@@ -4,7 +4,7 @@
         "noImplicitAny": true,
         "strictBindCallApply": true,
         "removeComments": true,
-        "sourceMap": true,
+        "sourceMap": false,
 
         "noImplicitThis": true,
 

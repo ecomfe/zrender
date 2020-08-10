@@ -14,15 +14,15 @@ type InterpolatableType = string | number | NumberArray | NumberArray[];
 
 const arraySlice = Array.prototype.slice;
 
-function interpolateNumber(p0: number, p1: number, percent: number): number {
+export function interpolateNumber(p0: number, p1: number, percent: number): number {
     return (p1 - p0) * percent + p0;
 }
 
-function step(p0: any, p1: any, percent: number): any {
+export function step(p0: any, p1: any, percent: number): any {
     return percent > 0.5 ? p1 : p0;
 }
 
-function interpolate1DArray(
+export function interpolate1DArray(
     out: NumberArray,
     p0: NumberArray,
     p1: NumberArray,
@@ -35,7 +35,7 @@ function interpolate1DArray(
     }
 }
 
-function interpolate2DArray(
+export function interpolate2DArray(
     out: NumberArray[],
     p0: NumberArray[],
     p1: NumberArray[],
@@ -308,7 +308,11 @@ class Track {
 
     needsAnimate() {
         // return this.keyframes.length >= 2;
-        return !this._isAllValueEqual && this.keyframes.length >= 2;
+        return !this._isAllValueEqual && this.keyframes.length >= 2 && this.interpolable;
+    }
+
+    getAdditiveTrack() {
+        return this._additiveTrack;
     }
 
     addKeyframe(time: number, value: unknown) {
@@ -387,12 +391,14 @@ class Track {
             }
         }
 
-        // Not check if value equal here.
-        this.keyframes.push({
+        const kf = {
             time,
             value,
             percent: 0
-        });
+        };
+        // Not check if value equal here.
+        this.keyframes.push(kf);
+        return kf;
     }
 
     prepare(additiveTrack?: Track) {
@@ -503,11 +509,17 @@ class Track {
             }
             frameIdx = Math.min(frameIdx - 1, kfsNum - 2);
         }
+        let nextFrame = keyframes[frameIdx + 1];
+        let frame = keyframes[frameIdx];
+
+        // Defensive coding.
+        if (!(frame && nextFrame)) {
+            return;
+        }
+
         this._lastFrame = frameIdx;
         this._lastFramePercent = percent;
 
-        let nextFrame = keyframes[frameIdx + 1];
-        let frame = keyframes[frameIdx];
 
         const range = (nextFrame.percent - frame.percent);
         if (range === 0) {
@@ -558,7 +570,8 @@ class Track {
                 let value;
                 if (!this.interpolable) {
                     // String is step(0.5)
-                    value = step(p1, p2, w);
+                    // value = step(p1, p2, w);
+                    value = p2;
                 }
                 else {
                     value = catmullRomInterpolate(
@@ -652,7 +665,7 @@ class Track {
 
 
 type DoneCallback = () => void;
-type OnframeCallback<T> = (target: T, percent: number) => void;
+export type OnframeCallback<T> = (target: T, percent: number) => void;
 
 export type AnimationPropGetter<T> = (target: T, key: string) => InterpolatableType;
 export type AnimationPropSetter<T> = (target: T, key: string, value: InterpolatableType) => void;
@@ -663,6 +676,8 @@ export default class Animator<T> {
 
     targetName?: string
 
+    scope?: string
+
     __fromStateTransition?: string
 
     private _tracks: Dictionary<Track> = {}
@@ -672,8 +687,14 @@ export default class Animator<T> {
 
     private _loop: boolean
     private _delay = 0
-    private _paused = false
     private _maxTime = 0
+
+    // Some status
+    private _paused = false
+    // 0: Not started
+    // 1: Invoked started
+    // 2: Has been run for at least one frame.
+    private _started = 0
 
     private _additiveAnimator: Animator<any>
 
@@ -683,7 +704,6 @@ export default class Animator<T> {
     private _clip: Clip = null
 
     constructor(target: T, loop: boolean, additiveTo?: Animator<any>) {
-        this._target = target;
         this._target = target;
         this._loop = loop;
         if (loop) {
@@ -804,6 +824,10 @@ export default class Animator<T> {
      * @return
      */
     start(easing?: AnimationEasing, forceAnimate?: boolean) {
+        if (this._started > 0) {
+            return;
+        }
+        this._started = 1;
 
         const self = this;
 
@@ -812,9 +836,17 @@ export default class Animator<T> {
             const propName = this._trackKeys[i];
             const track = this._tracks[propName];
             const additiveTrack = this._additiveAnimator && this._additiveAnimator.getTrack(propName);
+            const kfs = track.keyframes;
             track.prepare(additiveTrack);
             if (track.needsAnimate()) {
                 tracks.push(track);
+            }
+            else if (!track.interpolable) {
+                const lastKf = kfs[kfs.length - 1];
+                // Set final value.
+                if (lastKf) {
+                    (self._target as any)[track.propName] = lastKf.value;
+                }
             }
         }
         // Add during callback on the last clip
@@ -824,12 +856,15 @@ export default class Animator<T> {
                 loop: this._loop,
                 delay: this._delay,
                 onframe(percent: number) {
+                    self._started = 2;
                     // Remove additived animator if it's finished.
                     // For the purpose of memory effeciency.
                     if (self._additiveAnimator && !self._additiveAnimator._clip) {
                         self._additiveAnimator = null;
                     }
                     for (let i = 0; i < tracks.length; i++) {
+                        // NOTE: don't cache target outside.
+                        // Because target may be changed.
                         tracks[i].step(self._target, percent);
                     }
                     for (let i = 0; i < self._onframeList.length; i++) {
@@ -924,6 +959,14 @@ export default class Animator<T> {
                 if (forwardToLast) {
                     track.step(this._target, 1);
                 }
+                // If the track has not been run for at least wrong frame.
+                // The property may be stayed at the final state. when setToFinal is set true.
+                // For example:
+                // Animate x from 0 to 100, then animate to 150 immediately.
+                // We want the x is translated from 0 to 150, not 100 to 150.
+                else if (this._started === 1) {
+                    track.step(this._target, 0);
+                }
                 // Set track to finished
                 track.setFinished();
             }
@@ -949,7 +992,7 @@ export default class Animator<T> {
      * It is mainly used in state mangement. When state is switching during animation.
      * We need to save final state of animation to the normal state. Not interpolated value.
      */
-    saveFinalToTarget(target: T, trackKeys?: string[]) {
+    saveFinalToTarget(target: T, trackKeys?: readonly string[]) {
         if (!target) {  // DO nothing if target is not given.
             return;
         }
@@ -962,8 +1005,8 @@ export default class Animator<T> {
             if (!track || track.isFinished()) {   // Ignore finished track.
                 continue;
             }
-
-            const lastKf = track.keyframes[track.keyframes.length - 1];
+            const kfs = track.keyframes;
+            const lastKf = kfs[kfs.length - 1];
             if (lastKf) {
                 // TODO CLONE?
                 let val: unknown = cloneValue(lastKf.value as any);
@@ -972,6 +1015,31 @@ export default class Animator<T> {
                 }
 
                 (target as any)[propName] = val;
+            }
+        }
+    }
+
+    // Change final value after animator has been started.
+    // NOTE: Be careful to use it.
+    __changeFinalValue(finalProps: Dictionary<any>, trackKeys?: readonly string[]) {
+        trackKeys = trackKeys || keys(finalProps);
+
+        for (let i = 0; i < trackKeys.length; i++) {
+            const propName = trackKeys[i];
+
+            const track = this._tracks[propName];
+            if (!track) {
+                continue;
+            }
+
+            const kfs = track.keyframes;
+            if (kfs.length > 1) {
+                // Remove the original last kf and add again.
+                const lastKf = kfs.pop();
+
+                track.addKeyframe(lastKf.time, finalProps[propName]);
+                // Prepare again.
+                track.prepare(track.getAdditiveTrack());
             }
         }
     }

@@ -25,6 +25,8 @@ import { EventCallback } from './core/Eventful';
 import TSpan from './graphic/TSpan';
 import ZRImage from './graphic/Image';
 import Displayable from './graphic/Displayable';
+import { lum } from './tool/color';
+import { DARK_MODE_THRESHOLD } from './config';
 
 
 const useVML = !env.canvasSupported;
@@ -33,15 +35,35 @@ type PainterBaseCtor = {
     new(dom: HTMLElement, storage: Storage, ...args: any[]): PainterBase
 }
 
-const painterCtors: Dictionary<PainterBaseCtor> = {
-};
+const painterCtors: Dictionary<PainterBaseCtor> = {};
 
 let instances: { [key: number]: ZRender } = {};
 
-
-
 function delInstance(id: number) {
     delete instances[id];
+}
+
+function isDarkMode(backgroundColor: string | GradientObject | PatternObject): boolean {
+    if (!backgroundColor) {
+        return false;
+    }
+    if (typeof backgroundColor === 'string') {
+        return lum(backgroundColor, 1) < DARK_MODE_THRESHOLD;
+    }
+    else if ((backgroundColor as GradientObject).colorStops) {
+        const colorStops = (backgroundColor as GradientObject).colorStops;
+        let totalLum = 0;
+        const len = colorStops.length;
+        // Simply do the math of average the color. Not consider the offset
+        for (let i = 0; i < len; i++) {
+            totalLum += lum(colorStops[i].color, 1);
+        }
+        totalLum /= len;
+
+        return totalLum < DARK_MODE_THRESHOLD;
+    }
+    // Can't determine
+    return false;
 }
 
 class ZRender {
@@ -55,8 +77,17 @@ class ZRender {
     handler: Handler
     animation: Animation
 
+    private _stillFrameAccum = 0;
+
     private _needsRefresh = true
     private _needsRefreshHover = true
+
+    /**
+     * If theme is dark mode. It will determine the color strategy for labels.
+     */
+    private _darkMode = false;
+
+    private _backgroundColor: string | GradientObject | PatternObject;
 
     constructor(id: number, dom: HTMLElement, opts?: ZRenderInitOpt) {
         opts = opts || {};
@@ -137,13 +168,28 @@ class ZRender {
     /**
      * Set background color
      */
-    setBackgroundColor(
-        backgroundColor: string | GradientObject | PatternObject
-    ) {
+    setBackgroundColor(backgroundColor: string | GradientObject | PatternObject) {
         if (this.painter.setBackgroundColor) {
             this.painter.setBackgroundColor(backgroundColor);
         }
         this._needsRefresh = true;
+        this._backgroundColor = backgroundColor;
+        this._darkMode = isDarkMode(backgroundColor);
+    }
+
+    getBackgroundColor() {
+        return this._backgroundColor;
+    }
+
+    /**
+     * Force to set dark mode
+     */
+    setDarkMode(darkMode: boolean) {
+        this._darkMode = darkMode;
+    }
+
+    isDarkMode() {
+        return this._darkMode;
     }
 
     /**
@@ -159,10 +205,10 @@ class ZRender {
 
         // Clear needsRefresh ahead to avoid something wrong happens in refresh
         // Or it will cause zrender refreshes again and again.
-        this._needsRefresh = this._needsRefreshHover = false;
+        this._needsRefresh = false;
         this.painter.refresh();
         // Avoid trigger zr.refresh in Element#beforeUpdate hook
-        this._needsRefresh = this._needsRefreshHover = false;
+        this._needsRefresh = false;
 
         // const end = new Date();
         // const log = document.getElementById('log');
@@ -176,6 +222,8 @@ class ZRender {
      */
     refresh() {
         this._needsRefresh = true;
+        // Active the animation again.
+        this.animation.start();
     }
 
     /**
@@ -189,46 +237,57 @@ class ZRender {
             triggerRendered = true;
             this.refreshImmediately(true);
         }
+
         if (this._needsRefreshHover) {
             triggerRendered = true;
             this.refreshHoverImmediately();
         }
         const end = new Date().getTime();
 
-        triggerRendered && this.trigger('rendered', {
-            elapsedTime: end - start
-        });
+        if (triggerRendered) {
+            this._stillFrameAccum = 0;
+            this.trigger('rendered', {
+                elapsedTime: end - start
+            });
+        }
+        else {
+            this._stillFrameAccum++;
+
+            // Stop the animiation after still for 10 frames.
+            if (this._stillFrameAccum > 10) {
+                this.animation.stop();
+            }
+        }
+    }
+
+    /**
+     * Wake up animation loop. But not render.
+     */
+    wakeUp() {
+        this.animation.start();
+        // Reset the frame count.
+        this._stillFrameAccum = 0;
     }
 
     /**
      * Add element to hover layer
      */
-    addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T {
-        if (this.painter.addHover) {
-            const elMirror = this.painter.addHover(el, hoverStyle);
-            this.refreshHover();
-            return elMirror;
-        }
+    addHover(el: Displayable) {
+        // deprecated.
     }
 
     /**
      * Add element from hover layer
      */
     removeHover(el: Path | TSpan | ZRImage) {
-        if (this.painter.removeHover) {
-            this.painter.removeHover(el);
-            this.refreshHover();
-        }
+        // deprecated.
     }
 
     /**
      * Clear all hover elements in hover layer
      */
     clearHover() {
-        if (this.painter.clearHover) {
-            this.painter.clearHover();
-            this.refreshHover();
-        }
+        // deprecated.
     }
 
     /**
@@ -438,7 +497,7 @@ export function registerPainter(name: string, Ctor: PainterBaseCtor) {
 /**
  * @type {string}
  */
-export const version = '4.2.0';
+export const version = '5.0.0-alpha.1';
 
 
 export interface ZRenderType extends ZRender {};

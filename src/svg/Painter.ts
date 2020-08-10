@@ -87,7 +87,10 @@ class SVGPainter implements PainterBase {
 
     private _opts: SVGPainterOption
 
-    private _svgRoot: SVGElement
+    private _svgDom: SVGElement
+    private _svgRoot: SVGGElement
+    private _backgroundRoot: SVGGElement
+    private _backgroundNode: SVGRectElement
 
     private _gradientManager: GradientManager
     private _clipPathManager: ClippathManager
@@ -104,11 +107,16 @@ class SVGPainter implements PainterBase {
         this.storage = storage;
         this._opts = opts = util.extend({}, opts || {});
 
-        const svgRoot = createElement('svg');
-        svgRoot.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-        svgRoot.setAttribute('version', '1.1');
-        svgRoot.setAttribute('baseProfile', 'full');
-        svgRoot.style.cssText = 'user-select:none;position:absolute;left:0;top:0;';
+        const svgDom = createElement('svg');
+        svgDom.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        svgDom.setAttribute('version', '1.1');
+        svgDom.setAttribute('baseProfile', 'full');
+        svgDom.style.cssText = 'user-select:none;position:absolute;left:0;top:0;';
+
+        const bgRoot = createElement('g') as SVGGElement;
+        svgDom.appendChild(bgRoot);
+        const svgRoot = createElement('g') as SVGGElement;
+        svgDom.appendChild(svgRoot);
 
         this._gradientManager = new GradientManager(zrId, svgRoot);
         this._clipPathManager = new ClippathManager(zrId, svgRoot);
@@ -117,11 +125,13 @@ class SVGPainter implements PainterBase {
         const viewport = document.createElement('div');
         viewport.style.cssText = 'overflow:hidden;position:relative';
 
+        this._svgDom = svgDom;
         this._svgRoot = svgRoot;
+        this._backgroundRoot = bgRoot;
         this._viewport = viewport;
 
         root.appendChild(viewport);
-        viewport.appendChild(svgRoot);
+        viewport.appendChild(svgDom);
 
         this.resize(opts.width, opts.height);
 
@@ -134,6 +144,14 @@ class SVGPainter implements PainterBase {
 
     getViewportRoot() {
         return this._viewport;
+    }
+
+    getSvgDom() {
+        return this._svgDom;
+    }
+
+    getSvgRoot() {
+        return this._svgRoot;
     }
 
     getViewportRootOffset() {
@@ -155,7 +173,21 @@ class SVGPainter implements PainterBase {
 
     setBackgroundColor(backgroundColor: string) {
         // TODO gradient
-        this._viewport.style.background = backgroundColor;
+        // Insert a bg rect instead of setting background to viewport.
+        // Otherwise, the exported SVG don't have background.
+        if (this._backgroundRoot && this._backgroundNode) {
+            this._backgroundRoot.removeChild(this._backgroundNode);
+        }
+
+        const bgNode = createElement('rect') as SVGRectElement;
+        bgNode.setAttribute('width', this.getWidth() as any);
+        bgNode.setAttribute('height', this.getHeight() as any);
+        bgNode.setAttribute('x', 0 as any);
+        bgNode.setAttribute('y', 0 as any);
+        bgNode.setAttribute('id', 0 as any);
+        bgNode.style.fill = backgroundColor;
+        this._backgroundRoot.appendChild(bgNode);
+        this._backgroundNode = bgNode;
     }
 
     _paintList(list: Displayable[]) {
@@ -173,7 +205,7 @@ class SVGPainter implements PainterBase {
             const svgProxy = getSvgProxy(displayable);
             const svgElement = getSvgElement(displayable);
             if (!displayable.invisible) {
-                if (displayable.__dirty) {
+                if (displayable.__dirty || !svgElement) {
                     svgProxy && (svgProxy as SVGProxy<Displayable>).brush(displayable);
 
                     // Update clipPath
@@ -191,7 +223,11 @@ class SVGPainter implements PainterBase {
 
                     displayable.__dirty = 0;
                 }
-                newVisibleList.push(displayable);
+
+                // May have optimizations and ignore brush(like empty string in TSpan)
+                if (getSvgElement(displayable)) {
+                    newVisibleList.push(displayable);
+                }
             }
         }
 
@@ -259,8 +295,8 @@ class SVGPainter implements PainterBase {
     }
 
     _getDefs(isForceCreating?: boolean) {
-        let svgRoot = this._svgRoot;
-        let defs = this._svgRoot.getElementsByTagName('defs');
+        let svgRoot = this._svgDom;
+        let defs = svgRoot.getElementsByTagName('defs');
         if (defs.length === 0) {
             // Not exist
             if (isForceCreating) {
@@ -317,10 +353,15 @@ class SVGPainter implements PainterBase {
             viewportStyle.width = width + 'px';
             viewportStyle.height = height + 'px';
 
-            const svgRoot = this._svgRoot;
+            const svgRoot = this._svgDom;
             // Set width by 'svgRoot.width = width' is invalid
             svgRoot.setAttribute('width', width + '');
             svgRoot.setAttribute('height', height + '');
+        }
+
+        if (this._backgroundNode) {
+            this._backgroundNode.setAttribute('width', width as any);
+            this._backgroundNode.setAttribute('height', height as any);
         }
     }
 
@@ -363,10 +404,13 @@ class SVGPainter implements PainterBase {
     dispose() {
         this.root.innerHTML = '';
 
-        this._svgRoot =
-            this._viewport =
-            this.storage =
-            null;
+        this._svgRoot
+            = this._backgroundRoot
+            = this._svgDom
+            = this._backgroundNode
+            = this._viewport
+            = this.storage
+            = null;
     }
 
     clear() {
@@ -375,15 +419,11 @@ class SVGPainter implements PainterBase {
         }
     }
 
-    pathToDataUrl() {
+    toDataURL() {
         this.refresh();
-        const html = this._svgRoot.outerHTML;
+        const html = encodeURIComponent(this._svgDom.outerHTML.replace(/></g, '>\n\r<'));
         return 'data:image/svg+xml;charset=UTF-8,' + html;
     }
-
-    addHover = createMethodNotSupport('addHover') as PainterBase['addHover'];
-    removeHover = createMethodNotSupport('removeHover') as PainterBase['removeHover'];
-    clearHover = createMethodNotSupport('clearHover') as PainterBase['clearHover'];
     refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];
     pathToImage = createMethodNotSupport('pathToImage') as PainterBase['pathToImage'];
     configLayer = createMethodNotSupport('configLayer') as PainterBase['configLayer'];

@@ -81,9 +81,14 @@ class Group extends Element<GroupProps> {
      * 添加子节点到最后
      */
     add(child: Element): Group {
-        if (child && child !== this && child.parent !== this) {
-            this._children.push(child);
-            this._doAdd(child);
+        if (child) {
+            if (child !== this && child.parent !== this) {
+                this._children.push(child);
+                this._doAdd(child);
+            }
+            if (child.__hostTarget) {
+                throw 'This elemenet has been used as an attachment';
+            }
         }
 
         return this;

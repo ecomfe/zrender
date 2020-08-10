@@ -10,11 +10,13 @@ import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
 import ZRImage from './Image';
 import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
-import { MatrixArray } from '../core/matrix';
+import { MatrixArray, copy } from '../core/matrix';
 import Displayable, { DisplayableStatePropNames, DisplayableProps, DEFAULT_COMMON_ANIMATION_PROPS } from './Displayable';
 import Path from './Path';
 import { ZRenderType } from '../zrender';
 import Animator from '../animation/Animator';
+import Transformable from '../core/Transformable';
+import { ElementCommonState } from '../Element';
 
 type TextContentBlock = ReturnType<typeof parseRichText>
 type TextLine = TextContentBlock['lines'][0]
@@ -38,6 +40,10 @@ export interface TextStylePropsPart {
      * user can choose to do not use text stroke.
      */
     lineWidth?: number
+    lineDash?: false | number[]
+    lineDashOffset?: number
+    borderDash?: false | number[]
+    borderDashOffset?: number
 
     /**
      * If `fontSize` or `fontFamily` exists, `font` will be reset by
@@ -68,7 +74,7 @@ export interface TextStylePropsPart {
      * It helps merging respectively, rather than parsing an entire font string.
      * Should be 12 but not '12px'.
      */
-    fontSize?: number
+    fontSize?: number | string
 
     align?: TextAlign
     verticalAlign?: TextVerticalAlign
@@ -106,6 +112,10 @@ export interface TextStylePropsPart {
      * Can be `2` or `[2, 4]` or `[2, 3, 4, 5]`
      */
     padding?: number | number[]
+    /**
+     * Margin of label. Used when layouting the label.
+     */
+    margin?: number
 
     borderColor?: string
     borderWidth?: number
@@ -146,9 +156,12 @@ export interface TextStyleProps extends TextStylePropsPart {
 
     /**
      * Strategy when calculated text width exceeds textWidth.
+     * break: break by word
+     * break: will break inside the word
+     * truncate: truncate the text and show ellipsis
      * Do nothing if not set
      */
-    overflow?: 'wrap' | 'truncate'
+    overflow?: 'break' | 'breakAll' | 'truncate'
 
     /**
      * Strategy when text lines exceeds textHeight.
@@ -181,7 +194,7 @@ export interface TextProps extends DisplayableProps {
     cursor?: string
 }
 
-export type TextState = Pick<TextProps, DisplayableStatePropNames>
+export type TextState = Pick<TextProps, DisplayableStatePropNames> & ElementCommonState
 
 export type DefaultTextStyle = Pick<TextStyleProps, 'fill' | 'stroke' | 'align' | 'verticalAlign'> & {
     autoStroke?: boolean
@@ -220,7 +233,7 @@ export const DEFAULT_TEXT_ANIMATION_PROPS: MapToType<TextProps, boolean> = {
         padding: true,  // TODO needs normalize padding before animate
         borderColor: true,
         borderWidth: true,
-        borderRadius: true,  // TODO needs normalize radius before animate
+        borderRadius: true  // TODO needs normalize radius before animate
     }, DEFAULT_COMMON_ANIMATION_PROPS.style)
  };
 
@@ -249,6 +262,12 @@ class ZRText extends Displayable<TextProps> {
      */
     overlap: 'hidden' | 'show' | 'blur'
 
+    /**
+     * Calculated transform after the text is attached on some element.
+     * Will override the default transform.
+     */
+    attachedTransform: Transformable
+
     private _children: (ZRImage | Rect | TSpan)[] = []
 
     private _childCursor: 0
@@ -267,7 +286,7 @@ class ZRText extends Displayable<TextProps> {
     update() {
         // Update children
         if (this.styleChanged()) {
-            this._updateSubTexts()
+            this._updateSubTexts();
         }
 
         for (let i = 0; i < this._children.length; i++) {
@@ -281,7 +300,22 @@ class ZRText extends Displayable<TextProps> {
             child.invisible = this.invisible;
         }
 
-        super.update();
+        const attachedTransform = this.attachedTransform;
+        if (attachedTransform) {
+            attachedTransform.updateTransform();
+            const m = attachedTransform.transform;
+            if (m) {
+                this.transform = this.transform || [];
+                // Copy to the transform will be actually used.
+                copy(this.transform, m);
+            }
+            else {
+                this.transform = null;
+            }
+        }
+        else {
+            super.update();
+        }
     }
 
 
@@ -293,7 +327,8 @@ class ZRText extends Displayable<TextProps> {
             this.__hostTarget.updateInnerText(true);
         }
 
-        return super.getComputedTransform();
+        return this.attachedTransform ? this.attachedTransform.getComputedTransform()
+            : super.getComputedTransform();
     }
 
     private _updateSubTexts() {
@@ -449,28 +484,33 @@ class ZRText extends Displayable<TextProps> {
         const baseX = style.x || 0;
         const baseY = style.y || 0;
         const textAlign = style.align || defaultStyle.align || 'left';
-        const textVerticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
+        const verticalAlign = style.verticalAlign || defaultStyle.verticalAlign || 'top';
 
-        const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
         let textX = baseX;
-        let textY = boxY;
+        let textY = adjustTextY(baseY, contentBlock.contentHeight, verticalAlign);
 
         if (needDrawBg || textPadding) {
             // Consider performance, do not call getTextWidth util necessary.
             let outerWidth = contentBlock.width;
             textPadding && (outerWidth += textPadding[1] + textPadding[3]);
             const boxX = adjustTextX(baseX, outerWidth, textAlign);
+            const boxY = adjustTextY(baseY, outerHeight, verticalAlign);
 
             needDrawBg && this._renderBackground(style, boxX, boxY, outerWidth, outerHeight);
-
-            if (textPadding) {
-                textX = getTextXForPadding(baseX, textAlign, textPadding);
-                textY += textPadding[0];
-            }
         }
 
         // `textBaseline` is set as 'middle'.
         textY += lineHeight / 2;
+
+        if (textPadding) {
+            textX = getTextXForPadding(baseX, textAlign, textPadding);
+            if (verticalAlign === 'top') {
+                textY += textPadding[0];
+            }
+            else if (verticalAlign === 'bottom') {
+                textY -= textPadding[2];
+            }
+        }
 
         let defaultLineWidth = 0;
         let useDefaultFill = false;
@@ -492,7 +532,7 @@ class ZRText extends Displayable<TextProps> {
         const hasShadow = style.textShadowBlur > 0;
 
         const fixedBoundingRect = style.width != null
-            && (style.overflow === 'truncate' || style.overflow === 'wrap');
+            && (style.overflow === 'truncate' || style.overflow === 'break' || style.overflow === 'breakAll');
         const calculatedLineHeight = contentBlock.calculatedLineHeight;
 
         for (let i = 0; i < textLines.length; i++) {
@@ -526,6 +566,8 @@ class ZRText extends Displayable<TextProps> {
             if (textStroke) {
                 subElStyle.stroke = textStroke as string;
                 subElStyle.lineWidth = style.lineWidth || defaultLineWidth;
+                subElStyle.lineDash = style.lineDash;
+                subElStyle.lineDashOffset = style.lineDashOffset || 0;
             }
             if (textFill) {
                 subElStyle.fill = textFill as string;
@@ -537,8 +579,8 @@ class ZRText extends Displayable<TextProps> {
 
             if (fixedBoundingRect) {
                 el.setBoundingRect(new BoundingRect(
-                    adjustTextX(subElStyle.x, style.width, subElStyle.textAlign),
-                    adjustTextY(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline),
+                    adjustTextX(subElStyle.x, style.width, subElStyle.textAlign as TextAlign),
+                    adjustTextY(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline as TextVerticalAlign),
                     style.width,
                     calculatedLineHeight
                 ));
@@ -563,17 +605,19 @@ class ZRText extends Displayable<TextProps> {
         const baseY = style.y || 0;
         const defaultStyle = this._defaultStyle;
         const textAlign = style.align || defaultStyle.align;
-        const textVerticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
+        const verticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
 
         const boxX = adjustTextX(baseX, outerWidth, textAlign);
-        const boxY = adjustTextY(baseY, outerHeight, textVerticalAlign);
+        const boxY = adjustTextY(baseY, outerHeight, verticalAlign);
         let xLeft = boxX;
         let lineTop = boxY;
+
         if (textPadding) {
             xLeft += textPadding[3];
             lineTop += textPadding[0];
         }
-        const xRight = xLeft + contentWidth;
+
+        let xRight = xLeft + contentWidth;
 
         if (needDrawBackground(style)) {
             this._renderBackground(style, boxX, boxY, outerWidth, outerHeight);
@@ -586,7 +630,7 @@ class ZRText extends Displayable<TextProps> {
             const tokenCount = tokens.length;
             const lineHeight = line.lineHeight;
 
-            let usedWidth = line.width;
+            let remainedWidth = line.width;
             let leftIndex = 0;
             let lineXLeft = xLeft;
             let lineXRight = xRight;
@@ -595,30 +639,33 @@ class ZRText extends Displayable<TextProps> {
 
             while (
                 leftIndex < tokenCount
-                && (token = tokens[leftIndex], !token.textAlign || token.textAlign === 'left')
+                && (token = tokens[leftIndex], !token.align || token.align === 'left')
             ) {
                 this._placeToken(token, style, lineHeight, lineTop, lineXLeft, 'left', bgColorDrawn);
-                usedWidth -= token.width;
+                remainedWidth -= token.width;
                 lineXLeft += token.width;
                 leftIndex++;
             }
 
             while (
                 rightIndex >= 0
-                && (token = tokens[rightIndex], token.textAlign === 'right')
+                && (token = tokens[rightIndex], token.align === 'right')
             ) {
                 this._placeToken(token, style, lineHeight, lineTop, lineXRight, 'right', bgColorDrawn);
-                usedWidth -= token.width;
+                remainedWidth -= token.width;
                 lineXRight -= token.width;
                 rightIndex--;
             }
 
             // The other tokens are placed as textAlign 'center' if there is enough space.
-            lineXLeft += (contentWidth - (lineXLeft - xLeft) - (xRight - lineXRight) - usedWidth) / 2;
+            lineXLeft += (contentWidth - (lineXLeft - xLeft) - (xRight - lineXRight) - remainedWidth) / 2;
             while (leftIndex <= rightIndex) {
                 token = tokens[leftIndex];
                 // Consider width specified by user, use 'center' rather than 'left'.
-                this._placeToken(token, style, lineHeight, lineTop, lineXLeft + token.width / 2, 'center', bgColorDrawn);
+                this._placeToken(
+                    token, style, lineHeight, lineTop,
+                    lineXLeft + token.width / 2, 'center', bgColorDrawn
+                );
                 lineXLeft += token.width;
                 leftIndex++;
             }
@@ -641,12 +688,12 @@ class ZRText extends Displayable<TextProps> {
 
         // 'ctx.textBaseline' is always set as 'middle', for sake of
         // the bias of "Microsoft YaHei".
-        const textVerticalAlign = token.textVerticalAlign;
+        const verticalAlign = token.verticalAlign;
         let y = lineTop + lineHeight / 2;
-        if (textVerticalAlign === 'top') {
+        if (verticalAlign === 'top') {
             y = lineTop + token.height / 2;
         }
-        else if (textVerticalAlign === 'bottom') {
+        else if (verticalAlign === 'bottom') {
             y = lineTop + lineHeight - token.height / 2;
         }
 
@@ -667,7 +714,6 @@ class ZRText extends Displayable<TextProps> {
         const textPadding = token.textPadding;
         if (textPadding) {
             x = getTextXForPadding(x, textAlign, textPadding);
-            y -= token.height / 2 - textPadding[2] - token.height / 2;
         }
 
         const el = this._getOrCreateChild(TSpan);
@@ -715,6 +761,8 @@ class ZRText extends Displayable<TextProps> {
 
         if (textStroke) {
             subElStyle.lineWidth = retrieve3(tokenStyle.lineWidth, style.lineWidth, defaultLineWidth);
+            subElStyle.lineDash = retrieve2(tokenStyle.lineDash, style.lineDash);
+            subElStyle.lineDashOffset = style.lineDashOffset || 0;
             subElStyle.stroke = textStroke;
         }
         if (textFill) {
@@ -725,8 +773,8 @@ class ZRText extends Displayable<TextProps> {
         const textHeight = token.contentHeight;
         // NOTE: Should not call dirtyStyle after setBoundingRect. Or it will be cleared.
         el.setBoundingRect(new BoundingRect(
-            adjustTextX(subElStyle.x, textWidth, subElStyle.textAlign),
-            adjustTextY(subElStyle.y, textHeight, subElStyle.textBaseline),
+            adjustTextX(subElStyle.x, textWidth, subElStyle.textAlign as TextAlign),
+            adjustTextY(subElStyle.y, textHeight, subElStyle.textBaseline as TextVerticalAlign),
             textWidth,
             textHeight
         ));
@@ -787,6 +835,14 @@ class ZRText extends Displayable<TextProps> {
             rectStyle.lineWidth = textBorderWidth;
             rectStyle.stroke = textBorderColor;
             rectStyle.strokeOpacity = retrieve2(style.strokeOpacity, 1);
+            rectStyle.lineDash = style.borderDash;
+            rectStyle.lineDashOffset = style.borderDashOffset || 0;
+
+            // Making shadow looks better.
+            if (rectEl.hasFill() && rectEl.hasStroke()) {
+                rectStyle.strokeFirst = true;
+                rectStyle.lineWidth *= 2;
+            }
         }
 
         const shadowStyle = (rectEl || imgEl).style;
@@ -794,19 +850,38 @@ class ZRText extends Displayable<TextProps> {
         shadowStyle.shadowColor = style.shadowColor || 'transparent';
         shadowStyle.shadowOffsetX = style.shadowOffsetX || 0;
         shadowStyle.shadowOffsetY = style.shadowOffsetY || 0;
-
     }
 
     static makeFont(style: TextStylePropsPart): string {
         // FIXME in node-canvas fontWeight is before fontStyle
         // Use `fontSize` `fontFamily` to check whether font properties are defined.
-        const font = (style.fontSize || style.fontFamily) && [
-            style.fontStyle,
-            style.fontWeight,
-            (style.fontSize || 12) + 'px',
-            // If font properties are defined, `fontFamily` should not be ignored.
-            style.fontFamily || 'sans-serif'
-        ].join(' ');
+        let font = '';
+        if (style.fontSize || style.fontFamily || style.fontWeight) {
+            let fontSize = '';
+            if (
+                typeof style.fontSize === 'string'
+                && (
+                    style.fontSize.indexOf('px') !== -1
+                    || style.fontSize.indexOf('rem') !== -1
+                    || style.fontSize.indexOf('em') !== -1
+                )
+            ) {
+                fontSize = style.fontSize;
+            }
+            else if (!isNaN(+style.fontSize)) {
+                fontSize = style.fontSize + 'px';
+            }
+            else {
+                fontSize = '12px';
+            }
+            font = [
+                style.fontStyle,
+                style.fontWeight,
+                fontSize,
+                // If font properties are defined, `fontFamily` should not be ignored.
+                style.fontFamily || 'sans-serif'
+            ].join(' ');
+        }
         return font && trim(font) || style.textFont || style.font;
     }
 }
@@ -832,11 +907,11 @@ function normalizeStyle(style: TextStylePropsPart) {
         ) ? textAlign : 'left';
 
         // Compatible with textBaseline.
-        let textVerticalAlign = style.verticalAlign;
-        (textVerticalAlign as string) === 'center' && (textVerticalAlign = 'middle');
+        let verticalAlign = style.verticalAlign;
+        (verticalAlign as string) === 'center' && (verticalAlign = 'middle');
         style.verticalAlign = (
-            textVerticalAlign == null || VALID_TEXT_VERTICAL_ALIGN[textVerticalAlign]
-        ) ? textVerticalAlign : 'top';
+            verticalAlign == null || VALID_TEXT_VERTICAL_ALIGN[verticalAlign]
+        ) ? verticalAlign : 'top';
 
         // TODO Should not change the orignal value.
         const textPadding = style.padding;

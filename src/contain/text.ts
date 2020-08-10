@@ -53,11 +53,16 @@ export function getWidth(text: string, font: string): number {
     return width;
 }
 
-export function getBoundingRect(
+/**
+ *
+ * Get bounding rect for inner usage(TSpan)
+ * Which not include text newline.
+ */
+export function innerGetBoundingRect(
     text: string,
     font: string,
-    textAlign?: CanvasTextAlign,
-    textBaseline?: CanvasTextBaseline
+    textAlign?: TextAlign,
+    textBaseline?: TextVerticalAlign
 ): BoundingRect {
     const width = getWidth(text, font);
     const height = getLineHeight(font);
@@ -70,7 +75,33 @@ export function getBoundingRect(
     return rect;
 }
 
-export function adjustTextX(x: number, width: number, textAlign: CanvasTextAlign): number {
+/**
+ *
+ * Get bounding rect for outer usage. Compatitable with old implementation
+ * Which includes text newline.
+ */
+export function getBoundingRect(
+    text: string,
+    font: string,
+    textAlign?: TextAlign,
+    textBaseline?: TextVerticalAlign
+) {
+    const textLines = ((text || '') + '').split('\n');
+    const len = textLines.length;
+    if (len === 1) {
+        return innerGetBoundingRect(textLines[0], font, textAlign, textBaseline);
+    }
+    else {
+        const uniondRect = new BoundingRect(0, 0, 0, 0);
+        for (let i = 0; i < textLines.length; i++) {
+            const rect = innerGetBoundingRect(textLines[i], font, textAlign, textBaseline);
+            i === 0 ? uniondRect.copy(rect) : uniondRect.union(rect);
+        }
+        return uniondRect;
+    }
+}
+
+export function adjustTextX(x: number, width: number, textAlign: TextAlign): number {
     // TODO Right to left language
     if (textAlign === 'right') {
         x -= width;
@@ -81,11 +112,11 @@ export function adjustTextX(x: number, width: number, textAlign: CanvasTextAlign
     return x;
 }
 
-export function adjustTextY(y: number, height: number, textBaseline: CanvasTextBaseline): number {
-    if (textBaseline === 'middle') {
+export function adjustTextY(y: number, height: number, verticalAlign: TextVerticalAlign): number {
+    if (verticalAlign === 'middle') {
         y -= height / 2;
     }
-    else if (textBaseline === 'bottom') {
+    else if (verticalAlign === 'bottom') {
         y -= height;
     }
     return y;

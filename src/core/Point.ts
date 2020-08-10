@@ -137,6 +137,9 @@ export default class Point {
      * Apply a transform matrix array.
      */
     transform(m: MatrixArray) {
+        if (!m) {
+            return;
+        }
         const x = this.x;
         const y = this.y;
         this.x = m[0] * x + m[2] * y + m[4];
@@ -148,6 +151,11 @@ export default class Point {
         out[0] = this.x;
         out[1] = this.y;
         return out;
+    }
+
+    fromArray(input: number[]) {
+        this.x = input[0];
+        this.y = input[1];
     }
 
     static set(p: PointLike, x: number, y: number) {
@@ -190,5 +198,11 @@ export default class Point {
     static scaleAndAdd(out: PointLike, p0: PointLike, p1: PointLike, scalar: number) {
         out.x = p0.x + p1.x * scalar;
         out.y = p0.y + p1.y * scalar;
+    }
+
+    static lerp(out: PointLike, p0: PointLike, p1: PointLike, t: number) {
+        const onet = 1 - t;
+        out.x = onet * p0.x + t * p1.x;
+        out.y = onet * p0.y + t * p1.y;
     }
 }

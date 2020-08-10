@@ -1,6 +1,6 @@
 import Transformable from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
-import Animator, {cloneValue} from './animation/Animator';
+import Animator, {cloneValue, OnframeCallback} from './animation/Animator';
 import { ZRenderType } from './zrender';
 import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes, TextVerticalAlign, TextAlign, MapToType } from './core/types';
 import Path from './graphic/Path';
@@ -21,12 +21,18 @@ import {
 import Polyline from './graphic/shape/Polyline';
 import Group from './graphic/Group';
 import Point from './core/Point';
+import { LIGHT_LABEL_COLOR, DARK_LABEL_COLOR } from './config';
+import { parse, stringify } from './tool/color';
+import env from './core/env';
 
 export interface ElementAnimateConfig {
     duration?: number
     delay?: number
     easing?: AnimationEasing
     done?: Function
+    during?: (percent: number) => void
+
+    scope?: string
     /**
      * If force animate
      * Prevent stop animation and callback
@@ -58,6 +64,12 @@ export interface ElementTextConfig {
      * Rotation of the label.
      */
     rotation?: number
+
+    /**
+     * Rect that text will be positioned.
+     * Default to be the rect of element.
+     */
+    layoutRect?: RectLike
 
     /**
      * Offset of the label.
@@ -152,24 +164,9 @@ export interface ElementTextGuideLineConfig {
     anchor?: Point
 
     /**
-     * If calculate guide line points automatically.
-     */
-    autoCalculate?: boolean
-
-    /**
      * Candidates of connectors. Used when autoCalculate is true and anchor is not specified.
      */
     candidates?: ('left' | 'top' | 'right' | 'bottom')[]
-
-    /**
-     * Length of the first segment near to text.
-     */
-    len?: number
-
-    /**
-     * Length of the second segment near to the element.
-     */
-    len2?: number
 }
 
 export interface ElementEvent {
@@ -242,13 +239,15 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
     clipPath?: Path
     drift?: Element['drift']
 
+    extra?: Dictionary<unknown>
+
     // For echarts animation.
     anid?: string
 }
 
 // Properties can be used in state.
 export const PRESERVED_NORMAL_STATE = '__zr_normal__';
-export const PRESERVED_MERGED_STATE = '__zr_merged__';
+// export const PRESERVED_MERGED_STATE = '__zr_merged__';
 
 const PRIMARY_STATES_KEYS = ['x', 'y', 'scaleX', 'scaleY', 'originX', 'originY', 'rotation', 'ignore'] as const;
 const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = {
@@ -263,7 +262,11 @@ const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = 
 }
 
 export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
-export type ElementState = Pick<ElementProps, ElementStatePropNames>;
+export type ElementState = Pick<ElementProps, ElementStatePropNames> & ElementCommonState
+
+export type ElementCommonState = {
+    hoverLayer?: boolean
+}
 
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 let tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
@@ -336,6 +339,13 @@ class Element<Props extends ElementProps = ElementProps> {
     __dirty: number
 
     /**
+     * If element has been moved to the hover layer.
+     *
+     * If so, dirty will only trigger the zrender refresh hover layer
+     */
+    __inHover: boolean
+
+    /**
      * path to clip the elements and its children, if it is a group.
      * @see http://www.w3.org/TR/2dcontext/#clipping-region
      */
@@ -371,7 +381,11 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     anid: string
 
+    extra: Dictionary<unknown>
+
     currentStates?: string[] = []
+    // prevStates is for storager in echarts.
+    prevStates?: string[]
     /**
      * Store of element state.
      * '__normal__' key is preserved for default properties.
@@ -386,8 +400,10 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Proxy function for getting state with given stateName.
      * ZRender will first try to get with stateProxy. Then find from states if stateProxy returns nothing
+     *
+     * targetStates will be given in useStates
      */
-    stateProxy?: (stateName: string) => ElementState
+    stateProxy?: (stateName: string, targetStates?: string[]) => ElementState
 
     protected _normalState: ElementState
 
@@ -395,10 +411,6 @@ class Element<Props extends ElementProps = ElementProps> {
     private _innerTextDefaultStyle: DefaultTextStyle
 
     constructor(props?: Props) {
-        // Transformable needs position, rotation, scale
-        Transformable.call(this);
-        Eventful.call(this);
-
         this._init(props);
     }
 
@@ -458,6 +470,8 @@ class Element<Props extends ElementProps = ElementProps> {
             }
             const textConfig = this.textConfig;
             const isLocal = textConfig.local;
+            const attachedTransform = textEl.attachedTransform;
+
             let textAlign: TextAlign;
             let textVerticalAlign: TextVerticalAlign;
 
@@ -469,30 +483,46 @@ class Element<Props extends ElementProps = ElementProps> {
             if (isLocal) {
                 // Apply host's transform.
                 // TODO parent is always be group for developers. But can be displayble inside.
-                textEl.parent = this as unknown as Group;
+                attachedTransform.parent = this as unknown as Group;
             }
             else {
-                textEl.parent = null;
+                attachedTransform.parent = null;
             }
 
+            let innerOrigin = false;
+
+            // Reset x/y/rotation
+            attachedTransform.x = textEl.x;
+            attachedTransform.y = textEl.y;
+            attachedTransform.originX = textEl.originX;
+            attachedTransform.originY = textEl.originY;
+            attachedTransform.rotation = textEl.rotation;
+            attachedTransform.scaleX = textEl.scaleX;
+            attachedTransform.scaleY = textEl.scaleY;
             // Force set attached text's position if `position` is in config.
             if (textConfig.position != null) {
-                tmpBoundingRect.copy(this.getBoundingRect());
+                let layoutRect = tmpBoundingRect;
+                if (textConfig.layoutRect) {
+                    layoutRect.copy(textConfig.layoutRect);
+                }
+                else {
+                    layoutRect.copy(this.getBoundingRect());
+                }
                 if (!isLocal) {
-                    tmpBoundingRect.applyTransform(this.transform);
+                    layoutRect.applyTransform(this.transform);
                 }
 
                 if (this.calculateTextPosition) {
-                    this.calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
+                    this.calculateTextPosition(tmpTextPosCalcRes, textConfig, layoutRect);
                 }
                 else {
-                    calculateTextPosition(tmpTextPosCalcRes, textConfig, tmpBoundingRect);
+                    calculateTextPosition(tmpTextPosCalcRes, textConfig, layoutRect);
                 }
 
                 // TODO Should modify back if textConfig.position is set to null again.
                 // Or textContent is detached.
-                textEl.x = tmpTextPosCalcRes.x;
-                textEl.y = tmpTextPosCalcRes.y;
+                attachedTransform.x = tmpTextPosCalcRes.x;
+                attachedTransform.y = tmpTextPosCalcRes.y;
 
                 // User specified align/verticalAlign has higher priority, which is
                 // useful in the case that attached text is rotated 90 degree.
@@ -504,32 +534,35 @@ class Element<Props extends ElementProps = ElementProps> {
                     let relOriginX;
                     let relOriginY;
                     if (textOrigin === 'center') {
-                        relOriginX = tmpBoundingRect.width * 0.5;
-                        relOriginY = tmpBoundingRect.height * 0.5;
+                        relOriginX = layoutRect.width * 0.5;
+                        relOriginY = layoutRect.height * 0.5;
                     }
                     else {
-                        relOriginX = parsePercent(textOrigin[0], tmpBoundingRect.width);
-                        relOriginY = parsePercent(textOrigin[1], tmpBoundingRect.height);
+                        relOriginX = parsePercent(textOrigin[0], layoutRect.width);
+                        relOriginY = parsePercent(textOrigin[1], layoutRect.height);
                     }
 
-                    textEl.originX = -textEl.x + relOriginX + (isLocal ? 0 : tmpBoundingRect.x);
-                    textEl.originY = -textEl.y + relOriginY + (isLocal ? 0 : tmpBoundingRect.y);
+                    innerOrigin = true;
+                    attachedTransform.originX = -attachedTransform.x + relOriginX + (isLocal ? 0 : layoutRect.x);
+                    attachedTransform.originY = -attachedTransform.y + relOriginY + (isLocal ? 0 : layoutRect.y);
                 }
             }
 
+
             if (textConfig.rotation != null) {
-                textEl.rotation = textConfig.rotation;
+                attachedTransform.rotation = textConfig.rotation;
             }
 
+            // TODO
             const textOffset = textConfig.offset;
             if (textOffset) {
-                textEl.x += textOffset[0];
-                textEl.y += textOffset[1];
+                attachedTransform.x += textOffset[0];
+                attachedTransform.y += textOffset[1];
 
                 // Not change the user set origin.
-                if (!textConfig.origin) {
-                    textEl.originX = -textOffset[0];
-                    textEl.originY = -textOffset[1];
+                if (!innerOrigin) {
+                    attachedTransform.originX = -textOffset[0];
+                    attachedTransform.originY = -textOffset[1];
                 }
             }
 
@@ -542,17 +575,17 @@ class Element<Props extends ElementProps = ElementProps> {
             let textFill;
             let textStroke;
             let autoStroke;
-            if (isInside) {
+            if (isInside && this.canBeInsideText()) {
                 // In most cases `textContent` need this "auto" strategy.
                 // So by default be 'auto'. Otherwise users need to literally
                 // set `insideFill: 'auto', insideStroke: 'auto'` each time.
                 textFill = textConfig.insideFill;
                 textStroke = textConfig.insideStroke;
 
-                if (textFill == null) {
+                if (textFill == null || textFill === 'auto') {
                     textFill = this.getInsideTextFill();
                 }
-                if (textStroke == null) {
+                if (textStroke == null || textStroke === 'auto') {
                     textStroke = this.getInsideTextStroke(textFill);
                     autoStroke = true;
                 }
@@ -561,18 +594,16 @@ class Element<Props extends ElementProps = ElementProps> {
                 textFill = textConfig.outsideFill;
                 textStroke = textConfig.outsideStroke;
 
-                // Not pretty sure by default use #000 or host el color on outsideFill.
-                // Conservatively, use #000.
-                if (textFill == null) {
-                    textFill = '#000';
+                if (textFill == null || textFill === 'auto') {
+                    textFill = this.getOutsideFill();
                 }
                 // By default give a stroke to distinguish "front end" label with
                 // messy background (like other text label, line or other graphic).
                 // If textContent.style.fill specified, this auto stroke will not be used.
-                if (textStroke == null) {
+                if (textStroke == null || textStroke === 'auto') {
                     // If some time need to customize the default stroke getter,
                     // add some kind of override method.
-                    textStroke = 'rgba(255, 255, 255, 0.9)';
+                    textStroke = this.getOutsideStroke(textFill);
                     autoStroke = true;
                 }
             }
@@ -607,21 +638,36 @@ class Element<Props extends ElementProps = ElementProps> {
         }
     }
 
+    protected canBeInsideText() {
+        return true;
+    }
+
     protected getInsideTextFill(): string {
         return '#fff';
     }
 
-    protected getInsideTextStroke(textFill?: string): string {
+    protected getInsideTextStroke(textFill: string): string {
         return '#000';
     }
 
-    // protected getOutsideFill() {
-    //     return '#000';
-    // }
+    protected getOutsideFill() {
+        return this.__zr && this.__zr.isDarkMode() ? LIGHT_LABEL_COLOR : DARK_LABEL_COLOR;
+    }
 
-    // protected getOutsideStroke(textFill?: string) {
-    //     return 'rgba(255, 255, 255, 0.7)';
-    // }
+    protected getOutsideStroke(textFill: string): string {
+        const backgroundColor = this.__zr && this.__zr.getBackgroundColor();
+        let colorArr = typeof backgroundColor === 'string' && parse(backgroundColor as string);
+        if (!colorArr) {
+            colorArr = [255, 255, 255, 1];
+        }
+        // Assume blending on a white background.
+        const alpha = colorArr[3];
+        for (let i = 0; i < 3; i++) {
+            colorArr[i] = colorArr[i] * alpha + 255 * (1 - alpha);
+        }
+        colorArr[3] = 1;
+        return stringify(colorArr, 'rgba');
+    }
 
     traverse<Context>(
         cb: (this: Context, el: Element<Props>) => void,
@@ -637,6 +683,10 @@ class Element<Props extends ElementProps = ElementProps> {
         }
         else if (key === 'clipPath') {
             this.setClipPath(value as Path);
+        }
+        else if (key === 'extra') {
+            this.extra = this.extra || {};
+            extend(this.extra, value);
         }
         else {
             (this as any)[key] = value;
@@ -700,7 +750,6 @@ class Element<Props extends ElementProps = ElementProps> {
             // Only save keys that are changed by the states.
             animator.saveFinalToTarget(target);
         }
-
     }
 
     protected _innerSaveToNormal(toState: ElementState) {
@@ -807,12 +856,19 @@ class Element<Props extends ElementProps = ElementProps> {
             this.saveCurrentToNormalState(state);
         }
 
+        const useHoverLayer = !!(state && state.hoverLayer);
+
+        if (useHoverLayer) {
+            // Enter hover layer before states update.
+            this._toggleHoverLayerFlag(true);
+        }
+
         this._applyStateObj(
             stateName,
             state,
             this._normalState,
             keepCurrentStates,
-            animationCfg && animationCfg.duration > 0,
+            !this.__inHover && animationCfg && animationCfg.duration > 0,
             animationCfg
         );
 
@@ -843,6 +899,15 @@ class Element<Props extends ElementProps = ElementProps> {
         this._updateAnimationTargets();
 
         this.markRedraw();
+
+        if (!useHoverLayer && this.__inHover) {
+            // Leave hover layer after states update and markRedraw.
+            this._toggleHoverLayerFlag(false);
+            // NOTE: avoid unexpected refresh when moving out from hover layer!!
+            // Only clear from hover layer.
+            this.__dirty &= ~Element.REDARAW_BIT;
+        }
+
         // Return used state.
         return state;
     }
@@ -871,11 +936,12 @@ class Element<Props extends ElementProps = ElementProps> {
             if (notChange) {
                 return;
             }
+
             for (let i = 0; i < len; i++) {
                 const stateName = states[i];
                 let stateObj: ElementState;
                 if (this.stateProxy) {
-                    stateObj = this.stateProxy(stateName);
+                    stateObj = this.stateProxy(stateName, states);
                 }
                 if (!stateObj) {
                     stateObj = this.states[stateName];
@@ -885,17 +951,23 @@ class Element<Props extends ElementProps = ElementProps> {
                 }
             }
 
+            const useHoverLayer = !!(stateObjects[len - 1] && stateObjects[len - 1].hoverLayer);
+            if (useHoverLayer) {
+                // Enter hover layer before states update.
+                this._toggleHoverLayerFlag(true);
+            }
+
             const mergedState = this._mergeStates(stateObjects);
             const animationCfg = this.stateTransition;
 
             this.saveCurrentToNormalState(mergedState);
 
             this._applyStateObj(
-                PRESERVED_MERGED_STATE,
+                states.join(','),
                 mergedState,
                 this._normalState,
                 false,
-                animationCfg && animationCfg.duration > 0,
+                !this.__inHover && animationCfg && animationCfg.duration > 0,
                 animationCfg
             );
 
@@ -911,6 +983,15 @@ class Element<Props extends ElementProps = ElementProps> {
             // Create a copy
             this.currentStates = states.slice();
             this.markRedraw();
+
+
+            if (!useHoverLayer) {
+                // Leave hover layer after states update and markRedraw.
+                this._toggleHoverLayerFlag(false);
+                // NOTE: avoid unexpected refresh when moving out from hover layer!!
+                // Only clear from hover layer.
+                this.__dirty &= ~Element.REDARAW_BIT;
+            }
         }
     }
 
@@ -1053,6 +1134,19 @@ class Element<Props extends ElementProps = ElementProps> {
             }
         }
 
+        if (!transition) {
+            // Keep the running animation to the new values after states changed.
+            // Not simply stop animation. Or it may have jump effect.
+            for (let i = 0; i < this.animators.length; i++) {
+                const animator = this.animators[i];
+                const targetName = animator.targetName
+                animator.__changeFinalValue(targetName
+                    ? ((state || normalState) as any)[targetName]
+                    : (state || normalState)
+                );
+            }
+        }
+
         if (hasTransition) {
             this._transitionState(
                 stateName,
@@ -1139,14 +1233,20 @@ class Element<Props extends ElementProps = ElementProps> {
      * Attach text on element
      */
     setTextContent(textEl: ZRText) {
+        const previousTextContent = this._textContent;
+        if (previousTextContent === textEl) {
+            return;
+        }
         // Remove previous textContent
-        if (this._textContent && this._textContent !== textEl) {
+        if (previousTextContent && previousTextContent !== textEl) {
             this.removeTextContent();
         }
 
         if (textEl.__zr && !textEl.__hostTarget) {
             throw new Error('Text element has been added to zrender.');
         }
+
+        textEl.attachedTransform = new Transformable();
 
         this._attachComponent(textEl);
 
@@ -1173,8 +1273,10 @@ class Element<Props extends ElementProps = ElementProps> {
     removeTextContent() {
         const textEl = this._textContent;
         if (textEl) {
+            textEl.attachedTransform = null;
             this._detachComponent(textEl);
             this._textContent = null;
+            this._innerTextDefaultStyle = null;
             this.markRedraw();
         }
     }
@@ -1209,7 +1311,16 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     markRedraw() {
         this.__dirty |= Element.REDARAW_BIT;
-        this.__zr && this.__zr.refresh();
+        const zr = this.__zr;
+        if (zr) {
+            if (this.__inHover) {
+                zr.refreshHover();
+            }
+            else {
+                zr.refresh();
+            }
+        }
+
         // Used as a clipPath or textContent
         if (this.__hostTarget) {
             this.__hostTarget.markRedraw();
@@ -1222,6 +1333,18 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     dirty() {
         this.markRedraw();
+    }
+
+    private _toggleHoverLayerFlag(inHover: boolean) {
+        this.__inHover = inHover;
+        const textContent = this._textContent;
+        const textGuide = this._textGuide;
+        if (textContent) {
+            textContent.__inHover = inHover;
+        }
+        if (textGuide) {
+            textGuide.__inHover = inHover;
+        }
     }
 
     /**
@@ -1255,7 +1378,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     removeSelfFromZr(zr: ZRenderType) {
         this.__zr = null;
-        // 移除动画
+        // Remove animation
         const animators = this.animators;
         if (animators) {
             for (let i = 0; i < animators.length; i++) {
@@ -1307,11 +1430,11 @@ class Element<Props extends ElementProps = ElementProps> {
         const zr = this.__zr;
 
         const el = this;
-        const animators = el.animators;
 
         animator.during(function () {
             el.updateDuringAnimation(key as string);
         }).done(function () {
+            const animators = el.animators;
             // FIXME Animator will not be removed if use `Animator#stop` to stop animation
             const idx = indexOf(animators, animator);
             if (idx >= 0) {
@@ -1319,7 +1442,7 @@ class Element<Props extends ElementProps = ElementProps> {
             }
         });
 
-        animators.push(animator);
+        this.animators.push(animator);
 
         // If animate after added to the zrender
         if (zr) {
@@ -1335,13 +1458,20 @@ class Element<Props extends ElementProps = ElementProps> {
      * 停止动画
      * @param {boolean} forwardToLast If move to last frame before stop
      */
-    stopAnimation(forwardToLast?: boolean) {
+    stopAnimation(scope?: string, forwardToLast?: boolean) {
         const animators = this.animators;
         const len = animators.length;
+        const leftAnimators: Animator<any>[] = [];
         for (let i = 0; i < len; i++) {
-            animators[i].stop(forwardToLast);
+            const animator = animators[i];
+            if (!scope || scope === animator.scope) {
+                animator.stop(forwardToLast);
+            }
+            else {
+                leftAnimators.push(animator);
+            }
         }
-        this.animators = [];
+        this.animators = leftAnimators;
 
         return this;
     }
@@ -1435,6 +1565,7 @@ class Element<Props extends ElementProps = ElementProps> {
         elProto.isGroup = false;
         elProto.draggable = false;
         elProto.dragging = false;
+        elProto.__inHover = false;
         elProto.__dirty = Element.REDARAW_BIT;
 
 
@@ -1488,7 +1619,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 });
             }
         }
-        if (Object.defineProperty) {
+        if (Object.defineProperty && (!(env as any).browser.ie || (env as any).browser.version > 8)) {
             createLegacyProperty('position', '_legacyPos', 'x', 'y');
             createLegacyProperty('scale', '_legacyScale', 'scaleX', 'scaleY');
             createLegacyProperty('origin', '_legacyOrigin', 'originX', 'originY');
@@ -1532,6 +1663,15 @@ function animateTo<T>(
     if (!count) {
         cfg.done && cfg.done();
     }
+
+    // Adding during callback to the first animator
+    if (animators.length > 0 && typeof cfg.during === 'function') {
+        // TODO If there are two animators in animateTo, and the first one is stopped by other animator.
+        animators[0].during((target, percent) => {
+            cfg.during(percent);
+        });
+    }
+
     // Start after all animators created
     // Incase any animator is done immediately when all animation properties are not changed
     for (let i = 0; i < animators.length; i++) {
@@ -1598,6 +1738,7 @@ function animateToShallow<T>(
     reverse: boolean    // If `true`, animate from the `target` to current state.
 ) {
     const animatableKeys: string[] = [];
+    const changedKeys: string[] = [];
     const targetKeys = keys(target);
     const duration = cfg.duration;
     const delay = cfg.delay;
@@ -1607,11 +1748,10 @@ function animateToShallow<T>(
     for (let k = 0; k < targetKeys.length; k++) {
         const innerKey = targetKeys[k] as string;
 
-        if (target[innerKey] == null) { // Can't animate to a null/undefined value.
-            continue;
-        }
-
-        if (source[innerKey] != null && (animateAll || (animationProps as Dictionary<any>)[innerKey])) {
+        if (source[innerKey] != null
+            && target[innerKey] != null // Can't animate between null value. assign directly. For example. stroke animate from #fff to null.
+            && (animateAll || (animationProps as Dictionary<any>)[innerKey])
+        ) {
             if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
                 if (topKey) {
                     // logError('Only support 1 depth nest object animation.');
@@ -1636,42 +1776,22 @@ function animateToShallow<T>(
             }
             else {
                 animatableKeys.push(innerKey);
+                changedKeys.push(innerKey);
             }
         }
         else if (!reverse) {
             // Assign target value directly.
             source[innerKey] = target[innerKey];
             animatable.updateDuringAnimation(topKey);
+            // Previous animation will be stopped on the changed keys.
+            // So direct assign is also included.
+            changedKeys.push(innerKey);
         }
     }
 
     const keyLen = animatableKeys.length;
 
     if (keyLen > 0 || cfg.force) {
-        let revertedSource: Dictionary<any>;
-        let reversedTarget: Dictionary<any>;
-        let sourceClone: Dictionary<any>;
-        if (reverse) {
-            reversedTarget = {};
-            revertedSource = {};
-            for (let i = 0; i < keyLen; i++) {
-                const innerKey = animatableKeys[i];
-                reversedTarget[innerKey] = source[innerKey];
-                // Animate from target
-                revertedSource[innerKey] = target[innerKey];
-            }
-        }
-        else if (setToFinal) {
-            sourceClone = {};
-            for (let i = 0; i < keyLen; i++) {
-                const innerKey = animatableKeys[i];
-                sourceClone[innerKey] = cloneValue(source[innerKey]);
-                // Use copy, not change the original reference
-                // Copy from target to source.
-                copyValue(source, target, innerKey);
-            }
-        }
-
         // Find last animator animating same prop.
         const existsAnimators = animatable.animators;
         let lastAnimator;
@@ -1685,17 +1805,57 @@ function animateToShallow<T>(
         if (!additive && lastAnimator) {
             // Stop exists animation on specific tracks. Only one animator available for each property.
             // TODO Should invoke previous animation callback?
-            const allAborted = lastAnimator.stopTracks(animatableKeys);
+            const allAborted = lastAnimator.stopTracks(changedKeys);
             if (allAborted) {   // This animator can't be used.
                 const idx = indexOf(existsAnimators, lastAnimator);
                 existsAnimators.splice(idx, 1);
             }
         }
 
+        let revertedSource: Dictionary<any>;
+        let reversedTarget: Dictionary<any>;
+        let sourceClone: Dictionary<any>;
+        if (reverse) {
+            reversedTarget = {};
+            if (setToFinal) {
+                revertedSource = {};
+            }
+            for (let i = 0; i < keyLen; i++) {
+                const innerKey = animatableKeys[i];
+                reversedTarget[innerKey] = source[innerKey];
+                if (setToFinal) {
+                    revertedSource[innerKey] = target[innerKey];
+                }
+                else {
+                    // The usage of "animateFrom" expects that the element props has been updated dirctly to
+                    // "final" values outside, and input the "from" values here (i.e., in variable `target` here).
+                    // So here we assign the "from" values directly to element here (rather that in the next frame)
+                    // to prevent the "final" values from being read in any other places (like other running
+                    // animator during callbacks).
+                    // But if `setToFinal: true` this feature can not be satisfied.
+                    source[innerKey] = target[innerKey];
+                }
+            }
+        }
+        else if (setToFinal) {
+            sourceClone = {};
+            for (let i = 0; i < keyLen; i++) {
+                const innerKey = animatableKeys[i];
+                // NOTE: Must clone source after the stopTracks. The property may be modified in stopTracks.
+                sourceClone[innerKey] = cloneValue(source[innerKey]);
+                // Use copy, not change the original reference
+                // Copy from target to source.
+                copyValue(source, target, innerKey);
+            }
+        }
+
         const animator = new Animator(source, false, additive ? lastAnimator : null);
         animator.targetName = topKey;
+        if (cfg.scope) {
+            animator.scope = cfg.scope;
+        }
 
-        if (revertedSource) {
+        if (setToFinal && revertedSource) {
             animator.whenWithKeys(0, revertedSource, animatableKeys);
         }
         if (sourceClone) {

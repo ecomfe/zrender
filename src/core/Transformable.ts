@@ -35,7 +35,7 @@ class Transformable {
     /**
      * Scale ratio
      */
-    globalScaleRatio = 1
+    globalScaleRatio: number
 
     transform: matrix.MatrixArray
     invTransform: matrix.MatrixArray
@@ -283,8 +283,8 @@ class Transformable {
         m = m || [];
         mIdentity(m);
 
-        const ox = target.originX;
-        const oy = target.originY;
+        const ox = target.originX || 0;
+        const oy = target.originY || 0;
         const sx = target.scaleX;
         const sy = target.scaleY;
         const rotation = target.rotation || 0;
@@ -324,6 +324,7 @@ class Transformable {
         proto.originX = 0;
         proto.originY = 0;
         proto.rotation = 0;
+        proto.globalScaleRatio = 1;
     })()
 };
 

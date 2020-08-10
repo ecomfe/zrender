@@ -10,6 +10,7 @@ import { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import { DEFAULT_FONT, getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
+import { map } from '../core/util';
 
 export interface SVGProxy<T> {
     brush(el: T): void
@@ -102,14 +103,24 @@ function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan |
         const strokeScale = style.strokeNoScale
             ? (el as Path).getLineScale()
             : 1;
-        attr(svgEl, 'stroke-width', strokeWidth / strokeScale + '');
+        attr(svgEl, 'stroke-width', (strokeScale ? strokeWidth / strokeScale : 0) + '');
         // stroke then fill for text; fill then stroke for others
         attr(svgEl, 'paint-order', style.strokeFirst ? 'stroke' : 'fill');
         attr(svgEl, 'stroke-opacity', (style.strokeOpacity != null ? style.strokeOpacity * opacity : opacity) + '');
-        const lineDash = style.lineDash;
+        let lineDash = style.lineDash;
         if (lineDash) {
-            attr(svgEl, 'stroke-dasharray', (style.lineDash as number[]).join(','));
-            attr(svgEl, 'stroke-dashoffset', mathRound(style.lineDashOffset || 0) + '');
+            let lineDashOffset = style.lineDashOffset;
+            if (strokeScale && strokeScale !== 1) {
+                lineDash = map(lineDash, function (rawVal) {
+                    return rawVal / strokeScale;
+                });
+                if (lineDashOffset) {
+                    lineDashOffset /= strokeScale;
+                    lineDashOffset = mathRound(lineDashOffset);
+                }
+            }
+            attr(svgEl, 'stroke-dasharray', lineDash.join(','));
+            attr(svgEl, 'stroke-dashoffset', (lineDashOffset || 0) + '');
         }
         else {
             attr(svgEl, 'stroke-dasharray', '');
@@ -129,6 +140,10 @@ function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan |
  * PATH
  **************************************************/
 function pathDataToString(path: PathProxy) {
+    if (!path) {
+        return '';
+    }
+
     const str = [];
     const data = path.data;
     const dataLength = path.len();
@@ -212,6 +227,10 @@ function pathDataToString(path: PathProxy) {
                 x = round4(cx + rx * mathCos(theta + dTheta));
                 y = round4(cy + ry * mathSin(theta + dTheta));
 
+                if (isNaN(x0) || isNaN(y0) || isNaN(rx) || isNaN(ry) || isNaN(psi) || isNaN(degree) || isNaN(x)  || isNaN(y)) {
+                    return '';
+                }
+
                 // FIXME Ellipse
                 str.push('A', round4(rx), round4(ry),
                     mathRound(psi * degree), +large, +clockwise, x, y);
@@ -224,6 +243,11 @@ function pathDataToString(path: PathProxy) {
                 y = round4(data[i++]);
                 const w = round4(data[i++]);
                 const h = round4(data[i++]);
+
+                if (isNaN(x) || isNaN(y) || isNaN(w) || isNaN(h)) {
+                    return '';
+                }
+
                 str.push(
                     'M', x, y,
                     'L', x + w, y,
@@ -235,11 +259,33 @@ function pathDataToString(path: PathProxy) {
         }
         cmdStr && str.push(cmdStr);
         for (let j = 0; j < nData; j++) {
+            const val = round4(data[i++]);
+            if (isNaN(val)) {
+                return '';
+            }
             // PENDING With scale
-            str.push(round4(data[i++]));
+            str.push(val);
         }
     }
     return str.join(' ');
+}
+
+interface PathWithSVGBuildPath extends Path {
+    __svgBuildPath: Path['buildPath']
+    __svgPathStr: string
+}
+
+function wrapSVGBuildPath(el: PathWithSVGBuildPath) {
+    if (!el.__svgBuildPath) {
+        const oldBuildPath = el.buildPath;
+        el.__svgBuildPath = el.buildPath = function (path, shape, inBundle) {
+            oldBuildPath.call(this, el.path, shape, inBundle);
+            el.__svgPathStr = pathDataToString(el.path);
+        }
+        if (!el.shapeChanged()) {   // If path is updated. Get string manually.
+            el.__svgPathStr = pathDataToString(el.path);
+        }
+    }
 }
 
 const svgPath: SVGProxy<Path> = {
@@ -257,18 +303,16 @@ const svgPath: SVGProxy<Path> = {
         }
         const path = el.path;
 
+        wrapSVGBuildPath(el as PathWithSVGBuildPath);
+
         if (el.shapeChanged()) {
             path.beginPath();
             el.buildPath(path, el.shape);
             el.pathUpdated();
-
-            const pathStr = pathDataToString(path);
-            if (pathStr.indexOf('NaN') < 0) {
-                // Ignore illegal path, which may happen such in out-of-range
-                // data in Calendar series.
-                attr(svgEl, 'd', pathStr);
-            }
         }
+
+        // TODO Optimize
+        attr(svgEl, 'd', (el as PathWithSVGBuildPath).__svgPathStr);
 
         bindStyle(svgEl, style, el);
         setTransform(svgEl, el.transform);

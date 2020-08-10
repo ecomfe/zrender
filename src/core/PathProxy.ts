@@ -217,24 +217,25 @@ export default class PathProxy {
         // Normalize delta to 0 - PI2
         let delta = endAngle - startAngle;
 
-        if (delta < 0) {
-            const n = Math.round(delta / PI * 1e6) / 1e6;
-            // Convert to positive
-            // It's much more stable to mod N.
-            delta = PI2 + (n % 2) * PI;
-        }
-        else {
-            delta = mathMin(delta, PI2);
-        }
+        /// TODO
+        // if (delta < 0) {
+        //     const n = Math.round(delta / PI * 1e6) / 1e6;
+        //     // Convert to positive
+        //     // It's much more stable to mod N.
+        //     delta = PI2 + (n % 2) * PI;
+        // }
+        // else {
+        //     delta = mathMin(delta, PI2);
+        // }
 
-        // Convert to -PI2 ~ PI2, -PI2 is anticlockwise
-        if (anticlockwise && delta > 0) {
-            // Convert delta to negative
-            delta = delta - PI2;
-            if (Math.abs(delta) < 1e-6) {   // is circle.
-                delta = delta - PI2;
-            }
-        }
+        // // Convert to -PI2 ~ PI2, -PI2 is anticlockwise
+        // if (anticlockwise && delta > 0) {
+        //     // Convert delta to negative
+        //     delta = delta - PI2;
+        //     if (Math.abs(delta) < 1e-6) {   // is circle.
+        //         delta = delta - PI2;
+        //     }
+        // }
 
         endAngle = startAngle + delta;
 

@@ -14,11 +14,15 @@ import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
 import { defaults, keys, extend, clone, isString, createObject } from '../core/util';
 import Animator from '../animation/Animator';
-import { parse } from '../tool/color';
+import { lum } from '../tool/color';
+import { DARK_LABEL_COLOR, LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, LIGHTER_LABEL_COLOR } from '../config';
 
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
     stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
+    /**
+     * Still experimental, not works weel on arc with edge cases(large angle).
+     */
     strokePercent?: number
     strokeNoScale?: boolean
     fillOpacity?: number
@@ -86,6 +90,8 @@ export interface PathProps extends DisplayableProps {
 
     autoBatch?: boolean
 
+    __value?: (string | number)[] | (string | number)
+
     buildPath?: (
         ctx: PathProxy | CanvasRenderingContext2D,
         shapeCfg: Dictionary<any>,
@@ -110,7 +116,9 @@ interface Path<Props extends PathProps = PathProps> {
 }
 
 export type PathStatePropNames = DisplayableStatePropNames | 'shape';
-export type PathState = Pick<PathProps, PathStatePropNames>
+export type PathState = Pick<PathProps, PathStatePropNames> & {
+    hoverLayer?: boolean
+}
 
 class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
@@ -159,15 +167,15 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
             if (key === 'style') {
                 if (!this.style) {
                     // PENDING Reuse style object if possible?
-                    this.useStyle(value);
+                    this.useStyle(value as Props['style']);
                 }
                 else {
-                    extend(this.style, value);
+                    extend(this.style, value as Props['style']);
                 }
             }
             else if (key === 'shape') {
                 // this.shape = value;
-                extend(this.shape, value);
+                extend(this.shape, value as Props['shape']);
             }
             else {
                 super.attrKV(key as any, value);
@@ -196,31 +204,44 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         return {};
     }
 
-    // protected getInsideTextFill() {
-    //     const pathFill = this.style.fill;
-    //     if (pathFill !== 'none') {
-    //         if (isString(pathFill)) {
-    //             // Determin text color based on the lum of path fill.
-    //             const arr = parse(pathFill);
-    //             const lum =  (0.299 * arr[0] + 0.587 * arr[1] + 0.114 * arr[2]) * arr[3] / 255;
-    //             if (lum > 0.5) {
-    //                 return '#000';
-    //             }
-    //             return '#fff';
-    //         }
-    //         else if (pathFill) {
-    //             return '#fff';
-    //         }
+    protected canBeInsideText() {
+        return this.hasFill();
+    }
 
-    //     }
-    //     return '#000';
-    // }
+    protected getInsideTextFill() {
+        const pathFill = this.style.fill;
+        if (pathFill !== 'none') {
+            if (isString(pathFill)) {
+                const fillLum = lum(pathFill, 0);
+                // Determin text color based on the lum of path fill.
+                // TODO use (1 - DARK_MODE_THRESHOLD)?
+                if (fillLum > 0.6) {   // TODO Consider background lum?
+                    return DARK_LABEL_COLOR;
+                }
+                else if (fillLum > 0.2) {
+                    return LIGHTER_LABEL_COLOR;
+                }
+                return LIGHT_LABEL_COLOR;
+            }
+            else if (pathFill) {
+                return LIGHT_LABEL_COLOR;
+            }
+
+        }
+        return DARK_LABEL_COLOR;
+    }
 
     protected getInsideTextStroke(textFill?: string) {
         const pathFill = this.style.fill;
         // Not stroke on none fill object or gradient object
         if (isString(pathFill)) {
-            return pathFill;
+            const zr = this.__zr;
+            const isDarkMode = !!(zr && zr.isDarkMode());
+            const isDarkLabel = lum(textFill, 0) < DARK_MODE_THRESHOLD;
+            // All dark or all light.
+            if (isDarkMode === isDarkLabel) {
+                return pathFill;
+            }
         }
     }
 
@@ -242,13 +263,13 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
     hasStroke() {
         const style = this.style;
-        const stroke = 'stroke' in style ? style.stroke : DEFAULT_PATH_STYLE.stroke;
-        return stroke != null && stroke !== 'none' && style.lineWidth > 0;
+        const stroke = style.stroke;
+        return !(stroke == null || stroke === 'none' || !(style.lineWidth > 0));
     }
 
     hasFill() {
         const style = this.style;
-        const fill = 'fill' in style ? style.fill : DEFAULT_PATH_STYLE.fill;
+        const fill = style.fill;
         return fill != null && fill !== 'none';
     }
 
@@ -409,7 +430,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      * If shape changed. used with dirtyShape
      */
     shapeChanged() {
-        return this.__dirty & Path.SHAPE_CHANGED_BIT;
+        return !!(this.__dirty & Path.SHAPE_CHANGED_BIT);
     }
 
     /**

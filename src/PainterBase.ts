@@ -33,11 +33,6 @@ export interface PainterBase {
     getViewportRoot: () => HTMLElement
     getViewportRootOffset: () => {offsetLeft: number, offsetTop: number}
 
-    // Following methods won't implemented by every Painter
-    addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T
-
-    removeHover(el: Path | TSpan | ZRImage): void
-    clearHover(): void
     refreshHover(): void
     pathToImage(e: Path, dpr: number): ZRImage
 

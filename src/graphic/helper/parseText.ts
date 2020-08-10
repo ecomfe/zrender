@@ -156,6 +156,7 @@ function estimateLength(
 
 export interface PlainTextContentBlock {
     lineHeight: number
+    contentHeight: number
     // Line height of actual content.
     calculatedLineHeight: number
 
@@ -174,17 +175,20 @@ export function parsePlainText(
     text != null && (text += '');
 
     // textPadding has been normalized
+    const overflow = style.overflow;
     const padding = style.padding as number[];
     const font = style.font;
-    const truncate = style.overflow === 'truncate';
+    const truncate = overflow === 'truncate';
     const calculatedLineHeight = getLineHeight(font);
     const lineHeight = retrieve2(style.lineHeight, calculatedLineHeight);
+
+    const truncateLineOverflow = style.lineOverflow === 'truncate';
 
     let width = style.width;
     let lines: string[];
 
-    if (width != null && style.overflow === 'wrap') {
-        lines = text ? wrapText(text, style.font, width, 0).lines : [];
+    if (width != null && overflow === 'break' || overflow === 'breakAll') {
+        lines = text ? wrapText(text, style.font, width, overflow === 'breakAll', 0).lines : [];
     }
     else {
         lines = text ? text.split('\n') : [];
@@ -194,20 +198,19 @@ export function parsePlainText(
     const height = retrieve2(style.height, contentHeight);
 
     // Truncate lines.
-    if (contentHeight > height && style.lineOverflow === 'truncate') {
+    if (contentHeight > height && truncateLineOverflow) {
         const lineCount = Math.floor(height / lineHeight);
-        const lastLine = lines.slice(lineCount - 1).join('');
 
         lines = lines.slice(0, lineCount);
 
-        // TODO Optimize
-        if (style.ellipsis) {
-            const options = prepareTruncateOptions(width, font, style.ellipsis, {
-                minChar: style.truncateMinChar,
-                placeholder: style.placeholder
-            });
-            lines[lineCount - 1] = truncateSingleLine(lastLine, options);
-        }
+        // TODO If show ellipse for line truncate
+        // if (style.ellipsis) {
+        //     const options = prepareTruncateOptions(width, font, style.ellipsis, {
+        //         minChar: style.truncateMinChar,
+        //         placeholder: style.placeholder
+        //     });
+        //     lines[lineCount - 1] = truncateSingleLine(lastLine, options);
+        // }
     }
 
     let outerHeight = height;
@@ -246,6 +249,7 @@ export function parsePlainText(
         outerHeight: outerHeight,
         lineHeight: lineHeight,
         calculatedLineHeight: calculatedLineHeight,
+        contentHeight: contentHeight,
         width: width
     };
 }
@@ -262,8 +266,8 @@ class RichTextToken {
 
     lineHeight: number
     font: string
-    textAlign: TextAlign
-    textVerticalAlign: TextVerticalAlign
+    align: TextAlign
+    verticalAlign: TextVerticalAlign
 
     textPadding: number[]
     percentWidth?: string
@@ -285,6 +289,9 @@ export class RichTextContentBlock {
     // width/height of content
     width: number = 0
     height: number = 0
+    // Calculated text height
+    contentWidth: number = 0
+    contentHeight: number = 0
     // outerWidth/outerHeight with padding
     outerWidth: number = 0
     outerHeight: number = 0
@@ -293,7 +300,8 @@ export class RichTextContentBlock {
 
 type WrapInfo = {
     width: number,
-    accumWidth: number
+    accumWidth: number,
+    breakAll: boolean
 }
 /**
  * For example: 'some text {a|some text}other text{b|some text}xxx{c|}xxx'
@@ -310,8 +318,9 @@ export function parseRichText(text: string, style: TextStyleProps) {
 
     const topWidth = style.width;
     const topHeight = style.height;
-    let wrapInfo: WrapInfo = style.overflow === 'wrap' && topWidth != null
-        ? {width: topWidth, accumWidth: 0}
+    const overflow = style.overflow;
+    let wrapInfo: WrapInfo = (overflow === 'break' || overflow === 'breakAll') && topWidth != null
+        ? {width: topWidth, accumWidth: 0, breakAll: overflow === 'breakAll'}
         : null;
 
     let lastIndex = STYLE_REG.lastIndex = 0;
@@ -337,7 +346,7 @@ export function parseRichText(text: string, style: TextStyleProps) {
 
     const stlPadding = style.padding as number[];
 
-    const truncate = style.overflow === 'truncate';
+    const truncate = overflow === 'truncate';
     const truncateLine = style.lineOverflow === 'truncate';
 
     let prevToken: RichTextToken;
@@ -363,14 +372,15 @@ export function parseRichText(text: string, style: TextStyleProps) {
                 // as box height of the block.
                 tokenStyle.height, token.contentHeight
             );
-            textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
-            token.height = tokenHeight;
             token.lineHeight = retrieve3(
                 tokenStyle.lineHeight, style.lineHeight, tokenHeight
             );
 
-            token.textAlign = tokenStyle && tokenStyle.align || style.align;
-            token.textVerticalAlign = tokenStyle && tokenStyle.verticalAlign || 'middle';
+            textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
+            token.height = tokenHeight;
+
+            token.align = tokenStyle && tokenStyle.align || style.align;
+            token.verticalAlign = tokenStyle && tokenStyle.verticalAlign || 'middle';
 
             if (truncateLine && topHeight != null && calculatedHeight + token.lineHeight > topHeight) {
                 // TODO Add ellipsis on the previous token.
@@ -435,7 +445,9 @@ export function parseRichText(text: string, style: TextStyleProps) {
                 }
             }
 
-            lineWidth += token.width + paddingH;
+            token.width += paddingH;
+
+            lineWidth += token.width;
             tokenStyle && (lineHeight = Math.max(lineHeight, token.lineHeight));
 
             prevToken = token;
@@ -450,6 +462,8 @@ export function parseRichText(text: string, style: TextStyleProps) {
 
     contentBlock.outerWidth = contentBlock.width = retrieve2(topWidth, calculatedWidth);
     contentBlock.outerHeight = contentBlock.height = retrieve2(topHeight, calculatedHeight);
+    contentBlock.contentHeight = calculatedHeight;
+    contentBlock.contentWidth = calculatedWidth;
 
     if (stlPadding) {
         contentBlock.outerWidth += stlPadding[1] + stlPadding[3];
@@ -500,7 +514,7 @@ function pushTokens(
             wrapInfo.accumWidth = outerWidth;
         }
         else {
-            const res = wrapText(str, font, wrapInfo.width, wrapInfo.accumWidth);
+            const res = wrapText(str, font, wrapInfo.width, wrapInfo.breakAll, wrapInfo.accumWidth);
             wrapInfo.accumWidth = res.accumWidth + tokenPaddingH;
             linesWidths = res.linesWidths;
             strLines = res.lines;
@@ -568,45 +582,47 @@ const breakCharMap = reduce(',&?/;] '.split(''), function (obj, ch) {
 function isWordBreakChar(ch: string) {
     if (isLatin(ch)) {
         if (breakCharMap[ch]) {
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
+    return true;
 }
 
 function wrapText(
     text: string,
     font: string,
     lineWidth: number,
+    isBreakAll: boolean,
     lastAccumWidth: number
 ) {
     let lines: string[] = [];
     let linesWidths: number[] = [];
     let line = '';
-    let lastWord = '';
-    let lastWordWidth = 0;
+    let currentWord = '';
+    let currentWordWidth = 0;
     let accumWidth = 0;
 
     for (let i = 0; i < text.length; i++) {
 
         const ch = text.charAt(i);
         if (ch === '\n') {
-            if (lastWord) {
-                line += lastWord;
-                accumWidth += lastWordWidth;
+            if (currentWord) {
+                line += currentWord;
+                accumWidth += currentWordWidth;
             }
             lines.push(line);
             linesWidths.push(accumWidth);
             // Reset
             line = '';
-            lastWord = '';
-            lastWordWidth = 0;
+            currentWord = '';
+            currentWordWidth = 0;
             accumWidth = 0;
             continue;
         }
 
         const chWidth = getWidth(ch, font);
-        const inWord = isWordBreakChar(ch);
+        const inWord = isBreakAll ? false : !isWordBreakChar(ch);
 
         if (!lines.length
             ? lastAccumWidth + accumWidth + chWidth > lineWidth
@@ -614,13 +630,13 @@ function wrapText(
         ) {
             if (!accumWidth) {  // If nothing appended yet.
                 if (inWord) {
-                    // The word length is too long for lineWidth
+                    // The word length is still too long for one line
                     // Force break the word
-                    lines.push(lastWord);
-                    linesWidths.push(lastWordWidth);
+                    lines.push(currentWord);
+                    linesWidths.push(currentWordWidth);
 
-                    lastWord = ch;
-                    lastWordWidth = chWidth;
+                    currentWord = ch;
+                    currentWordWidth = chWidth;
                 }
                 else {
                     // lineWidth is too small for ch
@@ -628,24 +644,34 @@ function wrapText(
                     linesWidths.push(chWidth);
                 }
             }
-            else if (line || lastWord) {
+            else if (line || currentWord) {
                 if (inWord) {
+                    if (!line) {
+                        // The one word is still too long for one line
+                        // Force break the word
+                        // TODO Keep the word?
+                        line = currentWord;
+                        currentWord = '';
+                        currentWordWidth = 0;
+                        accumWidth = currentWordWidth;
+                    }
+
                     lines.push(line);
-                    linesWidths.push(accumWidth - lastWordWidth);
+                    linesWidths.push(accumWidth - currentWordWidth);
 
                     // Break the whole word
-                    lastWord += ch;
-                    lastWordWidth += chWidth;
+                    currentWord += ch;
+                    currentWordWidth += chWidth;
                     line = '';
-                    accumWidth = lastWordWidth;
+                    accumWidth = currentWordWidth;
                 }
                 else {
                     // Append lastWord if have
-                    if (lastWord) {
-                        line += lastWord;
-                        accumWidth += lastWordWidth;
-                        lastWord = '';
-                        lastWordWidth = 0;
+                    if (currentWord) {
+                        line += currentWord;
+                        accumWidth += currentWordWidth;
+                        currentWord = '';
+                        currentWordWidth = 0;
                     }
                     lines.push(line);
                     linesWidths.push(accumWidth);
@@ -661,16 +687,16 @@ function wrapText(
         accumWidth += chWidth;
 
         if (inWord) {
-            lastWord += ch;
-            lastWordWidth += chWidth;
+            currentWord += ch;
+            currentWordWidth += chWidth;
         }
         else {
             // Append whole word
-            if (lastWord) {
-                line += lastWord;
+            if (currentWord) {
+                line += currentWord;
                 // Reset
-                lastWord = '';
-                lastWordWidth = 0;
+                currentWord = '';
+                currentWordWidth = 0;
             }
 
             // Append character
@@ -680,13 +706,13 @@ function wrapText(
 
     if (!lines.length && !line) {
         line = text;
-        lastWord = '';
-        lastWordWidth = 0;
+        currentWord = '';
+        currentWordWidth = 0;
     }
 
     // Append last line.
-    if (lastWord) {
-        line += lastWord;
+    if (currentWord) {
+        line += currentWord;
     }
     if (line) {
         lines.push(line);

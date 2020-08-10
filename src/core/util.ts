@@ -1,4 +1,4 @@
-import { Dictionary, ArrayLike } from './types';
+import { Dictionary, ArrayLike, KeyOfDistributive } from './types';
 import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
 
@@ -35,6 +35,9 @@ const nativeForEach = arrayProto.forEach;
 const nativeFilter = arrayProto.filter;
 const nativeSlice = arrayProto.slice;
 const nativeMap = arrayProto.map;
+// In case some env may redefine the global variable `Function`.
+const ctorFunction = (function() {}).constructor;
+const protoFunction = ctorFunction ? ctorFunction.prototype : null;
 
 // Avoid assign to an exported constiable, for transforming to cjs.
 const methods: {[key: string]: Function} = {};
@@ -249,8 +252,22 @@ export function inherits(clazz: Function, baseClazz: Function) {
 export function mixin<T, S>(target: T | Function, source: S | Function, override?: boolean) {
     target = 'prototype' in target ? target.prototype : target;
     source = 'prototype' in source ? source.prototype : source;
-
-    defaults(target, source, override);
+    // If build target is ES6 class. prototype methods is not enumerable. Use getOwnPropertyNames instead
+    // TODO: Determine if source is ES6 class?
+    if (Object.getOwnPropertyNames) {
+        const keyList = Object.getOwnPropertyNames(source);
+        for (let i = 0; i < keyList.length; i++) {
+            const key = keyList[i];
+            if (key !== 'constructor') {
+                if ((override ? (source as any)[key] != null : (target as any)[key] == null)) {
+                    (target as any)[key] = (source as any)[key];
+                }
+            }
+        }
+    }
+    else {
+        defaults(target, source, override);
+    }
 }
 
 /**
@@ -292,6 +309,7 @@ export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayL
     }
     else if (arr.length === +arr.length) {
         for (let i = 0, len = arr.length; i < len; i++) {
+            // FIXME: should the elided item be travelled? like `[33,,55]`.
             cb.call(context, (arr as any[])[i], i as any, arr);
         }
     }
@@ -305,18 +323,23 @@ export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayL
 }
 
 /**
- * 数组映射
+ * Array mapping.
  * @typeparam T Type in Array
  * @typeparam R Type Returned
- * @return
+ * @return Must be an array.
  */
 export function map<T, R, Context>(
     arr: readonly T[],
     cb: (this: Context, val: T, index?: number, arr?: readonly T[]) => R,
     context?: Context
 ): R[] {
-    if (!(arr && cb)) {
-        return;
+    // Take the same behavior with lodash when !arr and !cb,
+    // which might be some common sense.
+    if (!arr) {
+        return [];
+    }
+    if (!cb) {
+        return slice(arr) as unknown[] as R[];
     }
     if (arr.map && arr.map === nativeMap) {
         return arr.map(cb, context);
@@ -324,6 +347,7 @@ export function map<T, R, Context>(
     else {
         const result = [];
         for (let i = 0, len = arr.length; i < len; i++) {
+            // FIXME: should the elided item be travelled, like `[33,,55]`.
             result.push(cb.call(context, arr[i], i, arr));
         }
         return result;
@@ -346,15 +370,21 @@ export function reduce<T, S, Context>(
 }
 
 /**
- * 数组过滤
+ * Array filtering.
+ * @return Must be an array.
  */
 export function filter<T, Context>(
     arr: readonly T[],
     cb: (this: Context, value: T, index: number, arr: readonly T[]) => boolean,
     context?: Context
 ): T[] {
-    if (!(arr && cb)) {
-        return;
+    // Take the same behavior with lodash when !arr and !cb,
+    // which might be some common sense.
+    if (!arr) {
+        return [];
+    }
+    if (!cb) {
+        return slice(arr);
     }
     if (arr.filter && arr.filter === nativeFilter) {
         return arr.filter(cb, context);
@@ -362,6 +392,7 @@ export function filter<T, Context>(
     else {
         const result = [];
         for (let i = 0, len = arr.length; i < len; i++) {
+            // FIXME: should the elided items be travelled? like `[33,,55]`.
             if (cb.call(context, arr[i], i, arr)) {
                 result.push(arr[i]);
             }
@@ -393,26 +424,29 @@ export function find<T, Context>(
  *
  * Will return an empty array if obj is null/undefined
  */
-export function keys<T extends object>(obj: T): (keyof T)[] {
+export function keys<T extends object>(obj: T): (KeyOfDistributive<T> & string)[] {
     if (!obj) {
         return [];
     }
-    type TKeys = keyof T;
+    // Return type should be `keyof T` but exclude `number`, becuase
+    // `Object.keys` only return string rather than `number | string`.
+    type TKeys = KeyOfDistributive<T> & string;
     if (Object.keys) {
         return Object.keys(obj) as TKeys[];
     }
     let keyList: TKeys[] = [];
     for (let key in obj) {
         if (obj.hasOwnProperty(key)) {
-            keyList.push(key);
+            keyList.push(key as any);
         }
     }
     return keyList;
 }
 
+
 // Remove this type in returned function. Or it will conflicts wicth callback with given context. Like Eventful.
 // According to lib.es5.d.ts
-/* eslint-disable */
+/* eslint-disable max-len*/
 export type Bind1<F, Ctx> = F extends (this: Ctx, ...args: infer A) => infer R ? (...args: A) => R : unknown;
 export type Bind2<F, Ctx, T1> = F extends (this: Ctx, a: T1, ...args: infer A) => infer R ? (...args: A) => R : unknown;
 export type Bind3<F, Ctx, T1, T2> = F extends (this: Ctx, a: T1, b: T2, ...args: infer A) => infer R ? (...args: A) => R : unknown;
@@ -420,18 +454,23 @@ export type Bind4<F, Ctx, T1, T2, T3> = F extends (this: Ctx, a: T1, b: T2, c: T
 export type Bind5<F, Ctx, T1, T2, T3, T4> = F extends (this: Ctx, a: T1, b: T2, c: T3, d: T4, ...args: infer A) => infer R ? (...args: A) => R : unknown;
 type BindFunc<Ctx> = (this: Ctx, ...arg: any[]) => any
 
-function bind<F extends BindFunc<Ctx>, Ctx>(func: F, ctx: Ctx): Bind1<F, Ctx>
-function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0]>(func: F, ctx: Ctx, a: T1): Bind2<F, Ctx, T1>
-function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1]>(func: F, ctx: Ctx, a: T1, b: T2): Bind3<F, Ctx, T1, T2>
-function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2]>(func: F, ctx: Ctx, a: T1, b: T2, c: T3): Bind4<F, Ctx, T1, T2, T3>
-function bind<F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2], T4 extends Parameters<F>[3]>(func: F, ctx: Ctx, a: T1, b: T2, c: T3, d: T4): Bind5<F, Ctx, T1, T2, T3, T4>
-function bind<Ctx, Fn extends (...args: any) => any>(
+interface FunctionBind {
+    <F extends BindFunc<Ctx>, Ctx>(func: F, ctx: Ctx): Bind1<F, Ctx>
+    <F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0]>(func: F, ctx: Ctx, a: T1): Bind2<F, Ctx, T1>
+    <F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1]>(func: F, ctx: Ctx, a: T1, b: T2): Bind3<F, Ctx, T1, T2>
+    <F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2]>(func: F, ctx: Ctx, a: T1, b: T2, c: T3): Bind4<F, Ctx, T1, T2, T3>
+    <F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2], T4 extends Parameters<F>[3]>(func: F, ctx: Ctx, a: T1, b: T2, c: T3, d: T4): Bind5<F, Ctx, T1, T2, T3, T4>
+}
+function bindPolyfill<Ctx, Fn extends (...args: any) => any>(
     func: Fn, context: Ctx, ...args: any[]
 ): (...args: Parameters<Fn>) => ReturnType<Fn> {
     return function (this: Ctx) {
         return func.apply(context, args.concat(nativeSlice.call(arguments)));
     };
 }
+export const bind: FunctionBind = (protoFunction && isFunction(protoFunction.bind))
+    ? protoFunction.call.bind(protoFunction.bind)
+    : bindPolyfill;
 
 export type Curry1<F, T1> = F extends (a: T1, ...args: infer A) => infer R ? (...args: A) => R : unknown;
 export type Curry2<F, T1, T2> = F extends (a: T1, b: T2, ...args: infer A) => infer R ? (...args: A) => R : unknown;
@@ -448,14 +487,9 @@ function curry(func: Function, ...args: any[]): Function {
         return func.apply(this, args.concat(nativeSlice.call(arguments)));
     };
 }
+export {curry};
+/* eslint-enable max-len*/
 
-/* eslint-enable */
-export {bind, curry};
-
-/**
- * @param value
- * @return {boolean}
- */
 export function isArray(value: any): value is any[] {
     if (Array.isArray) {
         return Array.isArray(value);
@@ -463,20 +497,24 @@ export function isArray(value: any): value is any[] {
     return objToString.call(value) === '[object Array]';
 }
 
-/**
- * @param value
- * @return {boolean}
- */
 export function isFunction(value: any): value is Function {
     return typeof value === 'function';
 }
 
-/**
- * @param value
- * @return {boolean}
- */
 export function isString(value: any): value is string {
+    // Faster than `objToString.call` several times in chromium and webkit.
+    // And `new String()` is rarely used.
     return typeof value === 'string';
+}
+
+export function isStringSafe(value: any): value is string {
+    return objToString.call(value) === '[object String]';
+}
+
+export function isNumber(value: any): value is number {
+    // Faster than `objToString.call` several times in chromium and webkit.
+    // And `new Number()` is rarely used.
+    return typeof value === 'number';
 }
 
 // Usage: `isObject(xxx)` or `isObject(SomeType)(xxx)`
@@ -509,6 +547,10 @@ export function isGradientObject(value: any): value is GradientObject {
 
 export function isPatternObject(value: any): value is PatternObject {
     return (value as PatternObject).image != null;
+}
+
+export function isRegExp(value: unknown): value is RegExp {
+    return objToString.call(value) === '[object RegExp]';
 }
 
 /**
@@ -608,19 +650,20 @@ export function isPrimitive(obj: any): boolean {
     return obj[primitiveKey];
 }
 
+
 /**
  * @constructor
  * @param {Object} obj Only apply `ownProperty`.
  */
-export class HashMap<T> {
+export class HashMap<T, KEY extends string | number = string | number> {
 
-    data: {[key: string]: T} = {}
+    data: {[key in KEY]: T} = {} as {[key in KEY]: T};
 
-    constructor(obj?: HashMap<T> | Dictionary<T> | any[]) {
+    constructor(obj?: HashMap<T, KEY> | Dictionary<T> | any[]) {
         const isArr = isArray(obj);
         // Key should not be set on this, otherwise
         // methods get/set/... may be overrided.
-        this.data = {};
+        this.data = {} as {[key in KEY]: T};
         const thisMap = this;
 
         (obj instanceof HashMap)
@@ -635,10 +678,10 @@ export class HashMap<T> {
     // Do not provide `has` method to avoid defining what is `has`.
     // (We usually treat `null` and `undefined` as the same, different
     // from ES6 Map).
-    get(key: string | number): T {
+    get(key: KEY): T {
         return this.data.hasOwnProperty(key) ? this.data[key] : null;
     }
-    set(key: string | number, value: T) {
+    set(key: KEY, value: T) {
         // Comparing with invocation chaining, `return value` is more commonly
         // used in this case: `const someVal = map.set('a', genVal());`
         return (this.data[key] = value);
@@ -646,24 +689,28 @@ export class HashMap<T> {
     // Although util.each can be performed on this hashMap directly, user
     // should not use the exposed keys, who are prefixed.
     each<Context>(
-        cb: (this: Context, value?: T, key?: string) => void,
+        cb: (this: Context, value?: T, key?: KEY) => void,
         context?: Context
     ) {
-        context !== void 0 && (cb = bind(cb, context));
-        /* eslint-disable guard-for-in */
         for (let key in this.data) {
-            this.data.hasOwnProperty(key) && (cb as any)(this.data[key], key);
+            if (this.data.hasOwnProperty(key)) {
+                cb.call(context, this.data[key], key);
+            }
         }
-        /* eslint-enable guard-for-in */
+    }
+    keys(): KEY[] {
+        return keys(this.data);
     }
     // Do not use this method if performance sensitive.
-    removeKey(key: string | number) {
+    removeKey(key: KEY) {
         delete this.data[key];
     }
 }
 
-export function createHashMap<T>(obj?: HashMap<T> | Dictionary<T> | any[]) {
-    return new HashMap<T>(obj);
+export function createHashMap<T, KEY extends string | number = string | number>(
+    obj?: HashMap<T, KEY> | Dictionary<T> | any[]
+) {
+    return new HashMap<T, KEY>(obj);
 }
 
 export function concatArray<T, R>(a: ArrayLike<T>, b: ArrayLike<R>): ArrayLike<T | R> {

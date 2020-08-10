@@ -167,7 +167,10 @@ export function normalizeEvent(
 
     if (!isTouch) {
         clientToLocal(el, e, e, calculate);
-        e.zrDelta = ((e as any).wheelDelta) ? (e as any).wheelDelta / 120 : -(e.detail || 0) / 3;
+        const wheelDelta = getWheelDeltaMayPolyfill(e);
+        // FIXME: IE8- has "wheelDeta" in event "mousewheel" but hat different value (120 times)
+        // with Chrome and Safari. It's not correct for zrender event but we left it as it was.
+        e.zrDelta = wheelDelta ? wheelDelta / 120 : -(e.detail || 0) / 3;
     }
     else {
         const touch = eventType !== 'touchend'
@@ -191,6 +194,41 @@ export function normalizeEvent(
 
     return e;
 }
+
+// TODO: also provide prop "deltaX" "deltaY" in zrender "mousewheel" event.
+function getWheelDeltaMayPolyfill(e: ZRRawEvent): number {
+    // Although event "wheel" do not has the prop "wheelDelta" in spec,
+    // agent like Chrome and Safari still provide "wheelDelta" like
+    // event "mousewheel" did (perhaps for backward compat).
+    // Since zrender has been using "wheelDeta" in zrender event "mousewheel".
+    // we currently do not break it.
+    // But event "wheel" in firefox do not has "wheelDelta", so we calculate
+    // "wheelDeta" from "deltaX", "deltaY" (which is the props in spec).
+
+    const rawWheelDelta = (e as any).wheelDelta;
+    // Theroetically `e.wheelDelta` won't be 0 unless some day it has been deprecated
+    // by agent like Chrome or Safari. So we also calculate it if rawWheelDelta is 0.
+    if (rawWheelDelta) {
+        return rawWheelDelta;
+    }
+
+    const deltaX = (e as any).deltaX;
+    const deltaY = (e as any).deltaY;
+    if (deltaX == null || deltaY == null) {
+        return rawWheelDelta;
+    }
+
+    // Test in Chrome and Safari (MacOS):
+    // The sign is corrent.
+    // The abs value is 99% corrent (inconsist case only like 62~63, 125~126 ...)
+    const delta = deltaY !== 0 ? Math.abs(deltaY) : Math.abs(deltaX);
+    const sign = deltaY > 0 ? -1
+        : deltaY < 0 ? 1
+        : deltaX > 0 ? -1
+        : 1;
+    return 3 * delta * sign;
+}
+
 
 type AddEventListenerParams = Parameters<typeof HTMLElement.prototype.addEventListener>
 type RemoveEventListenerParams = Parameters<typeof HTMLElement.prototype.removeEventListener>
@@ -252,7 +290,7 @@ export function removeEventListener(
     opt: RemoveEventListenerParams[2]
 ) {
     if (isDomLevel2) {
-        el.removeEventListener(name, handler);
+        el.removeEventListener(name, handler, opt);
     }
     else {
         (el as any).detachEvent('on' + name, handler);

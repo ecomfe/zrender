@@ -5,16 +5,16 @@ import Layer, { LayerConfig } from './Layer';
 import requestAnimationFrame from '../animation/requestAnimationFrame';
 import ZRImage from '../graphic/Image';
 import env from '../core/env';
-import { Path, IncrementalDisplayable, Rect } from '../export';
+import { Path, IncrementalDisplayable } from '../export';
 import Displayable from '../graphic/Displayable';
 import { WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/types';
 import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
 import { brush, BrushScope } from './graphic';
-import TSpan from '../graphic/TSpan';
 import { PainterBase } from '../PainterBase';
 import BoundingRect from '../core/BoundingRect';
+import Element from '../Element';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 const CANVAS_ZLEVEL = 314159;
@@ -106,8 +106,6 @@ export default class CanvasPainter implements PainterBase {
     private _domRoot: HTMLElement
 
     private _hoverlayer: Layer
-
-    private _hoverElements: Displayable[] = []
 
     private _redrawId: number
 
@@ -259,102 +257,50 @@ export default class CanvasPainter implements PainterBase {
             }
         }
 
-        this.refreshHover();
-
-        this._prevDisplayList = list.slice();
-
         return this;
     }
 
-    /**
-     * Add element to hover layer
-     */
-    addHover<T extends Displayable>(el: T, hoverStyle?: T['style']): T {
-        if (el.__hoverMir) {
-            return;
-        }
-        const elMirror = new (el as any).constructor({
-            style: el.style,
-            shape: (el as unknown as Path).shape,
-            z: el.z,
-            z2: el.z2,
-            silent: el.silent
-        });
-        elMirror.__from = el;
-        el.__hoverMir = elMirror;
-        hoverStyle && elMirror.setStyle(hoverStyle);
-        this._hoverElements.push(elMirror);
-
-        return elMirror;
-    }
-
-    removeHover(el: Path | TSpan | ZRImage) {
-        const elMirror = el.__hoverMir;
-        const hoverElements = this._hoverElements;
-        const idx = util.indexOf(hoverElements, elMirror);
-        if (idx >= 0) {
-            hoverElements.splice(idx, 1);
-        }
-        el.__hoverMir = null;
-    }
-
-    clearHover() {
-        const hoverElements = this._hoverElements;
-        for (let i = 0; i < hoverElements.length; i++) {
-            const from = hoverElements[i].__from;
-            if (from) {
-                from.__hoverMir = null;
-            }
-        }
-        hoverElements.length = 0;
-    }
 
     refreshHover() {
-        const hoverElements = this._hoverElements;
-        let len = hoverElements.length;
+        this._paintHoverList(this.storage.getDisplayList(false));
+    }
+
+    private _paintHoverList(list: Displayable[]) {
+        let len = list.length;
         let hoverLayer = this._hoverlayer;
         hoverLayer && hoverLayer.clear();
 
         if (!len) {
             return;
         }
-        timsort(hoverElements, this.storage.displayableSortFunc);
-
-        // Use a extream large zlevel
-        // FIXME?
-        if (!hoverLayer) {
-            hoverLayer = this._hoverlayer = this.getLayer(HOVER_LAYER_ZLEVEL);
-        }
 
         const scope: BrushScope = {
+            inHover: true,
             viewWidth: this._width,
             viewHeight: this._height
         };
-        hoverLayer.ctx.save();
-        for (let i = 0; i < len;) {
-            const el = hoverElements[i];
-            const originalEl = el.__from;
-            // Original el is removed
-            // PENDING
-            if (!(originalEl && originalEl.__zr)) {
-                hoverElements.splice(i, 1);
-                originalEl.__hoverMir = null;
-                len--;
-                continue;
-            }
-            i++;
 
-            // Use transform
-            // FIXME style and shape ?
-            if (!originalEl.invisible) {
-                el.transform = originalEl.transform;
-                el.invTransform = originalEl.invTransform;
-                el.__clipPaths = originalEl.__clipPaths;
-                this._doPaintEl(el, hoverLayer, null, true, scope, i === len - 1);
+        let ctx;
+        for (let i = 0; i < len; i++) {
+            const el = list[i];
+            if (el.__inHover) {
+                // Use a extream large zlevel
+                // FIXME?
+                if (!hoverLayer) {
+                    hoverLayer = this._hoverlayer = this.getLayer(HOVER_LAYER_ZLEVEL);
+                }
+
+                if (!ctx) {
+                    ctx = hoverLayer.ctx;
+                    ctx.save();
+                }
+
+                brush(ctx, el, scope, i === len - 1);
             }
         }
-
-        hoverLayer.ctx.restore();
+        if (ctx) {
+            ctx.restore();
+        }
     }
 
     getHoverLayer() {
@@ -370,10 +316,14 @@ export default class CanvasPainter implements PainterBase {
 
         this._updateLayerStatus(list);
 
-        const finished = this._doPaintList(list, prevList, paintAll);
+        const {finished, needsRefreshHover} = this._doPaintList(list, prevList, paintAll);
 
         if (this._needsManuallyCompositing) {
             this._compositeManually();
+        }
+
+        if (needsRefreshHover) {
+            this._paintHoverList(list);
         }
 
         if (!finished) {
@@ -397,7 +347,10 @@ export default class CanvasPainter implements PainterBase {
         });
     }
 
-    private _doPaintList (list: Displayable[], prevList: Displayable[], paintAll?: boolean) {
+    private _doPaintList(list: Displayable[], prevList: Displayable[], paintAll?: boolean): {
+        finished: boolean
+        needsRefreshHover: boolean
+    } {
         const layerList = [];
         for (let zi = 0; zi < this._zlevelList.length; zi++) {
             const zlevel = this._zlevelList[zi];
@@ -405,18 +358,23 @@ export default class CanvasPainter implements PainterBase {
             if (layer.__builtin__
                 && layer !== this._hoverlayer
                 && (layer.__dirty || paintAll)
+                // Layer with hover elements can't be redrawn.
+                // && !layer.__hasHoverLayerELement
             ) {
                 layerList.push(layer);
             }
         }
 
         let finished = true;
+        let needsRefreshHover = false;
 
         for (let k = 0; k < layerList.length; k++) {
             const layer = layerList[k];
             const ctx = layer.ctx;
 
             const repaintRects = layer.createRepaintRects(list, prevList);
+
+            ctx.save();
 
             let start = paintAll ? layer.__startIndex : layer.__drawIndex;
 
@@ -442,6 +400,7 @@ export default class CanvasPainter implements PainterBase {
             let i: number;
             const repaint = (repaintRect?: BoundingRect) => {
                 const scope: BrushScope = {
+                    inHover: false,
                     allClipped: false,
                     prevEl: null,
                     viewWidth: this._width,
@@ -450,7 +409,12 @@ export default class CanvasPainter implements PainterBase {
 
                 for (i = start; i < layer.__endIndex; i++) {
                     const el = list[i];
-                    this._doPaintEl(el, layer, repaintRect, paintAll, scope, i === layer.__endIndex - 1);
+
+                    if (el.__inHover) {
+                        needsRefreshHover = true;
+                    }
+
+                    this._doPaintEl(el, layer, repaintRect, scope, i === layer.__endIndex - 1);
                     el.__dirty = 0;
 
                     if (useTimer) {
@@ -512,31 +476,31 @@ export default class CanvasPainter implements PainterBase {
             });
         }
 
-        return finished;
+        return {
+            finished,
+            needsRefreshHover
+        };
     }
 
     private _doPaintEl (
         el: Displayable,
         currentLayer: Layer,
         repaintRect: BoundingRect,
-        forcePaint: boolean,
         scope: BrushScope,
         isLast: boolean
     ) {
         const ctx = currentLayer.ctx;
-        if (currentLayer.__dirty || forcePaint) {
-            if (repaintRect) {
-                // If there is repaintRect, only render the intersected ones
-                if (el.getPaintRect().intersect(repaintRect)) {
-                    // console.log('rebrush', el.id);
-                    brush(ctx, el, scope, isLast);
-                }
-            }
-            else {
-                // If no repaintRect, all displayables need to be painted once
+        if (repaintRect) {
+            // If there is repaintRect, only render the intersected ones
+            if (el.getPaintRect().intersect(repaintRect)) {
+                // console.log('rebrush', el.id);
                 brush(ctx, el, scope, isLast);
-                // console.log('brush', el.id);
             }
+        }
+        else {
+            // If no repaintRect, all displayables need to be painted once
+            brush(ctx, el, scope, isLast);
+            // console.log('brush', el.id);
         }
     }
 
@@ -558,6 +522,10 @@ export default class CanvasPainter implements PainterBase {
 
             if (this._layerConfig[zlevel]) {
                 util.merge(layer, this._layerConfig[zlevel], true);
+            }
+            // TODO Remove EL_AFTER_INCREMENTAL_INC magic number
+            else if (this._layerConfig[zlevel - EL_AFTER_INCREMENTAL_INC]) {
+                util.merge(layer, this._layerConfig[zlevel - EL_AFTER_INCREMENTAL_INC], true);
             }
 
             if (virtual) {
@@ -705,13 +673,27 @@ export default class CanvasPainter implements PainterBase {
 
         let prevLayer: Layer = null;
         let incrementalLayerCount = 0;
+        let prevZlevel;
         let i;
         for (i = 0; i < list.length; i++) {
             const el = list[i];
             const zlevel = el.zlevel;
             let layer;
-            // PENDING If change one incremental element style ?
-            // TODO Where there are non-incremental elements between incremental elements.
+
+            if (prevZlevel !== zlevel) {
+                prevZlevel = zlevel;
+                incrementalLayerCount = 0;
+            }
+
+            // TODO Not use magic number on zlevel.
+
+            // Each layer with increment element can be separated to 3 layers.
+            //          (Other Element drawn after incremental element)
+            // -----------------zlevel + EL_AFTER_INCREMENTAL_INC--------------------
+            //                      (Incremental element)
+            // ----------------------zlevel + INCREMENTAL_INC------------------------
+            //              (Element drawn before incremental element)
+            // --------------------------------zlevel--------------------------------
             if (el.incremental) {
                 layer = this.getLayer(zlevel + INCREMENTAL_INC, this._needsManuallyCompositing);
                 layer.incremental = true;
@@ -744,7 +726,7 @@ export default class CanvasPainter implements PainterBase {
                 updatePrevLayer(i);
                 prevLayer = layer;
             }
-            if (el.__dirty) {
+            if ((el.__dirty & Element.REDARAW_BIT) && !el.__inHover) {  // Ignore dirty elements in hover layer.
                 layer.__dirty = true;
                 if (layer.incremental && layer.__drawIndex < 0) {
                     // Start draw from the first dirty element.
@@ -799,6 +781,7 @@ export default class CanvasPainter implements PainterBase {
 
             for (let i = 0; i < this._zlevelList.length; i++) {
                 const _zlevel = this._zlevelList[i];
+                // TODO Remove EL_AFTER_INCREMENTAL_INC magic number
                 if (_zlevel === zlevel || _zlevel === zlevel + EL_AFTER_INCREMENTAL_INC) {
                     const layer = this._layers[_zlevel];
                     util.merge(layer, layerConfig[zlevel], true);
@@ -914,6 +897,7 @@ export default class CanvasPainter implements PainterBase {
         }
 
         const imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
+        const ctx = imageLayer.ctx;
         imageLayer.initContext();
         imageLayer.clear(false, opts.backgroundColor || this._backgroundColor);
 
@@ -937,20 +921,14 @@ export default class CanvasPainter implements PainterBase {
         else {
             // PENDING, echarts-gl and incremental rendering.
             const scope = {
+                inHover: false,
                 viewWidth: this._width,
                 viewHeight: this._height
             };
             const displayList = this.storage.getDisplayList(true);
             for (let i = 0, len = displayList.length; i < len; i++) {
                 const el = displayList[i];
-                this._doPaintEl(
-                    el,
-                    imageLayer,
-                    null,
-                    true,
-                    scope,
-                    i === len - 1
-                );
+                brush(ctx, el, scope, i === len - 1);
             }
         }
 
@@ -1035,6 +1013,7 @@ export default class CanvasPainter implements PainterBase {
         path.updateTransform();
         if (path) {
             brush(ctx, path, {
+                inHover: false,
                 viewWidth: this._width,
                 viewHeight: this._height
             }, true);
