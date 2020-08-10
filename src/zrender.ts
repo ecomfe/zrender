@@ -143,7 +143,7 @@ class ZRender {
     add(el: Element) {
         this.storage.addRoot(el);
         el.addSelfToZr(this);
-        this._needsRefresh = true;
+        this.refresh();
     }
 
     /**
@@ -152,7 +152,7 @@ class ZRender {
     remove(el: Element) {
         this.storage.delRoot(el);
         el.removeSelfFromZr(this);
-        this._needsRefresh = true;
+        this.refresh();
     }
 
     /**
@@ -162,7 +162,7 @@ class ZRender {
         if (this.painter.configLayer) {
             this.painter.configLayer(zLevel, config);
         }
-        this._needsRefresh = true;
+        this.refresh();
     }
 
     /**
@@ -172,7 +172,7 @@ class ZRender {
         if (this.painter.setBackgroundColor) {
             this.painter.setBackgroundColor(backgroundColor);
         }
-        this._needsRefresh = true;
+        this.refresh();
         this._backgroundColor = backgroundColor;
         this._darkMode = isDarkMode(backgroundColor);
     }
