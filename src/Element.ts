@@ -339,6 +339,11 @@ class Element<Props extends ElementProps = ElementProps> {
     __dirty: number
 
     /**
+     * If element needs to repaint dirty rect
+     */
+    __needsRepaintDirtyRect: boolean
+
+    /**
      * If element has been moved to the hover layer.
      *
      * If so, dirty will only trigger the zrender refresh hover layer

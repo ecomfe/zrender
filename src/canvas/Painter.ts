@@ -238,7 +238,7 @@ export default class CanvasPainter implements PainterBase {
      */
     refresh(paintAll?: boolean) {
 
-        const list = this.storage.getDisplayList(true);
+        const list = this.storage.getDisplayList(true, {markRepaintDirtyRect: true});
         const prevList = this._prevDisplayList;
 
         const zlevelList = this._zlevelList;
@@ -256,6 +256,8 @@ export default class CanvasPainter implements PainterBase {
                 layer.refresh(clearColor);
             }
         }
+
+        this._prevDisplayList = list.slice();
 
         return this;
     }

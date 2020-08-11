@@ -34,6 +34,15 @@ function shapeCompareFunc(a: Displayable, b: Displayable) {
     return a.zlevel - b.zlevel;
 }
 
+/**
+ * @param includeIgnore whether include ignored elements, valid only when update
+ * @param markRepaintDirtyRect mark element not painted in the last frame
+ */
+type DisplayParams = {
+    includeIgnore?: boolean,
+    markRepaintDirtyRect?: boolean
+};
+
 export default class Storage {
 
     private _roots: Element[] = []
@@ -52,16 +61,17 @@ export default class Storage {
     }
 
     /**
-     * 返回所有图形的绘制队列
-     * @param update 是否在返回前更新该数组
-     * @param includeIgnore 是否包含 ignore 的数组, 在 update 为 true 的时候有效
+     * get a list of elements to be rendered
+     *
+     * @param {boolean} update whether to update elements before return
+     * @param {DisplayParams} params options
+     * @return {Displayable[]} a list of elements
      */
-    getDisplayList(update?: boolean, includeIgnore?: boolean): Displayable[] {
-        includeIgnore = includeIgnore || false;
+    getDisplayList(update?: boolean, params?: DisplayParams): Displayable[] {
         const displayList = this._displayList;
         // If displaylist is not created yet. Update force
         if (update || !displayList.length) {
-            this.updateDisplayList(includeIgnore);
+            this.updateDisplayList(params);
         }
         return displayList;
     }
@@ -71,13 +81,13 @@ export default class Storage {
      * 每次绘制前都会调用，该方法会先深度优先遍历整个树，更新所有Group和Shape的变换并且把所有可见的Shape保存到数组中，
      * 最后根据绘制的优先级（zlevel > z > 插入顺序）排序得到绘制队列
      */
-    updateDisplayList(includeIgnore?: boolean) {
+    updateDisplayList(params?: DisplayParams) {
         this._displayListLen = 0;
 
         const roots = this._roots;
         const displayList = this._displayList;
         for (let i = 0, len = roots.length; i < len; i++) {
-            this._updateAndAddDisplayable(roots[i], null, includeIgnore);
+            this._updateAndAddDisplayable(roots[i], null, params);
         }
 
         displayList.length = this._displayListLen;
@@ -88,8 +98,14 @@ export default class Storage {
     private _updateAndAddDisplayable(
         el: Element,
         clipPaths: Path[],
-        includeIgnore?: boolean
+        params?: DisplayParams
     ) {
+        params = params || {};
+        const includeIgnore = params.includeIgnore || false;
+
+        if (params.markRepaintDirtyRect) {
+            el.__needsRepaintDirtyRect = false;
+        }
 
         if (el.ignore && !includeIgnore) {
             return;
@@ -140,7 +156,7 @@ export default class Storage {
                     child.markRedraw();
                 }
 
-                this._updateAndAddDisplayable(child, clipPaths, includeIgnore);
+                this._updateAndAddDisplayable(child, clipPaths, params);
             }
 
             // Mark group clean here
@@ -177,12 +193,12 @@ export default class Storage {
         // Add attached text element and guide line.
         const textGuide = el.getTextGuideLine();
         if (textGuide) {
-            this._updateAndAddDisplayable(textGuide, clipPaths, includeIgnore);
+            this._updateAndAddDisplayable(textGuide, clipPaths, params);
         }
 
         const textEl = el.getTextContent();
         if (textEl) {
-            this._updateAndAddDisplayable(textEl, clipPaths, includeIgnore);
+            this._updateAndAddDisplayable(textEl, clipPaths, params);
         }
     }
 

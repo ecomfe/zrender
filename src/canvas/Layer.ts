@@ -37,6 +37,11 @@ function createDom(id: string, painter: CanvasPainter, dpr: number) {
     return newDom;
 }
 
+function isValidPaintRect(rect: BoundingRect): boolean {
+    return rect && !isNaN(rect.x) && !isNaN(rect.y)
+        && !isNaN(rect.width) && !isNaN(rect.height);
+}
+
 export interface LayerConfig {
     // 每次清空画布的颜色
     clearColor?: string | GradientObject | PatternObject
@@ -178,23 +183,29 @@ export default class Layer extends Eventful {
         // Add current and previous bounding rect
         util.each(displayList, el => {
             if (el.__dirty) {
-                const curRect = el.getPaintRect();
-                if (!isNaN(curRect.x) && !isNaN(curRect.y) && !isNaN(curRect.width) && !isNaN(curRect.height)) {
-                    rects.push(curRect);
+                el.__needsRepaintDirtyRect = false;
 
-                    const prevRect = el.getPaintRect();
-                    prevRect && rects.push(prevRect);
+                const curRect = el.getPaintRect();
+                if (isValidPaintRect(curRect)) {
+                    rects.push(curRect);
                     el.setPrevPaintRect(curRect);
+                }
+
+                const prevRect = el.getPrevPaintRect();
+                if (isValidPaintRect(prevRect)) {
+                    rects.push(prevRect);
                 }
             }
         });
 
         // Add removed displayables because they need to be cleared
         util.each(prevList, el => {
-            if (!el.__zr) {
+            if (el.__needsRepaintDirtyRect) {
                 // el is removed
                 const prevRect = el.getPrevPaintRect();
-                prevRect && rects.push(prevRect);
+                if (isValidPaintRect(prevRect)) {
+                    rects.push(prevRect);
+                }
             }
         });
 
@@ -260,8 +271,7 @@ export default class Layer extends Eventful {
             mergedRepaintRects[minAId].union(mergedRepaintRects[minBId]);
             mergedRepaintRects.splice(minBId, 1);
         }
-        // console.log(mergedRepaintRects);
-        this._drawRect(mergedRepaintRects);
+        // this._drawRect(mergedRepaintRects);
 
 
         // Merge intersected rects in the result
@@ -345,7 +355,6 @@ export default class Layer extends Eventful {
         }
 
         const doClear = (rect: BoundingRect) => {
-            // console.log('clear', rect.x, rect.y, rect.width, rect.height);
             ctx.clearRect(rect.x, rect.y, rect.width, rect.height);
             if (clearColor && clearColor !== 'transparent') {
                 let clearColorGradientOrPattern;

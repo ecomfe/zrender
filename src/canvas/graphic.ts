@@ -793,6 +793,7 @@ export function brush(
 
     // Mark as painted.
     el.__dirty = 0;
+    el.__needsRepaintDirtyRect = true;
 }
 
 function brushIncremental(
