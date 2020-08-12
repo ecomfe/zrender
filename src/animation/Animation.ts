@@ -259,6 +259,9 @@ export default class Animation extends Eventful {
     }) {
         options = options || {};
 
+        // Start animation loop
+        this.start();
+
         const animator = new Animator(
             target,
             options.loop
