@@ -131,7 +131,7 @@ class ZRender {
          */
         this.animation = new Animation({
             stage: {
-                update: zrUtil.bind(this.flush, this)
+                update: () => this._flush(true)
             }
         });
         this.animation.start();
@@ -230,11 +230,15 @@ class ZRender {
      * Perform all refresh
      */
     flush() {
+        this._flush(false);
+    }
+
+    private _flush(fromInside?: boolean) {
         let triggerRendered;
 
         if (this._needsRefresh) {
             triggerRendered = true;
-            this.refreshImmediately(true);
+            this.refreshImmediately(fromInside);
         }
 
         if (this._needsRefreshHover) {
