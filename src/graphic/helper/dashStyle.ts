@@ -23,7 +23,7 @@ export function normalizeLineDash(lineType: any, lineWidth?: number): number[] |
     }
     lineWidth = lineWidth || 1;
     return lineType === 'dashed' 
-        ? [2 * lineWidth, lineWidth]
+        ? [4 * lineWidth, 2 * lineWidth]
         : lineType === 'dotted' 
             ? [lineWidth]
             : [];
