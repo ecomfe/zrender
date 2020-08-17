@@ -1249,7 +1249,7 @@
     }
     function removeEventListener(el, name, handler, opt) {
         if (isDomLevel2) {
-            el.removeEventListener(name, handler);
+            el.removeEventListener(name, handler, opt);
         }
         else {
             el.detachEvent('on' + name, handler);
@@ -2263,17 +2263,13 @@
     }());
 
     var requestAnimationFrame;
-    if (typeof window !== 'undefined') {
-        requestAnimationFrame = (window.requestAnimationFrame && window.requestAnimationFrame.bind(window))
-            || (window.msRequestAnimationFrame && window.msRequestAnimationFrame.bind(window))
-            || window.mozRequestAnimationFrame
-            || window.webkitRequestAnimationFrame;
-    }
-    else {
-        requestAnimationFrame = function (func) {
-            return setTimeout(func, 16);
-        };
-    }
+    requestAnimationFrame = (typeof window !== 'undefined'
+        && (window.requestAnimationFrame && window.requestAnimationFrame.bind(window))
+        || (window.msRequestAnimationFrame && window.msRequestAnimationFrame.bind(window))
+        || window.mozRequestAnimationFrame
+        || window.webkitRequestAnimationFrame) || function (func) {
+        return setTimeout(func, 16);
+    };
     var requestAnimationFrame$1 = requestAnimationFrame;
 
     var easing = {
@@ -3495,7 +3491,7 @@
                 logError('Can\' use additive animation on looped animation.');
                 return;
             }
-            this._additiveAnimator = additiveTo;
+            this._additiveAnimators = additiveTo;
         }
         Animator.prototype.getTarget = function () {
             return this._target;
@@ -3514,7 +3510,7 @@
                 if (!track) {
                     track = tracks[propName] = new Track(propName);
                     var initialValue = void 0;
-                    var additiveTrack = this._additiveAnimator && this._additiveAnimator.getTrack(propName);
+                    var additiveTrack = this._getAdditiveTrack(propName);
                     if (additiveTrack) {
                         var lastFinalKf = additiveTrack.keyframes[additiveTrack.keyframes.length - 1];
                         initialValue = lastFinalKf && lastFinalKf.value;
@@ -3562,6 +3558,19 @@
                 doneList[i].call(this);
             }
         };
+        Animator.prototype._getAdditiveTrack = function (trackName) {
+            var additiveTrack;
+            var additiveAnimators = this._additiveAnimators;
+            if (additiveAnimators) {
+                for (var i = 0; i < additiveAnimators.length; i++) {
+                    var track = additiveAnimators[i].getTrack(trackName);
+                    if (track) {
+                        additiveTrack = track;
+                    }
+                }
+            }
+            return additiveTrack;
+        };
         Animator.prototype.start = function (easing, forceAnimate) {
             if (this._started > 0) {
                 return;
@@ -3572,7 +3581,7 @@
             for (var i = 0; i < this._trackKeys.length; i++) {
                 var propName = this._trackKeys[i];
                 var track = this._tracks[propName];
-                var additiveTrack = this._additiveAnimator && this._additiveAnimator.getTrack(propName);
+                var additiveTrack = this._getAdditiveTrack(propName);
                 var kfs = track.keyframes;
                 track.prepare(additiveTrack);
                 if (track.needsAnimate()) {
@@ -3592,8 +3601,18 @@
                     delay: this._delay,
                     onframe: function (percent) {
                         self._started = 2;
-                        if (self._additiveAnimator && !self._additiveAnimator._clip) {
-                            self._additiveAnimator = null;
+                        var additiveAnimators = self._additiveAnimators;
+                        if (additiveAnimators) {
+                            var stillHasAdditiveAnimator = false;
+                            for (var i = 0; i < additiveAnimators.length; i++) {
+                                if (additiveAnimators[i]._clip) {
+                                    stillHasAdditiveAnimator = true;
+                                    break;
+                                }
+                            }
+                            if (!stillHasAdditiveAnimator) {
+                                self._additiveAnimators = null;
+                            }
                         }
                         for (var i = 0; i < tracks.length; i++) {
                             tracks[i].step(self._target, percent);
@@ -3858,6 +3877,7 @@
         };
         Animation.prototype.animate = function (target, options) {
             options = options || {};
+            this.start();
             var animator = new Animator(target, options.loop);
             this.addAnimator(animator);
             return animator;
@@ -4122,17 +4142,17 @@
             _this.__pointerCapturing = false;
             _this.dom = dom;
             _this.painterRoot = painterRoot;
-            _this.__localHandlerScope = new DOMHandlerScope(dom, localDOMHandlers);
+            _this._localHandlerScope = new DOMHandlerScope(dom, localDOMHandlers);
             if (globalEventSupported) {
-                _this.__globalHandlerScope = new DOMHandlerScope(document, globalDOMHandlers);
+                _this._globalHandlerScope = new DOMHandlerScope(document, globalDOMHandlers);
             }
-            mountLocalDOMEventListeners(_this, _this.__localHandlerScope);
+            mountLocalDOMEventListeners(_this, _this._localHandlerScope);
             return _this;
         }
         HandlerDomProxy.prototype.dispose = function () {
-            unmountDOMEventListeners(this.__localHandlerScope);
+            unmountDOMEventListeners(this._localHandlerScope);
             if (globalEventSupported) {
-                unmountDOMEventListeners(this.__globalHandlerScope);
+                unmountDOMEventListeners(this._globalHandlerScope);
             }
         };
         HandlerDomProxy.prototype.setCursor = function (cursorStyle) {
@@ -4143,7 +4163,7 @@
             if (globalEventSupported
                 && ((+this.__pointerCapturing) ^ (+isPointerCapturing))) {
                 this.__pointerCapturing = isPointerCapturing;
-                var globalHandlerScope = this.__globalHandlerScope;
+                var globalHandlerScope = this._globalHandlerScope;
                 isPointerCapturing
                     ? mountGlobalDOMEventListeners(this, globalHandlerScope)
                     : unmountDOMEventListeners(globalHandlerScope);
@@ -4990,7 +5010,9 @@
 
     var dpr = 1;
     if (typeof window !== 'undefined') {
-        dpr = Math.max(window.devicePixelRatio || 1, 1);
+        dpr = Math.max(window.devicePixelRatio
+            || (window.screen.deviceXDPI / window.screen.logicalXDPI)
+            || 1, 1);
     }
     var devicePixelRatio = dpr;
     var DARK_MODE_THRESHOLD = 0.4;
@@ -5696,6 +5718,7 @@
             if (zr) {
                 zr.animation.addAnimator(animator);
             }
+            zr && zr.wakeUp();
         };
         Element.prototype.updateDuringAnimation = function (key) {
             this.markRedraw();
@@ -5787,7 +5810,7 @@
                     });
                 }
             }
-            if (Object.defineProperty) {
+            if (Object.defineProperty && (!env.browser.ie || env.browser.version > 8)) {
                 createLegacyProperty('position', '_legacyPos', 'x', 'y');
                 createLegacyProperty('scale', '_legacyScale', 'scaleX', 'scaleY');
                 createLegacyProperty('origin', '_legacyOrigin', 'originX', 'originY');
@@ -5897,17 +5920,19 @@
         var keyLen = animatableKeys.length;
         if (keyLen > 0 || cfg.force) {
             var existsAnimators = animatable.animators;
-            var lastAnimator = void 0;
+            var existsAnimatorsOnSameTarget = [];
             for (var i = 0; i < existsAnimators.length; i++) {
                 if (existsAnimators[i].targetName === topKey) {
-                    lastAnimator = existsAnimators[i];
+                    existsAnimatorsOnSameTarget.push(existsAnimators[i]);
                 }
             }
-            if (!additive && lastAnimator) {
-                var allAborted = lastAnimator.stopTracks(changedKeys);
-                if (allAborted) {
-                    var idx = indexOf(existsAnimators, lastAnimator);
-                    existsAnimators.splice(idx, 1);
+            if (!additive && existsAnimatorsOnSameTarget.length) {
+                for (var i = 0; i < existsAnimatorsOnSameTarget.length; i++) {
+                    var allAborted = existsAnimatorsOnSameTarget[i].stopTracks(changedKeys);
+                    if (allAborted) {
+                        var idx = indexOf(existsAnimators, existsAnimatorsOnSameTarget[i]);
+                        existsAnimators.splice(idx, 1);
+                    }
                 }
             }
             var revertedSource = void 0;
@@ -5937,7 +5962,7 @@
                     copyValue(source, target, innerKey);
                 }
             }
-            var animator = new Animator(source, false, additive ? lastAnimator : null);
+            var animator = new Animator(source, false, additive ? existsAnimatorsOnSameTarget : null);
             animator.targetName = topKey;
             if (cfg.scope) {
                 animator.scope = cfg.scope;
@@ -11704,6 +11729,7 @@
     }
     var ZRender = (function () {
         function ZRender(id, dom, opts) {
+            var _this = this;
             this._stillFrameAccum = 0;
             this._needsRefresh = true;
             this._needsRefreshHover = true;
@@ -11734,7 +11760,7 @@
             this.handler = new Handler(storage, painter, handerProxy, painter.root);
             this.animation = new Animation({
                 stage: {
-                    update: bind(this.flush, this)
+                    update: function () { return _this._flush(true); }
                 }
             });
             this.animation.start();
@@ -11742,24 +11768,24 @@
         ZRender.prototype.add = function (el) {
             this.storage.addRoot(el);
             el.addSelfToZr(this);
-            this._needsRefresh = true;
+            this.refresh();
         };
         ZRender.prototype.remove = function (el) {
             this.storage.delRoot(el);
             el.removeSelfFromZr(this);
-            this._needsRefresh = true;
+            this.refresh();
         };
         ZRender.prototype.configLayer = function (zLevel, config) {
             if (this.painter.configLayer) {
                 this.painter.configLayer(zLevel, config);
             }
-            this._needsRefresh = true;
+            this.refresh();
         };
         ZRender.prototype.setBackgroundColor = function (backgroundColor) {
             if (this.painter.setBackgroundColor) {
                 this.painter.setBackgroundColor(backgroundColor);
             }
-            this._needsRefresh = true;
+            this.refresh();
             this._backgroundColor = backgroundColor;
             this._darkMode = isDarkMode(backgroundColor);
         };
@@ -11785,10 +11811,13 @@
             this.animation.start();
         };
         ZRender.prototype.flush = function () {
+            this._flush(false);
+        };
+        ZRender.prototype._flush = function (fromInside) {
             var triggerRendered;
             if (this._needsRefresh) {
                 triggerRendered = true;
-                this.refreshImmediately(true);
+                this.refreshImmediately(fromInside);
             }
             if (this._needsRefreshHover) {
                 triggerRendered = true;
@@ -11905,7 +11934,7 @@
     function registerPainter(name, Ctor) {
         painterCtors[name] = Ctor;
     }
-    var version = '5.0.0-alpha.1';
+    var version = '5.0.0-alpha.2';
 
     function createLinearGradient(ctx, obj, rect) {
         var x = obj.x == null ? 0 : obj.x;
