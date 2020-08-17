@@ -412,8 +412,6 @@ const svgText: SVGProxy<TSpan> = {
         textSvgElStyle.font = font;
 
         textSvgEl.textContent = text;
-        
-        console.log(text)
 
         bindStyle(textSvgEl, style, el);
         setTransform(textSvgEl, el.transform);
