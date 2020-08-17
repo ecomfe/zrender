@@ -160,7 +160,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         }
     }
 
-    let lineDash = style.lineDash = normalizeLineDash(style.lineDash, style.lineWidth);
+    let lineDash = normalizeLineDash(style.lineDash, style.lineWidth);
     let lineDashOffset = style.lineDashOffset;
 
     const ctxLineDash = !!ctx.setLineDash;
@@ -315,7 +315,7 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
         ctx.textAlign = style.textAlign;
         ctx.textBaseline = style.textBaseline;
         if (ctx.setLineDash) {
-            let lineDash = style.lineDash = normalizeLineDash(style.lineDash);
+            let lineDash = normalizeLineDash(style.lineDash);
             let lineDashOffset = style.lineDashOffset;
             if (lineDash) {
                 const lineScale = (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1;

@@ -108,7 +108,7 @@ function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan |
         // stroke then fill for text; fill then stroke for others
         attr(svgEl, 'paint-order', style.strokeFirst ? 'stroke' : 'fill');
         attr(svgEl, 'stroke-opacity', (style.strokeOpacity != null ? style.strokeOpacity * opacity : opacity) + '');
-        let lineDash = style.lineDash = normalizeLineDash(style.lineDash, el instanceof TSpan ? void 0 : style.lineWidth);
+        let lineDash = normalizeLineDash(style.lineDash, el instanceof TSpan ? void 0 : style.lineWidth);
         if (lineDash) {
             let lineDashOffset = style.lineDashOffset;
             if (strokeScale && strokeScale !== 1) {
