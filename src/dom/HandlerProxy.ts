@@ -564,10 +564,10 @@ export default class HandlerDomProxy extends Eventful {
 
     handler: Handler
 
-    __lastTouchMoment: Date
+    private _localHandlerScope: DOMHandlerScope
+    private _globalHandlerScope: DOMHandlerScope
 
-    __localHandlerScope: DOMHandlerScope
-    __globalHandlerScope: DOMHandlerScope
+    __lastTouchMoment: Date
 
     __pointerCapturing = false
 
@@ -581,19 +581,19 @@ export default class HandlerDomProxy extends Eventful {
         this.dom = dom;
         this.painterRoot = painterRoot;
 
-        this.__localHandlerScope = new DOMHandlerScope(dom, localDOMHandlers);
+        this._localHandlerScope = new DOMHandlerScope(dom, localDOMHandlers);
 
         if (globalEventSupported) {
-            this.__globalHandlerScope = new DOMHandlerScope(document, globalDOMHandlers);
+            this._globalHandlerScope = new DOMHandlerScope(document, globalDOMHandlers);
         }
 
-        mountLocalDOMEventListeners(this, this.__localHandlerScope);
+        mountLocalDOMEventListeners(this, this._localHandlerScope);
     }
 
     dispose() {
-        unmountDOMEventListeners(this.__localHandlerScope);
+        unmountDOMEventListeners(this._localHandlerScope);
         if (globalEventSupported) {
-            unmountDOMEventListeners(this.__globalHandlerScope);
+            unmountDOMEventListeners(this._globalHandlerScope);
         }
     }
 
@@ -617,7 +617,7 @@ export default class HandlerDomProxy extends Eventful {
         ) {
             this.__pointerCapturing = isPointerCapturing;
 
-            const globalHandlerScope = this.__globalHandlerScope;
+            const globalHandlerScope = this._globalHandlerScope;
             isPointerCapturing
                 ? mountGlobalDOMEventListeners(this, globalHandlerScope)
                 : unmountDOMEventListeners(globalHandlerScope);

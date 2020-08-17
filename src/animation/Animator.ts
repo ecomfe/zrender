@@ -696,21 +696,21 @@ export default class Animator<T> {
     // 2: Has been run for at least one frame.
     private _started = 0
 
-    private _additiveAnimator: Animator<any>
+    private _additiveAnimators: Animator<any>[]
 
     private _doneList: DoneCallback[] = []
     private _onframeList: OnframeCallback<T>[] = []
 
     private _clip: Clip = null
 
-    constructor(target: T, loop: boolean, additiveTo?: Animator<any>) {
+    constructor(target: T, loop: boolean, additiveTo?: Animator<any>[]) {
         this._target = target;
         this._loop = loop;
         if (loop) {
             logError('Can\' use additive animation on looped animation.');
             return;
         }
-        this._additiveAnimator = additiveTo;
+        this._additiveAnimators = additiveTo;
     }
 
     getTarget() {
@@ -747,7 +747,7 @@ export default class Animator<T> {
                 track = tracks[propName] = new Track(propName);
 
                 let initialValue;
-                const additiveTrack = this._additiveAnimator && this._additiveAnimator.getTrack(propName);
+                const additiveTrack = this._getAdditiveTrack(propName);
                 if (additiveTrack) {
                     const lastFinalKf = additiveTrack.keyframes[additiveTrack.keyframes.length - 1];
                     // Use the last state of additived animator.
@@ -805,7 +805,7 @@ export default class Animator<T> {
         return !!this._paused;
     }
 
-    _doneCallback() {
+    private _doneCallback() {
         // Clear all tracks
         this._tracks = null;
         // Clear clip
@@ -816,6 +816,21 @@ export default class Animator<T> {
         for (let i = 0; i < len; i++) {
             doneList[i].call(this);
         }
+    }
+
+    private _getAdditiveTrack(trackName: string): Track {
+        let additiveTrack;
+        const additiveAnimators = this._additiveAnimators;
+        if (additiveAnimators) {
+            for (let i = 0; i < additiveAnimators.length; i++) {
+                const track = additiveAnimators[i].getTrack(trackName);
+                if (track) {
+                    // Use the track of latest animator.
+                    additiveTrack = track;
+                }
+            }
+        }
+        return additiveTrack;
     }
     /**
      * Start the animation
@@ -835,7 +850,7 @@ export default class Animator<T> {
         for (let i = 0; i < this._trackKeys.length; i++) {
             const propName = this._trackKeys[i];
             const track = this._tracks[propName];
-            const additiveTrack = this._additiveAnimator && this._additiveAnimator.getTrack(propName);
+            const additiveTrack = this._getAdditiveTrack(propName)
             const kfs = track.keyframes;
             track.prepare(additiveTrack);
             if (track.needsAnimate()) {
@@ -859,9 +874,20 @@ export default class Animator<T> {
                     self._started = 2;
                     // Remove additived animator if it's finished.
                     // For the purpose of memory effeciency.
-                    if (self._additiveAnimator && !self._additiveAnimator._clip) {
-                        self._additiveAnimator = null;
+                    const additiveAnimators = self._additiveAnimators;
+                    if (additiveAnimators) {
+                        let stillHasAdditiveAnimator = false;
+                        for (let i = 0; i < additiveAnimators.length; i++) {
+                            if (additiveAnimators[i]._clip) {
+                                stillHasAdditiveAnimator = true;
+                                break;
+                            }
+                        }
+                        if (!stillHasAdditiveAnimator) {
+                            self._additiveAnimators = null;
+                        }
                     }
+
                     for (let i = 0; i < tracks.length; i++) {
                         // NOTE: don't cache target outside.
                         // Because target may be changed.

@@ -1453,6 +1453,9 @@ class Element<Props extends ElementProps = ElementProps> {
         if (zr) {
             zr.animation.addAnimator(animator);
         }
+
+        // Wake up zrender to start the animation loop.
+        zr && zr.wakeUp();
     }
 
     updateDuringAnimation(key: string) {
@@ -1799,21 +1802,23 @@ function animateToShallow<T>(
     if (keyLen > 0 || cfg.force) {
         // Find last animator animating same prop.
         const existsAnimators = animatable.animators;
-        let lastAnimator;
+        let existsAnimatorsOnSameTarget: Animator<any>[] = [];
         for (let i = 0; i < existsAnimators.length; i++) {
             // Use key string instead object reference because ref may be changed.
             if (existsAnimators[i].targetName === topKey) {
-                lastAnimator = existsAnimators[i];
+                existsAnimatorsOnSameTarget.push(existsAnimators[i]);
             }
         }
 
-        if (!additive && lastAnimator) {
+        if (!additive && existsAnimatorsOnSameTarget.length) {
             // Stop exists animation on specific tracks. Only one animator available for each property.
             // TODO Should invoke previous animation callback?
-            const allAborted = lastAnimator.stopTracks(changedKeys);
-            if (allAborted) {   // This animator can't be used.
-                const idx = indexOf(existsAnimators, lastAnimator);
-                existsAnimators.splice(idx, 1);
+            for (let i = 0; i < existsAnimatorsOnSameTarget.length; i++) {
+                const allAborted = existsAnimatorsOnSameTarget[i].stopTracks(changedKeys);
+                if (allAborted) {   // This animator can't be used.
+                    const idx = indexOf(existsAnimators, existsAnimatorsOnSameTarget[i]);
+                    existsAnimators.splice(idx, 1);
+                }
             }
         }
 
@@ -1854,7 +1859,7 @@ function animateToShallow<T>(
             }
         }
 
-        const animator = new Animator(source, false, additive ? lastAnimator : null);
+        const animator = new Animator(source, false, additive ? existsAnimatorsOnSameTarget : null);
         animator.targetName = topKey;
         if (cfg.scope) {
             animator.scope = cfg.scope;
