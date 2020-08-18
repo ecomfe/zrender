@@ -1,7 +1,7 @@
 import { isArray, isNumber } from '../../core/util';
 
 export function normalizeLineDash(lineType: any, lineWidth?: number): number[] | false {
-    if (!lineType || lineType === 'solid' || (lineWidth != null && lineWidth <= 0)) {
+    if (!lineType || lineType === 'solid' || !(lineWidth > 0)) {
         return null;
     }
     lineWidth = lineWidth || 1;
