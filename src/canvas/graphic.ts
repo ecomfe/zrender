@@ -160,7 +160,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         }
     }
 
-    let lineDash = normalizeLineDash(style.lineDash, style.lineWidth);
+    let lineDash = style.lineDash && normalizeLineDash(style.lineDash, style.lineWidth);
     let lineDashOffset = style.lineDashOffset;
 
     const ctxLineDash = !!ctx.setLineDash;
