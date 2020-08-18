@@ -315,7 +315,7 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
         ctx.textAlign = style.textAlign;
         ctx.textBaseline = style.textBaseline;
         if (ctx.setLineDash) {
-            let lineDash = normalizeLineDash(style.lineDash);
+            let lineDash = style.lineDash && style.lineWidth > 0 && normalizeLineDash(style.lineDash, style.lineWidth);
             let lineDashOffset = style.lineDashOffset;
             if (lineDash) {
                 const lineScale = (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1;
