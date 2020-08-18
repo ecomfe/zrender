@@ -185,15 +185,15 @@ export default class Layer extends Eventful {
             if (el.__dirty) {
                 el.__needsRepaintDirtyRect = false;
 
+                const prevRect = el.getPrevPaintRect();
+                if (isValidPaintRect(prevRect)) {
+                    rects.push(prevRect);
+                }
+
                 const curRect = el.getPaintRect();
                 if (isValidPaintRect(curRect)) {
                     rects.push(curRect);
                     el.setPrevPaintRect(curRect);
-                }
-
-                const prevRect = el.getPrevPaintRect();
-                if (isValidPaintRect(prevRect)) {
-                    rects.push(prevRect);
                 }
             }
         });
@@ -271,8 +271,6 @@ export default class Layer extends Eventful {
             mergedRepaintRects[minAId].union(mergedRepaintRects[minBId]);
             mergedRepaintRects.splice(minBId, 1);
         }
-        // this._drawRect(mergedRepaintRects);
-
 
         // Merge intersected rects in the result
         function checkIntersection() {
@@ -419,23 +417,6 @@ export default class Layer extends Eventful {
 
     // Interface of renderToCanvas in getRenderedCanvas
     renderToCanvas: (ctx: CanvasRenderingContext2D) => void
-
-    private _drawRect(rects: BoundingRect[]) {
-        // setTimeout(() => {
-        //     this.ctx.save();
-        //     this.ctx.fillStyle = 'none';
-
-        //     const r = Math.floor(255 * Math.random());
-        //     const g = Math.floor(255 * Math.random());
-        //     const b = Math.floor(255 * Math.random());
-
-        //     this.ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
-        //     util.each(rects, rect => {
-        //         this.ctx.strokeRect(rect.x * this.dpr, rect.y * this.dpr, rect.width * this.dpr, rect.height * this.dpr);
-        //     });
-        //     this.ctx.restore();
-        // });
-    }
 
     // Events
     onclick: ElementEventCallback<unknown, this>

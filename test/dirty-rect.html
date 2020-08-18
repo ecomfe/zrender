@@ -12,6 +12,26 @@
         var zr = zrender.init(document.getElementById('main'), {
         });
 
+        var circle = new zrender.Circle({
+            scale: [1, 1],
+            shape: {
+                cx: 50,
+                cy: 50,
+                r: 50
+            },
+            style: {
+            }
+        });
+        zr.add(circle);
+
+        circle.animateTo({
+            shape: {
+                cy: 200
+            }
+        }, {
+            duration: 1000
+        });
+
         var rects = [];
         for (var i = 0; i < 20; ++i) {
             var rect = new zrender.Rect({

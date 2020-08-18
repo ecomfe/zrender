@@ -251,7 +251,8 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     }
 
     setPrevPaintRect(paintRect: BoundingRect) {
-        this._prevPaintRect = paintRect;
+        this._prevPaintRect = new BoundingRect(0, 0, 0, 0);
+        this._prevPaintRect.copy(paintRect);
     }
 
     getPrevPaintRect(): BoundingRect {
