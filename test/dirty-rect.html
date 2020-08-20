@@ -12,6 +12,13 @@
         var zr = zrender.init(document.getElementById('main'), {
         });
 
+        var text = new zrender.Text({
+            style: {
+                fill: 'white',
+                text: 'Start'
+            },
+            zlevel: 1
+        });
         var circle = new zrender.Circle({
             scale: [1, 1],
             shape: {
@@ -20,16 +27,32 @@
                 r: 50
             },
             style: {
-            }
+                fill: '#f0f',
+                opacity: 0.8
+            },
+            textContent: text,
+            textConfig: {
+                position: 'inside'
+            },
+            zlevel: 1
         });
         zr.add(circle);
 
+        text.animateTo({
+            style: {
+                fill: 'yellow'
+            }
+        }, {
+            duration: 3000
+        });
+
         circle.animateTo({
             shape: {
+                cx: 800,
                 cy: 200
             }
         }, {
-            duration: 1000
+            duration: 3000
         });
 
         var rects = [];
@@ -89,15 +112,14 @@
         });
         zr.add(a);
 
-        setTimeout(() => {
+        setTimeout(function () {
             zr.remove(a);
+        }, 5000);
+        setInterval(function () {
+            for (var i = 0; i < 2; ++i) {
+                rects[i].attr('position', [800 * Math.random(), 400 * Math.random()]);
+            }
         }, 3000);
-        // setInterval(() => {
-        //     for (var i = 0; i < 2; ++i) {
-        //         rects[i].attr('position', [800 * Math.random(), 400 * Math.random()]);
-        //     }
-
-        // }, 3000);
     </script>
 
 </body>

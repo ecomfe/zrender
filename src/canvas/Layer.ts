@@ -105,6 +105,10 @@ export default class Layer extends Eventful {
     __startIndex = 0
     __endIndex = 0
 
+    // indices in the previous frame
+    __prevStartIndex: number = null
+    __prevEndIndex: number = null
+
     __builtin__: boolean
 
     constructor(id: string | HTMLCanvasElement, painter: CanvasPainter, dpr?: number) {
@@ -149,6 +153,11 @@ export default class Layer extends Eventful {
         return this.__endIndex - this.__startIndex;
     }
 
+    afterBrush() {
+        this.__prevStartIndex = this.__startIndex;
+        this.__prevEndIndex = this.__endIndex;
+    }
+
     initContext() {
         this.ctx = this.dom.getContext('2d');
         (this.ctx as ZRCanvasRenderingContext).dpr = this.dpr;
@@ -165,23 +174,30 @@ export default class Layer extends Eventful {
         }
     }
 
-    createRepaintRects(displayList: Displayable[], prevList: Displayable[]) {
+    /**
+     * Create repaint list when using dirty rect rendering.
+     *
+     * @param layer onlu elements in this layer will be used to compute
+     * @param displayList current rendering list
+     * @param prevList last frame rendering list
+     * @return repaint rects. null for the first frame, [] for no element dirty
+     */
+    createRepaintRects(
+        layer: Layer,
+        displayList: Displayable[],
+        prevList: Displayable[]
+    ) {
         if (this.__firstTimePaint) {
-            util.each(displayList, el => {
-                if (el.__dirty) {
-                    el.setPrevPaintRect(el.getPaintRect());
-                }
-            });
-
             this.__firstTimePaint = false;
-            return [];
+            return null;
         }
 
         const mergedRepaintRects: BoundingRect[] = [];
         const rects: BoundingRect[] = [];
 
         // Add current and previous bounding rect
-        util.each(displayList, el => {
+        for (let i = layer.__startIndex; i < layer.__endIndex; ++i) {
+            const el = displayList[i];
             if (el.__dirty) {
                 el.__needsRepaintDirtyRect = false;
 
@@ -193,13 +209,13 @@ export default class Layer extends Eventful {
                 const curRect = el.getPaintRect();
                 if (isValidPaintRect(curRect)) {
                     rects.push(curRect);
-                    el.setPrevPaintRect(curRect);
                 }
             }
-        });
+        }
 
         // Add removed displayables because they need to be cleared
-        util.each(prevList, el => {
+        for (let i = layer.__prevStartIndex; i < layer.__prevEndIndex; ++i) {
+            const el = prevList[i];
             if (el.__needsRepaintDirtyRect) {
                 // el is removed
                 const prevRect = el.getPrevPaintRect();
@@ -207,7 +223,7 @@ export default class Layer extends Eventful {
                     rects.push(prevRect);
                 }
             }
-        });
+        }
 
         // Merge
         util.each(rects, rect => {
@@ -395,11 +411,11 @@ export default class Layer extends Eventful {
             }
         };
 
-        if (!repaintRects || !repaintRects.length) {
+        if (!repaintRects) {
             // Clear the full canvas
             doClear(new BoundingRect(0, 0, width, height));
         }
-        else {
+        else if (repaintRects.length) {
             // Clear the repaint areas
             util.each(repaintRects, rect => {
                 doClear(new BoundingRect(

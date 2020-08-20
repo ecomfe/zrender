@@ -334,6 +334,11 @@ export default class CanvasPainter implements PainterBase {
                 self._paintList(list, prevList, paintAll, redrawId);
             });
         }
+        else {
+            util.each(this._layers, layer => {
+                layer.afterBrush();
+            });
+        }
     }
 
     private _compositeManually() {
@@ -349,7 +354,12 @@ export default class CanvasPainter implements PainterBase {
         });
     }
 
-    private _doPaintList(list: Displayable[], prevList: Displayable[], paintAll?: boolean): {
+    private _doPaintList(
+        list: Displayable[],
+        prevList: Displayable[],
+        paintAll?: boolean,
+        useDirtyRect?: boolean
+    ): {
         finished: boolean
         needsRefreshHover: boolean
     } {
@@ -370,11 +380,15 @@ export default class CanvasPainter implements PainterBase {
         let finished = true;
         let needsRefreshHover = false;
 
+        // TODO:
+        useDirtyRect = true;
+
         for (let k = 0; k < layerList.length; k++) {
             const layer = layerList[k];
             const ctx = layer.ctx;
 
-            const repaintRects = layer.createRepaintRects(list, prevList);
+            const repaintRects = useDirtyRect
+                && layer.createRepaintRects(layer, list, prevList);
 
             ctx.save();
 
@@ -436,7 +450,7 @@ export default class CanvasPainter implements PainterBase {
                 }
             };
 
-            if (repaintRects.length) {
+            if (repaintRects) {
                 // Set repaintRect as clipPath
                 for (var r = 0; r < repaintRects.length; ++r) {
                     const rect = repaintRects[r];
@@ -492,17 +506,12 @@ export default class CanvasPainter implements PainterBase {
         isLast: boolean
     ) {
         const ctx = currentLayer.ctx;
-        if (repaintRect) {
-            // If there is repaintRect, only render the intersected ones
-            if (el.getPaintRect().intersect(repaintRect)) {
-                // console.log('rebrush', el.id);
-                brush(ctx, el, scope, isLast);
-            }
-        }
-        else {
+        const paintRect = el.getPaintRect();
+        if (!repaintRect || repaintRect && paintRect.intersect(repaintRect)) {
             // If no repaintRect, all displayables need to be painted once
+            // If there is repaintRect, only render the intersected ones
             brush(ctx, el, scope, isLast);
-            // console.log('brush', el.id);
+            el.setPrevPaintRect(paintRect);
         }
     }
 

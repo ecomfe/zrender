@@ -132,6 +132,8 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     protected _rect: BoundingRect
     protected _paintRect: BoundingRect
     protected _prevPaintRect: BoundingRect
+    // protected _prevPaintRectPending: BoundingRect // waiting to replace _prevPaintRect in frame rendering stage
+    // protected _prevPaintRectFlushed: boolean
 
     /************* Properties will be inejected in other modules. *******************/
 
@@ -251,8 +253,13 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     }
 
     setPrevPaintRect(paintRect: BoundingRect) {
-        this._prevPaintRect = new BoundingRect(0, 0, 0, 0);
-        this._prevPaintRect.copy(paintRect);
+        if (paintRect) {
+            this._prevPaintRect = new BoundingRect(0, 0, 0, 0);
+            this._prevPaintRect.copy(paintRect);
+        }
+        else {
+            this._prevPaintRect = null;
+        }
     }
 
     getPrevPaintRect(): BoundingRect {
