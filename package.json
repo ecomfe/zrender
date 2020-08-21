@@ -1,6 +1,6 @@
 {
   "name": "zrender",
-  "version": "5.0.0-alpha.1",
+  "version": "5.0.0-alpha.2",
   "description": "A lightweight canvas library.",
   "keywords": [
     "canvas",
@@ -27,7 +27,7 @@
   "module": "index.esm.js",
   "main": "index.js",
   "dependencies": {
-    "tslib": "^1.10.0"
+    "tslib": "1.10.0"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.7.2",
