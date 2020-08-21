@@ -310,7 +310,7 @@ export default class CanvasPainter implements PainterBase {
         return this.getLayer(HOVER_LAYER_ZLEVEL);
     }
 
-    private _paintList (list: Displayable[], prevList: Displayable[], paintAll: boolean, redrawId?: number) {
+    private _paintList(list: Displayable[], prevList: Displayable[], paintAll: boolean, redrawId?: number) {
         if (this._redrawId !== redrawId) {
             return;
         }

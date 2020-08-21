@@ -538,7 +538,7 @@ function isClipPathChanged(clipPaths: Path[], prevClipPaths: Path[]): boolean {
     return false;
 }
 
-export function updateClipStatus(clipPaths: Path[], ctx: CanvasRenderingContext2D, scope: BrushScope) {
+function updateClipStatus(clipPaths: Path[], ctx: CanvasRenderingContext2D, scope: BrushScope) {
     let allClipped = false;
     for (let i = 0; i < clipPaths.length; i++) {
         const clipPath = clipPaths[i];

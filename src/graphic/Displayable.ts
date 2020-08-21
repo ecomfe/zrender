@@ -132,8 +132,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     protected _rect: BoundingRect
     protected _paintRect: BoundingRect
     protected _prevPaintRect: BoundingRect
-    // protected _prevPaintRectPending: BoundingRect // waiting to replace _prevPaintRect in frame rendering stage
-    // protected _prevPaintRectFlushed: boolean
 
     /************* Properties will be inejected in other modules. *******************/
 
