@@ -310,6 +310,8 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
     // Convert to string
     text != null && (text += '');
 
+    let hasLineDash;
+
     if (text) {
         ctx.font = style.font || DEFAULT_FONT;
         ctx.textAlign = style.textAlign;
@@ -325,9 +327,10 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
                     });
                     lineDashOffset /= lineScale;
                 }
+                ctx.setLineDash(lineDash);
+                ctx.lineDashOffset = lineDashOffset;
+                hasLineDash = true;
             }
-            ctx.setLineDash(lineDash || []);
-            ctx.lineDashOffset = lineDashOffset;
         }
 
         if (style.strokeFirst) {
@@ -346,6 +349,12 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
                 ctx.strokeText(text, style.x, style.y);
             }
         }
+    }
+
+    if (hasLineDash) {
+        // PENDING
+        // Remove lineDash
+        ctx.setLineDash([]);
     }
 }
 
