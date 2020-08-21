@@ -37,11 +37,6 @@ function createDom(id: string, painter: CanvasPainter, dpr: number) {
     return newDom;
 }
 
-function isValidPaintRect(rect: BoundingRect): boolean {
-    return rect && !isNaN(rect.x) && !isNaN(rect.y)
-        && !isNaN(rect.width) && !isNaN(rect.height);
-}
-
 export interface LayerConfig {
     // 每次清空画布的颜色
     clearColor?: string | GradientObject | PatternObject
@@ -177,13 +172,11 @@ export default class Layer extends Eventful {
     /**
      * Create repaint list when using dirty rect rendering.
      *
-     * @param layer onlu elements in this layer will be used to compute
      * @param displayList current rendering list
      * @param prevList last frame rendering list
      * @return repaint rects. null for the first frame, [] for no element dirty
      */
     createRepaintRects(
-        layer: Layer,
         displayList: Displayable[],
         prevList: Displayable[]
     ) {
@@ -196,30 +189,30 @@ export default class Layer extends Eventful {
         const rects: BoundingRect[] = [];
 
         // Add current and previous bounding rect
-        for (let i = layer.__startIndex; i < layer.__endIndex; ++i) {
+        for (let i = this.__startIndex; i < this.__endIndex; ++i) {
             const el = displayList[i];
             if (el.__dirty) {
                 el.__needsRepaintDirtyRect = false;
 
                 const prevRect = el.getPrevPaintRect();
-                if (isValidPaintRect(prevRect)) {
+                if (prevRect && prevRect.isValid()) {
                     rects.push(prevRect);
                 }
 
                 const curRect = el.getPaintRect();
-                if (isValidPaintRect(curRect)) {
+                if (curRect && curRect.isValid()) {
                     rects.push(curRect);
                 }
             }
         }
 
         // Add removed displayables because they need to be cleared
-        for (let i = layer.__prevStartIndex; i < layer.__prevEndIndex; ++i) {
+        for (let i = this.__prevStartIndex; i < this.__prevEndIndex; ++i) {
             const el = prevList[i];
             if (el.__needsRepaintDirtyRect) {
                 // el is removed
                 const prevRect = el.getPrevPaintRect();
-                if (isValidPaintRect(prevRect)) {
+                if (prevRect && prevRect.isValid()) {
                     rects.push(prevRect);
                 }
             }

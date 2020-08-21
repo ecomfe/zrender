@@ -24,12 +24,11 @@ class BoundingRect {
     height: number
 
     constructor(x: number, y: number, width: number, height: number) {
-
-        if (width < 0) {
+        if (width < 0 && isFinite(width)) {
             x = x + width;
             width = -width;
         }
-        if (height < 0) {
+        if (height < 0 && isFinite(height)) {
             y = y + height;
             height = -height;
         }
@@ -44,14 +43,28 @@ class BoundingRect {
         const x = mathMin(other.x, this.x);
         const y = mathMin(other.y, this.y);
 
-        this.width = mathMax(
-            other.x + other.width,
-            this.x + this.width
-        ) - x;
-        this.height = mathMax(
-            other.y + other.height,
-            this.y + this.height
-        ) - y;
+        // If x is -Infinity and width is Infinity (like in the case of
+        // IncrementalDisplayble), x + width would be NaN
+        if (isFinite(this.x) && isFinite(this.width)) {
+            this.width = mathMax(
+                other.x + other.width,
+                this.x + this.width
+            ) - x;
+        }
+        else {
+            this.width = other.width;
+        }
+
+        if (isFinite(this.y) && isFinite(this.height)) {
+            this.height = mathMax(
+                other.y + other.height,
+                this.y + this.height
+            ) - y;
+        }
+        else {
+            this.height = other.height;
+        }
+
         this.x = x;
         this.y = y;
     }
@@ -187,6 +200,16 @@ class BoundingRect {
             width: this.width,
             height: this.height
         };
+    }
+
+    /**
+     * If not having NaN or Infinity with attributes
+     */
+    isValid(): boolean {
+        return !isNaN(this.x) && isFinite(this.x)
+            && !isNaN(this.y) && isFinite(this.y)
+            && !isNaN(this.width) && isFinite(this.width)
+            && !isNaN(this.height) && isFinite(this.height);
     }
 
     static create(rect: RectLike): BoundingRect {

@@ -116,6 +116,11 @@ class ZRender {
         if (!painterCtors[rendererType]) {
             throw new Error(`Renderer '${rendererType}' is not imported. Please import it first.`);
         }
+
+        opts.useDirtyRect = opts.useDirtyRect == null
+            ? false
+            : opts.useDirtyRect;
+
         const painter = new painterCtors[rendererType](dom, storage, opts, id);
 
         this.storage = storage;
@@ -457,6 +462,7 @@ export interface ZRenderInitOpt {
     devicePixelRatio?: number
     width?: number | string // 10, 10px, 'auto'
     height?: number | string
+    useDirtyRect?: boolean
 }
 
 /**

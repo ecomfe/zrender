@@ -70,7 +70,8 @@ function createRoot(width: number, height: number) {
 interface CanvasPainterOption {
     devicePixelRatio?: number
     width?: number | string  // Can be 10 / 10px / auto
-    height?: number | string
+    height?: number | string,
+    useDirtyRect?: boolean
 }
 
 export default class CanvasPainter implements PainterBase {
@@ -357,8 +358,7 @@ export default class CanvasPainter implements PainterBase {
     private _doPaintList(
         list: Displayable[],
         prevList: Displayable[],
-        paintAll?: boolean,
-        useDirtyRect?: boolean
+        paintAll?: boolean
     ): {
         finished: boolean
         needsRefreshHover: boolean
@@ -380,15 +380,12 @@ export default class CanvasPainter implements PainterBase {
         let finished = true;
         let needsRefreshHover = false;
 
-        // TODO:
-        useDirtyRect = true;
-
         for (let k = 0; k < layerList.length; k++) {
             const layer = layerList[k];
             const ctx = layer.ctx;
 
-            const repaintRects = useDirtyRect
-                && layer.createRepaintRects(layer, list, prevList);
+            const repaintRects = this._opts.useDirtyRect
+                && layer.createRepaintRects(list, prevList);
 
             ctx.save();
 
@@ -431,7 +428,6 @@ export default class CanvasPainter implements PainterBase {
                     }
 
                     this._doPaintEl(el, layer, repaintRect, scope, i === layer.__endIndex - 1);
-                    el.__dirty = 0;
 
                     if (useTimer) {
                         // Date.now can be executed in 13,025,305 ops/second.
@@ -451,22 +447,28 @@ export default class CanvasPainter implements PainterBase {
             };
 
             if (repaintRects) {
-                // Set repaintRect as clipPath
-                for (var r = 0; r < repaintRects.length; ++r) {
-                    const rect = repaintRects[r];
+                if (repaintRects.length === 0) {
+                    // Nothing to repaint, mark as finished
+                    i = layer.__endIndex;
+                }
+                else {
+                    // Set repaintRect as clipPath
+                    for (var r = 0; r < repaintRects.length; ++r) {
+                        const rect = repaintRects[r];
 
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.rect(
-                        rect.x * this.dpr,
-                        rect.y * this.dpr,
-                        rect.width * this.dpr,
-                        rect.height * this.dpr
-                    );
-                    ctx.clip();
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.rect(
+                            rect.x * this.dpr,
+                            rect.y * this.dpr,
+                            rect.width * this.dpr,
+                            rect.height * this.dpr
+                        );
+                        ctx.clip();
 
-                    repaint(rect);
-                    ctx.restore();
+                        repaint(rect);
+                        ctx.restore();
+                    }
                 }
             }
             else {
