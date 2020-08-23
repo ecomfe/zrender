@@ -35,6 +35,7 @@ var nativeFilter = arrayProto.filter;
 var nativeSlice = arrayProto.slice;
 var nativeMap = arrayProto.map;
 var nativeReduce = arrayProto.reduce;
+var nativeFind = arrayProto.find;
 
 // Avoid assign to an exported variable, for transforming to cjs.
 var methods = {};
@@ -393,9 +394,13 @@ export function find(obj, cb, context) {
     if (!(obj && cb)) {
         return;
     }
-    for (var i = 0, len = obj.length; i < len; i++) {
-        if (cb.call(context, obj[i], i, obj)) {
-            return obj[i];
+    if (obj.find && obj.find === nativeFind) {
+        return obj.find(cb, context);
+    } else {
+        for (var i = 0, len = obj.length; i < len; i++) {
+            if (cb.call(context, obj[i], i, obj)) {
+                return obj[i];
+            }
         }
     }
 }
@@ -412,6 +417,10 @@ export function bind(func, context) {
         return func.apply(context, args.concat(nativeSlice.call(arguments)));
     };
 }
+if (bind.bind) {
+    // https://jsben.ch/sEcop
+    bind = bind.call.bind(bind.bind);
+}
 
 /**
  * @memberOf module:zrender/core/util
@@ -421,6 +430,20 @@ export function bind(func, context) {
 export function curry(func) {
     var args = nativeSlice.call(arguments, 1);
     return function () {
+        // https://jsben.ch/bumDU
+        if (args.length === 1) {
+            switch (arguments.length) {
+                case 1: return func.call(this, args[0], arguments[0]);
+                case 2: return func.call(this, args[0], arguments[0], arguments[1]);
+                case 3: return func.call(this, args[0], arguments[0], arguments[1], arguments[2]);
+            }
+        } else if (args.length === 2) {
+            switch (arguments.length) {
+                case 1: return func.call(this, args[0], args[1], arguments[0]);
+                case 2: return func.call(this, args[0], args[1], arguments[0], arguments[1]);
+                case 3: return func.call(this, args[0], args[1], arguments[0], arguments[1], arguments[2]);
+            }
+        }
         return func.apply(this, args.concat(nativeSlice.call(arguments)));
     };
 }
