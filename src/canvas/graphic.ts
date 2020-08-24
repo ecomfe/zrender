@@ -310,12 +310,12 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
     // Convert to string
     text != null && (text += '');
 
-    let hasLineDash;
-
     if (text) {
         ctx.font = style.font || DEFAULT_FONT;
         ctx.textAlign = style.textAlign;
         ctx.textBaseline = style.textBaseline;
+
+        let hasLineDash;
         if (ctx.setLineDash) {
             let lineDash = style.lineDash && style.lineWidth > 0 && normalizeLineDash(style.lineDash, style.lineWidth);
             let lineDashOffset = style.lineDashOffset;
@@ -329,6 +329,7 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
                 }
                 ctx.setLineDash(lineDash);
                 ctx.lineDashOffset = lineDashOffset;
+
                 hasLineDash = true;
             }
         }
@@ -349,13 +350,13 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
                 ctx.strokeText(text, style.x, style.y);
             }
         }
+
+        if (hasLineDash) {
+            // Remove lineDash
+            ctx.setLineDash([]);
+        }
     }
 
-    if (hasLineDash) {
-        // PENDING
-        // Remove lineDash
-        ctx.setLineDash([]);
-    }
 }
 
 const SHADOW_NUMBER_PROPS = ['shadowBlur', 'shadowOffsetX', 'shadowOffsetY'] as const;
