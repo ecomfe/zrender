@@ -2,9 +2,9 @@
 export default (
     typeof window !== 'undefined'
     && (
-        (window.requestAnimationFrame && window.requestAnimationFrame.bind(window))
         // https://github.com/ecomfe/zrender/issues/189#issuecomment-224919809
-        || (window.msRequestAnimationFrame && window.msRequestAnimationFrame.bind(window))
+        (window.msRequestAnimationFrame && window.msRequestAnimationFrame.bind(window))
+        || window.requestAnimationFrame
         || window.mozRequestAnimationFrame
         || window.webkitRequestAnimationFrame
     )
