@@ -11,6 +11,7 @@ import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import { DEFAULT_FONT, getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import { map } from '../core/util';
+import { normalizeLineDash } from '../graphic/helper/dashStyle';
 
 export interface SVGProxy<T> {
     brush(el: T): void
@@ -107,7 +108,7 @@ function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan |
         // stroke then fill for text; fill then stroke for others
         attr(svgEl, 'paint-order', style.strokeFirst ? 'stroke' : 'fill');
         attr(svgEl, 'stroke-opacity', (style.strokeOpacity != null ? style.strokeOpacity * opacity : opacity) + '');
-        let lineDash = style.lineDash;
+        let lineDash = style.lineDash && strokeWidth > 0 && normalizeLineDash(style.lineDash, strokeWidth);
         if (lineDash) {
             let lineDashOffset = style.lineDashOffset;
             if (strokeScale && strokeScale !== 1) {

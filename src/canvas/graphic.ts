@@ -15,6 +15,7 @@ import { DEFAULT_FONT } from '../contain/text';
 import { IncrementalDisplayable } from '../export';
 import { MatrixArray } from '../core/matrix';
 import { map } from '../core/util';
+import { normalizeLineDash } from '../graphic/helper/dashStyle';
 
 const pathProxyForDraw = new PathProxy(true);
 
@@ -159,7 +160,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         }
     }
 
-    let lineDash = style.lineDash;
+    let lineDash = style.lineDash && style.lineWidth > 0 && normalizeLineDash(style.lineDash, style.lineWidth);
     let lineDashOffset = style.lineDashOffset;
 
     const ctxLineDash = !!ctx.setLineDash;
@@ -313,8 +314,10 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
         ctx.font = style.font || DEFAULT_FONT;
         ctx.textAlign = style.textAlign;
         ctx.textBaseline = style.textBaseline;
+
+        let hasLineDash;
         if (ctx.setLineDash) {
-            let lineDash = style.lineDash;
+            let lineDash = style.lineDash && style.lineWidth > 0 && normalizeLineDash(style.lineDash, style.lineWidth);
             let lineDashOffset = style.lineDashOffset;
             if (lineDash) {
                 const lineScale = (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1;
@@ -324,9 +327,11 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
                     });
                     lineDashOffset /= lineScale;
                 }
+                ctx.setLineDash(lineDash);
+                ctx.lineDashOffset = lineDashOffset;
+
+                hasLineDash = true;
             }
-            ctx.setLineDash(lineDash || []);
-            ctx.lineDashOffset = lineDashOffset;
         }
 
         if (style.strokeFirst) {
@@ -345,7 +350,13 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
                 ctx.strokeText(text, style.x, style.y);
             }
         }
+
+        if (hasLineDash) {
+            // Remove lineDash
+            ctx.setLineDash([]);
+        }
     }
+
 }
 
 const SHADOW_NUMBER_PROPS = ['shadowBlur', 'shadowOffsetX', 'shadowOffsetY'] as const;
