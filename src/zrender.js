@@ -130,8 +130,8 @@ var ZRender = function (id, dom, opts) {
     this.storage = storage;
     this.painter = painter;
 
-    var handerProxy = (!env.node && !env.worker) ? new HandlerProxy(painter.getViewportRoot(), painter.root) : null;
-    this.handler = new Handler(storage, painter, handerProxy, painter.root);
+    var handlerProxy = (!env.node && !env.worker) ? new HandlerProxy(painter.getViewportRoot(), painter.root) : null;
+    this.handler = new Handler(storage, painter, handlerProxy, painter.root);
 
     /**
      * @type {module:zrender/animation/Animation}
