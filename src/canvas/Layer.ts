@@ -216,13 +216,11 @@ export default class Layer extends Eventful {
         // Add removed displayables because they need to be cleared
         for (let i = this.__prevStartIndex; i < this.__prevEndIndex; ++i) {
             const el = prevList[i];
-            if (el) {
-                if ((!el.shouldBePainted() || !el.__zr) && el.__isRendered) {
-                    // el is removed
-                    const prevRect = el.getPrevPaintRect();
-                    if (prevRect && prevRect.isValid()) {
-                        rects.push(prevRect);
-                    }
+            if (el && (!el.shouldBePainted() || !el.__zr) && el.__isRendered) {
+                // el was removed
+                const prevRect = el.getPrevPaintRect();
+                if (prevRect && prevRect.isValid()) {
+                    rects.push(prevRect);
                 }
             }
         }

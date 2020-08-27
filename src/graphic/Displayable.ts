@@ -189,13 +189,11 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
     shouldBePainted() {
         let shouldPaint = !this.ignore && !this.invisible;
-        if (shouldPaint) {
-            if (this.__clipPaths) {
-                for (let i = 0; i < this.__clipPaths.length; ++i) {
-                    if (this.__clipPaths[i].isZeroArea()) {
-                        shouldPaint = false;
-                        break;
-                    }
+        if (shouldPaint && this.__clipPaths) {
+            for (let i = 0; i < this.__clipPaths.length; ++i) {
+                if (this.__clipPaths[i].isZeroArea()) {
+                    shouldPaint = false;
+                    break;
                 }
             }
         }

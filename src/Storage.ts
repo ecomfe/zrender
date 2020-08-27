@@ -59,6 +59,7 @@ export default class Storage {
      * @return {Displayable[]} a list of elements
      */
     getDisplayList(update?: boolean, includeIgnore?: boolean): Displayable[] {
+        includeIgnore = includeIgnore || false;
         const displayList = this._displayList;
         // If displaylist is not created yet. Update force
         if (update || !displayList.length) {
