@@ -158,6 +158,10 @@ export default class Layer extends Eventful {
         (this.ctx as ZRCanvasRenderingContext).dpr = this.dpr;
     }
 
+    setUnpainted() {
+        this.__firstTimePaint = true;
+    }
+
     createBackBuffer() {
         const dpr = this.dpr;
 
@@ -191,15 +195,18 @@ export default class Layer extends Eventful {
         // Add current and previous bounding rect
         for (let i = this.__startIndex; i < this.__endIndex; ++i) {
             const el = displayList[i];
-            if (el.__dirty) {
-                el.__needsRepaintDirtyRect = false;
-
-                const prevRect = el.getPrevPaintRect();
+            if (el) {
+                const shouldPaint = el.shouldBePainted();
+                const prevRect = el.__isRendered && (el.__dirty || !shouldPaint)
+                    ? el.getPrevPaintRect()
+                    : null;
                 if (prevRect && prevRect.isValid()) {
                     rects.push(prevRect);
                 }
 
-                const curRect = el.getPaintRect();
+                const curRect = shouldPaint && (el.__dirty || !el.__isRendered)
+                    ? el.getPaintRect()
+                    : null;
                 if (curRect && curRect.isValid()) {
                     rects.push(curRect);
                 }
@@ -209,11 +216,13 @@ export default class Layer extends Eventful {
         // Add removed displayables because they need to be cleared
         for (let i = this.__prevStartIndex; i < this.__prevEndIndex; ++i) {
             const el = prevList[i];
-            if (el.__needsRepaintDirtyRect) {
-                // el is removed
-                const prevRect = el.getPrevPaintRect();
-                if (prevRect && prevRect.isValid()) {
-                    rects.push(prevRect);
+            if (el) {
+                if ((!el.shouldBePainted() || !el.__zr) && el.__isRendered) {
+                    // el is removed
+                    const prevRect = el.getPrevPaintRect();
+                    if (prevRect && prevRect.isValid()) {
+                        rects.push(prevRect);
+                    }
                 }
             }
         }
@@ -404,7 +413,7 @@ export default class Layer extends Eventful {
             }
         };
 
-        if (!repaintRects) {
+        if (!repaintRects || haveMotionBLur) {
             // Clear the full canvas
             doClear(new BoundingRect(0, 0, width, height));
         }

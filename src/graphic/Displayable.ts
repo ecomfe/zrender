@@ -187,6 +187,30 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     innerBeforeBrush() {}
     innerAfterBrush() {}
 
+    shouldBePainted() {
+        let shouldPaint = !this.ignore && !this.invisible;
+        if (shouldPaint) {
+            if (this.__clipPaths) {
+                for (let i = 0; i < this.__clipPaths.length; ++i) {
+                    if (this.__clipPaths[i].isZeroArea()) {
+                        shouldPaint = false;
+                        break;
+                    }
+                }
+            }
+        }
+        if (shouldPaint && this.parent) {
+            let parent = this.parent;
+            while (parent) {
+                if (parent.ignore) {
+                    return false;
+                }
+                parent = parent.parent;
+            }
+        }
+        return shouldPaint;
+    }
+
     /**
      * If displayable element contain coord x, y
      */
@@ -239,7 +263,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             rect.union(tmpRect);
 
             // For the accuracy tolerance of text height or line joint point
-            const tolerance = 2;
+            const tolerance = 10;
             rect.x = Math.floor(rect.x - tolerance);
             rect.y = Math.floor(rect.y - tolerance);
             rect.width = Math.ceil(rect.width + tolerance * 2);

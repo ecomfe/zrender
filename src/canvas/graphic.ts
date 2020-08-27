@@ -262,8 +262,8 @@ function brushImage(ctx: CanvasRenderingContext2D, el: ZRImage, style: ImageStyl
 
     const x = style.x || 0;
     const y = style.y || 0;
-    let width = style.width;
-    let height = style.height;
+    let width = el.getWidth();
+    let height = el.getHeight();
     const aspect = image.width / image.height;
     if (width == null && height != null) {
         // Keep image/height ratio
@@ -651,6 +651,7 @@ export function brush(
         // Needs to mark el rendered.
         // Or this element will always been rendered in progressive rendering.
         el.__dirty = 0;
+        el.__isRendered = false;
         return;
     }
 
@@ -705,6 +706,7 @@ export function brush(
     //  ctx.fill();
     // )
     if (scope.allClipped) {
+        el.__isRendered = false;
         return;
     }
 
@@ -793,7 +795,7 @@ export function brush(
 
     // Mark as painted.
     el.__dirty = 0;
-    el.__needsRepaintDirtyRect = true;
+    el.__isRendered = true;
 }
 
 function brushIncremental(

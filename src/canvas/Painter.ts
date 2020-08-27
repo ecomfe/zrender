@@ -238,8 +238,7 @@ export default class CanvasPainter implements PainterBase {
      * @param paintAll 强制绘制所有displayable
      */
     refresh(paintAll?: boolean) {
-
-        const list = this.storage.getDisplayList(true, {markRepaintDirtyRect: true});
+        const list = this.storage.getDisplayList(true);
         const prevList = this._prevDisplayList;
 
         const zlevelList = this._zlevelList;
@@ -777,6 +776,10 @@ export default class CanvasPainter implements PainterBase {
 
     setBackgroundColor(backgroundColor: string | GradientObject | PatternObject) {
         this._backgroundColor = backgroundColor;
+
+        util.each(this._layers, layer => {
+            layer.setUnpainted();
+        });
     }
 
     /**

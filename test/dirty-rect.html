@@ -29,23 +29,78 @@
             },
             style: {
                 fill: '#f0f',
-                opacity: 0.8
+                opacity: 0.8,
+                shadowColor: 'red',
+                shadowBlur: 30,
+                shadowOffsetX: 20,
+                shadowOffsetY: -20
             },
             textContent: text,
             textConfig: {
                 position: 'inside'
             },
-            zlevel: 1
+            zlevel: 1,
+            x: 100,
+            y: 200
         });
         zr.add(circle);
 
+        setTimeout(function () {
+            text.attr({
+                style: {
+                    text: 'End'
+                }
+            })
+        }, 2000);
+
+        setTimeout(function () {
+            circle.attr({
+                style: {
+                    fill: 'blue'
+                },
+                ignore: false
+            });
+        }, 4000);
+
         text.animateTo({
             style: {
-                fill: 'yellow'
+                fill: '#444'
             }
         }, {
             duration: 3000
         });
+
+        var singleText = new zrender.Text({
+            style: {
+                fill: 'blue',
+                text: 'This text should be removed in the end'
+            },
+            x: 100,
+            y: 100
+        });
+        zr.add(singleText);
+
+        var textIgnored = new zrender.Text({
+            style: {
+                fill: 'blue',
+                text: 'This text should be shown in the end'
+            },
+            x: 100,
+            y: 200,
+            ignore: true
+        });
+        zr.add(textIgnored);
+
+        var textNotIgnored = new zrender.Text({
+            style: {
+                fill: 'blue',
+                text: 'This text should not be shown in the end'
+            },
+            x: 100,
+            y: 300,
+            ignore: false
+        });
+        zr.add(textNotIgnored);
 
         circle.animateTo({
             shape: {
@@ -115,6 +170,11 @@
 
         setTimeout(function () {
             zr.remove(a);
+            circle.removeTextContent();
+            zr.remove(singleText);
+
+            textIgnored.ignore = false;
+            textNotIgnored.ignore = true;
         }, 5000);
         setInterval(function () {
             for (var i = 0; i < 2; ++i) {

@@ -66,6 +66,48 @@ class ZRImage extends Displayable<ImageProps> {
         return createObject(DEFAULT_IMAGE_STYLE, obj);
     }
 
+    getWidth(): number {
+        if (!this.__image) {
+            return 0;
+        }
+
+        let width = this.style.width;
+        let height = this.style.height;
+        if (width == null) {
+            if (height == null) {
+                return this.__image.width;
+            }
+            else {
+                const aspect = this.__image.width / this.__image.height;
+                return aspect * height;
+            }
+        }
+        else {
+            return width;
+        }
+    }
+
+    getHeight(): number {
+        if (!this.__image) {
+            return 0;
+        }
+
+        let width = this.style.width;
+        let height = this.style.height;
+        if (height == null) {
+            if (width == null) {
+                return this.__image.height;
+            }
+            else {
+                const aspect = this.__image.height / this.__image.width;
+                return aspect * width;
+            }
+        }
+        else {
+            return height;
+        }
+    }
+
     protected _getAnimationStyleProps() {
         return DEFAULT_IMAGE_ANIMATION_PROPS;
     }
@@ -74,7 +116,7 @@ class ZRImage extends Displayable<ImageProps> {
         const style = this.style;
         if (!this._rect) {
             this._rect = new BoundingRect(
-                style.x || 0, style.y || 0, style.width || 0, style.height || 0
+                style.x || 0, style.y || 0, this.getWidth(), this.getHeight()
             );
         }
         return this._rect;

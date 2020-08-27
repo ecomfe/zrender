@@ -339,9 +339,9 @@ class Element<Props extends ElementProps = ElementProps> {
     __dirty: number
 
     /**
-     * If element needs to repaint dirty rect
+     * If element was painted on the screen
      */
-    __needsRepaintDirtyRect: boolean
+    __isRendered: boolean;
 
     /**
      * If element has been moved to the hover layer.
