@@ -509,19 +509,6 @@ function setContextTransform(ctx: CanvasRenderingContext2D, el: Displayable) {
     }
 }
 
-
-const tmpRect = new BoundingRect(0, 0, 0, 0);
-const viewRect = new BoundingRect(0, 0, 0, 0);
-function isDisplayableCulled(el: Displayable, width: number, height: number) {
-    tmpRect.copy(el.getBoundingRect());
-    if (el.transform) {
-        tmpRect.applyTransform(el.transform);
-    }
-    viewRect.width = width;
-    viewRect.height = height;
-    return !tmpRect.intersect(viewRect);
-}
-
 function isClipPathChanged(clipPaths: Path[], prevClipPaths: Path[]): boolean {
     // displayable.__clipPaths can only be `null`/`undefined` or an non-empty array.
     if (clipPaths === prevClipPaths || (!clipPaths && !prevClipPaths)) {
@@ -636,18 +623,7 @@ export function brush(
 ) {
     const m = el.transform;
 
-    if (
-        // Ignore invisible element
-        el.invisible
-        // Ignore transparent element
-        || el.style.opacity === 0
-        // Ignore culled element
-        || (el.culling && isDisplayableCulled(el, scope.viewWidth, scope.viewHeight))
-        // Ignore scale 0 element, in some environment like node-canvas
-        // Draw a scale 0 element can cause all following draw wrong
-        // And setTransform with scale 0 will cause set back transform failed.
-        || (m && !m[0] && !m[3])
-    ) {
+    if (!el.shouldBePainted(scope.viewWidth, scope.viewHeight, false, false)) {
         // Needs to mark el rendered.
         // Or this element will always been rendered in progressive rendering.
         el.__dirty = 0;

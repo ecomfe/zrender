@@ -384,7 +384,7 @@ export default class CanvasPainter implements PainterBase {
             const ctx = layer.ctx;
 
             const repaintRects = this._opts.useDirtyRect
-                && layer.createRepaintRects(list, prevList);
+                && layer.createRepaintRects(list, prevList, this._width, this._height);
 
             ctx.save();
 

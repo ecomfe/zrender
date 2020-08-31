@@ -9,6 +9,7 @@ import { PropType, Dictionary, MapToType } from '../core/types';
 import Path from './Path';
 import { keys, extend, createObject } from '../core/util';
 import Animator from '../animation/Animator';
+import {BrushScope} from '../canvas/graphic';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
@@ -187,17 +188,39 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     innerBeforeBrush() {}
     innerAfterBrush() {}
 
-    shouldBePainted() {
-        let shouldPaint = !this.ignore && !this.invisible;
-        if (shouldPaint && this.__clipPaths) {
+    shouldBePainted(
+        viewWidth: number,
+        viewHeight: number,
+        considerClipPath: boolean,
+        considerAncestors: boolean
+    ) {
+        const m = this.transform;
+        if (
+            // Ignore invisible element
+            this.invisible
+            // Ignore transparent element
+            || this.style.opacity === 0
+            // Ignore culled element
+            || (this.culling
+                && isDisplayableCulled(this, viewWidth, viewHeight)
+            )
+            // Ignore scale 0 element, in some environment like node-canvas
+            // Draw a scale 0 element can cause all following draw wrong
+            // And setTransform with scale 0 will cause set back transform failed.
+            || (m && !m[0] && !m[3])
+        ) {
+            return false;
+        }
+
+        if (considerClipPath && this.__clipPaths) {
             for (let i = 0; i < this.__clipPaths.length; ++i) {
                 if (this.__clipPaths[i].isZeroArea()) {
-                    shouldPaint = false;
-                    break;
+                    return false;
                 }
             }
         }
-        if (shouldPaint && this.parent) {
+
+        if (considerAncestors && this.parent) {
             let parent = this.parent;
             while (parent) {
                 if (parent.ignore) {
@@ -206,7 +229,8 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
                 parent = parent.parent;
             }
         }
-        return shouldPaint;
+
+        return true;
     }
 
     /**
@@ -261,7 +285,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             rect.union(tmpRect);
 
             // For the accuracy tolerance of text height or line joint point
-            const tolerance = 10;
+            const tolerance = this.type === 'text' ? 10 : 0;
             rect.x = Math.floor(rect.x - tolerance);
             rect.y = Math.floor(rect.y - tolerance);
             rect.width = Math.ceil(rect.width + tolerance * 2);
@@ -569,6 +593,18 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
         dispProto.__dirty = Element.REDARAW_BIT | Displayable.STYLE_CHANGED_BIT;
     })()
+}
+
+const tmpRect = new BoundingRect(0, 0, 0, 0);
+const viewRect = new BoundingRect(0, 0, 0, 0);
+function isDisplayableCulled(el: Displayable, width: number, height: number) {
+    tmpRect.copy(el.getBoundingRect());
+    if (el.transform) {
+        tmpRect.applyTransform(el.transform);
+    }
+    viewRect.width = width;
+    viewRect.height = height;
+    return !tmpRect.intersect(viewRect);
 }
 
 export default Displayable;

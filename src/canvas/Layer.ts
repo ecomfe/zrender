@@ -182,7 +182,9 @@ export default class Layer extends Eventful {
      */
     createRepaintRects(
         displayList: Displayable[],
-        prevList: Displayable[]
+        prevList: Displayable[],
+        viewWidth: number,
+        viewHeight: number
     ) {
         if (this.__firstTimePaint) {
             this.__firstTimePaint = false;
@@ -192,34 +194,75 @@ export default class Layer extends Eventful {
         const mergedRepaintRects: BoundingRect[] = [];
         const rects: BoundingRect[] = [];
 
-        // Add current and previous bounding rect
+        /**
+         * Loop the paint list of this frame and get the dirty rects of elements
+         * in this frame.
+         */
         for (let i = this.__startIndex; i < this.__endIndex; ++i) {
             const el = displayList[i];
             if (el) {
-                const shouldPaint = el.shouldBePainted();
+                /**
+                 * `shouldPaint` is true only when the element is not ignored or
+                 * invisible and all its ancestors are not ignored.
+                 * `shouldPaint` being true means it will be brushed this frame.
+                 *
+                 * `__isRendered` being true means the element is currently on
+                 * the canvas.
+                 *
+                 * `__dirty` being true means the element should be brushed this
+                 * frame.
+                 *
+                 * We only need to repaint the element's previous painting rect
+                 * if it's currently on the canvas and needs repaint this frame
+                 * or not painted this frame.
+                 */
+                const shouldPaint = el.shouldBePainted(viewWidth, viewHeight, true, true);
                 const prevRect = el.__isRendered && (el.__dirty || !shouldPaint)
                     ? el.getPrevPaintRect()
                     : null;
-                if (prevRect && prevRect.isValid()) {
+                if (prevRect && prevRect.isFinite()) {
                     rects.push(prevRect);
                 }
 
+                /**
+                 * On the other hand, we only need to paint the current rect
+                 * if the element should be brushed this frame and either being
+                 * dirty or not rendered before.
+                 */
                 const curRect = shouldPaint && (el.__dirty || !el.__isRendered)
                     ? el.getPaintRect()
                     : null;
-                if (curRect && curRect.isValid()) {
+                if (curRect && curRect.isFinite()) {
                     rects.push(curRect);
                 }
             }
         }
 
-        // Add removed displayables because they need to be cleared
+        /**
+         * The above loop calculates the dirty rects of elements that are in the
+         * paint list this frame, which does not include those elements removed
+         * in this frame. So we loop the `prevList` to get the removed elements.
+         */
         for (let i = this.__prevStartIndex; i < this.__prevEndIndex; ++i) {
             const el = prevList[i];
-            if (el && (!el.shouldBePainted() || !el.__zr) && el.__isRendered) {
+            /**
+             * Consider the elements whose ancestors are invisible, they should
+             * not be painted and their previous painting rects should be
+             * cleared if they are rendered on the canvas (`__isRendered` being
+             * true). `!shouldPaint` means the element is not brushed in this
+             * frame.
+             *
+             * `!el.__zr` means it's removed from the storage.
+             *
+             * In conclusion, an element needs to repaint the previous painting
+             * rect if and only if it's not painted this frame and was
+             * previously painted on the canvas.
+             */
+            const shouldPaint = el.shouldBePainted(viewWidth, viewHeight, true, true);
+            if (el && (!shouldPaint || !el.__zr) && el.__isRendered) {
                 // el was removed
                 const prevRect = el.getPrevPaintRect();
-                if (prevRect && prevRect.isValid()) {
+                if (prevRect && prevRect.isFinite()) {
                     rects.push(prevRect);
                 }
             }

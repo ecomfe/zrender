@@ -205,7 +205,7 @@ class BoundingRect {
     /**
      * If not having NaN or Infinity with attributes
      */
-    isValid(): boolean {
+    isFinite(): boolean {
         return !isNaN(this.x) && isFinite(this.x)
             && !isNaN(this.y) && isFinite(this.y)
             && !isNaN(this.width) && isFinite(this.width)
