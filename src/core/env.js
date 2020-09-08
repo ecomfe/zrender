@@ -10,18 +10,23 @@
 
 var env = {};
 
+var miniAppEnv = {
+    browser: {},
+    os: {},
+    node: false,
+    canvasSupported: true,
+    svgSupported: false,
+    touchEventsSupported: true,
+    domSupported: false
+};
+
 if (typeof wx === 'object' && typeof wx.getSystemInfoSync === 'function') {
-    // In Weixin Application
-    env = {
-        browser: {},
-        os: {},
-        node: false,
-        wxa: true, // Weixin Application
-        canvasSupported: true,
-        svgSupported: false,
-        touchEventsSupported: true,
-        domSupported: false
-    };
+    miniAppEnv.wxa = true;
+    env = miniAppEnv;
+}
+else if (typeof swan === 'object' && typeof swan.getSystemInfoSync === 'function') {
+    miniAppEnv.swan = true;
+    env = miniAppEnv;
 }
 else if (typeof document === 'undefined' && typeof self !== 'undefined') {
     // In worker
