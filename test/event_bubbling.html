@@ -9,47 +9,102 @@
     <div id="main" style="width:1000px;height:500px;"></div>
     <script type="text/javascript">
         var zr = zrender.init(document.getElementById('main'));
-        var circle = new zrender.Circle({
-            scale : [1, 1],
-            shape : {
-                cx : 0,
-                cy : 0,
-                r : 100
-            }
-        });
 
-        var g1 = new zrender.Group({
-            position: [100, 100]
-        });
-        g1.add(circle);
+        (function() {
+            var circle = new zrender.Circle({
+                scale : [1, 1],
+                shape : {
+                    cx : 0,
+                    cy : 0,
+                    r : 100
+                },
+                style : {
+                    fill: '#0bd',
+                    text: "element.on('click', handler)"
+                }
+            });
 
-        var g2 = new zrender.Group();
-        g2.add(g1);
+            var g1 = new zrender.Group({
+                position: [100, 100]
+            });
+            g1.add(circle);
 
-        var g3 = new zrender.Group();
-        g3.add(g2);
+            var g2 = new zrender.Group();
+            g2.add(g1);
 
-        var g4 = new zrender.Group();
-        g4.add(g3);
+            var g3 = new zrender.Group();
+            g3.add(g2);
 
-        circle.on('click', function(e) {
-            console.log('Circle');
-        });
-        g1.on('click', function(e) {
-            console.log('Group 1');
-        });
-        g2.one('click', function(e) {
-            console.log('Group 2 should be triggered once');
-        });
-        g3.on('click', function(e) {
-            console.log('Group 3');
-            e.cancelBubble = true;
-        });
-        g4.on('click', function(e) {
-            console.log("Group 4 should not be triggered");
-        })
+            var g4 = new zrender.Group();
+            g4.add(g3);
 
-        zr.add(g4);
+            circle.on('click', function(e) {
+                console.log('Circle');
+            });
+            g1.on('click', function(e) {
+                console.log('Group 1');
+            });
+            g2.one('click', function(e) {
+                console.log('Group 2 should be triggered once');
+            });
+            g3.on('click', function(e) {
+                console.log('Group 3');
+                e.cancelBubble = true;
+            });
+            g4.on('click', function(e) {
+                console.log("Group 4 should not be triggered");
+            });
+
+            zr.add(g4);
+        })();
+
+        (function() {
+            var circle = new zrender.Circle({
+                scale : [1, 1],
+                shape : {
+                    cx : 0,
+                    cy : 0,
+                    r : 100
+                },
+                style : {
+                    fill: '#0bd',
+                    text: 'element.onclick = handler'
+                }
+            });
+
+            var g1 = new zrender.Group({
+                position: [300, 100]
+            });
+            g1.add(circle);
+
+            var g2 = new zrender.Group();
+            g2.add(g1);
+
+            var g3 = new zrender.Group();
+            g3.add(g2);
+
+            var g4 = new zrender.Group();
+            g4.add(g3);
+
+            circle.onclick = function(e) {
+                console.log('Circle');
+            };
+            g1.onclick = function(e) {
+                console.log('Group 1');
+            };
+            // g2.one('click', function(e) {
+            //     console.log('Group 2 should be triggered once');
+            // });
+            g3.onclick = function(e) {
+                console.log('Group 3');
+                e.cancelBubble = true;
+            };
+            g4.onclick = function(e) {
+                console.log("Group 4 should not be triggered");
+            };
+
+            zr.add(g4);
+        })();
     </script>
 </body>
 </html>
