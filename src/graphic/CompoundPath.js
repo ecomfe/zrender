@@ -7,6 +7,7 @@ export default Path.extend({
     type: 'compound',
 
     shape: {
+        fillRule: 'nonzero',
 
         paths: null
     },
@@ -37,6 +38,9 @@ export default Path.extend({
 
     buildPath: function (ctx, shape) {
         var paths = shape.paths || [];
+        if (paths.length > 1) {
+            this.shape.fillRule = 'evenodd';
+        }
         for (var i = 0; i < paths.length; i++) {
             paths[i].buildPath(ctx, paths[i].shape, true);
         }
