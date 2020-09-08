@@ -128,6 +128,18 @@ var Handler = function (storage, painter, proxy, painterRoot) {
     this.proxy = null;
 
     /**
+     * @private
+     * @type {MouseEvent}
+     */
+    this._oldMousemoveEvent;
+
+    /**
+     * @private
+     * @type {MouseEvent}
+     */
+    this._newMousemoveEvent;
+
+    /**
      * {target, topTarget, x, y}
      * @private
      * @type {Object}
@@ -182,7 +194,15 @@ Handler.prototype = {
         this.proxy = proxy;
     },
 
-    mousemove: function (event) {
+    dispatchToAny: function () {
+        var newEvent = this._newMousemoveEvent;
+        var oldEvent = this._oldMousemoveEvent;
+        var event = newEvent;
+
+        if (!event) {
+            return;
+        }
+
         var x = event.zrX;
         var y = event.zrY;
 
@@ -211,16 +231,28 @@ Handler.prototype = {
             this.dispatchToElement(lastHovered, 'mouseout', event);
         }
 
-        // Mouse moving on one element
-        this.dispatchToElement(hovered, 'mousemove', event);
+        if (!isEqual(newEvent, oldEvent)) {
+            // Mouse moving on one element
+            this.dispatchToElement(hovered, 'mousemove', event);
+        }
 
         // Mouse over on a new element
         if (hoveredTarget && hoveredTarget !== lastHoveredTarget) {
             this.dispatchToElement(hovered, 'mouseover', event);
         }
+
+        this._oldMousemoveEvent = event;
+    },
+
+    mousemove: function (event) {
+        this._newMousemoveEvent = event;
     },
 
     mouseout: function (event) {
+        // 鼠标移出时清空这个值可以暂停执行dispatchToAny
+        // 直到鼠标重新移入时，可以减少性能损耗
+        this._newMousemoveEvent = null;
+
         var eventControl = event.zrEventControl;
         var zrIsToLocalDOM = event.zrIsToLocalDOM;
 
@@ -447,6 +479,18 @@ function isHover(displayable, x, y) {
 function isOutsideBoundary(handlerInstance, x, y) {
     var painter = handlerInstance.painter;
     return x < 0 || x > painter.getWidth() || y < 0 || y > painter.getHeight();
+}
+
+/**
+ * 比较两个鼠标事件的坐标是否相等
+ * @param {MouseEvent} newEvent
+ * @param {MouseEvent} oldEvent
+ */
+function isEqual(newEvent, oldEvent) {
+    if (!oldEvent) {
+        return false;
+    }
+    return newEvent.zrX === oldEvent.zrX && newEvent.zrY === oldEvent.zrY;
 }
 
 util.mixin(Handler, Eventful);
