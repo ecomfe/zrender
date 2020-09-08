@@ -24,7 +24,7 @@ function Displayable(opts) {
     for (var name in opts) {
         if (
             opts.hasOwnProperty(name)
-                && name !== 'style'
+            && name !== 'style'
         ) {
             this[name] = opts[name];
         }
@@ -151,23 +151,23 @@ Displayable.prototype = {
      */
     globalScaleRatio: 1,
 
-    beforeBrush: function (ctx) {},
+    beforeBrush: function (ctx) { },
 
-    afterBrush: function (ctx) {},
+    afterBrush: function (ctx) { },
 
     /**
      * Graphic drawing method.
      * @param {CanvasRenderingContext2D} ctx
      */
     // Interface
-    brush: function (ctx, prevEl) {},
+    brush: function (ctx, prevEl) { },
 
     /**
      * Get the minimum bounding box.
      * @return {module:zrender/core/BoundingRect}
      */
     // Interface
-    getBoundingRect: function () {},
+    getBoundingRect: function () { },
 
     /**
      * If displayable element contain coord x, y
@@ -196,7 +196,14 @@ Displayable.prototype = {
     rectContain: function (x, y) {
         var coord = this.transformCoordToLocal(x, y);
         var rect = this.getBoundingRect();
-        return rect.contain(coord[0], coord[1]);
+        var contain = rect.contain(coord[0], coord[1]);
+        if (contain
+            && (typeof this.findDataIndex == 'function')
+            && (this.findDataIndex(coord[0], coord[1]) < 0)
+        ) {
+            contain = false;
+        }
+        return contain;
     },
 
     /**
