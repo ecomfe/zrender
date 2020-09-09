@@ -1,8 +1,11 @@
 import Transformable from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
-import Animator, {cloneValue, OnframeCallback} from './animation/Animator';
+import Animator, {cloneValue} from './animation/Animator';
 import { ZRenderType } from './zrender';
-import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes, TextVerticalAlign, TextAlign, MapToType } from './core/types';
+import {
+    Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes,
+    TextVerticalAlign, TextAlign, MapToType
+} from './core/types';
 import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
@@ -259,7 +262,7 @@ const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = 
     originY: true,
     rotation: true,
     ignore: false
-}
+};
 
 export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
 export type ElementState = Pick<ElementProps, ElementStatePropNames> & ElementCommonState
@@ -569,7 +572,7 @@ class Element<Props extends ElementProps = ElementProps> {
             // Calculate text color
             const isInside = textConfig.inside == null  // Force to be inside or not.
                 ? (typeof textConfig.position === 'string' && textConfig.position.indexOf('inside') >= 0)
-                : textConfig.inside
+                : textConfig.inside;
             const innerTextDefaultStyle = this._innerTextDefaultStyle || (this._innerTextDefaultStyle = {});
 
             let textFill;
@@ -765,7 +768,9 @@ class Element<Props extends ElementProps = ElementProps> {
         this._savePrimaryToNormal(toState, normalState, PRIMARY_STATES_KEYS);
     }
 
-    protected _savePrimaryToNormal(toState: Dictionary<any>, normalState: Dictionary<any>, primaryKeys: readonly string[]) {
+    protected _savePrimaryToNormal(
+        toState: Dictionary<any>, normalState: Dictionary<any>, primaryKeys: readonly string[]
+    ) {
         for (let i = 0; i < primaryKeys.length; i++) {
             let key = primaryKeys[i];
             // Only save property that will be changed by toState
@@ -1139,7 +1144,7 @@ class Element<Props extends ElementProps = ElementProps> {
             // Not simply stop animation. Or it may have jump effect.
             for (let i = 0; i < this.animators.length; i++) {
                 const animator = this.animators[i];
-                const targetName = animator.targetName
+                const targetName = animator.targetName;
                 animator.__changeFinalValue(targetName
                     ? ((state || normalState) as any)[targetName]
                     : (state || normalState)
@@ -1513,11 +1518,15 @@ class Element<Props extends ElementProps = ElementProps> {
      */
 
     // Overload definitions
-    animateFrom(target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>, animationProps?: MapToType<Props, boolean>) {
+    animateFrom(
+        target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>, animationProps?: MapToType<Props, boolean>
+    ) {
         animateTo(this, target, cfg, animationProps, true);
     }
 
-    protected _transitionState(stateName: string, target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>) {
+    protected _transitionState(
+        stateName: string, target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>
+    ) {
         const animators = animateTo(this, target, cfg, animationProps);
         for (let i = 0; i < animators.length; i++) {
             animators[i].__fromStateTransition = stateName;
@@ -1551,7 +1560,9 @@ class Element<Props extends ElementProps = ElementProps> {
      *             verticalAlign: string. optional. use style.textVerticalAlign by default.
      *         }
      */
-    calculateTextPosition: (out: TextPositionCalculationResult, style: ElementTextConfig, rect: RectLike) => TextPositionCalculationResult
+    calculateTextPosition: (
+        out: TextPositionCalculationResult, style: ElementTextConfig, rect: RectLike
+    ) => TextPositionCalculationResult
 
 
     static REDARAW_BIT = 1;
@@ -1690,7 +1701,7 @@ function copyArrShallow(source: number[], target: number[], len: number) {
 }
 
 function is2DArray(value: any[]): value is number[][] {
-    return isArrayLike(value[0])
+    return isArrayLike(value[0]);
 }
 
 function copyValue(target: Dictionary<any>, source: Dictionary<any>, key: string) {

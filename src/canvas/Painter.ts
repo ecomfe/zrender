@@ -1,6 +1,5 @@
 import {devicePixelRatio} from '../config';
 import * as util from '../core/util';
-import timsort from '../core/timsort';
 import Layer, { LayerConfig } from './Layer';
 import requestAnimationFrame from '../animation/requestAnimationFrame';
 import ZRImage from '../graphic/Image';
