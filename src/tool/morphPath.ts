@@ -282,9 +282,11 @@ export function alignBezierCurves(array1: number[][], array2: number[][]) {
 
         if (!subpath1) {
             newSubpath1 = createSubpath(lastSubpath1 || subpath2);
+            newSubpath2 = subpath2;
         }
         else if (!subpath2) {
             newSubpath2 = createSubpath(lastSubpath2 || subpath1);
+            newSubpath1 = subpath1;
         }
         else {
             [newSubpath1, newSubpath2] = alignSubpath(subpath1, subpath2);
@@ -301,6 +303,16 @@ export function alignBezierCurves(array1: number[][], array2: number[][]) {
 
 interface MorphingPath extends Path {
     __morphT: number
+    __oldBuildPath: Path['buildPath']
+}
+
+/**
+ * If we interpolating between two bezier curve arrays.
+ * It will have many broken effects during the transition.
+ * So we try to apply an extra rotation which can make each bezier curve morph as small as possible.
+ */
+function calcualteRotation(array1: number[][], array2: number[][]) {
+
 }
 
 /**
@@ -314,15 +326,20 @@ export function morphPath(fromPath: Path, toPath: Path, animationOpts: ElementAn
     if (!toPath.path) {
         toPath.createPathProxy();
     }
+    fromPath.path.beginPath();
     fromPath.buildPath(fromPath.path, fromPath.shape);
+    toPath.path.beginPath();
     toPath.buildPath(toPath.path, toPath.shape);
 
     const [fromBezierCurves, toBezierCurves] =
         alignBezierCurves(pathToBezierCurves(fromPath.path), pathToBezierCurves(toPath.path));
 
-    const oldBuildPath = toPath.buildPath;
-
     const morphingPath = toPath as MorphingPath;
+
+    if (!morphingPath.__oldBuildPath) {
+        morphingPath.__oldBuildPath = morphingPath.buildPath;
+    }
+
     morphingPath.buildPath = function (path: PathProxy, shape: unknown) {
         const t = morphingPath.__morphT;
         const onet = 1 - t;
@@ -347,20 +364,27 @@ export function morphPath(fromPath: Path, toPath: Path, animationOpts: ElementAn
     (morphingPath as MorphingPath).__morphT = 0;
 
     const oldDone = animationOpts && animationOpts.done;
-    const oldAborted = animationOpts.aborted && animationOpts.aborted;
+    const oldAborted = animationOpts && animationOpts.aborted;
+    const oldDuring = animationOpts && animationOpts.during;
 
     morphingPath.animateTo({
         __morphT: 1
     } as any, defaults({
+        during(p) {
+            morphingPath.dirtyShape();
+            oldDuring && oldDuring(p);
+        },
         done() {
-            morphingPath.buildPath = oldBuildPath;
+            // Restore
+            morphingPath.buildPath = morphingPath.__oldBuildPath;
+            morphingPath.__oldBuildPath = null;
             // Cleanup.
             morphingPath.createPathProxy();
+            morphingPath.path.beginPath();
             morphingPath.buildPath(morphingPath.path, morphingPath.shape);
             oldDone && oldDone();
         },
         aborted() {
-            morphingPath.buildPath = oldBuildPath;
             oldAborted && oldAborted();
         }
     } as ElementAnimateConfig, animationOpts));

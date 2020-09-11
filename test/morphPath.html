@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Image</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <div id="main"></div>
+    <script type="text/javascript">
+        const zr = zrender.init(document.getElementById('main'));
+        const shapes = [
+            new zrender.Circle({
+                shape: {
+                    cx: 200,
+                    cy: 200,
+                    r: 90
+                }
+            }),
+            new zrender.Isogon({
+                shape: {
+                    x: 200,
+                    y: 200,
+                    r: 100,
+                    n: 10
+                }
+            }),
+            new zrender.Sector({
+                shape: {
+                    cx: 250,
+                    cy: 200,
+                    r0: 50,
+                    r: 100,
+                    startAngle: 1,
+                    endAngle: 3
+                }
+            }),
+            new zrender.Rect({
+                shape: {
+                    x: 100,
+                    y: 100,
+                    width: 50,
+                    height: 200
+                }
+            })
+        ];
+
+        let currentShapeIdx = 0;
+        zr.add(shapes[currentShapeIdx]);
+
+        function morphShape() {
+            let currentShape = shapes[currentShapeIdx];
+            currentShapeIdx = (currentShapeIdx + 1) % shapes.length;
+            let nextShape = shapes[currentShapeIdx];
+            zr.remove(currentShape);
+            zr.add(nextShape);
+            zrender.morphPath(currentShape, nextShape, {
+                duration: 1000,
+                done() {
+                    setTimeout(morphShape, 500);
+                }
+            });
+        }
+
+        morphShape();
+    </script>
+</body>
+</html>
