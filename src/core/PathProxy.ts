@@ -609,7 +609,8 @@ export default class PathProxy {
         for (i = 0; i < data.length;) {
             const cmd = data[i++] as number;
 
-            if (i === 1) {
+            const isFirst = i === 1;
+            if (isFirst) {
                 // 如果第一个命令是 L, C, Q
                 // 则 previous point 同绘制命令的第一个 point
                 // 第一个命令为 Arc 的情况下会在后面特殊处理
@@ -663,7 +664,7 @@ export default class PathProxy {
                     i += 1;
                     const anticlockwise = !data[i++];
 
-                    if (i === 1) {
+                    if (isFirst) {
                         // 直接使用 arc 命令
                         // 第一个命令起点还未定义
                         x0 = mathCos(startAngle) * rx + cx;
@@ -726,8 +727,9 @@ export default class PathProxy {
 
         for (let i = 0; i < len;) {
             const cmd = data[i++] as number;
+            const isFirst = i === 1;
 
-            if (i === 1) {
+            if (isFirst) {
                 // 如果第一个命令是 L, C, Q
                 // 则 previous point 同绘制命令的第一个 point
                 // 第一个命令为 Arc 的情况下会在后面特殊处理
@@ -795,7 +797,7 @@ export default class PathProxy {
                     i += 1;
                     const anticlockwise = !data[i++];
 
-                    if (i === 1) {
+                    if (isFirst) {
                         // 直接使用 arc 命令
                         // 第一个命令起点还未定义
                         x0 = mathCos(startAngle) * rx + cx;
@@ -876,8 +878,9 @@ export default class PathProxy {
 
         lo: for (let i = 0; i < len;) {
             const cmd = d[i++];
+            const isFirst = i === 1;
 
-            if (i === 1) {
+            if (isFirst) {
                 // 如果第一个命令是 L, C, Q
                 // 则 previous point 同绘制命令的第一个 point
                 // 第一个命令为 Arc 的情况下会在后面特殊处理
@@ -1002,7 +1005,7 @@ export default class PathProxy {
                         break lo;
                     }
 
-                    if (i === 1) {
+                    if (isFirst) {
                         // 直接使用 arc 命令
                         // 第一个命令起点还未定义
                         x0 = mathCos(startAngle) * rx + cx;

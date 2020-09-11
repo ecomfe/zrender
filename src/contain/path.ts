@@ -224,6 +224,7 @@ function containPath(
 
     for (let i = 0; i < data.length;) {
         const cmd = data[i++];
+        const isFirst = i === 1;
         // Begin a new subpath
         if (cmd === CMD.M && i > 1) {
             // Close previous subpath
@@ -236,7 +237,7 @@ function containPath(
             // }
         }
 
-        if (i === 1) {
+        if (isFirst) {
             // 如果第一个命令是 L, C, Q
             // 则 previous point 同绘制命令的第一个 point
             //
@@ -322,7 +323,7 @@ function containPath(
                 x1 = Math.cos(theta) * rx + cx;
                 y1 = Math.sin(theta) * ry + cy;
                 // 不是直接使用 arc 命令
-                if (i > 1) {
+                if (!isFirst) {
                     w += windingLine(xi, yi, x1, y1, x, y);
                 }
                 else {
