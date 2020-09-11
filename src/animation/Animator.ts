@@ -665,6 +665,7 @@ class Track {
 
 
 type DoneCallback = () => void;
+type AbortCallback = () => void;
 export type OnframeCallback<T> = (target: T, percent: number) => void;
 
 export type AnimationPropGetter<T> = (target: T, key: string) => InterpolatableType;
@@ -698,8 +699,10 @@ export default class Animator<T> {
 
     private _additiveAnimators: Animator<any>[]
 
-    private _doneList: DoneCallback[] = []
-    private _onframeList: OnframeCallback<T>[] = []
+    private _doneList: DoneCallback[]
+    private _onframeList: OnframeCallback<T>[]
+
+    private _abortedList: AbortCallback[]
 
     private _clip: Clip = null
 
@@ -782,15 +785,6 @@ export default class Animator<T> {
         return this;
     }
 
-    /**
-     * 添加动画每一帧的回调函数
-     * @param callback
-     */
-    during(callback: OnframeCallback<T>) {
-        this._onframeList.push(callback);
-        return this;
-    }
-
     pause() {
         this._clip.pause();
         this._paused = true;
@@ -812,9 +806,27 @@ export default class Animator<T> {
         this._clip = null;
 
         const doneList = this._doneList;
-        const len = doneList.length;
-        for (let i = 0; i < len; i++) {
-            doneList[i].call(this);
+        if (doneList) {
+            const len = doneList.length;
+            for (let i = 0; i < len; i++) {
+                doneList[i].call(this);
+            }
+        }
+    }
+
+    private _abortedCallback() {
+        const animation = this.animation;
+        const abortedList = this._abortedList;
+
+        if (animation) {
+            animation.removeClip(this._clip);
+        }
+        this._clip = null;
+
+        if (abortedList) {
+            for (let i = 0; i < abortedList.length; i++) {
+                abortedList[i].call(this);
+            }
         }
     }
 
@@ -893,8 +905,11 @@ export default class Animator<T> {
                         // Because target may be changed.
                         tracks[i].step(self._target, percent);
                     }
-                    for (let i = 0; i < self._onframeList.length; i++) {
-                        self._onframeList[i](self._target, percent);
+                    const onframeList = self._onframeList;
+                    if (onframeList) {
+                        for (let i = 0; i < onframeList.length; i++) {
+                            onframeList[i](self._target, percent);
+                        }
                     }
                 },
                 ondestroy() {
@@ -932,15 +947,12 @@ export default class Animator<T> {
             return;
         }
         const clip = this._clip;
-        const animation = this.animation;
         if (forwardToLast) {
             // Move to last frame before stop
             clip.onframe(1);
         }
-        if (animation) {
-            animation.removeClip(clip);
-        }
-        this._clip = null;
+
+        this._abortedCallback();
     }
     /**
      * Set when animation delay starts
@@ -951,12 +963,38 @@ export default class Animator<T> {
         return this;
     }
     /**
+     * 添加动画每一帧的回调函数
+     * @param callback
+     */
+    during(cb: OnframeCallback<T>) {
+        if (cb) {
+            if (!this._onframeList) {
+                this._onframeList = [];
+            }
+            this._onframeList.push(cb);
+        }
+        return this;
+    }
+    /**
      * Add callback for animation end
      * @param cb
      */
     done(cb: DoneCallback) {
         if (cb) {
+            if (!this._doneList) {
+                this._doneList = [];
+            }
             this._doneList.push(cb);
+        }
+        return this;
+    }
+
+    aborted(cb: AbortCallback) {
+        if (cb) {
+            if (!this._abortedList) {
+                this._abortedList = [];
+            }
+            this._abortedList.push(cb);
         }
         return this;
     }
@@ -1005,9 +1043,8 @@ export default class Animator<T> {
             }
         }
         // Remove clip if all tracks has been aborted.
-        if (allAborted && this.animation) {
-            this.animation.removeClip(this._clip);
-            this._clip = null;
+        if (allAborted) {
+            this._abortedCallback();
         }
 
         return allAborted;
@@ -1069,4 +1106,5 @@ export default class Animator<T> {
             }
         }
     }
+
 }

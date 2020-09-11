@@ -59,7 +59,7 @@ export default class Animation extends Eventful {
 
     private _paused = false;
 
-    constructor(opts: AnimationOption) {
+    constructor(opts?: AnimationOption) {
         super();
 
         opts = opts || {};

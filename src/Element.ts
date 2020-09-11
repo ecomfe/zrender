@@ -34,6 +34,7 @@ export interface ElementAnimateConfig {
     easing?: AnimationEasing
     done?: Function
     during?: (percent: number) => void
+    aborted?: Function
 
     scope?: string
     /**
@@ -1661,22 +1662,33 @@ function animateTo<T>(
         reverse
     );
 
-    let count = animators.length;
-    function done() {
-        count--;
-        if (!count) {
-            cfg.done && cfg.done();
+    let doneCount = animators.length;
+    let abortedCount = doneCount;
+    const cfgDone = cfg.done;
+    const cfgAborted = cfg.aborted;
+
+    const doneCb = cfgDone ? () => {
+        doneCount--;
+        if (!doneCount) {
+            cfgDone();
         }
-    }
+    } : null;
+
+    const abortedCb = cfgAborted ? () => {
+        abortedCount--;
+        if (!abortedCount) {
+            cfgAborted();
+        }
+    } : null;
 
     // No animators. This should be checked before animators[i].start(),
     // because 'done' may be executed immediately if no need to animate.
-    if (!count) {
-        cfg.done && cfg.done();
+    if (!doneCount) {
+        cfgDone && cfgDone();
     }
 
     // Adding during callback to the first animator
-    if (animators.length > 0 && typeof cfg.during === 'function') {
+    if (animators.length > 0 && cfg.during) {
         // TODO If there are two animators in animateTo, and the first one is stopped by other animator.
         animators[0].during((target, percent) => {
             cfg.during(percent);
@@ -1686,9 +1698,14 @@ function animateTo<T>(
     // Start after all animators created
     // Incase any animator is done immediately when all animation properties are not changed
     for (let i = 0; i < animators.length; i++) {
-        animators[i]
-            .done(done)
-            .start(cfg.easing, cfg.force);
+        const animator = animators[i];
+        if (doneCb) {
+            animator.done(doneCb);
+        }
+        if (abortedCb) {
+            animator.aborted(abortedCb);
+        }
+        animator.start(cfg.easing, cfg.force);
     }
 
     return animators;
