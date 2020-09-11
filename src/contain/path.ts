@@ -3,7 +3,6 @@ import * as line from './line';
 import * as cubic from './cubic';
 import * as quadratic from './quadratic';
 import * as arc from './arc';
-import {normalizeRadian} from './util';
 import * as curve from '../core/curve';
 import windingLine from './windingLine';
 
@@ -143,9 +142,9 @@ function windingQuadratic(
         }
     }
 }
-
 // TODO
 // Arc 旋转
+// startAngle, endAngle has been normalized by normalizeArcAngles
 function windingArc(
     cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise: boolean,
     x: number, y: number
@@ -162,7 +161,7 @@ function windingArc(
     if (dTheta < 1e-4) {
         return 0;
     }
-    if (dTheta % PI2 < 1e-4) {
+    if (dTheta >= PI2 - 1e-4) {
         // Is a circle
         startAngle = 0;
         endAngle = PI2;
@@ -175,18 +174,19 @@ function windingArc(
         }
     }
 
-    if (anticlockwise) {
-        const tmp = startAngle;
-        startAngle = normalizeRadian(endAngle);
-        endAngle = normalizeRadian(tmp);
-    }
-    else {
-        startAngle = normalizeRadian(startAngle);
-        endAngle = normalizeRadian(endAngle);
-    }
     if (startAngle > endAngle) {
+        // Swap, make sure startAngle is smaller than endAngle.
+        const tmp = startAngle;
+        startAngle = endAngle;
+        endAngle = tmp;
+    }
+    // endAngle - startAngle is normalized to 0 - 2*PI.
+    // So following will normalize them to 0 - 4*PI
+    if (startAngle < 0) {
+        startAngle += PI2;
         endAngle += PI2;
     }
+    console.log(startAngle, endAngle);
 
     let w = 0;
     for (let i = 0; i < 2; i++) {
@@ -210,6 +210,7 @@ function windingArc(
     }
     return w;
 }
+
 
 function containPath(
     data: PathData, lineWidth: number, isStroke: boolean, x: number, y: number

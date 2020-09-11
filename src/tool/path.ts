@@ -31,6 +31,7 @@ function processArc(
     x1: number, y1: number, x2: number, y2: number, fa: number, fs: number,
     rx: number, ry: number, psiDeg: number, cmd: number, path: PathProxy
 ) {
+    // https://www.w3.org/TR/SVG11/implnote.html#ArcImplementationNotes
     const psi = psiDeg * (PI / 180.0);
     const xp = mathCos(psi) * (x1 - x2) / 2.0
                 + mathSin(psi) * (y1 - y2) / 2.0;
