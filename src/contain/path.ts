@@ -186,7 +186,6 @@ function windingArc(
         startAngle += PI2;
         endAngle += PI2;
     }
-    console.log(startAngle, endAngle);
 
     let w = 0;
     for (let i = 0; i < 2; i++) {
