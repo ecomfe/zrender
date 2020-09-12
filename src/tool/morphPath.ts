@@ -247,13 +247,13 @@ function alignSubpath(subpath1: number[], subpath2: number[]): [number[], number
     return shorterPath === subpath1 ? [newSubpath, subpath2] : [subpath1, newSubpath];
 }
 
-function createSubpath(otherSubpath: number[]) {
-    const len = otherSubpath.length;
-    const lastX = otherSubpath[len - 2];
-    const lastY = otherSubpath[len - 1];
+function createSubpath(lastSubpathSubpath: number[], otherSubpath: number[]) {
+    const len = lastSubpathSubpath.length;
+    const lastX = lastSubpathSubpath[len - 2];
+    const lastY = lastSubpathSubpath[len - 1];
 
     const newSubpath: number[] = [];
-    for (let i = 0; i < len;) {
+    for (let i = 0; i < otherSubpath.length;) {
         newSubpath[i++] = lastX;
         newSubpath[i++] = lastY;
     }
@@ -285,11 +285,11 @@ export function alignBezierCurves(array1: number[][], array2: number[][]) {
         let newSubpath2;
 
         if (!subpath1) {
-            newSubpath1 = createSubpath(lastSubpath1 || subpath2);
+            newSubpath1 = createSubpath(lastSubpath1, subpath2);
             newSubpath2 = subpath2;
         }
         else if (!subpath2) {
-            newSubpath2 = createSubpath(lastSubpath2 || subpath1);
+            newSubpath2 = createSubpath(lastSubpath2, subpath1);
             newSubpath1 = subpath1;
         }
         else {
@@ -328,9 +328,11 @@ export function centroid(array: number[]) {
         cy += (y0 + y1) * a;
     }
 
-    signedArea *= 3;
+    if (signedArea === 0) {
+        return [array[0] || 0, array[1] || 0];
+    }
 
-    return [cx / signedArea, cy / signedArea];
+    return [cx / signedArea / 3, cy / signedArea / 3, signedArea];
 }
 
 /**
@@ -354,6 +356,10 @@ function findBestMorphingRotation(
 
     const result = [];
 
+    // TODO shift points.
+
+    let fromNeedsReverse: boolean;
+
     for (let i = 0; i < fromArr.length; i++) {
         const fromSubpathBezier = fromArr[i];
         const toSubpathBezier = toArr[i];
@@ -361,21 +367,39 @@ function findBestMorphingRotation(
         const fromCp = centroid(fromSubpathBezier);
         const toCp = centroid(toSubpathBezier);
 
+        if (fromNeedsReverse == null) {
+            // Reverse from array if two have different directions.
+            // Determine the clockwise based on the first subpath.
+            // Reverse all subpaths or not. Avoid winding rule changed.
+            fromNeedsReverse = fromCp[2] < 0 !== toCp[2] < 0;
+        }
+
         const newFromSubpathBezier: number[] = [];
         const newToSubpathBezier: number[] = [];
         let bestAngle = 0;
-        let minDistance = Infinity;
+        let bestScore = Infinity;
         let tmpArr: number[] = [];
 
-        for (let k = 0; k < fromSubpathBezier.length; k += 2) {
-            newFromSubpathBezier[k] = fromSubpathBezier[k] - fromCp[0];
-            newFromSubpathBezier[k + 1] = fromSubpathBezier[k + 1] - fromCp[1];
+        const len = fromSubpathBezier.length;
+        for (let k = 0; k < len; k += 2) {
+            const x = fromSubpathBezier[k] - fromCp[0];
+            const y = fromSubpathBezier[k + 1] - fromCp[1];
+            if (fromNeedsReverse) {
+                // Make sure clockwise
+                newFromSubpathBezier[len - k - 2] = x;
+                newFromSubpathBezier[len - k - 1] = y;
+            }
+            else {
+                newFromSubpathBezier[k] = x;
+                newFromSubpathBezier[k + 1] = y;
+            }
         }
 
         for (let angle = -Math.PI; angle <= Math.PI; angle += step) {
             const sa = Math.sin(angle);
             const ca = Math.cos(angle);
-            let distance = 0;
+            let score = 0;
+
             for (let k = 0; k < fromSubpathBezier.length; k += 2) {
                 const x0 = newFromSubpathBezier[k];
                 const y0 = newFromSubpathBezier[k + 1];
@@ -392,10 +416,14 @@ function findBestMorphingRotation(
                 const dx = newX1 - x0;
                 const dy = newY1 - y0;
 
-                distance += dx * dx + dy * dy;
+                // Use dot product to have min direction change.
+                // const d = Math.sqrt(x0 * x0 + y0 * y0);
+                // score += x0 * dx / d + y0 * dy / d;
+                score += dx * dx + dy * dy;
             }
-            if (distance < minDistance) {
-                minDistance = distance;
+
+            if (score < bestScore) {
+                bestScore = score;
                 bestAngle = angle;
                 // Copy.
                 for (let m = 0; m < tmpArr.length; m++) {
@@ -475,7 +503,7 @@ export function morphPath(fromPath: Path, toPath: Path, animationOpts: ElementAn
                 tmpArr[m + 1] = (x * sa + y * ca) + newCp[1];
             }
 
-            for (let m = 0; m < tmpArr.length;) {
+            for (let m = 0; m < from.length;) {
                 if (m === 0) {
                     path.moveTo(tmpArr[m++], tmpArr[m++]);
                 }
