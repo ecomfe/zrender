@@ -3,6 +3,7 @@ import { cubicSubdivide } from '../core/curve';
 import Path from '../graphic/Path';
 import { ElementAnimateConfig } from '../Element';
 import { extend, defaults } from '../core/util';
+import { lerp, max } from '../core/vector';
 const CMD = PathProxy.CMD;
 
 function aroundEqual(a: number, b: number) {
@@ -37,8 +38,9 @@ export function pathToBezierCurves(path: PathProxy) {
 
     function addArc(startAngle: number, endAngle: number, cx: number, cy: number, rx: number, ry: number) {
         // https://stackoverflow.com/questions/1734745/how-to-create-circle-with-b%C3%A9zier-curves
-        const delta = endAngle - startAngle;
+        const delta = Math.abs(endAngle - startAngle);
         const len = Math.tan(delta / 4) * 4 / 3;
+        const dir = endAngle < startAngle ? -1 : 1;
 
         const c1 = Math.cos(startAngle);
         const s1 = Math.sin(startAngle);
@@ -51,8 +53,8 @@ export function pathToBezierCurves(path: PathProxy) {
         const x4 = c2 * rx + cx;
         const y4 = s2 * ry + cy;
 
-        const hx = rx * len;
-        const hy = ry * len;
+        const hx = rx * len * dir;
+        const hy = ry * len * dir;
         currentSubpath.push(
             // Move control points on tangent.
             x1 - hx * s1, y1 + hy * c1,
@@ -133,9 +135,6 @@ export function pathToBezierCurves(path: PathProxy) {
 
                 x1 = Math.cos(startAngle) * rx + cx;
                 y1 = Math.sin(startAngle) * ry + cy;
-
-                xi = Math.cos(endAngle) * rx + cx;
-                yi = Math.sin(endAngle) * ry + cy;
                 if (isFirst) {
                     // 直接使用 arc 命令
                     // 第一个命令起点还未定义
@@ -143,15 +142,20 @@ export function pathToBezierCurves(path: PathProxy) {
                     y0 = y1;
                     createNewSubpath(x0, y0);
                 }
-                // Connect a line between current point to arc start point.
-                addLine(x0, y0, x1, y1);
+                else {
+                    // Connect a line between current point to arc start point.
+                    addLine(xi, yi, x1, y1);
+                }
 
-                const minAngle = Math.min(startAngle, endAngle);
-                const maxAngle = Math.max(startAngle, endAngle);
-                const step = Math.PI / 2;
+                xi = Math.cos(endAngle) * rx + cx;
+                yi = Math.sin(endAngle) * ry + cy;
 
-                for (let angle = minAngle; angle < maxAngle; angle += step) {
-                    addArc(angle, Math.min(angle + step, maxAngle), cx, cy, rx, ry);
+                const step = (anticlockwise? -1 : 1) * Math.PI / 2;
+
+                for (let angle = startAngle; anticlockwise ? angle > endAngle : angle < endAngle; angle += step) {
+                    const nextAngle = anticlockwise ? Math.max(angle + step, endAngle)
+                        : Math.min(angle + step, endAngle);
+                    addArc(angle, nextAngle, cx, cy, rx, ry);
                 }
 
                 break;
@@ -162,11 +166,11 @@ export function pathToBezierCurves(path: PathProxy) {
                 y1 = y0 + data[i++];
 
                 // rect is an individual path.
-                createNewSubpath(x0, y0);
-                addLine(x0, y0, x1, y0);
+                createNewSubpath(x1, y0);
                 addLine(x1, y0, x1, y1);
                 addLine(x1, y1, x0, y1);
                 addLine(x0, y1, x0, y0);
+                addLine(x0, y0, x1, y0);
                 break;
             case CMD.Z:
                 currentSubpath && addLine(xi, yi, x0, y0);
@@ -306,13 +310,109 @@ interface MorphingPath extends Path {
     __oldBuildPath: Path['buildPath']
 }
 
+export function centroid(array: number[]) {
+    // https://en.wikipedia.org/wiki/Centroid#Of_a_polygon
+    let signedArea = 0;
+    let cx = 0;
+    let cy = 0;
+    const len = array.length;
+    // Polygon should been closed.
+    for (let i = 0, j = len - 2; i < len; j = i, i += 2) {
+        const x0 = array[j];
+        const y0 = array[j + 1];
+        const x1 = array[i];
+        const y1 = array[i + 1];
+        const a = x0 * y1 - x1 * y0;
+        signedArea += a;
+        cx += (x0 + x1) * a;
+        cy += (y0 + y1) * a;
+    }
+
+    signedArea *= 3;
+
+    return [cx / signedArea, cy / signedArea];
+}
+
 /**
  * If we interpolating between two bezier curve arrays.
  * It will have many broken effects during the transition.
  * So we try to apply an extra rotation which can make each bezier curve morph as small as possible.
  */
-function calcualteRotation(array1: number[][], array2: number[][]) {
+function findBestMorphingRotation(
+    fromArr: number[][],
+    toArr: number[][],
+    iteration: number
+): {
+    from: number[]
+    to: number[]
+    fromCp: number[]
+    toCp: number[]
+    rotation: number
+}[] {
 
+    const step = Math.PI * 2 / iteration;
+
+    const result = [];
+
+    for (let i = 0; i < fromArr.length; i++) {
+        const fromSubpathBezier = fromArr[i];
+        const toSubpathBezier = toArr[i];
+
+        const fromCp = centroid(fromSubpathBezier);
+        const toCp = centroid(toSubpathBezier);
+
+        const newFromSubpathBezier: number[] = [];
+        const newToSubpathBezier: number[] = [];
+        let bestAngle = 0;
+        let minDistance = Infinity;
+        let tmpArr: number[] = [];
+
+        for (let k = 0; k < fromSubpathBezier.length; k += 2) {
+            newFromSubpathBezier[k] = fromSubpathBezier[k] - fromCp[0];
+            newFromSubpathBezier[k + 1] = fromSubpathBezier[k + 1] - fromCp[1];
+        }
+
+        for (let angle = -Math.PI; angle <= Math.PI; angle += step) {
+            const sa = Math.sin(angle);
+            const ca = Math.cos(angle);
+            let distance = 0;
+            for (let k = 0; k < fromSubpathBezier.length; k += 2) {
+                const x0 = newFromSubpathBezier[k];
+                const y0 = newFromSubpathBezier[k + 1];
+                const x1 = toSubpathBezier[k] - toCp[0];
+                const y1 = toSubpathBezier[k + 1] - toCp[1];
+
+                // Apply rotation on the target point.
+                const newX1 = x1 * ca - y1 * sa;
+                const newY1 = x1 * sa + y1 * ca;
+
+                tmpArr[k] = newX1;
+                tmpArr[k + 1] = newY1;
+
+                const dx = newX1 - x0;
+                const dy = newY1 - y0;
+
+                distance += dx * dx + dy * dy;
+            }
+            if (distance < minDistance) {
+                minDistance = distance;
+                bestAngle = angle;
+                // Copy.
+                for (let m = 0; m < tmpArr.length; m++) {
+                    newToSubpathBezier[m] = tmpArr[m];
+                }
+            }
+        }
+
+        result.push({
+            from: newFromSubpathBezier,
+            to: newToSubpathBezier,
+            fromCp,
+            toCp,
+            rotation: -bestAngle
+        });
+    }
+    return result;
 }
 
 /**
@@ -334,29 +434,55 @@ export function morphPath(fromPath: Path, toPath: Path, animationOpts: ElementAn
     const [fromBezierCurves, toBezierCurves] =
         alignBezierCurves(pathToBezierCurves(fromPath.path), pathToBezierCurves(toPath.path));
 
+    const morphingData = findBestMorphingRotation(
+        fromBezierCurves, toBezierCurves, 30
+    );
+
     const morphingPath = toPath as MorphingPath;
 
     if (!morphingPath.__oldBuildPath) {
         morphingPath.__oldBuildPath = morphingPath.buildPath;
     }
 
+    let tmpArr: number[] = [];
     morphingPath.buildPath = function (path: PathProxy, shape: unknown) {
         const t = morphingPath.__morphT;
         const onet = 1 - t;
-        for (let i = 0; i < fromBezierCurves.length; i++) {
-            const a = fromBezierCurves[i];
-            const b = toBezierCurves[i];
 
-            for (let m = 0, n = 0; m < a.length;) {
+        const newCp: number[] = [];
+        for (let i = 0; i < morphingData.length; i++) {
+            const item = morphingData[i];
+            const from = item.from;
+            const to = item.to;
+            const angle = item.rotation * t;
+            const fromCp = item.fromCp;
+            const toCp = item.toCp;
+            const sa = Math.sin(angle);
+            const ca = Math.cos(angle);
+
+            lerp(newCp, fromCp, toCp, t);
+
+            for (let m = 0; m < from.length; m += 2) {
+                const x0 = from[m];
+                const y0 = from[m + 1];
+                const x1 = to[m];
+                const y1 = to[m + 1];
+
+                const x = x0 * onet + x1 * t;
+                const y = y0 * onet + y1 * t;
+
+                tmpArr[m] = (x * ca - y * sa) + newCp[0];
+                tmpArr[m + 1] = (x * sa + y * ca) + newCp[1];
+            }
+
+            for (let m = 0; m < tmpArr.length;) {
                 if (m === 0) {
-                    path.moveTo(
-                        a[m++] * onet + b[n++] * t, a[m++] * onet + b[n++] * t
-                    );
+                    path.moveTo(tmpArr[m++], tmpArr[m++]);
                 }
                 path.bezierCurveTo(
-                    a[m++] * onet + b[n++] * t, a[m++] * onet + b[n++] * t,
-                    a[m++] * onet + b[n++] * t, a[m++] * onet + b[n++] * t,
-                    a[m++] * onet + b[n++] * t, a[m++] * onet + b[n++] * t
+                    tmpArr[m++], tmpArr[m++],
+                    tmpArr[m++], tmpArr[m++],
+                    tmpArr[m++], tmpArr[m++]
                 )
             }
         }
@@ -380,8 +506,7 @@ export function morphPath(fromPath: Path, toPath: Path, animationOpts: ElementAn
             morphingPath.__oldBuildPath = null;
             // Cleanup.
             morphingPath.createPathProxy();
-            morphingPath.path.beginPath();
-            morphingPath.buildPath(morphingPath.path, morphingPath.shape);
+            morphingPath.dirtyShape();
             oldDone && oldDone();
         },
         aborted() {

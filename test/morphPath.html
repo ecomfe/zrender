@@ -16,11 +16,29 @@
     <script type="text/javascript">
         const zr = zrender.init(document.getElementById('main'));
         const shapes = [
+            new zrender.Rect({
+                shape: {
+                    x: 100,
+                    y: 100,
+                    width: 100,
+                    height: 200
+                },
+                style: {
+                    fill: 'red',
+                    opacity: 0.5,
+                    stroke: 'red'
+                }
+            }),
             new zrender.Circle({
                 shape: {
                     cx: 200,
                     cy: 200,
                     r: 90
+                },
+                style: {
+                    fill: 'red',
+                    opacity: 0.5,
+                    stroke: 'red'
                 }
             }),
             new zrender.Isogon({
@@ -28,7 +46,12 @@
                     x: 200,
                     y: 200,
                     r: 100,
-                    n: 10
+                    n: 6
+                },
+                style: {
+                    fill: 'red',
+                    opacity: 0.5,
+                    stroke: 'red'
                 }
             }),
             new zrender.Sector({
@@ -39,14 +62,11 @@
                     r: 100,
                     startAngle: 1,
                     endAngle: 3
-                }
-            }),
-            new zrender.Rect({
-                shape: {
-                    x: 100,
-                    y: 100,
-                    width: 50,
-                    height: 200
+                },
+                style: {
+                    fill: 'red',
+                    opacity: 0.5,
+                    stroke: 'red'
                 }
             })
         ];
