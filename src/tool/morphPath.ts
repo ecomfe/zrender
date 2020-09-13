@@ -285,11 +285,11 @@ export function alignBezierCurves(array1: number[][], array2: number[][]) {
         let newSubpath2;
 
         if (!subpath1) {
-            newSubpath1 = createSubpath(lastSubpath1, subpath2);
+            newSubpath1 = createSubpath(lastSubpath1 || subpath2, subpath2);
             newSubpath2 = subpath2;
         }
         else if (!subpath2) {
-            newSubpath2 = createSubpath(lastSubpath2, subpath1);
+            newSubpath2 = createSubpath(lastSubpath2 || subpath1, subpath1);
             newSubpath1 = subpath1;
         }
         else {

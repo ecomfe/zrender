@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Image</title>
+    <title>Shape Morphing</title>
     <script src="../dist/zrender.js"></script>
 </head>
 <body>
@@ -103,7 +103,7 @@
             zrender.morphPath(currentShape, nextShape, {
                 duration: 1000,
                 done() {
-                    setTimeout(morphShape, 500);
+                    setTimeout(morphShape, 100);
                 }
             });
         }
