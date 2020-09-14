@@ -336,6 +336,57 @@ export function centroid(array: number[]) {
 }
 
 /**
+ * Offset the points to find the nearest morphing distance.
+ * Return beziers count needs to be offset.
+ */
+function findBestRingOffset(
+    fromSubBeziers: number[],
+    toSubBeziers: number[],
+    fromCp: number[],
+    toCp: number[]
+) {
+    const bezierCount = (fromSubBeziers.length - 2) / 6;
+    let bestScore = Infinity;
+    let bestOffset = 0;
+
+    const len = fromSubBeziers.length;
+    const len2 = len - 2;
+    for (let offset = 0; offset < bezierCount; offset++) {
+        const cursorOffset = offset * 6;
+        let score = 0;
+
+        for (let k = 0; k < len; k += 2) {
+            let idx = k === 0 ? cursorOffset : ((cursorOffset + k - 2) % len2 + 2);
+
+            const x0 = fromSubBeziers[idx] - fromCp[0];
+            const y0 = fromSubBeziers[idx + 1] - fromCp[1];
+            const x1 = toSubBeziers[k] - toCp[0];
+            const y1 = toSubBeziers[k + 1] - toCp[1];
+
+            const dx = x1 - x0;
+            const dy = y1 - y0;
+            score += dx * dx + dy * dy;
+        }
+        if (score < bestScore) {
+            bestScore = score;
+            bestOffset = offset;
+        }
+    }
+
+    return bestOffset;
+}
+
+function reverse(array: number[]) {
+    const newArr: number[] = [];
+    const len = array.length;
+    for  (let i = 0; i < len; i += 2) {
+        newArr[i] = array[len - i - 2];
+        newArr[i + 1] = array[len - i - 1];
+    }
+    return newArr;
+}
+
+/**
  * If we interpolating between two bezier curve arrays.
  * It will have many broken effects during the transition.
  * So we try to apply an extra rotation which can make each bezier curve morph as small as possible.
@@ -343,7 +394,8 @@ export function centroid(array: number[]) {
 function findBestMorphingRotation(
     fromArr: number[][],
     toArr: number[][],
-    iteration: number
+    searchAngleIteration: number,
+    searchAngleRange: number
 ): {
     from: number[]
     to: number[]
@@ -351,17 +403,12 @@ function findBestMorphingRotation(
     toCp: number[]
     rotation: number
 }[] {
-
-    const step = Math.PI * 2 / iteration;
-
     const result = [];
-
-    // TODO shift points.
 
     let fromNeedsReverse: boolean;
 
     for (let i = 0; i < fromArr.length; i++) {
-        const fromSubpathBezier = fromArr[i];
+        let fromSubpathBezier = fromArr[i];
         const toSubpathBezier = toArr[i];
 
         const fromCp = centroid(fromSubpathBezier);
@@ -381,54 +428,65 @@ function findBestMorphingRotation(
         let tmpArr: number[] = [];
 
         const len = fromSubpathBezier.length;
-        for (let k = 0; k < len; k += 2) {
-            const x = fromSubpathBezier[k] - fromCp[0];
-            const y = fromSubpathBezier[k + 1] - fromCp[1];
-            if (fromNeedsReverse) {
-                // Make sure clockwise
-                newFromSubpathBezier[len - k - 2] = x;
-                newFromSubpathBezier[len - k - 1] = y;
-            }
-            else {
-                newFromSubpathBezier[k] = x;
-                newFromSubpathBezier[k + 1] = y;
+        if (fromNeedsReverse) {
+            // Make sure clockwise
+            fromSubpathBezier = reverse(fromSubpathBezier);
+        }
+        const offset = findBestRingOffset(fromSubpathBezier, toSubpathBezier, fromCp, toCp) * 6;
+
+        const len2 = len - 2;
+        for (let k = 0; k < len2; k += 2) {
+            // Not include the start point.
+            const idx = (offset + k) % len2 + 2;
+            newFromSubpathBezier[k + 2] = fromSubpathBezier[idx] - fromCp[0];
+            newFromSubpathBezier[k + 3] = fromSubpathBezier[idx + 1] - fromCp[1];
+        }
+        newFromSubpathBezier[0] = fromSubpathBezier[offset] - fromCp[0];
+        newFromSubpathBezier[1] = fromSubpathBezier[offset + 1] - fromCp[1];
+
+        if (searchAngleIteration > 0) {
+            const step = searchAngleRange / searchAngleIteration;
+            for (let angle = -searchAngleRange / 2; angle <= searchAngleRange / 2; angle += step) {
+                const sa = Math.sin(angle);
+                const ca = Math.cos(angle);
+                let score = 0;
+
+                for (let k = 0; k < fromSubpathBezier.length; k += 2) {
+                    const x0 = newFromSubpathBezier[k];
+                    const y0 = newFromSubpathBezier[k + 1];
+                    const x1 = toSubpathBezier[k] - toCp[0];
+                    const y1 = toSubpathBezier[k + 1] - toCp[1];
+
+                    // Apply rotation on the target point.
+                    const newX1 = x1 * ca - y1 * sa;
+                    const newY1 = x1 * sa + y1 * ca;
+
+                    tmpArr[k] = newX1;
+                    tmpArr[k + 1] = newY1;
+
+                    const dx = newX1 - x0;
+                    const dy = newY1 - y0;
+
+                    // Use dot product to have min direction change.
+                    // const d = Math.sqrt(x0 * x0 + y0 * y0);
+                    // score += x0 * dx / d + y0 * dy / d;
+                    score += dx * dx + dy * dy;
+                }
+
+                if (score < bestScore) {
+                    bestScore = score;
+                    bestAngle = angle;
+                    // Copy.
+                    for (let m = 0; m < tmpArr.length; m++) {
+                        newToSubpathBezier[m] = tmpArr[m];
+                    }
+                }
             }
         }
-
-        for (let angle = -Math.PI; angle <= Math.PI; angle += step) {
-            const sa = Math.sin(angle);
-            const ca = Math.cos(angle);
-            let score = 0;
-
-            for (let k = 0; k < fromSubpathBezier.length; k += 2) {
-                const x0 = newFromSubpathBezier[k];
-                const y0 = newFromSubpathBezier[k + 1];
-                const x1 = toSubpathBezier[k] - toCp[0];
-                const y1 = toSubpathBezier[k + 1] - toCp[1];
-
-                // Apply rotation on the target point.
-                const newX1 = x1 * ca - y1 * sa;
-                const newY1 = x1 * sa + y1 * ca;
-
-                tmpArr[k] = newX1;
-                tmpArr[k + 1] = newY1;
-
-                const dx = newX1 - x0;
-                const dy = newY1 - y0;
-
-                // Use dot product to have min direction change.
-                // const d = Math.sqrt(x0 * x0 + y0 * y0);
-                // score += x0 * dx / d + y0 * dy / d;
-                score += dx * dx + dy * dy;
-            }
-
-            if (score < bestScore) {
-                bestScore = score;
-                bestAngle = angle;
-                // Copy.
-                for (let m = 0; m < tmpArr.length; m++) {
-                    newToSubpathBezier[m] = tmpArr[m];
-                }
+        else {
+            for (let i = 0; i < len; i += 2) {
+                newToSubpathBezier[i] = toSubpathBezier[i] - toCp[0];
+                newToSubpathBezier[i + 1] = toSubpathBezier[i + 1] - toCp[1];
             }
         }
 
@@ -462,9 +520,7 @@ export function morphPath(fromPath: Path, toPath: Path, animationOpts: ElementAn
     const [fromBezierCurves, toBezierCurves] =
         alignBezierCurves(pathToBezierCurves(fromPath.path), pathToBezierCurves(toPath.path));
 
-    const morphingData = findBestMorphingRotation(
-        fromBezierCurves, toBezierCurves, 30
-    );
+    const morphingData = findBestMorphingRotation(fromBezierCurves, toBezierCurves, 10, Math.PI);
 
     const morphingPath = toPath as MorphingPath;
 
