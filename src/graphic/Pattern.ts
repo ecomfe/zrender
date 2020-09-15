@@ -9,7 +9,7 @@ export interface PatternObject {
     repeat: CanvasPatternRepeat
 
     // Cached image. Which is created in the canvas painter.
-    __image: ImageLike
+    __image?: ImageLike
 }
 
 class Pattern {

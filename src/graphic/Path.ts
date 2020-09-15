@@ -16,10 +16,12 @@ import { defaults, keys, extend, clone, isString, createObject } from '../core/u
 import Animator from '../animation/Animator';
 import { lum } from '../tool/color';
 import { DARK_LABEL_COLOR, LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, LIGHTER_LABEL_COLOR } from '../config';
+import {DecalObject} from './Decal';
 
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
     stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
+    decal?: DecalObject
     /**
      * Still experimental, not works weel on arc with edge cases(large angle).
      */

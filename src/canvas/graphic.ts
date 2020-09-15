@@ -17,6 +17,7 @@ import { MatrixArray } from '../core/matrix';
 import { map } from '../core/util';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
 import Element from '../Element';
+import {createOrUpdatePatternFromDecal} from '../graphic/helper/decal';
 
 
 const pathProxyForDraw = new PathProxy(true);
@@ -224,22 +225,28 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         ctx.lineDashOffset = lineDashOffset;
     }
 
+    doBrush(hasStroke, hasFill);
+
+    const hasFillDecal = hasFill && !!style.decal;
+    const hasStrokeDecal = hasStroke && !!style.decal;
     if (!inBatch) {
-        if (style.strokeFirst) {
-            if (hasStroke) {
-                doStrokePath(ctx, style);
+        if (hasFillDecal || hasStrokeDecal) {
+            if (el.__dirty || el.__canvasDecal) {
+                // TODO: may not need to regenerate when dirty
+                const decal = createOrUpdatePatternFromDecal(
+                    {
+                        dashArrayX: [[15, 5, 20, 5]],
+                        dashArrayY: [[10, 10]],
+                        // dashLineOffsetX: 15
+                    },
+                    ctx.canvas.width,
+                    ctx.canvas.height
+                );
+                el.__canvasDecal = createCanvasPattern(ctx, decal, el);
             }
-            if (hasFill) {
-                doFillPath(ctx, style);
-            }
-        }
-        else {
-            if (hasFill) {
-                doFillPath(ctx, style);
-            }
-            if (hasStroke) {
-                doStrokePath(ctx, style);
-            }
+            hasFillDecal && (ctx.fillStyle = el.__canvasDecal);
+            hasStrokeDecal && (ctx.strokeStyle = el.__canvasDecal);
+            doBrush(hasStrokeDecal, hasFillDecal);
         }
     }
 
@@ -247,6 +254,27 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         // PENDING
         // Remove lineDash
         ctx.setLineDash([]);
+    }
+
+    function doBrush(hasStroke: boolean, hasFill: boolean) {
+        if (!inBatch) {
+            if (style.strokeFirst) {
+                if (hasStroke) {
+                    doStrokePath(ctx, style);
+                }
+                if (hasFill) {
+                    doFillPath(ctx, style);
+                }
+            }
+            else {
+                if (hasFill) {
+                    doFillPath(ctx, style);
+                }
+                if (hasStroke) {
+                    doStrokePath(ctx, style);
+                }
+            }
+        }
     }
 }
 
