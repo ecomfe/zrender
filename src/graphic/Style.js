@@ -38,6 +38,44 @@ function createLinearGradient(ctx, obj, rect) {
     return canvasGradient;
 }
 
+function transformAbsoluteOffset(offset, absolute, obj, rect) {
+    var x = obj.x == null ? 0 : obj.x;
+    var x2 = obj.x2 == null ? 1 : obj.x2;
+    var y = obj.y == null ? 0 : obj.y;
+    var y2 = obj.y2 == null ? 0 : obj.y2;
+
+    if (!obj.global) {
+        x = x * rect.width + rect.x;
+        x2 = x2 * rect.width + rect.x;
+        y = y * rect.height + rect.y;
+        y2 = y2 * rect.height + rect.y;
+    }
+
+    // Fix NaN when rect is Infinity
+    x = isNaN(x) ? 0 : x;
+    x2 = isNaN(x2) ? 1 : x2;
+    y = isNaN(y) ? 0 : y;
+    y2 = isNaN(y2) ? 0 : y2;
+    var length = Math.sqrt(Math.pow(x2 - x, 2) + Math.pow(y2 - y, 2));
+
+    if (absolute === 'start' | absolute === 'end') {
+        if (length === 0) {
+            return 0;
+        }
+        if (isFinite(offset)) {
+            if (absolute === 'start') {
+                return Math.min(Math.max(offset / length, 0), 1);
+            }
+        else if (absolute === 'end') {
+                return Math.min(Math.max((length - offset) / length, 0), 1);
+            }
+            throw new Error('absolute must to be \'start\' or \'end\'' + offset);
+        }
+        throw new Error('offset need to be finite:' + offset);
+    }
+    return offset;
+}
+
 function createRadialGradient(ctx, obj, rect) {
     var width = rect.width;
     var height = rect.height;
@@ -477,7 +515,7 @@ Style.prototype = {
         var colorStops = obj.colorStops;
         for (var i = 0; i < colorStops.length; i++) {
             canvasGradient.addColorStop(
-                colorStops[i].offset, colorStops[i].color
+                transformAbsoluteOffset(colorStops[i].offset, colorStops[i].absolute, obj, rect), colorStops[i].color
             );
         }
         return canvasGradient;

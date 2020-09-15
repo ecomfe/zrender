@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Bar Animation</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+    <script type="text/javascript">
+        var N = 50;
+        for (var k = 0; k < 50; k++) {
+            var div = document.createElement('div');
+            var width = 600;
+            var height = 300;
+            div.style.width = width + 'px';
+            div.style.height = height + 'px';
+            document.body.appendChild(div);
+            // 初始化zrender
+            var zr = zrender.init(div, {
+                renderer: 'canvas'
+            });
+
+            for (var i = 0; i < N; i++) {
+                var h = height * Math.random();
+                var barShape = new zrender.Rect({
+                    shape: {
+                        x: i * width / N,
+                        y: height,
+                        width: width / N,
+                        height: 0
+                    },
+                    style: {
+                        fill: new zrender.LinearGradient(0,0,0,1,[
+                            {offset:0,color:"red"},
+                            {offset:2,color:"red",absolute:"start"},
+                            {offset:2,color:"transparent",absolute:"start"},
+                            {offset:4,color:"transparent",absolute:"start"},
+                            {offset:4,color:"blue",absolute:"start"},
+                            {offset:2,color:"blue",absolute:"end"},
+                            {offset:2,color:"green",absolute:"end"},
+                            {offset:1,color:"green"}
+                        ])
+                    },
+                });
+                zr.add(barShape);
+
+                barShape.animateTo({
+                    shape: {
+                        height: h,
+                        y: height - h
+                    }
+                }, 500);
+            }
+        }
+    </script>
+</body>
+</html>
