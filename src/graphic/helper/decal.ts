@@ -47,14 +47,20 @@ export function createOrUpdatePatternFromDecal(
 
     const base64 = canvas.toDataURL();
 
-    return new Pattern(base64, 'repeat');
+    return new Pattern(base64, 'repeat', decalObject.rotation);
 
     /**
      * Get minumum length that can make a repeatable pattern.
      *
      * @return {Object} pattern width and height
      */
-    function getPatternSize(): {width: number, height: number} {
+    function getPatternSize()
+        : {
+            width: number,
+            height: number,
+            lines: number
+        }
+    {
         /**
          * For example, if dash is [[3, 2], [2, 1]] for X, it looks like
          * |---  ---  ---  ---  --- ...
@@ -89,11 +95,15 @@ export function createOrUpdatePatternFromDecal(
             const x = getLeastCommonMultiple(offsetMultipleX * xlen, lineBlockLengthsX[i]);
             width = getLeastCommonMultiple(width, x);
         }
-        const height = lineBlockLengthY * width / offsetMultipleX;
+        const columns = decalObject.dashLineOffset
+            ? width / offsetMultipleX
+            : 2;
+        let height = lineBlockLengthY * columns;
 
         return {
             width: Math.max(1, Math.min(width, canvasWidth)),
-            height: Math.max(1, Math.min(height, canvasHeight))
+            height: Math.max(1, Math.min(height, canvasHeight)),
+            lines: columns
         };
     }
 
@@ -109,17 +119,18 @@ export function createOrUpdatePatternFromDecal(
         ctx.fillStyle = '#000';
 
         let yCnt = 0;
-        let y = 0;
+        let y = -pSize.lines * lineBlockLengthY;
         let yId = 0;
         let xId0 = 0;
         while (y < pSize.height) {
             if (yId % 2 === 0) {
+                console.log(yCnt);
                 let x = fixStartPosition(
-                    decalObject.dashLineOffset * yCnt / 2,
+                    decalObject.dashLineOffset * (yCnt - pSize.lines) / 2,
                     lineBlockLengthsX[0]
                 );
                 let xId1 = 0;
-                while (x < pSize.width) {
+                while (x < pSize.width * 2) {
                     if (xId1 % 2 === 0) {
                         // E.g., [15, 5, 20, 5] draws only for 15 and 20
                         ctx.fillRect(

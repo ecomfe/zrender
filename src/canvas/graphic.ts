@@ -66,7 +66,13 @@ export function createCanvasPattern(
 ): CanvasPattern {
     const image = createOrUpdateImage(pattern.image, pattern.__image, el);
     if (isImageReady(image)) {
-        return ctx.createPattern(image, pattern.repeat || 'repeat');
+        const p = ctx.createPattern(image, pattern.repeat || 'repeat');
+        if (pattern.rotation) {
+            const matrix = new DOMMatrix();
+            matrix.rotateSelf(0, 0, pattern.rotation / Math.PI * 180);
+            p.setTransform(matrix);
+        }
+        return p;
     }
 }
 
@@ -237,7 +243,8 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
                     {
                         dashArrayX: [[30, 10], [10, 10]],
                         dashArrayY: [10, 20],
-                        dashLineOffset: 30
+                        dashLineOffset: 10,
+                        rotation: Math.PI / 6
                     },
                     ctx.canvas.width,
                     ctx.canvas.height
