@@ -235,9 +235,9 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
                 // TODO: may not need to regenerate when dirty
                 const decal = createOrUpdatePatternFromDecal(
                     {
-                        dashArrayX: [[15, 5, 20, 5]],
-                        dashArrayY: [[10, 10]],
-                        // dashLineOffsetX: 15
+                        dashArrayX: [[30, 10], [10, 10]],
+                        dashArrayY: [10, 20],
+                        dashLineOffset: 30
                     },
                     ctx.canvas.width,
                     ctx.canvas.height

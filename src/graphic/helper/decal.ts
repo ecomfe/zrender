@@ -1,6 +1,6 @@
-import {DecalObject, DecalDashArray} from '../Decal';
+import {DecalObject, DecalDashArrayX, DecalDashArrayY} from '../Decal';
 import Pattern, {PatternObject} from '../Pattern';
-import {createCanvas, getLeastCommonMultiple} from '../../core/util';
+import {createCanvas, getLeastCommonMultiple, map} from '../../core/util';
 
 const decalDefaults: DecalObject = {
     shape: 'rect',
@@ -11,8 +11,7 @@ const decalDefaults: DecalObject = {
     backgroundColor: null,
     dashArrayX: [20, 5],
     dashArrayY: [10, 2],
-    dashOffsetX: 0,
-    dashOffsetY: 0
+    dashLineOffset: 0
 };
 
 /**
@@ -28,16 +27,14 @@ export function createOrUpdatePatternFromDecal(
     canvasWidth: number,
     canvasHeight: number
 ): PatternObject {
-    const dashArrayX = normalizeDashArray(decalObject.dashArrayX);
-    const dashArrayY = normalizeDashArray(decalObject.dashArrayY);
-    console.log(dashArrayX, dashArrayY);
+    const dashArrayX = normalizeDashArrayX(decalObject.dashArrayX);
+    const dashArrayY = normalizeDashArrayY(decalObject.dashArrayY);
 
-    const lineBlockLengthsX = getLineBlockLength(dashArrayX);
-    const lineBlockLengthsY = getLineBlockLength(dashArrayY);
+    const lineBlockLengthsX = getLineBlockLengthX(dashArrayX);
+    const lineBlockLengthY = getLineBlockLengthY(dashArrayY);
 
     const canvas = createCanvas();
     const pSize = getPatternSize();
-    console.log(pSize);
 
     canvas.width = pSize.width;
     canvas.height = pSize.height;
@@ -49,7 +46,6 @@ export function createOrUpdatePatternFromDecal(
     brush();
 
     const base64 = canvas.toDataURL();
-    console.log(base64);
 
     return new Pattern(base64, 'repeat');
 
@@ -87,33 +83,74 @@ export function createOrUpdatePatternFromDecal(
          * |- --- =-- --|- --- -- ...
          * | - - - - = -| - - - - ...
          */
-        const offsetMultipleX = decalObject.dashLineOffsetX || 1;
-        const offsetMultipleY = decalObject.dashLineOffsetY || 1;
+        const offsetMultipleX = decalObject.dashLineOffset || 1;
         let width = 1;
-        let height = 1;
-        let xRepeats = 1;
-        let yRepeats = 1;
         for (let i = 0, xlen = lineBlockLengthsX.length; i < xlen; ++i) {
             const x = getLeastCommonMultiple(offsetMultipleX * xlen, lineBlockLengthsX[i]);
             width = getLeastCommonMultiple(width, x);
-            yRepeats = getLeastCommonMultiple(yRepeats, offsetMultipleX * xlen * lineBlockLengthsX[i] / x);
         }
-        for (let j = 0, ylen = lineBlockLengthsY.length; j < ylen; ++j) {
-            const y = getLeastCommonMultiple(offsetMultipleY * ylen, lineBlockLengthsY[j]);
-            height = getLeastCommonMultiple(height, y);
-            xRepeats = getLeastCommonMultiple(xRepeats, offsetMultipleY * ylen * lineBlockLengthsY[j] / y);
-        }
+        const height = lineBlockLengthY * width / offsetMultipleX;
 
         return {
-            width: Math.max(1, Math.min(width * xRepeats, canvasWidth)),
-            height: Math.max(1, Math.min(height * yRepeats, canvasHeight))
+            width: Math.max(1, Math.min(width, canvasWidth)),
+            height: Math.max(1, Math.min(height, canvasHeight))
         };
+    }
+
+    function fixStartPosition(lineOffset: number, blockLength: number) {
+        let start = lineOffset || 0;
+        while (start > 0) {
+            start -= blockLength;
+        }
+        return start;
     }
 
     function brush() {
         ctx.fillStyle = '#000';
-        // debugger;
 
+        let yCnt = 0;
+        let y = 0;
+        let yId = 0;
+        let xId0 = 0;
+        while (y < pSize.height) {
+            if (yId % 2 === 0) {
+                let x = fixStartPosition(
+                    decalObject.dashLineOffset * yCnt / 2,
+                    lineBlockLengthsX[0]
+                );
+                let xId1 = 0;
+                while (x < pSize.width) {
+                    if (xId1 % 2 === 0) {
+                        // E.g., [15, 5, 20, 5] draws only for 15 and 20
+                        ctx.fillRect(
+                            x,
+                            y,
+                            dashArrayX[xId0][xId1],
+                            dashArrayY[yId]
+                        );
+                    }
+
+                    x += dashArrayX[xId0][xId1];
+                    ++xId1;
+                    if (xId1 === dashArrayX[xId0].length) {
+                        xId1 = 0;
+                    }
+                }
+
+                ++xId0;
+                if (xId0 === dashArrayX.length) {
+                    xId0 = 0;
+                }
+            }
+
+            ++yCnt;
+            y += dashArrayY[yId];
+
+            ++yId;
+            if (yId === dashArrayY.length) {
+                yId = 0;
+            }
+        }
 
         ctx.strokeStyle = 'red';
         ctx.strokeRect(0, 0, pSize.width, pSize.height);
@@ -124,10 +161,10 @@ export function createOrUpdatePatternFromDecal(
 /**
  * Convert dash input into dashArray
  *
- * @param {DecalDashArray} dash dash input
+ * @param {DecalDashArrayX} dash dash input
  * @return {number[][]} normolized dash array
  */
-function normalizeDashArray(dash: DecalDashArray): number[][] {
+function normalizeDashArrayX(dash: DecalDashArrayX): number[][] {
     if (!dash || typeof dash === 'object' && dash.length === 0) {
         return [[0, 0]];
     }
@@ -146,10 +183,26 @@ function normalizeDashArray(dash: DecalDashArray): number[][] {
             result.push((dash[i] as number[]).concat(dash[i]));
         }
         else {
-            result.push(dash[i] as number[]);
+            result.push((dash[i] as number[]).slice());
         }
     }
     return result;
+}
+
+/**
+ * Convert dash input into dashArray
+ *
+ * @param {DecalDashArrayY} dash dash input
+ * @return {number[]} normolized dash array
+ */
+function normalizeDashArrayY(dash: DecalDashArrayY): number[] {
+    if (!dash || typeof dash === 'object' && dash.length === 0) {
+        return [0, 0];
+    }
+    if (typeof dash === 'number') {
+        return [dash, dash];
+    }
+    return dash.length % 2 ? dash.concat(dash) : dash.slice();
 }
 
 /**
@@ -160,28 +213,21 @@ function normalizeDashArray(dash: DecalDashArray): number[][] {
  * @param {number[][]} dash dash arrary of X or Y
  * @return {number[]} block length of each line
  */
-function getLineBlockLength(dash: number[][]): number[] {
-    const lineBlockLengths = [];
-    for (var i = 0; i < dash.length; ++i) {
-        // basicLength is the length of dash line and space for a line
-        let basicLength = 0;
-        if (dash[i].length === 1) {
-            // [0] is for |--------| whose block length is 1
-            // [2] is for |--  --  | whose block length is 4
-            basicLength = dash[i][0] === 0 ? 1 : dash[i][0] * 2;
-        }
-        else {
-            for (var j = 0; j < dash[i].length; ++j) {
-                basicLength += dash[i][j];
-            }
-            if (dash[i].length % 2 === 1) {
-                // [4, 2, 1] means |----  -    -- |----  -    -- |
-                // So total length is (4 + 2 + 1) * 2
-                basicLength += basicLength;
-            }
-        }
+function getLineBlockLengthX(dash: number[][]): number[] {
+    return map(dash, function (line) {
+        return getLineBlockLengthY(line);
+    });
+}
 
-        lineBlockLengths.push(basicLength);
+function getLineBlockLengthY(dash: number[]): number {
+    let blockLength = 0;
+    for (let i = 0; i < dash.length; ++i) {
+        blockLength += dash[i];
     }
-    return lineBlockLengths;
+    if (dash.length % 2 === 1) {
+        // [4, 2, 1] means |----  -    -- |----  -    -- |
+        // So total length is (4 + 2 + 1) * 2
+        return blockLength * 2;
+    }
+    return blockLength;
 }

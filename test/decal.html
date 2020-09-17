@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Image</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <div id="main"></div>
+    <script type="text/javascript">
+        var zr = zrender.init(document.getElementById('main'));
+
+        const rect = new zrender.Rect({
+            shape: {
+                x: 0,
+                y: 0,
+                width: 600,
+                height: 600
+            },
+            style: {
+                fill: '#ccc',
+                decal: {
+                    color: 'rgba(255, 255, 255, 0.6)',
+                    shape: 'rect',
+                    rotation: Math.PI / 6,
+                    dashArrayY: [20, 20]
+                }
+            }
+        });
+        zr.add(rect);
+    </script>
+</body>
+</html>

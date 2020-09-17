@@ -1,6 +1,7 @@
 import {ImageLike} from '../core/types';
 
-export type DecalDashArray = number | (number | number[])[];
+export type DecalDashArrayX = number | (number | number[])[];
+export type DecalDashArrayY = number | number[];
 
 export interface DecalObject {
     // 'image', 'triangle', 'diamond', 'pin', 'arrow', 'line', 'rect', 'roundRect', 'square', 'circle'
@@ -18,17 +19,11 @@ export interface DecalObject {
     backgroundColor?: string
 
     // dash-gap pattern on x
-    dashArrayX?: DecalDashArray
+    dashArrayX?: DecalDashArrayX
     // dash-gap pattern on y
-    dashArrayY?: DecalDashArray
-    // offset of the starting x
-    dashOffsetX?: number
-    // offset of the starting y
-    dashOffsetY?: number
+    dashArrayY?: DecalDashArrayY
     // extra offset of each row
-    dashLineOffsetX?: number
-    // extra offset of each column
-    dashLineOffsetY?: number
+    dashLineOffset?: number
 
     // in radians; valued from -Math.PI to Math.PI
     rotation?: number
@@ -44,10 +39,9 @@ class Decal {
     color: string
     backgroundColor: string
 
-    dashArrayX: DecalDashArray
-    dashArrayY: DecalDashArray
-    dashOffsetX: number
-    dashOffsetY: number
+    dashArrayX: DecalDashArrayX
+    dashArrayY: DecalDashArrayY
+    dashLineOffset: number
 
     rotation: number
 
