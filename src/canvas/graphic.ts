@@ -68,9 +68,11 @@ export function createCanvasPattern(
     if (isImageReady(image)) {
         const p = ctx.createPattern(image, pattern.repeat || 'repeat');
         if (pattern.rotation) {
-            const matrix = new DOMMatrix();
-            matrix.rotateSelf(0, 0, pattern.rotation / Math.PI * 180);
-            p.setTransform(matrix);
+            if (typeof DOMMatrix === 'function') {
+                const matrix = new DOMMatrix();
+                matrix.rotateSelf(0, 0, pattern.rotation / Math.PI * 180);
+                p.setTransform(matrix);
+            }
         }
         return p;
     }
@@ -240,12 +242,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
             if (el.__dirty || el.__canvasDecal) {
                 // TODO: may not need to regenerate when dirty
                 const decal = createOrUpdatePatternFromDecal(
-                    {
-                        dashArrayX: [[30, 10], [10, 10]],
-                        dashArrayY: [10, 20],
-                        dashLineOffset: 10,
-                        rotation: Math.PI / 6
-                    },
+                    style.decal,
                     ctx.canvas.width,
                     ctx.canvas.height
                 );

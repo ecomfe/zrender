@@ -1,18 +1,6 @@
 import {DecalObject, DecalDashArrayX, DecalDashArrayY} from '../Decal';
 import Pattern, {PatternObject} from '../Pattern';
-import {createCanvas, getLeastCommonMultiple, map} from '../../core/util';
-
-const decalDefaults: DecalObject = {
-    shape: 'rect',
-    image: null,
-    symbolSize: 1,
-    symbolKeepAspect: true,
-    color: 'rgba(255, 255, 255, 0.2)',
-    backgroundColor: null,
-    dashArrayX: [20, 5],
-    dashArrayY: [10, 2],
-    dashLineOffset: 0
-};
+import {createCanvas, getLeastCommonMultiple, map, defaults} from '../../core/util';
 
 /**
  * Create or update pattern image from decal options
@@ -27,8 +15,23 @@ export function createOrUpdatePatternFromDecal(
     canvasWidth: number,
     canvasHeight: number
 ): PatternObject {
-    const dashArrayX = normalizeDashArrayX(decalObject.dashArrayX);
-    const dashArrayY = normalizeDashArrayY(decalObject.dashArrayY);
+    const decalOpt = defaults({
+        shape: 'rect',
+        symbolSize: 1,
+        symbolKeepAspect: true,
+        color: 'rgba(255, 255, 255, 0.4)',
+        backgroundColor: null,
+        dashArrayX: 10,
+        dashArrayY: 10,
+        dashLineOffset: 0,
+        rotation: Math.PI / 4
+    } as DecalObject, decalObject);
+    if (decalOpt.backgroundColor === 'none') {
+        decalOpt.backgroundColor = null;
+    }
+
+    const dashArrayX = normalizeDashArrayX(decalOpt.dashArrayX);
+    const dashArrayY = normalizeDashArrayY(decalOpt.dashArrayY);
 
     const lineBlockLengthsX = getLineBlockLengthX(dashArrayX);
     const lineBlockLengthY = getLineBlockLengthY(dashArrayY);
@@ -47,7 +50,7 @@ export function createOrUpdatePatternFromDecal(
 
     const base64 = canvas.toDataURL();
 
-    return new Pattern(base64, 'repeat', decalObject.rotation);
+    return new Pattern(base64, 'repeat', decalOpt.rotation);
 
     /**
      * Get minumum length that can make a repeatable pattern.
@@ -89,13 +92,13 @@ export function createOrUpdatePatternFromDecal(
          * |- --- =-- --|- --- -- ...
          * | - - - - = -| - - - - ...
          */
-        const offsetMultipleX = decalObject.dashLineOffset || 1;
+        const offsetMultipleX = decalOpt.dashLineOffset || 1;
         let width = 1;
         for (let i = 0, xlen = lineBlockLengthsX.length; i < xlen; ++i) {
             const x = getLeastCommonMultiple(offsetMultipleX * xlen, lineBlockLengthsX[i]);
             width = getLeastCommonMultiple(width, x);
         }
-        const columns = decalObject.dashLineOffset
+        const columns = decalOpt.dashLineOffset
             ? width / offsetMultipleX
             : 2;
         let height = lineBlockLengthY * columns;
@@ -116,7 +119,13 @@ export function createOrUpdatePatternFromDecal(
     }
 
     function brush() {
-        ctx.fillStyle = '#000';
+        ctx.clearRect(0, 0, pSize.width, pSize.height);
+        if (decalOpt.backgroundColor) {
+            ctx.fillStyle = decalOpt.backgroundColor;
+            ctx.fillRect(0, 0, pSize.width, pSize.height);
+        }
+
+        ctx.fillStyle = decalOpt.color;
 
         let yCnt = 0;
         let y = -pSize.lines * lineBlockLengthY;
@@ -126,7 +135,7 @@ export function createOrUpdatePatternFromDecal(
             if (yId % 2 === 0) {
                 console.log(yCnt);
                 let x = fixStartPosition(
-                    decalObject.dashLineOffset * (yCnt - pSize.lines) / 2,
+                    decalOpt.dashLineOffset * (yCnt - pSize.lines) / 2,
                     lineBlockLengthsX[0]
                 );
                 let xId1 = 0;
@@ -162,9 +171,10 @@ export function createOrUpdatePatternFromDecal(
                 yId = 0;
             }
         }
+        console.log(ctx.canvas.toDataURL())
 
-        ctx.strokeStyle = 'red';
-        ctx.strokeRect(0, 0, pSize.width, pSize.height);
+        // ctx.strokeStyle = 'red';
+        // ctx.strokeRect(0, 0, pSize.width, pSize.height);
     }
 
 }
@@ -181,6 +191,21 @@ function normalizeDashArrayX(dash: DecalDashArrayX): number[][] {
     }
     if (typeof dash === 'number') {
         return [[dash, dash]];
+    }
+
+    /**
+     * [20, 5] should be normalized into [[20, 5]],
+     * while [20, [5, 10]] should be normalized into [[20, 20], [5, 10]]
+     */
+    let isAllNumber = true;
+    for (let i = 0; i < dash.length; ++i) {
+        if (typeof dash[i] !== 'number') {
+            isAllNumber = false;
+            break;
+        }
+    }
+    if (isAllNumber) {
+        return normalizeDashArrayX([dash as number[]]);
     }
 
     const result: number[][] = [];
