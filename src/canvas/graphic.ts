@@ -17,7 +17,7 @@ import { MatrixArray } from '../core/matrix';
 import { map } from '../core/util';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
 import Element from '../Element';
-import {createOrUpdatePatternFromDecal} from '../graphic/helper/decal';
+import {DecalObject} from '../graphic/Decal';
 
 
 const pathProxyForDraw = new PathProxy(true);
@@ -66,16 +66,27 @@ export function createCanvasPattern(
 ): CanvasPattern {
     const image = createOrUpdateImage(pattern.image, pattern.__image, el);
     if (isImageReady(image)) {
-        const p = ctx.createPattern(image, pattern.repeat || 'repeat');
-        if (pattern.rotation) {
-            if (typeof DOMMatrix === 'function') {
-                const matrix = new DOMMatrix();
-                matrix.rotateSelf(0, 0, pattern.rotation / Math.PI * 180);
-                p.setTransform(matrix);
-            }
+        const canvasPattern = ctx.createPattern(image, pattern.repeat || 'repeat');
+        if (pattern.rotation && typeof DOMMatrix === 'function') {
+            const matrix = new DOMMatrix();
+            matrix.rotateSelf(0, 0, pattern.rotation / Math.PI * 180);
+            canvasPattern.setTransform(matrix);
         }
-        return p;
+        return canvasPattern;
     }
+}
+
+function createDecalPattern(
+    ctx: CanvasRenderingContext2D,
+    decal: DecalObject
+) {
+    if (decal.__canvasPattern || !decal.__pattern) {
+        return decal.__canvasPattern;
+    }
+    const hostEl = decal as {dirty: () => void};
+    const canvasPattern = createCanvasPattern(ctx, decal.__pattern, hostEl);
+    decal.__canvasPattern = canvasPattern;
+    return canvasPattern;
 }
 
 // Draw Path Elements
@@ -235,21 +246,15 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
 
     doBrush(hasStroke, hasFill);
 
-    const hasFillDecal = hasFill && !!style.decal;
-    const hasStrokeDecal = hasStroke && !!style.decal;
     if (!inBatch) {
+        const hasDecal = !!(style.decal && style.decal.__pattern);
+        const hasFillDecal = hasFill && hasDecal;
+        const hasStrokeDecal = hasStroke && hasDecal;
+
         if (hasFillDecal || hasStrokeDecal) {
-            if (el.__dirty || el.__canvasDecal) {
-                // TODO: may not need to regenerate when dirty
-                const decal = createOrUpdatePatternFromDecal(
-                    style.decal,
-                    ctx.canvas.width,
-                    ctx.canvas.height
-                );
-                el.__canvasDecal = createCanvasPattern(ctx, decal, el);
-            }
-            hasFillDecal && (ctx.fillStyle = el.__canvasDecal);
-            hasStrokeDecal && (ctx.strokeStyle = el.__canvasDecal);
+            const decalPattern = createDecalPattern(ctx, style.decal);
+            hasFillDecal && (ctx.fillStyle = decalPattern);
+            hasStrokeDecal && (ctx.strokeStyle = decalPattern);
             doBrush(hasStrokeDecal, hasFillDecal);
         }
     }

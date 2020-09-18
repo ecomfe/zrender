@@ -22,6 +22,7 @@ export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
     stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
     decal?: DecalObject
+
     /**
      * Still experimental, not works weel on arc with edge cases(large angle).
      */

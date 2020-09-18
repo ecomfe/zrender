@@ -1,4 +1,5 @@
 import {ImageLike} from '../core/types';
+import Pattern from './Pattern';
 
 export type DecalDashArrayX = number | (number | number[])[];
 export type DecalDashArrayY = number | number[];
@@ -26,7 +27,17 @@ export interface DecalObject {
     dashLineOffset?: number
 
     // in radians; valued from -Math.PI to Math.PI
-    rotation?: number
+    rotation?: number,
+
+    // boundary of largest tile width
+    maxTileWidth?: number,
+    // boundary of largest tile height
+    maxTileHeight?: number,
+
+    __pattern?: Pattern,
+    __canvasPattern?: CanvasPattern,
+
+    dirty?: () => void
 }
 
 class Decal {
@@ -44,6 +55,12 @@ class Decal {
     dashLineOffset: number
 
     rotation: number
+
+    maxTileWidth: number
+    maxTileHeight: number
+
+    pattern: Pattern
+    canvasPattern: CanvasPattern
 
     constructor(decalObject: DecalObject) {
         decalObject = decalObject || {};
