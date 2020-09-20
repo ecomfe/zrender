@@ -2,8 +2,8 @@ import PathProxy from '../core/PathProxy';
 import { cubicSubdivide } from '../core/curve';
 import Path from '../graphic/Path';
 import { ElementAnimateConfig } from '../Element';
-import { extend, defaults } from '../core/util';
-import { lerp, max } from '../core/vector';
+import { defaults } from '../core/util';
+import { lerp } from '../core/vector';
 const CMD = PathProxy.CMD;
 
 function aroundEqual(a: number, b: number) {

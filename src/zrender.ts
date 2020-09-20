@@ -126,9 +126,6 @@ class ZRender {
             : null;
         this.handler = new Handler(storage, painter, handerProxy, painter.root);
 
-        /**
-         * @type {module:zrender/animation/Animation}
-         */
         this.animation = new Animation({
             stage: {
                 update: () => this._flush(true)
@@ -200,7 +197,8 @@ class ZRender {
 
         if (!fromInside) {
             // Update animation if refreshImmediately is invoked from outside.
-            this.animation.update();
+            // Not trigger stage update to call flush again. Which may refresh twice
+            this.animation.update(true);
         }
 
         // Clear needsRefresh ahead to avoid something wrong happens in refresh
@@ -238,7 +236,7 @@ class ZRender {
 
         if (this._needsRefresh) {
             triggerRendered = true;
-            this.refreshImmediately(fromInside);
+            this.refreshImmediately(true);
         }
 
         if (this._needsRefreshHover) {
