@@ -250,12 +250,10 @@ class ZRender {
             this._stillFrameAccum = 0;
             this.trigger('rendered');
         }
-        else {
+        else if (this._sleepAfterStill > 0) {
             this._stillFrameAccum++;
-
-            const sleepAfterStill = this._sleepAfterStill;
             // Stop the animiation after still for 10 frames.
-            if (sleepAfterStill > 0 && this._stillFrameAccum > sleepAfterStill) {
+            if (this._stillFrameAccum > this._sleepAfterStill) {
                 this.animation.stop();
             }
         }
