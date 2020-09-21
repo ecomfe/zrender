@@ -77,6 +77,8 @@ class ZRender {
     handler: Handler
     animation: Animation
 
+    private _sleepAfterStill = 10;
+
     private _stillFrameAccum = 0;
 
     private _needsRefresh = true
@@ -251,11 +253,20 @@ class ZRender {
         else {
             this._stillFrameAccum++;
 
+            const sleepAfterStill = this._sleepAfterStill;
             // Stop the animiation after still for 10 frames.
-            if (this._stillFrameAccum > 10) {
+            if (sleepAfterStill > 0 && this._stillFrameAccum > sleepAfterStill) {
                 this.animation.stop();
             }
         }
+    }
+
+    /**
+     * Set sleep after still for frames.
+     * Disable auto sleep when it's 0.
+     */
+    setSleepAfterStill(stillFramesCount: number) {
+        this._sleepAfterStill = stillFramesCount;
     }
 
     /**
