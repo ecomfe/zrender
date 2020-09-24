@@ -136,7 +136,7 @@ export default class Animation extends Eventful {
         animator.animation = null;
     }
 
-    update() {
+    update(notTriggerStageUpdate?: boolean) {
         const time = new Date().getTime() - this._pausedTime;
         const delta = time - this._time;
         let clip = this._clipsHead;
@@ -165,7 +165,7 @@ export default class Animation extends Eventful {
         // event judge)
         this.trigger('frame', delta);
 
-        if (this.stage.update) {
+        if (this.stage.update && !notTriggerStageUpdate) {
             this.stage.update();
         }
     }

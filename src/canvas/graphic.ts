@@ -563,6 +563,10 @@ function setContextTransform(ctx: CanvasRenderingContext2D, el: Displayable) {
 const tmpRect = new BoundingRect(0, 0, 0, 0);
 const viewRect = new BoundingRect(0, 0, 0, 0);
 function isDisplayableCulled(el: Displayable, width: number, height: number) {
+    // Disable culling when width or height is 0
+    if (!width || !height) {
+        return false;
+    }
     tmpRect.copy(el.getBoundingRect());
     if (el.transform) {
         tmpRect.applyTransform(el.transform);
@@ -675,6 +679,10 @@ function flushPathDrawn(ctx: CanvasRenderingContext2D, scope: BrushScope) {
 
 function getStyle(el: Displayable, inHover?: boolean) {
     return inHover ? (el.__hoverStyle || el.style) : el.style;
+}
+
+export function brushSingle(ctx: CanvasRenderingContext2D, el: Displayable) {
+    brush(ctx, el, { inHover: false, viewWidth: 0, viewHeight: 0 }, true);
 }
 
 // Brush different type of elements.

@@ -168,6 +168,11 @@ export interface ElementTextGuideLineConfig {
     anchor?: Point
 
     /**
+     * If above the target element.
+     */
+    showAbove?: boolean
+
+    /**
      * Candidates of connectors. Used when autoCalculate is true and anchor is not specified.
      */
     candidates?: ('left' | 'top' | 'right' | 'bottom')[]
