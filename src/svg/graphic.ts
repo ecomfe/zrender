@@ -272,21 +272,8 @@ function pathDataToString(path: PathProxy) {
 }
 
 interface PathWithSVGBuildPath extends Path {
-    __svgBuildPath: Path['buildPath']
+    __svgPathVersion: number
     __svgPathStr: string
-}
-
-function wrapSVGBuildPath(el: PathWithSVGBuildPath) {
-    if (!el.__svgBuildPath) {
-        const oldBuildPath = el.buildPath;
-        el.__svgBuildPath = el.buildPath = function (path, shape, inBundle) {
-            oldBuildPath.call(this, el.path, shape, inBundle);
-            el.__svgPathStr = pathDataToString(el.path);
-        }
-        if (!el.shapeChanged()) {   // If path is updated. Get string manually.
-            el.__svgPathStr = pathDataToString(el.path);
-        }
-    }
 }
 
 const svgPath: SVGProxy<Path> = {
@@ -304,7 +291,7 @@ const svgPath: SVGProxy<Path> = {
         }
         const path = el.path;
 
-        wrapSVGBuildPath(el as PathWithSVGBuildPath);
+        // wrapSVGBuildPath(el as PathWithSVGBuildPath);
 
         if (el.shapeChanged()) {
             path.beginPath();
@@ -312,7 +299,12 @@ const svgPath: SVGProxy<Path> = {
             el.pathUpdated();
         }
 
-        // TODO Optimize
+        const pathVersion = path.getVersion();
+        if ((el as PathWithSVGBuildPath).__svgPathVersion !== pathVersion) {
+            (el as PathWithSVGBuildPath).__svgPathStr = pathDataToString(el.path);
+            (el as PathWithSVGBuildPath).__svgPathVersion = pathVersion;
+        }
+
         attr(svgEl, 'd', (el as PathWithSVGBuildPath).__svgPathStr);
 
         bindStyle(svgEl, style, el);

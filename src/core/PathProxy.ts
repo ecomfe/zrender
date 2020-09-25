@@ -111,6 +111,11 @@ export default class PathProxy {
 
     data: number[] | Float32Array
 
+    /**
+     * Version is for detecing if the path has been changed.
+     */
+    private _version = 0
+
     private _saveData: boolean
 
     private _ctx: ExtendedCanvasRenderingContext2D
@@ -150,6 +155,18 @@ export default class PathProxy {
         if (this._saveData) {
             this.data = [];
         }
+    }
+
+    increaseVersion() {
+        this._version++;
+    }
+
+    /**
+     * Version can be used outside for compare if the path is changed.
+     * For example to determine if need to update svg d str in svg renderer.
+     */
+    getVersion() {
+        return this._version;
     }
 
     /**
@@ -200,6 +217,9 @@ export default class PathProxy {
             this._pathSegLen = null;
             this._pathLen = 0;
         }
+
+        // Update version
+        this._version++;
     }
 
     moveTo(x: number, y: number) {
