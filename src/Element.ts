@@ -995,7 +995,6 @@ class Element<Props extends ElementProps = ElementProps> {
             this.currentStates = states.slice();
             this.markRedraw();
 
-
             if (!useHoverLayer) {
                 // Leave hover layer after states update and markRedraw.
                 this._toggleHoverLayerFlag(false);
