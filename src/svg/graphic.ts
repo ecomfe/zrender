@@ -3,7 +3,7 @@
 // 2. Image: sx, sy, sw, sh
 
 import {createElement} from './core';
-import PathProxy from '../core/PathProxy';
+import PathProxy, { PathRebuilder } from '../core/PathProxy';
 import * as matrix from '../core/matrix';
 import { Path } from '../export';
 import { PathStyleProps } from '../graphic/Path';
@@ -137,143 +137,127 @@ function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan |
     }
 }
 
-/***************************************************
- * PATH
- **************************************************/
-function pathDataToString(path: PathProxy) {
-    if (!path) {
-        return '';
+class SVGPathRebuilder implements PathRebuilder {
+    _d: (string | number)[]
+    _str: string
+    _invalid: boolean
+
+    reset() {
+        this._d = [];
+        this._str = '';
     }
+    moveTo(x: number, y: number) {
+        this._add('M', x, y);
+    }
+    lineTo(x: number, y: number) {
+        this._add('L', x, y);
+    }
+    bezierCurveTo(x: number, y: number, x2: number, y2: number, x3: number, y3: number) {
+        this._add('C', x, y, x2, y2, x3, y3);
+    }
+    quadraticCurveTo(x: number, y: number, x2: number, y2: number) {
+        this._add('Q', x, y, x2, y2);
+    }
+    arc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise: boolean) {
+        this.ellipse(cx, cy, r, r, 0, startAngle, endAngle, anticlockwise);
+    }
+    ellipse(cx: number, cy: number, rx: number, ry: number, psi: number, startAngle: number, endAngle: number, anticlockwise: boolean) {
 
-    const str = [];
-    const data = path.data;
-    const dataLength = path.len();
-    let x;
-    let y;
-    for (let i = 0; i < dataLength;) {
-        let cmd = data[i++];
-        let cmdStr = '';
-        let nData = 0;
-        switch (cmd) {
-            case CMD.M:
-                cmdStr = 'M';
-                nData = 2;
-                break;
-            case CMD.L:
-                cmdStr = 'L';
-                nData = 2;
-                break;
-            case CMD.Q:
-                cmdStr = 'Q';
-                nData = 4;
-                break;
-            case CMD.C:
-                cmdStr = 'C';
-                nData = 6;
-                break;
-            case CMD.A:
-                const cx = data[i++];
-                const cy = data[i++];
-                const rx = data[i++];
-                const ry = data[i++];
-                const theta = data[i++];
-                let dTheta = data[i++];
-                const psi = data[i++];
-                const clockwise = data[i++];
+        const firstCmd = this._d.length === 0;
 
-                const dThetaPositive = Math.abs(dTheta);
-                const isCircle = isAroundZero(dThetaPositive - PI2)
-                    || (clockwise ? dTheta >= PI2 : -dTheta >= PI2);
+        let dTheta = endAngle - startAngle;
+        const clockwise = !anticlockwise;
 
-                // Mapping to 0~2PI
-                const unifiedTheta = dTheta > 0 ? dTheta % PI2 : (dTheta % PI2 + PI2);
+        const dThetaPositive = Math.abs(dTheta);
+        const isCircle = isAroundZero(dThetaPositive - PI2)
+            || (clockwise ? dTheta >= PI2 : -dTheta >= PI2);
 
-                let large = false;
-                if (isCircle) {
-                    large = true;
-                }
-                else if (isAroundZero(dThetaPositive)) {
-                    large = false;
-                }
-                else {
-                    large = (unifiedTheta >= PI) === !!clockwise;
-                }
+        // Mapping to 0~2PI
+        const unifiedTheta = dTheta > 0 ? dTheta % PI2 : (dTheta % PI2 + PI2);
 
-                const x0 = round4(cx + rx * mathCos(theta));
-                const y0 = round4(cy + ry * mathSin(theta));
-
-                // It will not draw if start point and end point are exactly the same
-                // We need to shift the end point with a small value
-                // FIXME A better way to draw circle ?
-                if (isCircle) {
-                    if (clockwise) {
-                        dTheta = PI2 - 1e-4;
-                    }
-                    else {
-                        dTheta = -PI2 + 1e-4;
-                    }
-
-                    large = true;
-
-                    if (i === 9) {
-                        // Move to (x0, y0) only when CMD.A comes at the
-                        // first position of a shape.
-                        // For instance, when drawing a ring, CMD.A comes
-                        // after CMD.M, so it's unnecessary to move to
-                        // (x0, y0).
-                        str.push('M', x0, y0);
-                    }
-                }
-
-                x = round4(cx + rx * mathCos(theta + dTheta));
-                y = round4(cy + ry * mathSin(theta + dTheta));
-
-                if (isNaN(x0) || isNaN(y0) || isNaN(rx) || isNaN(ry) || isNaN(psi) || isNaN(degree) || isNaN(x)  || isNaN(y)) {
-                    return '';
-                }
-
-                // FIXME Ellipse
-                str.push('A', round4(rx), round4(ry),
-                    mathRound(psi * degree), +large, +clockwise, x, y);
-                break;
-            case CMD.Z:
-                cmdStr = 'Z';
-                break;
-            case CMD.R:
-                x = round4(data[i++]);
-                y = round4(data[i++]);
-                const w = round4(data[i++]);
-                const h = round4(data[i++]);
-
-                if (isNaN(x) || isNaN(y) || isNaN(w) || isNaN(h)) {
-                    return '';
-                }
-
-                str.push(
-                    'M', x, y,
-                    'L', x + w, y,
-                    'L', x + w, y + h,
-                    'L', x, y + h,
-                    'L', x, y
-                );
-                break;
+        let large = false;
+        if (isCircle) {
+            large = true;
         }
-        cmdStr && str.push(cmdStr);
-        for (let j = 0; j < nData; j++) {
-            const val = round4(data[i++]);
-            if (isNaN(val)) {
-                return '';
+        else if (isAroundZero(dThetaPositive)) {
+            large = false;
+        }
+        else {
+            large = (unifiedTheta >= PI) === !!clockwise;
+        }
+
+        const x0 = round4(cx + rx * mathCos(startAngle));
+        const y0 = round4(cy + ry * mathSin(startAngle));
+
+        // It will not draw if start point and end point are exactly the same
+        // We need to shift the end point with a small value
+        // FIXME A better way to draw circle ?
+        if (isCircle) {
+            if (clockwise) {
+                dTheta = PI2 - 1e-4;
             }
-            // PENDING With scale
-            str.push(val);
+            else {
+                dTheta = -PI2 + 1e-4;
+            }
+
+            large = true;
+
+            if (firstCmd) {
+                // Move to (x0, y0) only when CMD.A comes at the
+                // first position of a shape.
+                // For instance, when drawing a ring, CMD.A comes
+                // after CMD.M, so it's unnecessary to move to
+                // (x0, y0).
+                this._d.push('M', x0, y0);
+            }
+        }
+
+        const x = round4(cx + rx * mathCos(startAngle + dTheta));
+        const y = round4(cy + ry * mathSin(startAngle + dTheta));
+
+        if (isNaN(x0) || isNaN(y0) || isNaN(rx) || isNaN(ry) || isNaN(psi) || isNaN(degree) || isNaN(x)  || isNaN(y)) {
+            return '';
+        }
+
+        // FIXME Ellipse
+        this._d.push('A', round4(rx), round4(ry),
+            mathRound(psi * degree), +large, +clockwise, x, y);
+    }
+    rect(x: number, y: number, w: number, h: number) {
+        this._add('M', x, y);
+        this._add('L', x + w, y);
+        this._add('L', x + w, y + h);
+        this._add('L', x, y + h);
+        this._add('L', x, y);
+    }
+    closePath() {
+        this._add('Z');
+    }
+
+    _add(cmd: string, a?: number, b?: number, c?: number, d?: number, e?: number, f?: number, g?: number, h?: number) {
+        this._d.push(cmd);
+        for (let i = 1; i < arguments.length; i++) {
+            const val = arguments[i];
+            if (isNaN(val)) {
+                this._invalid = true;
+                return;
+            }
+            this._d.push(round4(val));
         }
     }
-    return str.join(' ');
+
+    generateStr() {
+        this._str = this._invalid ? '' : this._d.join(' ');
+        this._d = [];
+    }
+    getStr() {
+        return this._str;
+    }
 }
 
 interface PathWithSVGBuildPath extends Path {
     __svgPathVersion: number
-    __svgPathStr: string
+    __svgPathBuilder: SVGPathRebuilder
 }
 
 const svgPath: SVGProxy<Path> = {
@@ -300,12 +284,19 @@ const svgPath: SVGProxy<Path> = {
         }
 
         const pathVersion = path.getVersion();
-        if ((el as PathWithSVGBuildPath).__svgPathVersion !== pathVersion) {
-            (el as PathWithSVGBuildPath).__svgPathStr = pathDataToString(el.path);
-            (el as PathWithSVGBuildPath).__svgPathVersion = pathVersion;
+        const elExt = el as PathWithSVGBuildPath;
+        let svgPathBuilder = elExt.__svgPathBuilder;
+        if (elExt.__svgPathVersion !== pathVersion || !svgPathBuilder || el.style.strokePercent < 1) {
+            if (!svgPathBuilder) {
+                svgPathBuilder = elExt.__svgPathBuilder = new SVGPathRebuilder();
+            }
+            svgPathBuilder.reset();
+            path.rebuildPath(svgPathBuilder, el.style.strokePercent);
+            svgPathBuilder.generateStr();
+            elExt.__svgPathVersion = pathVersion;
         }
 
-        attr(svgEl, 'd', (el as PathWithSVGBuildPath).__svgPathStr);
+        attr(svgEl, 'd', svgPathBuilder.getStr());
 
         bindStyle(svgEl, style, el);
         setTransform(svgEl, el.transform);
