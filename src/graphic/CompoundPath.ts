@@ -1,6 +1,7 @@
 // CompoundPath to improve performance
 
 import Path from './Path';
+import PathProxy from '../core/PathProxy';
 
 interface CompoundPathShape {
     paths: Path[]
@@ -37,7 +38,7 @@ export default class CompoundPath extends Path {
         }
     }
 
-    buildPath(ctx: CanvasRenderingContext2D, shape: CompoundPathShape) {
+    buildPath(ctx: PathProxy | CanvasRenderingContext2D, shape: CompoundPathShape) {
         const paths = shape.paths || [];
         for (let i = 0; i < paths.length; i++) {
             paths[i].buildPath(ctx, paths[i].shape, true);

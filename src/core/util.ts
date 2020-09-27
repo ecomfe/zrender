@@ -36,7 +36,7 @@ const nativeFilter = arrayProto.filter;
 const nativeSlice = arrayProto.slice;
 const nativeMap = arrayProto.map;
 // In case some env may redefine the global variable `Function`.
-const ctorFunction = (function() {}).constructor;
+const ctorFunction = (function () {}).constructor;
 const protoFunction = ctorFunction ? ctorFunction.prototype : null;
 
 // Avoid assign to an exported constiable, for transforming to cjs.
