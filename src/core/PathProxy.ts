@@ -61,7 +61,7 @@ const tmpAngles: number[] = [];
 
 function modPI2(radian: number) {
     // It's much more stable to mod N instedof PI
-    const n = Math.round(radian / PI * 1e5) / 1e5;
+    const n = Math.round(radian / PI * 1e8) / 1e8;
     return (n % 2) * PI;
 }
 /**
