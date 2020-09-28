@@ -168,6 +168,11 @@ export interface ElementTextGuideLineConfig {
     anchor?: Point
 
     /**
+     * If above the target element.
+     */
+    showAbove?: boolean
+
+    /**
      * Candidates of connectors. Used when autoCalculate is true and anchor is not specified.
      */
     candidates?: ('left' | 'top' | 'right' | 'bottom')[]
@@ -990,8 +995,7 @@ class Element<Props extends ElementProps = ElementProps> {
             this.currentStates = states.slice();
             this.markRedraw();
 
-
-            if (!useHoverLayer) {
+            if (!useHoverLayer && this.__inHover) {
                 // Leave hover layer after states update and markRedraw.
                 this._toggleHoverLayerFlag(false);
                 // NOTE: avoid unexpected refresh when moving out from hover layer!!
