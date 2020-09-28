@@ -732,7 +732,6 @@ function splitShape(path: Path, splitCount: number): Path[] {
                 : toPathShape[propXY] + toPathShape[propWH] - xyCurr;
             const splitted = new Rect({ shape: subShape });
             resultPaths.push(splitted);
-
             sharePropsWithSplittedPath(splitted, path);
         }
     }

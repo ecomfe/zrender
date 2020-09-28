@@ -529,7 +529,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         return mergedState;
     }
 
-    protected _getAnimationStyleProps() {
+    getAnimationStyleProps() {
         return DEFAULT_PATH_ANIMATION_PROPS;
     }
     /**

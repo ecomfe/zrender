@@ -444,7 +444,7 @@ class ZRText extends Displayable<TextProps> {
         }
     }
 
-    protected _getAnimationStyleProps() {
+    getAnimationStyleProps() {
         return DEFAULT_TEXT_ANIMATION_PROPS;
     }
 
