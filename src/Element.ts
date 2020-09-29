@@ -816,8 +816,8 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Clear all states.
      */
-    clearStates() {
-        this.useState(PRESERVED_NORMAL_STATE, false);
+    clearStates(noAnimation?: boolean) {
+        this.useState(PRESERVED_NORMAL_STATE, false, noAnimation);
         // TODO set _normalState to null?
     }
     /**
@@ -828,7 +828,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * @param keepCurrentState If keep current states.
      *      If not, it will inherit from the normal state.
      */
-    useState(stateName: string, keepCurrentStates?: boolean) {
+    useState(stateName: string, keepCurrentStates?: boolean, noAnimation?: boolean) {
         // Use preserved word __normal__
         // TODO: Only restore changed properties when restore to normal???
         const toNormalState = stateName === PRESERVED_NORMAL_STATE;
@@ -879,7 +879,7 @@ class Element<Props extends ElementProps = ElementProps> {
             state,
             this._normalState,
             keepCurrentStates,
-            !this.__inHover && animationCfg && animationCfg.duration > 0,
+            !noAnimation && !this.__inHover && animationCfg && animationCfg.duration > 0,
             animationCfg
         );
 
@@ -927,7 +927,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * Apply multiple states.
      * @param states States list.
      */
-    useStates(states: string[]) {
+    useStates(states: string[], noAnimation?: boolean) {
         if (!states.length) {
             this.clearStates();
         }
@@ -978,7 +978,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 mergedState,
                 this._normalState,
                 false,
-                !this.__inHover && animationCfg && animationCfg.duration > 0,
+                !noAnimation && !this.__inHover && animationCfg && animationCfg.duration > 0,
                 animationCfg
             );
 
