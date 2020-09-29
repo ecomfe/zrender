@@ -437,16 +437,23 @@ function isHover(displayable: Displayable, x: number, y: number) {
     if (displayable[displayable.rectHover ? 'rectContain' : 'contain'](x, y)) {
         let el: Element = displayable;
         let isSilent;
+        let ignoreClip = false;
         while (el) {
-            let clipPath = el.getClipPath();
-            // If clipped by ancestor.
-            // FIXME: If clipPath has neither stroke nor fill,
-            // el.clipPath.contain(x, y) will always return false.
-            if (clipPath && !clipPath.contain(x, y)) {
-                return false;
+            // Ignore clip on any ancestors.
+            if (el.ignoreClip) {
+                ignoreClip = true;
             }
-            if (el.silent) {
-                isSilent = true;
+            if (!ignoreClip) {
+                let clipPath = el.getClipPath();
+                // If clipped by ancestor.
+                // FIXME: If clipPath has neither stroke nor fill,
+                // el.clipPath.contain(x, y) will always return false.
+                if (clipPath && !clipPath.contain(x, y)) {
+                    return false;
+                }
+                if (el.silent) {
+                    isSilent = true;
+                }
             }
             // Consider when el is textContent, also need to be silent
             // if any of its host el and its ancestors is silent.

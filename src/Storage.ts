@@ -100,7 +100,11 @@ export default class Storage {
         el.afterUpdate();
 
         const userSetClipPath = el.getClipPath();
-        if (userSetClipPath) {
+
+        if (el.ignoreClip) {
+            clipPaths = null;
+        }
+        else if (userSetClipPath) {
 
             // FIXME 效率影响
             if (clipPaths) {
