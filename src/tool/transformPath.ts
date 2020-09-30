@@ -93,4 +93,6 @@ export default function (path: PathProxy, m: MatrixArray) {
             data[j++] = p[1];
         }
     }
+
+    path.increaseVersion();
 }

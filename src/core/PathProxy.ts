@@ -61,7 +61,7 @@ const tmpAngles: number[] = [];
 
 function modPI2(radian: number) {
     // It's much more stable to mod N instedof PI
-    const n = Math.round(radian / PI * 1e5) / 1e5;
+    const n = Math.round(radian / PI * 1e8) / 1e8;
     return (n % 2) * PI;
 }
 /**
@@ -111,6 +111,11 @@ export default class PathProxy {
 
     data: number[] | Float32Array
 
+    /**
+     * Version is for detecing if the path has been changed.
+     */
+    private _version = 0
+
     private _saveData: boolean
 
     private _ctx: ExtendedCanvasRenderingContext2D
@@ -131,13 +136,9 @@ export default class PathProxy {
     private _uy: number
 
     private _lineDash: number[]
-
     private _needsDash: boolean
-
     private _dashOffset: number
-
     private _dashIdx: number
-
     private _dashSum: number
 
     static CMD = CMD
@@ -150,6 +151,18 @@ export default class PathProxy {
         if (this._saveData) {
             this.data = [];
         }
+    }
+
+    increaseVersion() {
+        this._version++;
+    }
+
+    /**
+     * Version can be used outside for compare if the path is changed.
+     * For example to determine if need to update svg d str in svg renderer.
+     */
+    getVersion() {
+        return this._version;
     }
 
     /**
@@ -200,6 +213,9 @@ export default class PathProxy {
             this._pathSegLen = null;
             this._pathLen = 0;
         }
+
+        // Update version
+        this._version++;
     }
 
     moveTo(x: number, y: number) {
@@ -845,7 +861,7 @@ export default class PathProxy {
      * Rebuild path will not consider javascript implemented line dash.
      * @param {CanvasRenderingContext2D} ctx
      */
-    rebuildPath(ctx: CanvasRenderingContext2D, percent: number) {
+    rebuildPath(ctx: PathRebuilder, percent: number) {
         const d = this.data;
         const ux = this._ux;
         const uy = this._uy;
@@ -988,14 +1004,8 @@ export default class PathProxy {
                         }
                         accumLength += l;
                     }
-                    if (isEllipse) {
-                        ctx.translate(cx, cy);
-                        ctx.rotate(psi);
-                        ctx.scale(scaleX, scaleY);
-                        ctx.arc(0, 0, r, startAngle, endAngle, anticlockwise);
-                        ctx.scale(1 / scaleX, 1 / scaleY);
-                        ctx.rotate(-psi);
-                        ctx.translate(-cx, -cy);
+                    if (isEllipse && ctx.ellipse) {
+                        ctx.ellipse(cx, cy, rx, ry, psi, startAngle, endAngle, anticlockwise);
                     }
                     else {
                         ctx.arc(cx, cy, r, startAngle, endAngle, anticlockwise);
@@ -1075,4 +1085,16 @@ export default class PathProxy {
         proto._ux = 0;
         proto._uy = 0;
     })()
+}
+
+
+export interface PathRebuilder {
+    moveTo(x: number, y: number): void
+    lineTo(x: number, y: number): void
+    bezierCurveTo(x: number, y: number, x2: number, y2: number, x3: number, y3: number): void
+    quadraticCurveTo(x: number, y: number, x2: number, y2: number): void
+    arc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise: boolean): void
+    ellipse(cx: number, cy: number, radiusX: number, radiusY: number, rotation: number, startAngle: number, endAngle: number, anticlockwise: boolean): void
+    rect(x: number, y: number, width: number, height: number): void
+    closePath(): void
 }
