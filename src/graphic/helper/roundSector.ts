@@ -1,5 +1,5 @@
 import PathProxy from '../../core/PathProxy';
-import { normalizeRadian } from '../../contain/util'
+import { normalizeRadian } from '../../contain/util';
 
 const PI = Math.PI;
 const PI2 = PI * 2;
