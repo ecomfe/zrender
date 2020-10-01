@@ -1,13 +1,93 @@
-import PathProxy from '../../core/PathProxy';
-import { normalizeRadian } from '../../contain/util';
+import PathProxy, { normalizeArcAngles } from '../../core/PathProxy';
 
 const PI = Math.PI;
 const PI2 = PI * 2;
 const mathSin = Math.sin;
 const mathCos = Math.cos;
-const mathATan = Math.atan;
+const mathACos = Math.acos;
+const mathATan2 = Math.atan2;
 const mathAbs = Math.abs;
+const mathSqrt = Math.sqrt;
+const mathMax = Math.max;
+const mathMin = Math.min;
 const e = 1e-4;
+
+type CornerTangents = {
+    cx: number
+    cy: number
+    x01: number
+    y01: number
+    x11: number
+    y11: number
+};
+
+function intersect(
+    x0: number, y0: number, 
+    x1: number, y1: number, 
+    x2: number, y2: number, 
+    x3: number, y3: number
+): [number, number] {
+    const x10 = x1 - x0;
+    const y10 = y1 - y0;
+    const x32 = x3 - x2;
+    const y32 = y3 - y2;
+    let t = y32 * x10 - x32 * y10;
+    if (t * t < e) {
+        return;
+    }
+    t = (x32 * (y0 - y2) - y32 * (x0 - x2)) / t;
+    return [x0 + t * x10, y0 + t * y10];
+}
+
+// Compute perpendicular offset line of length rc.
+function computeCornerTangents(
+    x0: number, y0: number, 
+    x1: number, y1: number, 
+    radius: number, cr: number, 
+    clockwise: boolean
+): CornerTangents {
+  const x01 = x0 - x1;
+  const y01 = y0 - y1;
+  const lo = (clockwise ? cr : -cr) / mathSqrt(x01 * x01 + y01 * y01);
+  const ox = lo * y01;
+  const oy = -lo * x01;
+  const x11 = x0 + ox;
+  const y11 = y0 + oy;
+  const x10 = x1 + ox;
+  const y10 = y1 + oy;
+  const x00 = (x11 + x10) / 2;
+  const y00 = (y11 + y10) / 2;
+  const dx = x10 - x11;
+  const dy = y10 - y11;
+  const d2 = dx * dx + dy * dy;
+  const r = radius - cr;
+  const s = x11 * y10 - x10 * y11;
+  const d = (dy < 0 ? -1 : 1) * mathSqrt(mathMax(0, r * r * d2 - s * s));
+  let cx0 = (s * dy - dx * d) / d2;
+  let cy0 = (-s * dx - dy * d) / d2;
+  const cx1 = (s * dy + dx * d) / d2;
+  const cy1 = (-s * dx + dy * d) / d2;
+  const dx0 = cx0 - x00;
+  const dy0 = cy0 - y00;
+  const dx1 = cx1 - x00;
+  const dy1 = cy1 - y00;
+
+  // Pick the closer of the two intersection points
+  // TODO: Is there a faster way to determine which intersection to use?
+  if (dx0 * dx0 + dy0 * dy0 > dx1 * dx1 + dy1 * dy1) {
+      cx0 = cx1;
+      cy0 = cy1;
+  }
+
+  return {
+    cx: cx0,
+    cy: cy0,
+    x01: -ox,
+    y01: -oy,
+    x11: cx0 * (radius / r - 1),
+    y11: cy0 * (radius / r - 1)
+  };
+}
 
 export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     cx: number
@@ -20,8 +100,8 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     cornerRadius?: number,
     innerCornerRadius?: number
 }) {
-    let radius = Math.max(shape.r, 0);
-    let innerRadius = Math.max(shape.r0 || 0, 0);
+    let radius = mathMax(shape.r, 0);
+    let innerRadius = mathMax(shape.r0 || 0, 0);
     const hasRadius = radius > 0;
     const hasInnerRadius = innerRadius > 0;
 
@@ -30,13 +110,13 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     }
 
     if (!hasRadius) {
-        // use innerRadius
+        // use innerRadius as radius if no radius
         radius = innerRadius;
         innerRadius = 0;
     }
 
     if (innerRadius > radius) {
-        // swap
+        // swap, ensure that radius is always larger than innerRadius
         const tmp = radius;
         radius = innerRadius;
         innerRadius = tmp;
@@ -44,498 +124,137 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
 
     const x = shape.cx;
     const y = shape.cy;
-    const clockwise = shape.clockwise;
-    const startAngle = normalizeRadian(shape.startAngle);
-    const endAngle = normalizeRadian(shape.endAngle);
+    const clockwise = !!shape.clockwise;
+    const startAngle = shape.startAngle;
+    const endAngle = shape.endAngle;
+    const cornerRadius = shape.cornerRadius || 0;
+    const innerCornerRadius = shape.innerCornerRadius || 0;
 
-    let cornerRadius = shape.cornerRadius || 0;
-    let innerCornerRadius = shape.innerCornerRadius || 0;
+    // FIXME: whether normalizing angles is required
+    const tmpAngles = [startAngle, endAngle];
+    normalizeArcAngles(tmpAngles, !clockwise);
 
-    const arc = Math.abs(endAngle - startAngle);
+    const arc = mathAbs(tmpAngles[0] - tmpAngles[1]);
 
-    const needDrawCorner = (cornerRadius > e || innerCornerRadius > e) 
-        && radius !== innerRadius
-        && arc > e && arc < PI2 - e;
-
-    if (!needDrawCorner) {
-        const unitX = mathCos(startAngle);
-        const unitY = mathSin(startAngle);
-
-        ctx.moveTo(unitX * innerRadius + x, unitY * innerRadius + y);
-
-        ctx.lineTo(unitX * radius + x, unitY * radius + y);
-
-        ctx.arc(x, y, radius, startAngle, endAngle, !clockwise);
-
-        ctx.lineTo(
-            mathCos(endAngle) * innerRadius + x,
-            mathSin(endAngle) * innerRadius + y
-        );
-
-        if (innerRadius > 0) {
-            ctx.arc(x, y, innerRadius, endAngle, startAngle, clockwise);
-        }
-
-        ctx.closePath();
-
-        return;
-    }
-
-    let crMax = (radius - innerRadius) / 2;
-
-    if (cornerRadius > crMax) {
-        cornerRadius = crMax;
-    }
-
-    if (innerCornerRadius > crMax) {
-        innerCornerRadius = crMax;
-    }
-
-    const crSin = mathSin(Math.min(arc, 45 * PI / 180) / 4);
-
-    crMax = radius * crSin;
-    if (cornerRadius > crMax) {
-        cornerRadius = crMax;
-    }
-
-    crMax = innerRadius * crSin;
-    if (innerCornerRadius > crMax) {
-        innerCornerRadius = crMax;
-    }
-
-    // calculate some key points of the corner circle
-    const cornerKeyPoints = calcCornerKeyPoints(
-        x, y, radius, cornerRadius, 
-        startAngle, endAngle, clockwise
-    );
-
-    // calculate some key points of the inner corner circle
-    const innerCornerKeyPoints = calcCornerKeyPoints(
-        x, y, innerRadius, innerCornerRadius, 
-        startAngle, endAngle, clockwise, true
-    );
-
-    if (innerRadius) {
-        if (innerCornerRadius) {
-            const tprStart = innerCornerKeyPoints.tprStart;
-            ctx.moveTo(tprStart.x, tprStart.y);
-        }
-        else {
-            ctx.moveTo(
-               mathCos(startAngle) * innerRadius + x, 
-               mathSin(startAngle) * innerRadius + y
-            );
-        }
-    }
-    else {
+    // is a point
+    if (!(radius > e)) {
         ctx.moveTo(x, y);
     }
+    // is a circle or annulus
+    else if (arc > PI2 - e) {
+        ctx.moveTo(
+            x + radius * mathCos(startAngle), 
+            y + radius * mathSin(startAngle)
+        );
+        ctx.arc(x, y, radius, startAngle, endAngle, !clockwise);
 
-    if (radius) {
-        if (cornerRadius) {
-            const crAngle = cornerKeyPoints.crAngle;
-            const tprStart = cornerKeyPoints.tprStart;
-            const tpCenterStart = cornerKeyPoints.tpCenterStart;
-            const tpCenterEnd = cornerKeyPoints.tpCenterEnd;
-
-            // calculate startAngle and endAngle of two corner circles
-            const circleAngles = calcCornerCircleAngles(cornerKeyPoints, startAngle, endAngle, clockwise);
-
-            ctx.lineTo(tprStart.x, tprStart.y);
-
-            ctx.arc(tpCenterStart.x, tpCenterStart.y, cornerRadius, circleAngles.start0, circleAngles.end0, !clockwise);
-
-            ctx.arc(x, y, radius, startAngle + crAngle, endAngle - crAngle, !clockwise);
-
-            ctx.arc(tpCenterEnd.x, tpCenterEnd.y, cornerRadius, circleAngles.start1, circleAngles.end1, !clockwise);
-        }
-        else {
-            ctx.lineTo(
-                mathCos(startAngle) * radius + x, 
-                mathSin(startAngle) * radius + y
-            );
-
-            ctx.arc(x, y, radius, startAngle, endAngle, !clockwise);
-
+        if (innerRadius > e) {
             ctx.moveTo(
-                mathCos(endAngle) * radius + x, 
-                mathSin(endAngle) * radius + y
+                x + innerRadius * mathCos(endAngle), 
+                y + innerRadius * mathSin(endAngle)
             );
+            ctx.arc(x, y, innerRadius, endAngle, startAngle, clockwise);
         }
     }
-    
-    if (innerRadius) {
-        if (innerCornerRadius) {
-            const crAngle = innerCornerKeyPoints.crAngle;
-            const tprStart = innerCornerKeyPoints.tprStart;
-            const tprEnd = innerCornerKeyPoints.tprEnd;
-            const tpCenterStart = innerCornerKeyPoints.tpCenterStart;
-            const tpCenterEnd = innerCornerKeyPoints.tpCenterEnd;
-
-            // calculate startAngle and endAngle of two inner corner circles
-            const innerCircleAngles = calcInnerCornerCircleAngles(innerCornerKeyPoints, startAngle, endAngle, clockwise);
-
-            ctx.lineTo(tprEnd.x, tprEnd.y);
-
-            ctx.arc(tpCenterEnd.x, tpCenterEnd.y, innerCornerRadius, innerCircleAngles.start1, innerCircleAngles.end1, !clockwise);
-
-            ctx.arc(x, y, innerRadius, endAngle - crAngle, startAngle + crAngle, !!clockwise);
-
-            ctx.arc(tpCenterStart.x, tpCenterStart.y, innerCornerRadius, innerCircleAngles.start0, innerCircleAngles.end0, !clockwise);
-
-            ctx.moveTo(tprStart.x, tprStart.y);
-        }
-        else {
-            ctx.lineTo(
-                mathCos(endAngle) * innerRadius + x, 
-                mathSin(endAngle) * innerRadius + y
-            );
-
-            ctx.arc(x, y, innerRadius, endAngle, startAngle, !!clockwise);
-        }
-    }
+    // is a circular or annular sector
     else {
-        ctx.lineTo(x, y);
+        const cr = mathMin(mathAbs(radius - innerRadius) / 2, cornerRadius);
+        let cr0 = cr;
+        let cr1 = cr;
+
+        const xrs = radius * mathCos(startAngle);
+        const yrs = radius * mathSin(startAngle);
+        const xire = innerRadius * mathCos(endAngle);
+        const yire = innerRadius * mathSin(endAngle);
+
+        let xre;
+        let yre;
+        let xirs;
+        let yirs;
+
+        // draw corner radius
+        if (cr > e) {
+            xre = radius * mathCos(endAngle);
+            yre = radius * mathSin(endAngle);
+            xirs = innerRadius * mathCos(startAngle);
+            yirs = innerRadius * mathSin(startAngle);
+
+            // restrict the max value of corner radius
+            if (arc < PI) {
+                const it = intersect(xrs, yrs, xirs, yirs, xre, yre, xire, yire);
+                if (it) {
+                    const x0 = xrs - it[0];
+                    const y0 = yrs - it[1];
+                    const x1 = xre - it[0];
+                    const y1 = yre - it[1];
+                    const a = 1 / mathSin(
+                        mathACos((x0 * x1 + y0 * y1) / (mathSqrt(x0 * x0 + y0 * y0) * mathSqrt(x1 * x1 + y1 * y1))) / 2
+                    );
+                    const b = mathSqrt(it[0] * it[0] + it[1] * it[1]);
+                    cr0 = mathMin(cr, (innerRadius - b) / (a - 1));
+                    cr1 = mathMin(cr, (radius - b) / (a + 1));
+                }
+            }
+        }
+
+        // the sector is collapsed to a line
+        if (!(arc > e)) {
+            ctx.moveTo(x + xrs, y + yrs);
+        }
+        // the outer ring has corners
+        else if (cr1 > e) {
+            const ct0 = computeCornerTangents(xirs, yirs, xrs, yrs, radius, cr1, clockwise);
+            const ct1 = computeCornerTangents(xre, yre, xire, yire, radius, cr1, clockwise);
+
+            ctx.moveTo(x + ct0.cx + ct0.x01, y + ct0.cy + ct0.y01);
+
+            // Have the corners merged?
+            if (cr1 < cr) {
+                ctx.arc(x + ct0.cx, y + ct0.cy, cr1, mathATan2(ct0.y01, ct0.x01), mathATan2(ct1.y01, ct1.x01), !clockwise);
+            }
+            else {
+              // draw the two corners and the ring
+              ctx.arc(x + ct0.cx, y + ct0.cy, cr1, mathATan2(ct0.y01, ct0.x01), mathATan2(ct0.y11, ct0.x11), !clockwise);
+
+              ctx.arc(x, y, radius, mathATan2(ct0.cy + ct0.y11, ct0.cx + ct0.x11), mathATan2(ct1.cy + ct1.y11, ct1.cx + ct1.x11), !clockwise);
+
+              ctx.arc(x + ct1.cx, y + ct1.cy, cr1, mathATan2(ct1.y11, ct1.x11), mathATan2(ct1.y01, ct1.x01), !clockwise);
+            }
+        }
+        // the outer ring is a circular arc
+        else {
+            ctx.moveTo(x + xrs, y + yrs);
+            ctx.arc(x, y, radius, startAngle, endAngle, !clockwise);
+        }
+
+        // no inner ring, is a circular sector
+        if (!(innerRadius > e)) {
+            ctx.lineTo(x + xire, y + yire);
+        }
+        // the inner ring has corners
+        else if (cr0 > e) {
+            const ct0 = computeCornerTangents(xire, yire, xre, yre, innerRadius, -cr0, clockwise);
+            const ct1 = computeCornerTangents(xrs, yrs, xirs, yirs, innerRadius, -cr0, clockwise);
+            ctx.lineTo(x + ct0.cx + ct0.x01, y + ct0.cy + ct0.y01);
+
+            // Have the corners merged?
+            if (cr0 < cr) {
+                ctx.arc(x + ct0.cx, y + ct0.cy, cr0, mathATan2(ct0.y01, ct0.x01), mathATan2(ct1.y01, ct1.x01), !clockwise);
+            }
+            // draw the two corners and the ring.
+            else {
+              ctx.arc(x + ct0.cx, y + ct0.cy, cr0, mathATan2(ct0.y01, ct0.x01), mathATan2(ct0.y11, ct0.x11), !clockwise);
+
+              ctx.arc(x, y, innerRadius, mathATan2(ct0.cy + ct0.y11, ct0.cx + ct0.x11), mathATan2(ct1.cy + ct1.y11, ct1.cx + ct1.x11), clockwise);
+
+              ctx.arc(x + ct1.cx, y + ct1.cy, cr0, mathATan2(ct1.y11, ct1.x11), mathATan2(ct1.y01, ct1.x01), !clockwise);
+            }
+        }
+        // the inner ring is just a circular arc
+        else {
+            ctx.arc(x, y, innerRadius, endAngle, startAngle, clockwise);
+        }
     }
 
     ctx.closePath();
-}
-
-type Point = {
-    x: number
-    y: number
-}
-
-type KeyPoints = {
-    tpStart: Point
-    tpEnd: Point
-    tprStart: Point
-    tprEnd: Point
-    tpCenterStart: Point
-    tpCenterEnd: Point,
-    crAngle: number
-}
-
-type CornerCircleAngles = {
-    start0: number,
-    end0: number,
-    start1: number,
-    end1: number
-}
-
-function calcCornerKeyPoints(
-    x: number, 
-    y: number,
-    radius: number, 
-    cornerRadius: number, 
-    startAngle: number, 
-    endAngle: number, 
-    clockwise?: boolean,
-    inner?: boolean
-): KeyPoints {
-
-    const radiusDiff = inner ? radius + cornerRadius : radius - cornerRadius;
-    const tangentLen = Math.sqrt(radiusDiff * radiusDiff - cornerRadius * cornerRadius);
-
-    const sign = clockwise ? 1 : -1;
-    const crAngle = Math.asin(cornerRadius / radiusDiff) * sign;
-    const sAngle = startAngle + crAngle;
-    const eAngle = endAngle - crAngle;
-
-    const sAngleSin = mathSin(sAngle);
-    const sAngleCos = mathCos(sAngle);
-    const eAngleSin = mathSin(eAngle);
-    const eAngleCos = mathCos(eAngle);
-
-    // tangent point with radius
-    const tprStart = {
-        x: x + mathCos(startAngle) * tangentLen,
-        y: y + mathSin(startAngle) * tangentLen
-    };
-
-    // tangent point with radius
-    const tprEnd = {
-        x: x + mathCos(endAngle) * tangentLen,
-        y: y + mathSin(endAngle) * tangentLen
-    };
-
-    // the center of inner tangent circle
-    const tpCenterStart = {
-        x: x + sAngleCos * radiusDiff,
-        y: y + sAngleSin * radiusDiff
-    };
-
-    // the center of inner tangent circle
-    const tpCenterEnd = {
-        x: x + eAngleCos * radiusDiff,
-        y: y + eAngleSin * radiusDiff
-    };
-
-    // tangent point with arc
-    const tpStart = {
-        x: x + sAngleCos * radius,
-        y: y + sAngleSin * radius
-    };
-
-    // tangent point with arc
-    const tpEnd = {
-        x: x + eAngleCos * radius,
-        y: y + eAngleSin * radius
-    };
-
-    return {
-        tprStart,
-        tprEnd,
-        tpCenterStart,
-        tpCenterEnd,
-        tpStart,
-        tpEnd,
-        crAngle
-    };
-}
-
-function calcCornerCircleAngles(
-    keyPoints: KeyPoints, 
-    startAngle: number, 
-    endAngle: number, 
-    clockwise?: boolean
-): CornerCircleAngles {
-
-    const tprStart = keyPoints.tprStart;
-    const tpCenterStart = keyPoints.tpCenterStart;
-    const tpStart = keyPoints.tpStart;
-
-    let crAngleStart0 = mathATan(mathAbs(tprStart.y - tpCenterStart.y) / mathAbs(tprStart.x - tpCenterStart.x));
-    let crAngleEnd0 = mathATan(mathAbs(tpStart.y - tpCenterStart.y) / mathAbs(tpStart.x - tpCenterStart.x));
-
-    if (clockwise) {
-        // fourth quadrant
-        if (startAngle >= 0 && startAngle < PI / 2) {
-            crAngleStart0 = -crAngleStart0;
-        }
-        // third quadrant
-        else if (startAngle > 0 && startAngle < PI) {
-            crAngleEnd0 = PI - crAngleEnd0;
-        }
-        // second quadrant
-        else if (startAngle > 0 && startAngle < PI * 1.5) {
-            crAngleStart0 = PI - crAngleStart0;
-            crAngleEnd0 = PI + crAngleEnd0;
-        }
-        // first quadrant
-        else {
-            crAngleStart0 = PI + crAngleStart0;
-            crAngleEnd0 = -crAngleEnd0;
-        }
-    }
-    else {
-        // fourth quadrant
-        if (startAngle > 0 && startAngle <= PI / 2) {
-            crAngleStart0 = PI - crAngleStart0;
-        }
-        // third quadrant
-        else if (startAngle > 0 && startAngle <= PI) {
-            crAngleStart0 = PI + crAngleStart0;
-            crAngleEnd0 = PI - crAngleEnd0;
-        }
-        // second quadrant
-        else if (startAngle > 0 && startAngle <= PI * 1.5) {
-            crAngleStart0 = -crAngleStart0;
-            crAngleEnd0 = PI + crAngleEnd0;
-        }
-        // first quadrant
-        else {
-            crAngleEnd0 = -crAngleEnd0;
-        }
-    }
-
-    const tprEnd = keyPoints.tprEnd;
-    const tpCenterEnd = keyPoints.tpCenterEnd;
-    const tpEnd = keyPoints.tpEnd;
-
-    let crAngleStart1 = mathATan(mathAbs(tprEnd.y - tpCenterEnd.y) / mathAbs(tprEnd.x - tpCenterEnd.x));
-    let crAngleEnd1 = mathATan(mathAbs(tpEnd.y - tpCenterEnd.y) / mathAbs(tpEnd.x - tpCenterEnd.x));
-
-    if (clockwise) {
-        // fourth quadrant
-        if (endAngle > 0 && endAngle <= PI / 2) {
-            const tmp = crAngleStart1;
-            crAngleStart1 = crAngleEnd1;
-            crAngleEnd1 = PI - tmp;
-        }
-        // third quadrant
-        else if (endAngle > 0 && endAngle <= PI) {
-            const tmp = crAngleStart1;
-            crAngleStart1 = PI - crAngleEnd1;
-            crAngleEnd1 = PI + tmp;
-        }
-        // second quadrant
-        else if (endAngle > 0 && endAngle <= PI * 1.5) {
-            const tmp = crAngleStart1;
-            crAngleStart1 = PI + crAngleEnd1;
-            crAngleEnd1 = -tmp;
-        }
-        // first quadrant
-        else {
-            const tmp = crAngleStart1;
-            crAngleStart1 = -crAngleEnd1;
-            crAngleEnd1 = tmp;
-        }
-    }
-    else {
-        // fourth quadrant
-        if (endAngle >= 0 && endAngle < PI / 2) {
-            const tmp = crAngleStart1;
-            crAngleStart1 = crAngleEnd1;
-            crAngleEnd1 = -tmp;
-        }
-        // third quadrant
-        else if (endAngle > 0 && endAngle < PI) {
-            const tmp = crAngleStart1;
-            crAngleStart1 = PI - crAngleEnd1;
-            crAngleEnd1 = tmp;
-        }
-        // second quadrant
-        else if (endAngle > 0 && endAngle < PI * 1.5) {
-            const tmp = crAngleStart1;
-            crAngleStart1 = PI + crAngleEnd1;
-            crAngleEnd1 = PI - tmp;
-        }
-        // first quadrant
-        else {
-            const tmp = crAngleStart1;
-            crAngleStart1 = -crAngleEnd1;
-            crAngleEnd1 = PI + tmp;
-        }
-    }
-
-    return {
-        start0: crAngleStart0,
-        end0: crAngleEnd0,
-        start1: crAngleStart1,
-        end1: crAngleEnd1
-    };
-}
-
-function calcInnerCornerCircleAngles(
-    keyPoints: KeyPoints, 
-    startAngle: number, 
-    endAngle: number, 
-    clockwise?: boolean
-): CornerCircleAngles {
-
-    const tprStart = keyPoints.tprStart;
-    const tpCenterStart = keyPoints.tpCenterStart;
-    const tpStart = keyPoints.tpStart;
-
-    let crAngleStart0 = mathATan(mathAbs(tprStart.y - tpCenterStart.y) / mathAbs(tprStart.x - tpCenterStart.x));
-    let crAngleEnd0 = mathATan(mathAbs(tpStart.y - tpCenterStart.y) / mathAbs(tpStart.x - tpCenterStart.x));
-
-    if (clockwise) {
-        // fourth quadrant
-        if (startAngle >= 0 && startAngle < PI / 2) {
-            const tmp = crAngleStart0;
-            crAngleStart0 = PI + crAngleEnd0;
-            crAngleEnd0 = -tmp;
-        }
-        // third quadrant
-        else if (startAngle > 0 && startAngle < PI) {
-           const tmp = crAngleStart0;
-           crAngleStart0 = -crAngleEnd0;
-           crAngleEnd0 = tmp;
-        }
-        // second quadrant
-        else if (startAngle > 0 && startAngle < PI * 1.5) {
-            const tmp = crAngleStart0;
-            crAngleStart0 = crAngleEnd0;
-            crAngleEnd0 = PI - tmp;
-        }
-        // first quadrant
-        else {
-            const tmp = crAngleStart0;
-            crAngleStart0 = PI - crAngleEnd0;
-            crAngleEnd0 = PI + tmp;
-        }
-    }
-    else {
-        // fourth quadrant
-        if (startAngle >= 0 && startAngle < PI / 2) {
-            const tmp = crAngleStart0;
-            crAngleStart0 = PI + crAngleEnd0;
-            crAngleEnd0 = PI - tmp;
-        }
-        // third quadrant
-        else if (startAngle > 0 && startAngle < PI) {
-            const tmp = crAngleStart0;
-            crAngleStart0 = -crAngleEnd0;
-            crAngleEnd0 = PI + tmp;
-        }
-        // second quadrant
-        else if (startAngle > 0 && startAngle < PI * 1.5) {
-            const tmp = crAngleStart0;
-            crAngleStart0 = crAngleEnd0;
-            crAngleEnd0 = -tmp;
-        }
-        // first quadrant
-        else {
-           const tmp = crAngleStart0;
-           crAngleStart0 = PI - crAngleEnd0;
-           crAngleEnd0 = tmp;
-        }
-    }
-
-    const tprEnd = keyPoints.tprEnd;
-    const tpCenterEnd = keyPoints.tpCenterEnd;
-    const tpEnd = keyPoints.tpEnd;
-
-    let crAngleStart1 = mathATan(mathAbs(tprEnd.y - tpCenterEnd.y) / mathAbs(tprEnd.x - tpCenterEnd.x));
-    let crAngleEnd1 = mathATan(mathAbs(tpEnd.y - tpCenterEnd.y) / mathAbs(tpEnd.x - tpCenterEnd.x));
-
-    if (clockwise) {
-        // fourth quadrant
-        if (endAngle > 0 && endAngle <= PI / 2) {
-            crAngleStart1 = PI - crAngleStart1;
-            crAngleEnd1 = PI + crAngleEnd1;
-        }
-        // third quadrant
-        else if (endAngle > 0 && endAngle <= PI) {
-            crAngleStart1 = PI + crAngleStart1;
-            crAngleEnd1 = -crAngleEnd1;
-        }
-        // second quadrant
-        else if (endAngle > 0 && endAngle <= PI * 1.5) {
-            crAngleStart1 = -crAngleStart1;
-        }
-        // first quadrant
-        else {
-            crAngleEnd1 = PI - crAngleEnd1;
-        }
-    }
-    else {
-        // fourth quadrant
-        if (endAngle >= 0 && endAngle < PI / 2) {
-            crAngleStart1 = -crAngleStart1;
-            crAngleEnd1 = PI + crAngleEnd1;
-        }
-        // third quadrant
-        else if (endAngle > 0 && endAngle < PI) {
-            crAngleEnd1 = -crAngleEnd1;
-        }
-        // second quadrant
-        else if (endAngle > 0 && endAngle < PI * 1.5) {
-            crAngleStart1 = PI - crAngleStart1;
-        }
-        // first quadrant
-        else {
-            crAngleStart1 = PI + crAngleStart1;
-            crAngleEnd1 = PI - crAngleEnd1;
-        }
-    }
-
-    return {
-        start0: crAngleStart0,
-        end0: crAngleEnd0,
-        start1: crAngleStart1,
-        end1: crAngleEnd1
-    };
 }
