@@ -9,8 +9,8 @@ class SectorShape {
     startAngle = 0
     endAngle = Math.PI * 2
     clockwise = true
-    cornerRadius?: number
-    innerCornerRadius?: number
+    cornerRadius = 0
+    innerCornerRadius = 0
 }
 
 interface SectorProps extends PathProps {
