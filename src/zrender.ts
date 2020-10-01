@@ -140,6 +140,9 @@ class ZRender {
      * 添加元素
      */
     add(el: Element) {
+        if (!el) {
+            return
+        }
         this.storage.addRoot(el);
         el.addSelfToZr(this);
         this.refresh();
@@ -149,6 +152,9 @@ class ZRender {
      * 删除元素
      */
     remove(el: Element) {
+        if (!el) {
+            return
+        }
         this.storage.delRoot(el);
         el.removeSelfFromZr(this);
         this.refresh();

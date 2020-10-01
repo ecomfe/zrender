@@ -19,7 +19,8 @@ import {
     indexOf,
     logError,
     mixin,
-    isArrayLike
+    isArrayLike,
+    isTypedArray
 } from './core/util';
 import Polyline from './graphic/shape/Polyline';
 import Group from './graphic/Group';
@@ -1737,6 +1738,14 @@ function copyValue(target: Dictionary<any>, source: Dictionary<any>, key: string
     if (isArrayLike(source[key])) {
         if (!isArrayLike(target[key])) {
             target[key] = [];
+        }
+
+        if (isTypedArray(source[key])) {
+            const len = source[key].length;
+            if (target[key].length !== len) {
+                target[key] = new (source[key].constructor)(len);
+                copyArrShallow(target[key], source[key], len);
+            }
         }
 
         const sourceArr = source[key] as any[];
