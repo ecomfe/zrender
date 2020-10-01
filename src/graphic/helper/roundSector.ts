@@ -130,7 +130,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     const cornerRadius = shape.cornerRadius || 0;
     const innerCornerRadius = shape.innerCornerRadius || 0;
 
-    // FIXME: whether normalizing angles is required
+    // FIXME: whether normalizing angles is required?
     const tmpAngles = [startAngle, endAngle];
     normalizeArcAngles(tmpAngles, !clockwise);
 
@@ -158,8 +158,10 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     }
     // is a circular or annular sector
     else {
-        const cr = mathMin(mathAbs(radius - innerRadius) / 2, cornerRadius);
-        let cr0 = cr;
+        const halfRd = mathAbs(radius - innerRadius) / 2;
+        const cr = mathMin(halfRd, cornerRadius);
+        const icr = mathMin(halfRd, innerCornerRadius);
+        let cr0 = icr;
         let cr1 = cr;
 
         const xrs = radius * mathCos(startAngle);
@@ -173,7 +175,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         let yirs;
 
         // draw corner radius
-        if (cr > e) {
+        if (cr > e || icr > e) {
             xre = radius * mathCos(endAngle);
             yre = radius * mathSin(endAngle);
             xirs = innerRadius * mathCos(startAngle);
@@ -191,7 +193,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
                         mathACos((x0 * x1 + y0 * y1) / (mathSqrt(x0 * x0 + y0 * y0) * mathSqrt(x1 * x1 + y1 * y1))) / 2
                     );
                     const b = mathSqrt(it[0] * it[0] + it[1] * it[1]);
-                    cr0 = mathMin(cr, (innerRadius - b) / (a - 1));
+                    cr0 = mathMin(icr, (innerRadius - b) / (a - 1));
                     cr1 = mathMin(cr, (radius - b) / (a + 1));
                 }
             }
@@ -238,10 +240,10 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
             ctx.lineTo(x + ct0.cx + ct0.x01, y + ct0.cy + ct0.y01);
 
             // Have the corners merged?
-            if (cr0 < cr) {
+            if (cr0 < icr) {
                 ctx.arc(x + ct0.cx, y + ct0.cy, cr0, mathATan2(ct0.y01, ct0.x01), mathATan2(ct1.y01, ct1.x01), !clockwise);
             }
-            // draw the two corners and the ring.
+            // draw the two corners and the ring
             else {
               ctx.arc(x + ct0.cx, y + ct0.cy, cr0, mathATan2(ct0.y01, ct0.x01), mathATan2(ct0.y11, ct0.x11), !clockwise);
 
@@ -252,6 +254,9 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         }
         // the inner ring is just a circular arc
         else {
+            // FIXME: if no lineTo, svg renderer will perform an abnormal drawing behavior.
+            ctx.lineTo(x + xire, y + yire);
+
             ctx.arc(x, y, innerRadius, endAngle, startAngle, clockwise);
         }
     }
