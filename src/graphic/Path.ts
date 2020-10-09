@@ -218,7 +218,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
                 const fillLum = lum(pathFill, 0);
                 // Determin text color based on the lum of path fill.
                 // TODO use (1 - DARK_MODE_THRESHOLD)?
-                if (fillLum > 0.6) {   // TODO Consider background lum?
+                if (fillLum > 0.5) {   // TODO Consider background lum?
                     return DARK_LABEL_COLOR;
                 }
                 else if (fillLum > 0.2) {
