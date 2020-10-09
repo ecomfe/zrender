@@ -769,3 +769,32 @@ export function hasOwn(own: object, prop: string): boolean {
 }
 
 export function noop() {}
+
+/**
+ * Get the greatest common dividor
+ *
+ * @param {number} a one number
+ * @param {number} b the other number
+ */
+export function getGreatestCommonDividor(a: number, b: number): number {
+    if (b === 0) {
+        return a;
+    }
+    return getGreatestCommonDividor(b, a % b);
+}
+
+/**
+ * Get the least common multiple
+ *
+ * @param {number} a one number
+ * @param {number} b the other number
+ */
+export function getLeastCommonMultiple(a: number, b: number) {
+    if (a == null) {
+        return b;
+    }
+    if (b == null) {
+        return a;
+    }
+    return a * b / getGreatestCommonDividor(a, b);
+}

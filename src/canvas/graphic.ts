@@ -18,7 +18,7 @@ import { map } from '../core/util';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
 import Element from '../Element';
 import {DecalObject} from '../graphic/Decal';
-
+import {createOrUpdatePatternFromDecal} from '../graphic/helper/decal';
 
 const pathProxyForDraw = new PathProxy(true);
 
@@ -76,15 +76,16 @@ export function createCanvasPattern(
     }
 }
 
-function createDecalPattern(
+export function createDecalPattern(
     ctx: CanvasRenderingContext2D,
-    decal: DecalObject
+    decal: DecalObject,
+    el: {dirty: () => void}
 ) {
-    if (decal.__canvasPattern || !decal.__pattern) {
+    if (decal.__canvasPattern) {
         return decal.__canvasPattern;
     }
-    const hostEl = decal as {dirty: () => void};
-    const canvasPattern = createCanvasPattern(ctx, decal.__pattern, hostEl);
+    const pattern = createOrUpdatePatternFromDecal(decal);
+    const canvasPattern = createCanvasPattern(ctx, pattern, el);
     decal.__canvasPattern = canvasPattern;
     return canvasPattern;
 }
@@ -247,12 +248,12 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
     doBrush(hasStroke, hasFill);
 
     if (!inBatch) {
-        const hasDecal = !!(style.decal && style.decal.__pattern);
+        const hasDecal = !!style.decal;
         const hasFillDecal = hasFill && hasDecal;
         const hasStrokeDecal = hasStroke && hasDecal;
 
         if (hasFillDecal || hasStrokeDecal) {
-            const decalPattern = createDecalPattern(ctx, style.decal);
+            const decalPattern = createDecalPattern(ctx, style.decal, el);
             hasFillDecal && (ctx.fillStyle = decalPattern);
             hasStrokeDecal && (ctx.strokeStyle = decalPattern);
             doBrush(hasStrokeDecal, hasFillDecal);
@@ -420,8 +421,13 @@ function bindCommonProps(
     if (!forceSetAll) {
         prevStyle = prevStyle || {};
 
+        // If decal exists in prevStyle, the last style of canvas ctx
+        // is decal pattern, so reset style is required.
+        if ((prevStyle as PathStyleProps).decal) {
+            return true;
+        }
         // Shared same style.
-        if (style === prevStyle) {
+        else if (style === prevStyle) {
             return false;
         }
     }
@@ -479,7 +485,7 @@ function bindPathAndTextCommonStyle(
 
     let styleChanged = bindCommonProps(ctx, style, prevStyle, forceSetAll, scope);
 
-    if (forceSetAll || style.fill !== prevStyle.fill) {
+    if (forceSetAll || style.fill !== (prevStyle.decal || prevStyle.fill)) {
         if (!styleChanged) {
             // Flush before set
             flushPathDrawn(ctx, scope);
@@ -487,7 +493,7 @@ function bindPathAndTextCommonStyle(
         }
         ctx.fillStyle = style.fill as string;
     }
-    if (forceSetAll || style.stroke !== prevStyle.stroke) {
+    if (forceSetAll || style.stroke !== (prevStyle.decal || prevStyle.stroke)) {
         if (!styleChanged) {
             flushPathDrawn(ctx, scope);
             styleChanged = true;
