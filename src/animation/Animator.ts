@@ -281,7 +281,6 @@ class Track {
 
     private _finished: boolean
 
-
     private _needsSort: boolean = false
 
     private _isAllValueEqual = true
@@ -428,6 +427,7 @@ class Track {
             && this.interpolable
             && arrDim === additiveTrack.arrDim
             && this.isValueColor === additiveTrack.isValueColor
+            && additiveTrack.needsAnimate()
             && !additiveTrack._finished
         ) {
             this._additiveTrack = additiveTrack;
@@ -641,24 +641,25 @@ class Track {
     private _addToTarget(target: any) {
         const arrDim = this.arrDim;
         const propName = this.propName;
+        const additiveValue = this._additiveValue;
 
         if (arrDim === 0) {
             if (this.isValueColor) {
                 // TODO reduce unnecessary parse
                 color.parse(target[propName], tmpRgba);
-                add1DArray(tmpRgba, tmpRgba, this._additiveValue as NumberArray, 1);
+                add1DArray(tmpRgba, tmpRgba, additiveValue as NumberArray, 1);
                 target[propName] = rgba2String(tmpRgba);
             }
             else {
                 // Add a difference value based on the change of previous frame.
-                target[propName] = target[propName] + this._additiveValue;
+                target[propName] = target[propName] + additiveValue;
             }
         }
         else if (arrDim === 1) {
-            add1DArray(target[propName], target[propName], this._additiveValue as NumberArray, 1);
+            add1DArray(target[propName], target[propName], additiveValue as NumberArray, 1);
         }
         else if (arrDim === 2) {
-            add2DArray(target[propName], target[propName], this._additiveValue as NumberArray[], 1);
+            add2DArray(target[propName], target[propName], additiveValue as NumberArray[], 1);
         }
     }
 }
@@ -800,8 +801,7 @@ export default class Animator<T> {
     }
 
     private _doneCallback() {
-        // Clear all tracks
-        this._tracks = null;
+        this._setTracksFinished();
         // Clear clip
         this._clip = null;
 
@@ -813,8 +813,9 @@ export default class Animator<T> {
             }
         }
     }
-
     private _abortedCallback() {
+        this._setTracksFinished();
+
         const animation = this.animation;
         const abortedList = this._abortedList;
 
@@ -827,6 +828,13 @@ export default class Animator<T> {
             for (let i = 0; i < abortedList.length; i++) {
                 abortedList[i].call(this);
             }
+        }
+    }
+    private _setTracksFinished() {
+        const tracks = this._tracks;
+        const tracksKeys = this._trackKeys;
+        for (let i = 0; i < tracksKeys.length; i++) {
+            tracks[tracksKeys[i]].setFinished();
         }
     }
 
@@ -844,6 +852,7 @@ export default class Animator<T> {
         }
         return additiveTrack;
     }
+
     /**
      * Start the animation
      * @param easing
@@ -913,9 +922,6 @@ export default class Animator<T> {
                     }
                 },
                 ondestroy() {
-                    for (let i = 0; i < tracks.length; i++) {
-                        tracks[i].setFinished();
-                    }
                     self._doneCallback();
                 }
             });

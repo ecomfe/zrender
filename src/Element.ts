@@ -748,7 +748,7 @@ class Element<Props extends ElementProps = ElementProps> {
     saveCurrentToNormalState(toState: ElementState) {
         this._innerSaveToNormal(toState);
 
-        // If we are swtiching from normal to other state during animation.
+        // If we are switching from normal to other state during animation.
         // We need to save final value of animation to the normal state. Not interpolated value.
         const normalState = this._normalState;
         for (let i = 0; i < this.animators.length; i++) {
