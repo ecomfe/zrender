@@ -19,7 +19,8 @@ import {
     indexOf,
     logError,
     mixin,
-    isArrayLike
+    isArrayLike,
+    isTypedArray
 } from './core/util';
 import Polyline from './graphic/shape/Polyline';
 import Group from './graphic/Group';
@@ -156,9 +157,6 @@ export interface ElementTextConfig {
      * In case position is not using builtin `inside` hints.
      */
     inside?: boolean
-
-    // TODO applyClip
-    // TODO align, verticalAlign??
 }
 export interface ElementTextGuideLineConfig {
     /**
@@ -231,6 +229,8 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
     draggable?: boolean
 
     silent?: boolean
+
+    ignoreClip?: boolean
     // From transform
     x?: number
     y?: number
@@ -330,6 +330,14 @@ class Element<Props extends ElementProps = ElementProps> {
     parent: Group
 
     animators: Animator<any>[] = []
+
+    /**
+     * If ignore clip from it's parent or hosts.
+     * Applied on itself and all it's children.
+     *
+     * NOTE: It won't affect the clipPath set on the children.
+     */
+    ignoreClip: boolean
 
     /**
      * If element is used as a component of other element.
@@ -740,7 +748,7 @@ class Element<Props extends ElementProps = ElementProps> {
     saveCurrentToNormalState(toState: ElementState) {
         this._innerSaveToNormal(toState);
 
-        // If we are swtiching from normal to other state during animation.
+        // If we are switching from normal to other state during animation.
         // We need to save final value of animation to the normal state. Not interpolated value.
         const normalState = this._normalState;
         for (let i = 0; i < this.animators.length; i++) {
@@ -816,8 +824,8 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Clear all states.
      */
-    clearStates() {
-        this.useState(PRESERVED_NORMAL_STATE, false);
+    clearStates(noAnimation?: boolean) {
+        this.useState(PRESERVED_NORMAL_STATE, false, noAnimation);
         // TODO set _normalState to null?
     }
     /**
@@ -828,7 +836,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * @param keepCurrentState If keep current states.
      *      If not, it will inherit from the normal state.
      */
-    useState(stateName: string, keepCurrentStates?: boolean) {
+    useState(stateName: string, keepCurrentStates?: boolean, noAnimation?: boolean) {
         // Use preserved word __normal__
         // TODO: Only restore changed properties when restore to normal???
         const toNormalState = stateName === PRESERVED_NORMAL_STATE;
@@ -879,7 +887,7 @@ class Element<Props extends ElementProps = ElementProps> {
             state,
             this._normalState,
             keepCurrentStates,
-            !this.__inHover && animationCfg && animationCfg.duration > 0,
+            !noAnimation && !this.__inHover && animationCfg && animationCfg.duration > 0,
             animationCfg
         );
 
@@ -927,7 +935,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * Apply multiple states.
      * @param states States list.
      */
-    useStates(states: string[]) {
+    useStates(states: string[], noAnimation?: boolean) {
         if (!states.length) {
             this.clearStates();
         }
@@ -978,7 +986,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 mergedState,
                 this._normalState,
                 false,
-                !this.__inHover && animationCfg && animationCfg.duration > 0,
+                !noAnimation && !this.__inHover && animationCfg && animationCfg.duration > 0,
                 animationCfg
             );
 
@@ -1581,6 +1589,7 @@ class Element<Props extends ElementProps = ElementProps> {
         elProto.isGroup = false;
         elProto.draggable = false;
         elProto.dragging = false;
+        elProto.ignoreClip = false;
         elProto.__inHover = false;
         elProto.__dirty = Element.REDARAW_BIT;
 
@@ -1729,6 +1738,14 @@ function copyValue(target: Dictionary<any>, source: Dictionary<any>, key: string
     if (isArrayLike(source[key])) {
         if (!isArrayLike(target[key])) {
             target[key] = [];
+        }
+
+        if (isTypedArray(source[key])) {
+            const len = source[key].length;
+            if (target[key].length !== len) {
+                target[key] = new (source[key].constructor)(len);
+                copyArrShallow(target[key], source[key], len);
+            }
         }
 
         const sourceArr = source[key] as any[];
