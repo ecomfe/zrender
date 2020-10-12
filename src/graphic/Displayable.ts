@@ -150,7 +150,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     __canvasStrokeGradient: CanvasGradient
     __canvasFillPattern: CanvasPattern
     __canvasStrokePattern: CanvasPattern
-    __canvasDecal: CanvasPattern
+    __canvasDecalPattern: CanvasPattern
 
     // FOR SVG PAINTER
     __svgEl: SVGElement

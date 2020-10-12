@@ -237,7 +237,10 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         const hasStrokeDecal = hasStroke && hasDecal;
 
         if (hasFillDecal || hasStrokeDecal) {
-            const decalPattern = createCanvasPattern(ctx, style.decal, el);
+            const decalPattern = (el.__dirty || !el.__canvasDecalPattern)
+                ? createCanvasPattern(ctx, style.decal, el)
+                : el.__canvasDecalPattern;
+            el.__canvasDecalPattern = decalPattern;
             hasFillDecal && (ctx.fillStyle = decalPattern);
             hasStrokeDecal && (ctx.strokeStyle = decalPattern);
             doBrush(hasStrokeDecal, hasFillDecal);
