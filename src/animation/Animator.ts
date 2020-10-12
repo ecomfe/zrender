@@ -303,6 +303,11 @@ class Track {
 
     setFinished() {
         this._finished = true;
+        // Also set additive track to finished.
+        // Make sure the final value stopped on the latest track
+        if (this._additiveTrack) {
+            this._additiveTrack.setFinished();
+        }
     }
 
     needsAnimate() {
