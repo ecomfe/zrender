@@ -7,7 +7,7 @@ import Displayable, { DisplayableProps,
 import Element, { PRESERVED_NORMAL_STATE, ElementAnimateConfig } from '../Element';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
-import { PatternObject } from './Pattern';
+import Pattern, { PatternObject } from './Pattern';
 import { Dictionary, PropType, MapToType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
@@ -16,12 +16,11 @@ import { defaults, keys, extend, clone, isString, createObject } from '../core/u
 import Animator from '../animation/Animator';
 import { lum } from '../tool/color';
 import { DARK_LABEL_COLOR, LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, LIGHTER_LABEL_COLOR } from '../config';
-import {DecalObject} from './Decal';
 
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
     stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
-    decal?: DecalObject
+    decal?: Pattern
 
     /**
      * Still experimental, not works weel on arc with edge cases(large angle).

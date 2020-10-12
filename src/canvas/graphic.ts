@@ -17,8 +17,6 @@ import { MatrixArray } from '../core/matrix';
 import { map } from '../core/util';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
 import Element from '../Element';
-import {DecalObject} from '../graphic/Decal';
-import {createOrUpdatePatternFromDecal} from '../graphic/helper/decal';
 
 const pathProxyForDraw = new PathProxy(true);
 
@@ -74,20 +72,6 @@ export function createCanvasPattern(
         }
         return canvasPattern;
     }
-}
-
-export function createDecalPattern(
-    ctx: CanvasRenderingContext2D,
-    decal: DecalObject,
-    el: {dirty: () => void}
-) {
-    if (decal.__canvasPattern) {
-        return decal.__canvasPattern;
-    }
-    const pattern = createOrUpdatePatternFromDecal(decal);
-    const canvasPattern = createCanvasPattern(ctx, pattern, el);
-    decal.__canvasPattern = canvasPattern;
-    return canvasPattern;
 }
 
 // Draw Path Elements
@@ -253,7 +237,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         const hasStrokeDecal = hasStroke && hasDecal;
 
         if (hasFillDecal || hasStrokeDecal) {
-            const decalPattern = createDecalPattern(ctx, style.decal, el);
+            const decalPattern = createCanvasPattern(ctx, style.decal, el);
             hasFillDecal && (ctx.fillStyle = decalPattern);
             hasStrokeDecal && (ctx.strokeStyle = decalPattern);
             doBrush(hasStrokeDecal, hasFillDecal);

@@ -32,12 +32,7 @@ export interface DecalObject {
     // boundary of largest tile width
     maxTileWidth?: number,
     // boundary of largest tile height
-    maxTileHeight?: number,
-
-    __pattern?: Pattern,
-    __canvasPattern?: CanvasPattern,
-
-    dirty?: () => void
+    maxTileHeight?: number
 }
 
 class Decal {
