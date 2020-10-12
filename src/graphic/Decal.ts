@@ -6,8 +6,7 @@ export type DecalDashArrayY = number | number[];
 
 export interface DecalObject {
     // 'image', 'triangle', 'diamond', 'pin', 'arrow', 'line', 'rect', 'roundRect', 'square', 'circle'
-    shape?: string
-    image?: ImageLike | string
+    symbol?: string
 
     // size relative to the dash bounding box; valued from 0 to 1
     symbolSize?: number
