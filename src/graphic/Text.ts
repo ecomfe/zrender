@@ -715,7 +715,7 @@ class ZRText extends Displayable<TextProps> {
         const textPadding = token.textPadding;
         if (textPadding) {
             x = getTextXForPadding(x, textAlign, textPadding);
-            y -= token.height / 2 - textPadding[2] - token.innerHeight / 2;
+            y -= token.height / 2 - textPadding[0] - token.innerHeight / 2;
         }
 
         const el = this._getOrCreateChild(TSpan);
