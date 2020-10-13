@@ -700,6 +700,7 @@ class ZRText extends Displayable<TextProps> {
         const needDrawBg = !token.isLineHolder && needDrawBackground(tokenStyle);
         needDrawBg && this._renderBackground(
             tokenStyle,
+            style,
             textAlign === 'right'
                 ? x - token.width
                 : textAlign === 'center'
@@ -714,6 +715,7 @@ class ZRText extends Displayable<TextProps> {
         const textPadding = token.textPadding;
         if (textPadding) {
             x = getTextXForPadding(x, textAlign, textPadding);
+            y -= token.height / 2 - textPadding[2] - token.innerHeight / 2;
         }
 
         const el = this._getOrCreateChild(TSpan);
@@ -758,6 +760,7 @@ class ZRText extends Displayable<TextProps> {
         // text will offset downward a little bit in font "Microsoft YaHei".
         subElStyle.textBaseline = 'middle';
         subElStyle.font = token.font || DEFAULT_FONT;
+        subElStyle.opacity = retrieve3(tokenStyle.opacity, style.opacity, 1);
 
         if (textStroke) {
             subElStyle.lineWidth = retrieve3(tokenStyle.lineWidth, style.lineWidth, defaultLineWidth);
@@ -782,6 +785,7 @@ class ZRText extends Displayable<TextProps> {
 
     private _renderBackground(
         style: TextStylePropsPart,
+        topStyle?: TextStylePropsPart,
         x: number,
         y: number,
         width: number,
@@ -813,7 +817,6 @@ class ZRText extends Displayable<TextProps> {
         if (isPlainBg) {
             const rectStyle = rectEl.style;
             rectStyle.fill = textBackgroundColor as string || null;
-            rectStyle.opacity = retrieve2(style.opacity, 1);
             rectStyle.fillOpacity = retrieve2(style.fillOpacity, 1);
         }
         else if (textBackgroundColor && (textBackgroundColor as {image: ImageLike}).image) {
@@ -845,11 +848,12 @@ class ZRText extends Displayable<TextProps> {
             }
         }
 
-        const shadowStyle = (rectEl || imgEl).style;
-        shadowStyle.shadowBlur = style.shadowBlur || 0;
-        shadowStyle.shadowColor = style.shadowColor || 'transparent';
-        shadowStyle.shadowOffsetX = style.shadowOffsetX || 0;
-        shadowStyle.shadowOffsetY = style.shadowOffsetY || 0;
+        const commonStyle = (rectEl || imgEl).style;
+        commonStyle.shadowBlur = style.shadowBlur || 0;
+        commonStyle.shadowColor = style.shadowColor || 'transparent';
+        commonStyle.shadowOffsetX = style.shadowOffsetX || 0;
+        commonStyle.shadowOffsetY = style.shadowOffsetY || 0;
+        commonStyle.opacity = retrieve3(style.opacity, topStyle.opacity, 1);
     }
 
     static makeFont(style: TextStylePropsPart): string {
