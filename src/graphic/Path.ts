@@ -122,6 +122,11 @@ export type PathState = Pick<PathProps, PathStatePropNames> & {
     hoverLayer?: boolean
 }
 
+const pathCopyParams = [
+    'x', 'y', 'rotation', 'scaleX', 'scaleY', 'originX', 'originY', 'invisible',
+    'culling', 'z', 'z2', 'zlevel'
+] as const;
+
 class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
     path: PathProxy
@@ -145,12 +150,43 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
     protected _normalState: PathState
 
+    protected _decalEl: Path
+
     // Must have an initial value on shape.
     // It will be assigned by default value.
     shape: Dictionary<any>
 
     constructor(opts?: Props) {
         super(opts);
+    }
+
+    update() {
+        super.update();
+
+        const style = this.style;
+        if (style.decal) {
+            const decalEl: Path = this._decalEl
+                = this._decalEl || new Path();
+            if (decalEl.buildPath === Path.prototype.buildPath) {
+                decalEl.buildPath = ctx => {
+                    this.buildPath(ctx, this.shape);
+                };
+            }
+
+            decalEl.style.fill = style.fill ? style.decal : null;
+            decalEl.style.stroke = style.stroke ? style.stroke : null;
+
+            for (let i = 0; i < pathCopyParams.length; ++i) {
+                (decalEl as any)[pathCopyParams[i]] = this[pathCopyParams[i]];
+            }
+        }
+        else if (this._decalEl) {
+            this._decalEl = null;
+        }
+    }
+
+    getDecalElement() {
+        return this._decalEl;
     }
 
     protected _init(props?: Props) {

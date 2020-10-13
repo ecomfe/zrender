@@ -229,21 +229,22 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         ctx.lineDashOffset = lineDashOffset;
     }
 
-    doBrush(hasStroke, hasFill);
-
     if (!inBatch) {
-        const hasDecal = !!style.decal;
-        const hasFillDecal = hasFill && hasDecal;
-        const hasStrokeDecal = hasStroke && hasDecal;
-
-        if (hasFillDecal || hasStrokeDecal) {
-            const decalPattern = (el.__dirty || !el.__canvasDecalPattern)
-                ? createCanvasPattern(ctx, style.decal, el)
-                : el.__canvasDecalPattern;
-            el.__canvasDecalPattern = decalPattern;
-            hasFillDecal && (ctx.fillStyle = decalPattern);
-            hasStrokeDecal && (ctx.strokeStyle = decalPattern);
-            doBrush(hasStrokeDecal, hasFillDecal);
+        if (style.strokeFirst) {
+            if (hasStroke) {
+                doStrokePath(ctx, style);
+            }
+            if (hasFill) {
+                doFillPath(ctx, style);
+            }
+        }
+        else {
+            if (hasFill) {
+                doFillPath(ctx, style);
+            }
+            if (hasStroke) {
+                doStrokePath(ctx, style);
+            }
         }
     }
 
@@ -251,27 +252,6 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         // PENDING
         // Remove lineDash
         ctx.setLineDash([]);
-    }
-
-    function doBrush(hasStroke: boolean, hasFill: boolean) {
-        if (!inBatch) {
-            if (style.strokeFirst) {
-                if (hasStroke) {
-                    doStrokePath(ctx, style);
-                }
-                if (hasFill) {
-                    doFillPath(ctx, style);
-                }
-            }
-            else {
-                if (hasFill) {
-                    doFillPath(ctx, style);
-                }
-                if (hasStroke) {
-                    doStrokePath(ctx, style);
-                }
-            }
-        }
     }
 }
 
@@ -408,13 +388,8 @@ function bindCommonProps(
     if (!forceSetAll) {
         prevStyle = prevStyle || {};
 
-        // If decal exists in prevStyle, the last style of canvas ctx
-        // is decal pattern, so reset style is required.
-        if ((prevStyle as PathStyleProps).decal) {
-            return true;
-        }
         // Shared same style.
-        else if (style === prevStyle) {
+        if (style === prevStyle) {
             return false;
         }
     }
@@ -472,7 +447,7 @@ function bindPathAndTextCommonStyle(
 
     let styleChanged = bindCommonProps(ctx, style, prevStyle, forceSetAll, scope);
 
-    if (forceSetAll || style.fill !== (prevStyle.decal || prevStyle.fill)) {
+    if (forceSetAll || style.fill !== prevStyle.fill) {
         if (!styleChanged) {
             // Flush before set
             flushPathDrawn(ctx, scope);
@@ -480,7 +455,7 @@ function bindPathAndTextCommonStyle(
         }
         ctx.fillStyle = style.fill as string;
     }
-    if (forceSetAll || style.stroke !== (prevStyle.decal || prevStyle.stroke)) {
+    if (forceSetAll || style.stroke !== prevStyle.stroke) {
         if (!styleChanged) {
             flushPathDrawn(ctx, scope);
             styleChanged = true;
