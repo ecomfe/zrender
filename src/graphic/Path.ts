@@ -308,7 +308,8 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
                 // Only add extra hover lineWidth when there are no fill
                 if (!this.hasFill()) {
-                    w = Math.max(w, this.strokeContainThreshold || 4);
+                    const strokeContainThreshold = this.strokeContainThreshold;
+                    w = Math.max(w, strokeContainThreshold == null ? 4 : strokeContainThreshold);
                 }
                 // Consider line width
                 // Line scale can't be 0;

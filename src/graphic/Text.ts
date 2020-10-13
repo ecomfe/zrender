@@ -840,6 +840,7 @@ class ZRText extends Displayable<TextProps> {
             rectStyle.strokeOpacity = retrieve2(style.strokeOpacity, 1);
             rectStyle.lineDash = style.borderDash;
             rectStyle.lineDashOffset = style.borderDashOffset || 0;
+            rectEl.strokeContainThreshold = 0;
 
             // Making shadow looks better.
             if (rectEl.hasFill() && rectEl.hasStroke()) {
