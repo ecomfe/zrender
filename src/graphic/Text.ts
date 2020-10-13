@@ -496,7 +496,7 @@ class ZRText extends Displayable<TextProps> {
             const boxX = adjustTextX(baseX, outerWidth, textAlign);
             const boxY = adjustTextY(baseY, outerHeight, verticalAlign);
 
-            needDrawBg && this._renderBackground(style, boxX, boxY, outerWidth, outerHeight);
+            needDrawBg && this._renderBackground(style, style, boxX, boxY, outerWidth, outerHeight);
         }
 
         // `textBaseline` is set as 'middle'.
@@ -620,7 +620,7 @@ class ZRText extends Displayable<TextProps> {
         let xRight = xLeft + contentWidth;
 
         if (needDrawBackground(style)) {
-            this._renderBackground(style, boxX, boxY, outerWidth, outerHeight);
+            this._renderBackground(style, style, boxX, boxY, outerWidth, outerHeight);
         }
         const bgColorDrawn = !!(style.backgroundColor);
 
@@ -785,7 +785,7 @@ class ZRText extends Displayable<TextProps> {
 
     private _renderBackground(
         style: TextStylePropsPart,
-        topStyle?: TextStylePropsPart,
+        topStyle: TextStylePropsPart,
         x: number,
         y: number,
         width: number,
