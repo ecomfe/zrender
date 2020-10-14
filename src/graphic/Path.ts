@@ -405,6 +405,9 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         if (this._rect) {
             this._rect = null;
         }
+        if (this._decalEl) {
+            this._decalEl.dirtyShape();
+        }
         this.markRedraw();
     }
 
