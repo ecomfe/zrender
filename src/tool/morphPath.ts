@@ -13,6 +13,7 @@ function aroundEqual(a: number, b: number) {
 export function pathToBezierCurves(path: PathProxy) {
 
     const data = path.data;
+    const len = path.len();
 
     const bezierArray: number[][] = [];
     let currentSubpath: number[];
@@ -65,7 +66,7 @@ export function pathToBezierCurves(path: PathProxy) {
 
     let x1, y1, x2, y2;
 
-    for (let i = 0; i < data.length;) {
+    for (let i = 0; i < len;) {
         const cmd = data[i++];
         const isFirst = i === 1;
 

@@ -212,8 +212,10 @@ function windingArc(
 
 
 function containPath(
-    data: PathData, lineWidth: number, isStroke: boolean, x: number, y: number
+    path: PathProxy, lineWidth: number, isStroke: boolean, x: number, y: number
 ): boolean {
+    const data = path.data;
+    const len = path.len();
     let w = 0;
     let xi = 0;
     let yi = 0;
@@ -222,7 +224,7 @@ function containPath(
     let x1;
     let y1;
 
-    for (let i = 0; i < data.length;) {
+    for (let i = 0; i < len;) {
         const cmd = data[i++];
         const isFirst = i === 1;
         // Begin a new subpath
@@ -400,10 +402,10 @@ function containPath(
     return w !== 0;
 }
 
-export function contain(pathData: PathData, x: number, y: number): boolean {
-    return containPath(pathData, 0, false, x, y);
+export function contain(pathProxy: PathProxy, x: number, y: number): boolean {
+    return containPath(pathProxy, 0, false, x, y);
 }
 
-export function containStroke(pathData: PathData, lineWidth: number, x: number, y: number): boolean {
-    return containPath(pathData, lineWidth, true, x, y);
+export function containStroke(pathProxy: PathProxy, lineWidth: number, x: number, y: number): boolean {
+    return containPath(pathProxy, lineWidth, true, x, y);
 }
