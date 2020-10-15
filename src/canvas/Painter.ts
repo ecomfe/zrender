@@ -507,12 +507,15 @@ export default class CanvasPainter implements PainterBase {
         isLast: boolean
     ) {
         const ctx = currentLayer.ctx;
-        const paintRect = el.getPaintRect();
-        if (!repaintRect || repaintRect && paintRect.intersect(repaintRect)) {
-            // If no repaintRect, all displayables need to be painted once
-            // If there is repaintRect, only render the intersected ones
+        if (repaintRect) {
+            const paintRect = el.getPaintRect();
+            if (paintRect && paintRect.intersect(repaintRect)) {
+                brush(ctx, el, scope, isLast);
+                el.setPrevPaintRect(paintRect);
+            }
+        }
+        else {
             brush(ctx, el, scope, isLast);
-            el.setPrevPaintRect(paintRect);
         }
     }
 
