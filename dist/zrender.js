@@ -952,7 +952,6 @@
                         && eventProcessor.filter
                         && hItem.query != null
                         && !eventProcessor.filter(eventType, hItem.query)) {
-                        i++;
                         continue;
                     }
                     switch (argLen) {
@@ -986,13 +985,12 @@
                 var argLen = args.length;
                 var ctx = args[argLen - 1];
                 var len = _h.length;
-                for (var i = 0; i < len;) {
+                for (var i = 0; i < len; i++) {
                     var hItem = _h[i];
                     if (eventProcessor
                         && eventProcessor.filter
                         && hItem.query != null
                         && !eventProcessor.filter(type, hItem.query)) {
-                        i++;
                         continue;
                     }
                     switch (argLen) {
@@ -1567,13 +1565,19 @@
         if (displayable[displayable.rectHover ? 'rectContain' : 'contain'](x, y)) {
             var el = displayable;
             var isSilent = void 0;
+            var ignoreClip = false;
             while (el) {
-                var clipPath = el.getClipPath();
-                if (clipPath && !clipPath.contain(x, y)) {
-                    return false;
+                if (el.ignoreClip) {
+                    ignoreClip = true;
                 }
-                if (el.silent) {
-                    isSilent = true;
+                if (!ignoreClip) {
+                    var clipPath = el.getClipPath();
+                    if (clipPath && !clipPath.contain(x, y)) {
+                        return false;
+                    }
+                    if (el.silent) {
+                        isSilent = true;
+                    }
                 }
                 var hostEl = el.__hostTarget;
                 el = hostEl ? hostEl : el.parent;
@@ -2164,12 +2168,13 @@
                 return;
             }
             el.beforeUpdate();
-            if (el.__dirty) {
-                el.update();
-            }
+            el.update();
             el.afterUpdate();
             var userSetClipPath = el.getClipPath();
-            if (userSetClipPath) {
+            if (el.ignoreClip) {
+                clipPaths = null;
+            }
+            else if (userSetClipPath) {
                 if (clipPaths) {
                     clipPaths = clipPaths.slice();
                 }
@@ -2264,10 +2269,10 @@
 
     var requestAnimationFrame;
     requestAnimationFrame = (typeof window !== 'undefined'
-        && (window.requestAnimationFrame && window.requestAnimationFrame.bind(window))
-        || (window.msRequestAnimationFrame && window.msRequestAnimationFrame.bind(window))
-        || window.mozRequestAnimationFrame
-        || window.webkitRequestAnimationFrame) || function (func) {
+        && ((window.requestAnimationFrame && window.requestAnimationFrame.bind(window))
+            || (window.msRequestAnimationFrame && window.msRequestAnimationFrame.bind(window))
+            || window.mozRequestAnimationFrame
+            || window.webkitRequestAnimationFrame)) || function (func) {
         return setTimeout(func, 16);
     };
     var requestAnimationFrame$1 = requestAnimationFrame;
@@ -3213,6 +3218,9 @@
         };
         Track.prototype.setFinished = function () {
             this._finished = true;
+            if (this._additiveTrack) {
+                this._additiveTrack.setFinished();
+            }
         };
         Track.prototype.needsAnimate = function () {
             return !this._isAllValueEqual && this.keyframes.length >= 2 && this.interpolable;
@@ -3311,7 +3319,8 @@
                 }
             }
             if (additiveTrack
-                && this.interpolable
+                && this.needsAnimate()
+                && additiveTrack.needsAnimate()
                 && arrDim === additiveTrack.arrDim
                 && this.isValueColor === additiveTrack.isValueColor
                 && !additiveTrack._finished) {
@@ -3455,21 +3464,22 @@
         Track.prototype._addToTarget = function (target) {
             var arrDim = this.arrDim;
             var propName = this.propName;
+            var additiveValue = this._additiveValue;
             if (arrDim === 0) {
                 if (this.isValueColor) {
                     parse(target[propName], tmpRgba);
-                    add1DArray(tmpRgba, tmpRgba, this._additiveValue, 1);
+                    add1DArray(tmpRgba, tmpRgba, additiveValue, 1);
                     target[propName] = rgba2String(tmpRgba);
                 }
                 else {
-                    target[propName] = target[propName] + this._additiveValue;
+                    target[propName] = target[propName] + additiveValue;
                 }
             }
             else if (arrDim === 1) {
-                add1DArray(target[propName], target[propName], this._additiveValue, 1);
+                add1DArray(target[propName], target[propName], additiveValue, 1);
             }
             else if (arrDim === 2) {
-                add2DArray(target[propName], target[propName], this._additiveValue, 1);
+                add2DArray(target[propName], target[propName], additiveValue, 1);
             }
         };
         return Track;
@@ -3482,8 +3492,6 @@
             this._maxTime = 0;
             this._paused = false;
             this._started = 0;
-            this._doneList = [];
-            this._onframeList = [];
             this._clip = null;
             this._target = target;
             this._loop = loop;
@@ -3534,10 +3542,6 @@
             this._maxTime = Math.max(this._maxTime, time);
             return this;
         };
-        Animator.prototype.during = function (callback) {
-            this._onframeList.push(callback);
-            return this;
-        };
         Animator.prototype.pause = function () {
             this._clip.pause();
             this._paused = true;
@@ -3550,12 +3554,35 @@
             return !!this._paused;
         };
         Animator.prototype._doneCallback = function () {
-            this._tracks = null;
+            this._setTracksFinished();
             this._clip = null;
             var doneList = this._doneList;
-            var len = doneList.length;
-            for (var i = 0; i < len; i++) {
-                doneList[i].call(this);
+            if (doneList) {
+                var len = doneList.length;
+                for (var i = 0; i < len; i++) {
+                    doneList[i].call(this);
+                }
+            }
+        };
+        Animator.prototype._abortedCallback = function () {
+            this._setTracksFinished();
+            var animation = this.animation;
+            var abortedList = this._abortedList;
+            if (animation) {
+                animation.removeClip(this._clip);
+            }
+            this._clip = null;
+            if (abortedList) {
+                for (var i = 0; i < abortedList.length; i++) {
+                    abortedList[i].call(this);
+                }
+            }
+        };
+        Animator.prototype._setTracksFinished = function () {
+            var tracks = this._tracks;
+            var tracksKeys = this._trackKeys;
+            for (var i = 0; i < tracksKeys.length; i++) {
+                tracks[tracksKeys[i]].setFinished();
             }
         };
         Animator.prototype._getAdditiveTrack = function (trackName) {
@@ -3617,14 +3644,14 @@
                         for (var i = 0; i < tracks.length; i++) {
                             tracks[i].step(self._target, percent);
                         }
-                        for (var i = 0; i < self._onframeList.length; i++) {
-                            self._onframeList[i](self._target, percent);
+                        var onframeList = self._onframeList;
+                        if (onframeList) {
+                            for (var i = 0; i < onframeList.length; i++) {
+                                onframeList[i](self._target, percent);
+                            }
                         }
                     },
                     ondestroy: function () {
-                        for (var i = 0; i < tracks.length; i++) {
-                            tracks[i].setFinished();
-                        }
                         self._doneCallback();
                     }
                 });
@@ -3646,22 +3673,39 @@
                 return;
             }
             var clip = this._clip;
-            var animation = this.animation;
             if (forwardToLast) {
                 clip.onframe(1);
             }
-            if (animation) {
-                animation.removeClip(clip);
-            }
-            this._clip = null;
+            this._abortedCallback();
         };
         Animator.prototype.delay = function (time) {
             this._delay = time;
             return this;
         };
+        Animator.prototype.during = function (cb) {
+            if (cb) {
+                if (!this._onframeList) {
+                    this._onframeList = [];
+                }
+                this._onframeList.push(cb);
+            }
+            return this;
+        };
         Animator.prototype.done = function (cb) {
             if (cb) {
+                if (!this._doneList) {
+                    this._doneList = [];
+                }
                 this._doneList.push(cb);
+            }
+            return this;
+        };
+        Animator.prototype.aborted = function (cb) {
+            if (cb) {
+                if (!this._abortedList) {
+                    this._abortedList = [];
+                }
+                this._abortedList.push(cb);
             }
             return this;
         };
@@ -3696,9 +3740,8 @@
                     break;
                 }
             }
-            if (allAborted && this.animation) {
-                this.animation.removeClip(this._clip);
-                this._clip = null;
+            if (allAborted) {
+                this._abortedCallback();
             }
             return allAborted;
         };
@@ -3806,7 +3849,7 @@
             }
             animator.animation = null;
         };
-        Animation.prototype.update = function () {
+        Animation.prototype.update = function (notTriggerStageUpdate) {
             var time = new Date().getTime() - this._pausedTime;
             var delta = time - this._time;
             var clip = this._clipsHead;
@@ -3825,7 +3868,7 @@
             this._time = time;
             this.onframe(delta);
             this.trigger('frame', delta);
-            if (this.stage.update) {
+            if (this.stage.update && !notTriggerStageUpdate) {
                 this.stage.update();
             }
         };
@@ -5307,10 +5350,10 @@
             }
             return states[name];
         };
-        Element.prototype.clearStates = function () {
-            this.useState(PRESERVED_NORMAL_STATE, false);
+        Element.prototype.clearStates = function (noAnimation) {
+            this.useState(PRESERVED_NORMAL_STATE, false, noAnimation);
         };
-        Element.prototype.useState = function (stateName, keepCurrentStates) {
+        Element.prototype.useState = function (stateName, keepCurrentStates, noAnimation) {
             var toNormalState = stateName === PRESERVED_NORMAL_STATE;
             var hasStates = this.hasState();
             if (!hasStates && toNormalState) {
@@ -5339,7 +5382,7 @@
             if (useHoverLayer) {
                 this._toggleHoverLayerFlag(true);
             }
-            this._applyStateObj(stateName, state, this._normalState, keepCurrentStates, !this.__inHover && animationCfg && animationCfg.duration > 0, animationCfg);
+            this._applyStateObj(stateName, state, this._normalState, keepCurrentStates, !noAnimation && !this.__inHover && animationCfg && animationCfg.duration > 0, animationCfg);
             if (this._textContent) {
                 this._textContent.useState(stateName, keepCurrentStates);
             }
@@ -5366,7 +5409,7 @@
             }
             return state;
         };
-        Element.prototype.useStates = function (states) {
+        Element.prototype.useStates = function (states, noAnimation) {
             if (!states.length) {
                 this.clearStates();
             }
@@ -5406,7 +5449,7 @@
                 var mergedState = this._mergeStates(stateObjects);
                 var animationCfg = this.stateTransition;
                 this.saveCurrentToNormalState(mergedState);
-                this._applyStateObj(states.join(','), mergedState, this._normalState, false, !this.__inHover && animationCfg && animationCfg.duration > 0, animationCfg);
+                this._applyStateObj(states.join(','), mergedState, this._normalState, false, !noAnimation && !this.__inHover && animationCfg && animationCfg.duration > 0, animationCfg);
                 if (this._textContent) {
                     this._textContent.useStates(states);
                 }
@@ -5416,7 +5459,7 @@
                 this._updateAnimationTargets();
                 this.currentStates = states.slice();
                 this.markRedraw();
-                if (!useHoverLayer) {
+                if (!useHoverLayer && this.__inHover) {
                     this._toggleHoverLayerFlag(false);
                     this.__dirty &= ~Element.REDARAW_BIT;
                 }
@@ -5764,6 +5807,7 @@
             elProto.isGroup = false;
             elProto.draggable = false;
             elProto.dragging = false;
+            elProto.ignoreClip = false;
             elProto.__inHover = false;
             elProto.__dirty = Element.REDARAW_BIT;
             var logs = {};
@@ -5824,25 +5868,39 @@
         cfg = cfg || {};
         var animators = [];
         animateToShallow(animatable, '', animatable, target, cfg, animationProps, animators, reverse);
-        var count = animators.length;
-        function done() {
-            count--;
-            if (!count) {
-                cfg.done && cfg.done();
+        var doneCount = animators.length;
+        var abortedCount = doneCount;
+        var cfgDone = cfg.done;
+        var cfgAborted = cfg.aborted;
+        var doneCb = cfgDone ? function () {
+            doneCount--;
+            if (!doneCount) {
+                cfgDone();
             }
+        } : null;
+        var abortedCb = cfgAborted ? function () {
+            abortedCount--;
+            if (!abortedCount) {
+                cfgAborted();
+            }
+        } : null;
+        if (!doneCount) {
+            cfgDone && cfgDone();
         }
-        if (!count) {
-            cfg.done && cfg.done();
-        }
-        if (animators.length > 0 && typeof cfg.during === 'function') {
+        if (animators.length > 0 && cfg.during) {
             animators[0].during(function (target, percent) {
                 cfg.during(percent);
             });
         }
         for (var i = 0; i < animators.length; i++) {
-            animators[i]
-                .done(done)
-                .start(cfg.easing, cfg.force);
+            var animator = animators[i];
+            if (doneCb) {
+                animator.done(doneCb);
+            }
+            if (abortedCb) {
+                animator.aborted(abortedCb);
+            }
+            animator.start(cfg.easing, cfg.force);
         }
         return animators;
     }
@@ -5858,6 +5916,13 @@
         if (isArrayLike(source[key])) {
             if (!isArrayLike(target[key])) {
                 target[key] = [];
+            }
+            if (isTypedArray(source[key])) {
+                var len = source[key].length;
+                if (target[key].length !== len) {
+                    target[key] = new (source[key].constructor)(len);
+                    copyArrShallow(target[key], source[key], len);
+                }
             }
             var sourceArr = source[key];
             var targetArr = target[key];
@@ -6682,9 +6747,40 @@
     var PI = Math.PI;
     var PI2$1 = PI * 2;
     var hasTypedArray = typeof Float32Array !== 'undefined';
+    var tmpAngles = [];
+    function modPI2(radian) {
+        var n = Math.round(radian / PI * 1e8) / 1e8;
+        return (n % 2) * PI;
+    }
+    function normalizeArcAngles(angles, anticlockwise) {
+        var newStartAngle = modPI2(angles[0]);
+        if (newStartAngle < 0) {
+            newStartAngle += PI2$1;
+        }
+        var delta = newStartAngle - angles[0];
+        var newEndAngle = angles[1];
+        newEndAngle += delta;
+        if (!anticlockwise && newEndAngle - newStartAngle >= PI2$1) {
+            newEndAngle = newStartAngle + PI2$1;
+        }
+        else if (anticlockwise && newStartAngle - newEndAngle >= PI2$1) {
+            newEndAngle = newStartAngle - PI2$1;
+        }
+        else if (!anticlockwise && newStartAngle > newEndAngle) {
+            newEndAngle = newStartAngle +
+                (PI2$1 - modPI2(newStartAngle - newEndAngle));
+        }
+        else if (anticlockwise && newStartAngle < newEndAngle) {
+            newEndAngle = newStartAngle -
+                (PI2$1 - modPI2(newEndAngle - newStartAngle));
+        }
+        angles[0] = newStartAngle;
+        angles[1] = newEndAngle;
+    }
     var PathProxy = (function () {
         function PathProxy(notSaveData) {
             this.dpr = 1;
+            this._version = 0;
             this._xi = 0;
             this._yi = 0;
             this._x0 = 0;
@@ -6697,6 +6793,12 @@
                 this.data = [];
             }
         }
+        PathProxy.prototype.increaseVersion = function () {
+            this._version++;
+        };
+        PathProxy.prototype.getVersion = function () {
+            return this._version;
+        };
         PathProxy.prototype.setScale = function (sx, sy, segmentIgnoreThreshold) {
             segmentIgnoreThreshold = segmentIgnoreThreshold || 0;
             if (segmentIgnoreThreshold > 0) {
@@ -6730,6 +6832,7 @@
                 this._pathSegLen = null;
                 this._pathLen = 0;
             }
+            this._version++;
         };
         PathProxy.prototype.moveTo = function (x, y) {
             this.addData(CMD.M, x, y);
@@ -6776,8 +6879,12 @@
             return this;
         };
         PathProxy.prototype.arc = function (cx, cy, r, startAngle, endAngle, anticlockwise) {
+            tmpAngles[0] = startAngle;
+            tmpAngles[1] = endAngle;
+            normalizeArcAngles(tmpAngles, anticlockwise);
+            startAngle = tmpAngles[0];
+            endAngle = tmpAngles[1];
             var delta = endAngle - startAngle;
-            endAngle = startAngle + delta;
             this.addData(CMD.A, cx, cy, r, r, startAngle, delta, 0, anticlockwise ? 0 : 1);
             this._ctx && this._ctx.arc(cx, cy, r, startAngle, endAngle, anticlockwise);
             this._xi = mathCos$1(endAngle) * r + cx;
@@ -7011,7 +7118,8 @@
             var i;
             for (i = 0; i < data.length;) {
                 var cmd = data[i++];
-                if (i === 1) {
+                var isFirst = i === 1;
+                if (isFirst) {
                     xi = data[i];
                     yi = data[i + 1];
                     x0 = xi;
@@ -7049,12 +7157,12 @@
                         var startAngle = data[i++];
                         var endAngle = data[i++] + startAngle;
                         i += 1;
-                        var anticlockwise = 1 - data[i++];
-                        if (i === 1) {
+                        var anticlockwise = !data[i++];
+                        if (isFirst) {
                             x0 = mathCos$1(startAngle) * rx + cx;
                             y0 = mathSin$1(startAngle) * ry + cy;
                         }
-                        fromArc(cx, cy, rx, ry, startAngle, endAngle, !!anticlockwise, min2, max2);
+                        fromArc(cx, cy, rx, ry, startAngle, endAngle, anticlockwise, min2, max2);
                         xi = mathCos$1(endAngle) * rx + cx;
                         yi = mathSin$1(endAngle) * ry + cy;
                         break;
@@ -7095,7 +7203,8 @@
             var segCount = 0;
             for (var i = 0; i < len;) {
                 var cmd = data[i++];
-                if (i === 1) {
+                var isFirst = i === 1;
+                if (isFirst) {
                     xi = data[i];
                     yi = data[i + 1];
                     x0 = xi;
@@ -7151,7 +7260,7 @@
                         var endAngle = delta + startAngle;
                         i += 1;
                         var anticlockwise = !data[i++];
-                        if (i === 1) {
+                        if (isFirst) {
                             x0 = mathCos$1(startAngle) * rx + cx;
                             y0 = mathSin$1(startAngle) * ry + cy;
                         }
@@ -7214,7 +7323,8 @@
             }
             lo: for (var i = 0; i < len;) {
                 var cmd = d[i++];
-                if (i === 1) {
+                var isFirst = i === 1;
+                if (isFirst) {
                     xi = d[i];
                     yi = d[i + 1];
                     x0 = xi;
@@ -7299,8 +7409,6 @@
                         var psi = d[i++];
                         var anticlockwise = !d[i++];
                         var r = (rx > ry) ? rx : ry;
-                        var scaleX = (rx > ry) ? 1 : rx / ry;
-                        var scaleY = (rx > ry) ? ry / rx : 1;
                         var isEllipse = mathAbs(rx - ry) > 1e-3;
                         var endAngle = startAngle + delta;
                         var breakBuild = false;
@@ -7312,14 +7420,8 @@
                             }
                             accumLength += l;
                         }
-                        if (isEllipse) {
-                            ctx.translate(cx, cy);
-                            ctx.rotate(psi);
-                            ctx.scale(scaleX, scaleY);
-                            ctx.arc(0, 0, r, startAngle, endAngle, anticlockwise);
-                            ctx.scale(1 / scaleX, 1 / scaleY);
-                            ctx.rotate(-psi);
-                            ctx.translate(-cx, -cy);
+                        if (isEllipse && ctx.ellipse) {
+                            ctx.ellipse(cx, cy, rx, ry, psi, startAngle, endAngle, anticlockwise);
                         }
                         else {
                             ctx.arc(cx, cy, r, startAngle, endAngle, anticlockwise);
@@ -7327,7 +7429,7 @@
                         if (breakBuild) {
                             break lo;
                         }
-                        if (i === 1) {
+                        if (isFirst) {
                             x0 = mathCos$1(startAngle) * rx + cx;
                             y0 = mathSin$1(startAngle) * ry + cy;
                         }
@@ -7628,7 +7730,7 @@
         if (dTheta < 1e-4) {
             return 0;
         }
-        if (dTheta % PI2$4 < 1e-4) {
+        if (dTheta >= PI2$4 - 1e-4) {
             startAngle = 0;
             endAngle = PI2$4;
             var dir = anticlockwise ? 1 : -1;
@@ -7639,16 +7741,13 @@
                 return 0;
             }
         }
-        if (anticlockwise) {
-            var tmp_1 = startAngle;
-            startAngle = normalizeRadian(endAngle);
-            endAngle = normalizeRadian(tmp_1);
-        }
-        else {
-            startAngle = normalizeRadian(startAngle);
-            endAngle = normalizeRadian(endAngle);
-        }
         if (startAngle > endAngle) {
+            var tmp_1 = startAngle;
+            startAngle = endAngle;
+            endAngle = tmp_1;
+        }
+        if (startAngle < 0) {
+            startAngle += PI2$4;
             endAngle += PI2$4;
         }
         var w = 0;
@@ -7681,12 +7780,13 @@
         var y1;
         for (var i = 0; i < data.length;) {
             var cmd = data[i++];
+            var isFirst = i === 1;
             if (cmd === CMD$1.M && i > 1) {
                 if (!isStroke) {
                     w += windingLine(xi, yi, x0, y0, x, y);
                 }
             }
-            if (i === 1) {
+            if (isFirst) {
                 xi = data[i];
                 yi = data[i + 1];
                 x0 = xi;
@@ -7746,7 +7846,7 @@
                     var anticlockwise = !!(1 - data[i++]);
                     x1 = Math.cos(theta) * rx + cx;
                     y1 = Math.sin(theta) * ry + cy;
-                    if (i > 1) {
+                    if (!isFirst) {
                         w += windingLine(xi, yi, x1, y1, x, y);
                     }
                     else {
@@ -7884,7 +7984,7 @@
             if (pathFill !== 'none') {
                 if (isString(pathFill)) {
                     var fillLum = lum(pathFill, 0);
-                    if (fillLum > 0.6) {
+                    if (fillLum > 0.5) {
                         return DARK_LABEL_COLOR;
                     }
                     else if (fillLum > 0.2) {
@@ -7952,7 +8052,8 @@
                     var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
                     var w = style.lineWidth;
                     if (!this.hasFill()) {
-                        w = Math.max(w, this.strokeContainThreshold || 4);
+                        var strokeContainThreshold = this.strokeContainThreshold;
+                        w = Math.max(w, strokeContainThreshold == null ? 4 : strokeContainThreshold);
                     }
                     if (lineScale > 1e-10) {
                         rectWithStroke.width += w / lineScale;
@@ -8227,6 +8328,7 @@
                 data[j++] = p_1[1];
             }
         }
+        path.increaseVersion();
     }
 
     var mathSqrt$3 = Math.sqrt;
@@ -9875,6 +9977,422 @@
         return parser.parse(xml, opt);
     }
 
+    var CMD$3 = PathProxy.CMD;
+    function aroundEqual(a, b) {
+        return Math.abs(a - b) < 1e-5;
+    }
+    function pathToBezierCurves(path) {
+        var data = path.data;
+        var bezierArray = [];
+        var currentSubpath;
+        var xi = 0;
+        var yi = 0;
+        var x0 = 0;
+        var y0 = 0;
+        function createNewSubpath(x, y) {
+            if (currentSubpath && currentSubpath.length > 2) {
+                bezierArray.push(currentSubpath);
+            }
+            currentSubpath = [x, y];
+        }
+        function addLine(x0, y0, x1, y1) {
+            if (!(aroundEqual(x0, x1) && aroundEqual(y0, y1))) {
+                currentSubpath.push(x0, y0, x1, y1, x1, y1);
+            }
+        }
+        function addArc(startAngle, endAngle, cx, cy, rx, ry) {
+            var delta = Math.abs(endAngle - startAngle);
+            var len = Math.tan(delta / 4) * 4 / 3;
+            var dir = endAngle < startAngle ? -1 : 1;
+            var c1 = Math.cos(startAngle);
+            var s1 = Math.sin(startAngle);
+            var c2 = Math.cos(endAngle);
+            var s2 = Math.sin(endAngle);
+            var x1 = c1 * rx + cx;
+            var y1 = s1 * ry + cy;
+            var x4 = c2 * rx + cx;
+            var y4 = s2 * ry + cy;
+            var hx = rx * len * dir;
+            var hy = ry * len * dir;
+            currentSubpath.push(x1 - hx * s1, y1 + hy * c1, x4 + hx * s2, y4 - hy * c2, x4, y4);
+        }
+        var x1, y1, x2, y2;
+        for (var i = 0; i < data.length;) {
+            var cmd = data[i++];
+            var isFirst = i === 1;
+            if (isFirst) {
+                xi = data[i];
+                yi = data[i + 1];
+                x0 = xi;
+                y0 = yi;
+                if (cmd === CMD$3.L || cmd === CMD$3.C || cmd === CMD$3.Q) {
+                    currentSubpath = [x0, y0];
+                }
+            }
+            switch (cmd) {
+                case CMD$3.M:
+                    xi = x0 = data[i++];
+                    yi = y0 = data[i++];
+                    createNewSubpath(x0, y0);
+                    break;
+                case CMD$3.L:
+                    x1 = data[i++];
+                    y1 = data[i++];
+                    addLine(xi, yi, x1, y1);
+                    xi = x1;
+                    yi = y1;
+                    break;
+                case CMD$3.C:
+                    currentSubpath.push(data[i++], data[i++], data[i++], data[i++], xi = data[i++], yi = data[i++]);
+                    break;
+                case CMD$3.Q:
+                    x1 = data[i++];
+                    y1 = data[i++];
+                    x2 = data[i++];
+                    y2 = data[i++];
+                    currentSubpath.push(xi + 2 / 3 * (x1 - xi), yi + 2 / 3 * (y1 - yi), x2 + 2 / 3 * (x1 - x2), y2 + 2 / 3 * (y1 - y2), x2, y2);
+                    xi = x2;
+                    yi = y2;
+                    break;
+                case CMD$3.A:
+                    var cx = data[i++];
+                    var cy = data[i++];
+                    var rx = data[i++];
+                    var ry = data[i++];
+                    var startAngle = data[i++];
+                    var endAngle = data[i++] + startAngle;
+                    i += 1;
+                    var anticlockwise = !data[i++];
+                    x1 = Math.cos(startAngle) * rx + cx;
+                    y1 = Math.sin(startAngle) * ry + cy;
+                    if (isFirst) {
+                        x0 = x1;
+                        y0 = y1;
+                        createNewSubpath(x0, y0);
+                    }
+                    else {
+                        addLine(xi, yi, x1, y1);
+                    }
+                    xi = Math.cos(endAngle) * rx + cx;
+                    yi = Math.sin(endAngle) * ry + cy;
+                    var step = (anticlockwise ? -1 : 1) * Math.PI / 2;
+                    for (var angle = startAngle; anticlockwise ? angle > endAngle : angle < endAngle; angle += step) {
+                        var nextAngle = anticlockwise ? Math.max(angle + step, endAngle)
+                            : Math.min(angle + step, endAngle);
+                        addArc(angle, nextAngle, cx, cy, rx, ry);
+                    }
+                    break;
+                case CMD$3.R:
+                    x0 = xi = data[i++];
+                    y0 = yi = data[i++];
+                    x1 = x0 + data[i++];
+                    y1 = y0 + data[i++];
+                    createNewSubpath(x1, y0);
+                    addLine(x1, y0, x1, y1);
+                    addLine(x1, y1, x0, y1);
+                    addLine(x0, y1, x0, y0);
+                    addLine(x0, y0, x1, y0);
+                    break;
+                case CMD$3.Z:
+                    currentSubpath && addLine(xi, yi, x0, y0);
+                    xi = x0;
+                    yi = y0;
+                    break;
+            }
+        }
+        if (currentSubpath && currentSubpath.length > 2) {
+            bezierArray.push(currentSubpath);
+        }
+        return bezierArray;
+    }
+    function alignSubpath(subpath1, subpath2) {
+        var len1 = subpath1.length;
+        var len2 = subpath2.length;
+        if (len1 === len2) {
+            return [subpath1, subpath2];
+        }
+        var shorterPath = len1 < len2 ? subpath1 : subpath2;
+        var shorterLen = Math.min(len1, len2);
+        var diff = Math.abs(len2 - len1) / 6;
+        var shorterBezierCount = (shorterLen - 2) / 6;
+        var eachCurveSubDivCount = Math.ceil(diff / shorterBezierCount) + 1;
+        var newSubpath = [shorterPath[0], shorterPath[1]];
+        var remained = diff;
+        var tmpSegX = [];
+        var tmpSegY = [];
+        for (var i = 2; i < shorterLen;) {
+            var x0 = shorterPath[i - 2];
+            var y0 = shorterPath[i - 1];
+            var x1 = shorterPath[i++];
+            var y1 = shorterPath[i++];
+            var x2 = shorterPath[i++];
+            var y2 = shorterPath[i++];
+            var x3 = shorterPath[i++];
+            var y3 = shorterPath[i++];
+            if (remained <= 0) {
+                newSubpath.push(x1, y1, x2, y2, x3, y3);
+                continue;
+            }
+            var actualSubDivCount = Math.min(remained, eachCurveSubDivCount - 1) + 1;
+            for (var k = 1; k <= actualSubDivCount; k++) {
+                var p = k / actualSubDivCount;
+                cubicSubdivide(x0, x1, x2, x3, p, tmpSegX);
+                cubicSubdivide(y0, y1, y2, y3, p, tmpSegY);
+                x0 = tmpSegX[3];
+                y0 = tmpSegY[3];
+                newSubpath.push(tmpSegX[1], tmpSegY[1], tmpSegX[2], tmpSegY[2], x0, y0);
+                x1 = tmpSegX[5];
+                y1 = tmpSegY[5];
+                x2 = tmpSegX[6];
+                y2 = tmpSegY[6];
+            }
+            remained -= actualSubDivCount - 1;
+        }
+        return shorterPath === subpath1 ? [newSubpath, subpath2] : [subpath1, newSubpath];
+    }
+    function createSubpath(lastSubpathSubpath, otherSubpath) {
+        var len = lastSubpathSubpath.length;
+        var lastX = lastSubpathSubpath[len - 2];
+        var lastY = lastSubpathSubpath[len - 1];
+        var newSubpath = [];
+        for (var i = 0; i < otherSubpath.length;) {
+            newSubpath[i++] = lastX;
+            newSubpath[i++] = lastY;
+        }
+        return newSubpath;
+    }
+    function alignBezierCurves(array1, array2) {
+        var _a;
+        var lastSubpath1;
+        var lastSubpath2;
+        var newArray1 = [];
+        var newArray2 = [];
+        for (var i = 0; i < Math.max(array1.length, array2.length); i++) {
+            var subpath1 = array1[i];
+            var subpath2 = array2[i];
+            var newSubpath1 = void 0;
+            var newSubpath2 = void 0;
+            if (!subpath1) {
+                newSubpath1 = createSubpath(lastSubpath1 || subpath2, subpath2);
+                newSubpath2 = subpath2;
+            }
+            else if (!subpath2) {
+                newSubpath2 = createSubpath(lastSubpath2 || subpath1, subpath1);
+                newSubpath1 = subpath1;
+            }
+            else {
+                _a = alignSubpath(subpath1, subpath2), newSubpath1 = _a[0], newSubpath2 = _a[1];
+                lastSubpath1 = newSubpath1;
+                lastSubpath2 = newSubpath2;
+            }
+            newArray1.push(newSubpath1);
+            newArray2.push(newSubpath2);
+        }
+        return [newArray1, newArray2];
+    }
+    function centroid(array) {
+        var signedArea = 0;
+        var cx = 0;
+        var cy = 0;
+        var len = array.length;
+        for (var i = 0, j = len - 2; i < len; j = i, i += 2) {
+            var x0 = array[j];
+            var y0 = array[j + 1];
+            var x1 = array[i];
+            var y1 = array[i + 1];
+            var a = x0 * y1 - x1 * y0;
+            signedArea += a;
+            cx += (x0 + x1) * a;
+            cy += (y0 + y1) * a;
+        }
+        if (signedArea === 0) {
+            return [array[0] || 0, array[1] || 0];
+        }
+        return [cx / signedArea / 3, cy / signedArea / 3, signedArea];
+    }
+    function findBestRingOffset(fromSubBeziers, toSubBeziers, fromCp, toCp) {
+        var bezierCount = (fromSubBeziers.length - 2) / 6;
+        var bestScore = Infinity;
+        var bestOffset = 0;
+        var len = fromSubBeziers.length;
+        var len2 = len - 2;
+        for (var offset = 0; offset < bezierCount; offset++) {
+            var cursorOffset = offset * 6;
+            var score = 0;
+            for (var k = 0; k < len; k += 2) {
+                var idx = k === 0 ? cursorOffset : ((cursorOffset + k - 2) % len2 + 2);
+                var x0 = fromSubBeziers[idx] - fromCp[0];
+                var y0 = fromSubBeziers[idx + 1] - fromCp[1];
+                var x1 = toSubBeziers[k] - toCp[0];
+                var y1 = toSubBeziers[k + 1] - toCp[1];
+                var dx = x1 - x0;
+                var dy = y1 - y0;
+                score += dx * dx + dy * dy;
+            }
+            if (score < bestScore) {
+                bestScore = score;
+                bestOffset = offset;
+            }
+        }
+        return bestOffset;
+    }
+    function reverse(array) {
+        var newArr = [];
+        var len = array.length;
+        for (var i = 0; i < len; i += 2) {
+            newArr[i] = array[len - i - 2];
+            newArr[i + 1] = array[len - i - 1];
+        }
+        return newArr;
+    }
+    function findBestMorphingRotation(fromArr, toArr, searchAngleIteration, searchAngleRange) {
+        var result = [];
+        var fromNeedsReverse;
+        for (var i = 0; i < fromArr.length; i++) {
+            var fromSubpathBezier = fromArr[i];
+            var toSubpathBezier = toArr[i];
+            var fromCp = centroid(fromSubpathBezier);
+            var toCp = centroid(toSubpathBezier);
+            if (fromNeedsReverse == null) {
+                fromNeedsReverse = fromCp[2] < 0 !== toCp[2] < 0;
+            }
+            var newFromSubpathBezier = [];
+            var newToSubpathBezier = [];
+            var bestAngle = 0;
+            var bestScore = Infinity;
+            var tmpArr = [];
+            var len = fromSubpathBezier.length;
+            if (fromNeedsReverse) {
+                fromSubpathBezier = reverse(fromSubpathBezier);
+            }
+            var offset = findBestRingOffset(fromSubpathBezier, toSubpathBezier, fromCp, toCp) * 6;
+            var len2 = len - 2;
+            for (var k = 0; k < len2; k += 2) {
+                var idx = (offset + k) % len2 + 2;
+                newFromSubpathBezier[k + 2] = fromSubpathBezier[idx] - fromCp[0];
+                newFromSubpathBezier[k + 3] = fromSubpathBezier[idx + 1] - fromCp[1];
+            }
+            newFromSubpathBezier[0] = fromSubpathBezier[offset] - fromCp[0];
+            newFromSubpathBezier[1] = fromSubpathBezier[offset + 1] - fromCp[1];
+            if (searchAngleIteration > 0) {
+                var step = searchAngleRange / searchAngleIteration;
+                for (var angle = -searchAngleRange / 2; angle <= searchAngleRange / 2; angle += step) {
+                    var sa = Math.sin(angle);
+                    var ca = Math.cos(angle);
+                    var score = 0;
+                    for (var k = 0; k < fromSubpathBezier.length; k += 2) {
+                        var x0 = newFromSubpathBezier[k];
+                        var y0 = newFromSubpathBezier[k + 1];
+                        var x1 = toSubpathBezier[k] - toCp[0];
+                        var y1 = toSubpathBezier[k + 1] - toCp[1];
+                        var newX1 = x1 * ca - y1 * sa;
+                        var newY1 = x1 * sa + y1 * ca;
+                        tmpArr[k] = newX1;
+                        tmpArr[k + 1] = newY1;
+                        var dx = newX1 - x0;
+                        var dy = newY1 - y0;
+                        score += dx * dx + dy * dy;
+                    }
+                    if (score < bestScore) {
+                        bestScore = score;
+                        bestAngle = angle;
+                        for (var m = 0; m < tmpArr.length; m++) {
+                            newToSubpathBezier[m] = tmpArr[m];
+                        }
+                    }
+                }
+            }
+            else {
+                for (var i_1 = 0; i_1 < len; i_1 += 2) {
+                    newToSubpathBezier[i_1] = toSubpathBezier[i_1] - toCp[0];
+                    newToSubpathBezier[i_1 + 1] = toSubpathBezier[i_1 + 1] - toCp[1];
+                }
+            }
+            result.push({
+                from: newFromSubpathBezier,
+                to: newToSubpathBezier,
+                fromCp: fromCp,
+                toCp: toCp,
+                rotation: -bestAngle
+            });
+        }
+        return result;
+    }
+    function morphPath(fromPath, toPath, animationOpts) {
+        if (!fromPath.path) {
+            fromPath.createPathProxy();
+        }
+        if (!toPath.path) {
+            toPath.createPathProxy();
+        }
+        fromPath.path.beginPath();
+        fromPath.buildPath(fromPath.path, fromPath.shape);
+        toPath.path.beginPath();
+        toPath.buildPath(toPath.path, toPath.shape);
+        var _a = alignBezierCurves(pathToBezierCurves(fromPath.path), pathToBezierCurves(toPath.path)), fromBezierCurves = _a[0], toBezierCurves = _a[1];
+        var morphingData = findBestMorphingRotation(fromBezierCurves, toBezierCurves, 10, Math.PI);
+        var morphingPath = toPath;
+        if (!morphingPath.__oldBuildPath) {
+            morphingPath.__oldBuildPath = morphingPath.buildPath;
+        }
+        var tmpArr = [];
+        morphingPath.buildPath = function (path, shape) {
+            var t = morphingPath.__morphT;
+            var onet = 1 - t;
+            var newCp = [];
+            for (var i = 0; i < morphingData.length; i++) {
+                var item = morphingData[i];
+                var from = item.from;
+                var to = item.to;
+                var angle = item.rotation * t;
+                var fromCp = item.fromCp;
+                var toCp = item.toCp;
+                var sa = Math.sin(angle);
+                var ca = Math.cos(angle);
+                lerp(newCp, fromCp, toCp, t);
+                for (var m = 0; m < from.length; m += 2) {
+                    var x0 = from[m];
+                    var y0 = from[m + 1];
+                    var x1 = to[m];
+                    var y1 = to[m + 1];
+                    var x = x0 * onet + x1 * t;
+                    var y = y0 * onet + y1 * t;
+                    tmpArr[m] = (x * ca - y * sa) + newCp[0];
+                    tmpArr[m + 1] = (x * sa + y * ca) + newCp[1];
+                }
+                for (var m = 0; m < from.length;) {
+                    if (m === 0) {
+                        path.moveTo(tmpArr[m++], tmpArr[m++]);
+                    }
+                    path.bezierCurveTo(tmpArr[m++], tmpArr[m++], tmpArr[m++], tmpArr[m++], tmpArr[m++], tmpArr[m++]);
+                }
+            }
+        };
+        morphingPath.__morphT = 0;
+        var oldDone = animationOpts && animationOpts.done;
+        var oldAborted = animationOpts && animationOpts.aborted;
+        var oldDuring = animationOpts && animationOpts.during;
+        morphingPath.animateTo({
+            __morphT: 1
+        }, defaults({
+            during: function (p) {
+                morphingPath.dirtyShape();
+                oldDuring && oldDuring(p);
+            },
+            done: function () {
+                morphingPath.buildPath = morphingPath.__oldBuildPath;
+                morphingPath.__oldBuildPath = null;
+                morphingPath.createPathProxy();
+                morphingPath.dirtyShape();
+                oldDone && oldDone();
+            },
+            aborted: function () {
+                oldAborted && oldAborted();
+            }
+        }, animationOpts));
+        return toPath;
+    }
+
     var CompoundPath = (function (_super) {
         __extends(CompoundPath, _super);
         function CompoundPath() {
@@ -10287,9 +10805,10 @@
                 var font = token.font = tokenStyle.font || style.font;
                 token.contentHeight = getLineHeight(font);
                 var tokenHeight = retrieve2(tokenStyle.height, token.contentHeight);
-                token.lineHeight = retrieve3(tokenStyle.lineHeight, style.lineHeight, tokenHeight);
+                token.innerHeight = tokenHeight;
                 textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
                 token.height = tokenHeight;
+                token.lineHeight = retrieve3(tokenStyle.lineHeight, style.lineHeight, tokenHeight);
                 token.align = tokenStyle && tokenStyle.align || style.align;
                 token.verticalAlign = tokenStyle && tokenStyle.verticalAlign || 'middle';
                 if (truncateLine && topHeight != null && calculatedHeight + token.lineHeight > topHeight) {
@@ -10739,7 +11258,7 @@
                 textPadding && (outerWidth_1 += textPadding[1] + textPadding[3]);
                 var boxX = adjustTextX(baseX, outerWidth_1, textAlign);
                 var boxY = adjustTextY(baseY, outerHeight, verticalAlign);
-                needDrawBg && this._renderBackground(style, boxX, boxY, outerWidth_1, outerHeight);
+                needDrawBg && this._renderBackground(style, style, boxX, boxY, outerWidth_1, outerHeight);
             }
             textY += lineHeight / 2;
             if (textPadding) {
@@ -10824,7 +11343,7 @@
             }
             var xRight = xLeft + contentWidth;
             if (needDrawBackground(style)) {
-                this._renderBackground(style, boxX, boxY, outerWidth, outerHeight);
+                this._renderBackground(style, style, boxX, boxY, outerWidth, outerHeight);
             }
             var bgColorDrawn = !!(style.backgroundColor);
             for (var i = 0; i < contentBlock.lines.length; i++) {
@@ -10874,7 +11393,7 @@
                 y = lineTop + lineHeight - token.height / 2;
             }
             var needDrawBg = !token.isLineHolder && needDrawBackground(tokenStyle);
-            needDrawBg && this._renderBackground(tokenStyle, textAlign === 'right'
+            needDrawBg && this._renderBackground(tokenStyle, style, textAlign === 'right'
                 ? x - token.width
                 : textAlign === 'center'
                     ? x - token.width / 2
@@ -10883,6 +11402,7 @@
             var textPadding = token.textPadding;
             if (textPadding) {
                 x = getTextXForPadding(x, textAlign, textPadding);
+                y -= token.height / 2 - textPadding[0] - token.innerHeight / 2;
             }
             var el = this._getOrCreateChild(TSpan);
             var subElStyle = el.createStyle();
@@ -10913,6 +11433,7 @@
             subElStyle.textAlign = textAlign;
             subElStyle.textBaseline = 'middle';
             subElStyle.font = token.font || DEFAULT_FONT;
+            subElStyle.opacity = retrieve3(tokenStyle.opacity, style.opacity, 1);
             if (textStroke) {
                 subElStyle.lineWidth = retrieve3(tokenStyle.lineWidth, style.lineWidth, defaultLineWidth);
                 subElStyle.lineDash = retrieve2(tokenStyle.lineDash, style.lineDash);
@@ -10926,7 +11447,7 @@
             var textHeight = token.contentHeight;
             el.setBoundingRect(new BoundingRect(adjustTextX(subElStyle.x, textWidth, subElStyle.textAlign), adjustTextY(subElStyle.y, textHeight, subElStyle.textBaseline), textWidth, textHeight));
         };
-        ZRText.prototype._renderBackground = function (style, x, y, width, height) {
+        ZRText.prototype._renderBackground = function (style, topStyle, x, y, width, height) {
             var textBackgroundColor = style.backgroundColor;
             var textBorderWidth = style.borderWidth;
             var textBorderColor = style.borderColor;
@@ -10950,7 +11471,6 @@
             if (isPlainBg) {
                 var rectStyle = rectEl.style;
                 rectStyle.fill = textBackgroundColor || null;
-                rectStyle.opacity = retrieve2(style.opacity, 1);
                 rectStyle.fillOpacity = retrieve2(style.fillOpacity, 1);
             }
             else if (textBackgroundColor && textBackgroundColor.image) {
@@ -10972,16 +11492,18 @@
                 rectStyle.strokeOpacity = retrieve2(style.strokeOpacity, 1);
                 rectStyle.lineDash = style.borderDash;
                 rectStyle.lineDashOffset = style.borderDashOffset || 0;
+                rectEl.strokeContainThreshold = 0;
                 if (rectEl.hasFill() && rectEl.hasStroke()) {
                     rectStyle.strokeFirst = true;
                     rectStyle.lineWidth *= 2;
                 }
             }
-            var shadowStyle = (rectEl || imgEl).style;
-            shadowStyle.shadowBlur = style.shadowBlur || 0;
-            shadowStyle.shadowColor = style.shadowColor || 'transparent';
-            shadowStyle.shadowOffsetX = style.shadowOffsetX || 0;
-            shadowStyle.shadowOffsetY = style.shadowOffsetY || 0;
+            var commonStyle = (rectEl || imgEl).style;
+            commonStyle.shadowBlur = style.shadowBlur || 0;
+            commonStyle.shadowColor = style.shadowColor || 'transparent';
+            commonStyle.shadowOffsetX = style.shadowOffsetX || 0;
+            commonStyle.shadowOffsetY = style.shadowOffsetY || 0;
+            commonStyle.opacity = retrieve3(style.opacity, topStyle.opacity, 1);
         };
         ZRText.makeFont = function (style) {
             var font = '';
@@ -11386,6 +11908,183 @@
     }(Path));
     Rose.prototype.type = 'rose';
 
+    var PI$3 = Math.PI;
+    var PI2$5 = PI$3 * 2;
+    var mathSin$3 = Math.sin;
+    var mathCos$3 = Math.cos;
+    var mathACos = Math.acos;
+    var mathATan2 = Math.atan2;
+    var mathAbs$1 = Math.abs;
+    var mathSqrt$4 = Math.sqrt;
+    var mathMax$3 = Math.max;
+    var mathMin$3 = Math.min;
+    var e = 1e-4;
+    function intersect(x0, y0, x1, y1, x2, y2, x3, y3) {
+        var x10 = x1 - x0;
+        var y10 = y1 - y0;
+        var x32 = x3 - x2;
+        var y32 = y3 - y2;
+        var t = y32 * x10 - x32 * y10;
+        if (t * t < e) {
+            return;
+        }
+        t = (x32 * (y0 - y2) - y32 * (x0 - x2)) / t;
+        return [x0 + t * x10, y0 + t * y10];
+    }
+    function computeCornerTangents(x0, y0, x1, y1, radius, cr, clockwise) {
+        var x01 = x0 - x1;
+        var y01 = y0 - y1;
+        var lo = (clockwise ? cr : -cr) / mathSqrt$4(x01 * x01 + y01 * y01);
+        var ox = lo * y01;
+        var oy = -lo * x01;
+        var x11 = x0 + ox;
+        var y11 = y0 + oy;
+        var x10 = x1 + ox;
+        var y10 = y1 + oy;
+        var x00 = (x11 + x10) / 2;
+        var y00 = (y11 + y10) / 2;
+        var dx = x10 - x11;
+        var dy = y10 - y11;
+        var d2 = dx * dx + dy * dy;
+        var r = radius - cr;
+        var s = x11 * y10 - x10 * y11;
+        var d = (dy < 0 ? -1 : 1) * mathSqrt$4(mathMax$3(0, r * r * d2 - s * s));
+        var cx0 = (s * dy - dx * d) / d2;
+        var cy0 = (-s * dx - dy * d) / d2;
+        var cx1 = (s * dy + dx * d) / d2;
+        var cy1 = (-s * dx + dy * d) / d2;
+        var dx0 = cx0 - x00;
+        var dy0 = cy0 - y00;
+        var dx1 = cx1 - x00;
+        var dy1 = cy1 - y00;
+        if (dx0 * dx0 + dy0 * dy0 > dx1 * dx1 + dy1 * dy1) {
+            cx0 = cx1;
+            cy0 = cy1;
+        }
+        return {
+            cx: cx0,
+            cy: cy0,
+            x01: -ox,
+            y01: -oy,
+            x11: cx0 * (radius / r - 1),
+            y11: cy0 * (radius / r - 1)
+        };
+    }
+    function buildPath$2(ctx, shape) {
+        var radius = mathMax$3(shape.r, 0);
+        var innerRadius = mathMax$3(shape.r0 || 0, 0);
+        var hasRadius = radius > 0;
+        var hasInnerRadius = innerRadius > 0;
+        if (!hasRadius && !hasInnerRadius) {
+            return;
+        }
+        if (!hasRadius) {
+            radius = innerRadius;
+            innerRadius = 0;
+        }
+        if (innerRadius > radius) {
+            var tmp = radius;
+            radius = innerRadius;
+            innerRadius = tmp;
+        }
+        var x = shape.cx;
+        var y = shape.cy;
+        var clockwise = !!shape.clockwise;
+        var startAngle = shape.startAngle;
+        var endAngle = shape.endAngle;
+        var cornerRadius = shape.cornerRadius || 0;
+        var innerCornerRadius = shape.innerCornerRadius || 0;
+        var tmpAngles = [startAngle, endAngle];
+        normalizeArcAngles(tmpAngles, !clockwise);
+        var arc = mathAbs$1(tmpAngles[0] - tmpAngles[1]);
+        if (!(radius > e)) {
+            ctx.moveTo(x, y);
+        }
+        else if (arc > PI2$5 - e) {
+            ctx.moveTo(x + radius * mathCos$3(startAngle), y + radius * mathSin$3(startAngle));
+            ctx.arc(x, y, radius, startAngle, endAngle, !clockwise);
+            if (innerRadius > e) {
+                ctx.moveTo(x + innerRadius * mathCos$3(endAngle), y + innerRadius * mathSin$3(endAngle));
+                ctx.arc(x, y, innerRadius, endAngle, startAngle, clockwise);
+            }
+        }
+        else {
+            var halfRd = mathAbs$1(radius - innerRadius) / 2;
+            var cr = mathMin$3(halfRd, cornerRadius);
+            var icr = mathMin$3(halfRd, innerCornerRadius);
+            var cr0 = icr;
+            var cr1 = cr;
+            var xrs = radius * mathCos$3(startAngle);
+            var yrs = radius * mathSin$3(startAngle);
+            var xire = innerRadius * mathCos$3(endAngle);
+            var yire = innerRadius * mathSin$3(endAngle);
+            var xre = void 0;
+            var yre = void 0;
+            var xirs = void 0;
+            var yirs = void 0;
+            if (cr > e || icr > e) {
+                xre = radius * mathCos$3(endAngle);
+                yre = radius * mathSin$3(endAngle);
+                xirs = innerRadius * mathCos$3(startAngle);
+                yirs = innerRadius * mathSin$3(startAngle);
+                if (arc < PI$3) {
+                    var it_1 = intersect(xrs, yrs, xirs, yirs, xre, yre, xire, yire);
+                    if (it_1) {
+                        var x0 = xrs - it_1[0];
+                        var y0 = yrs - it_1[1];
+                        var x1 = xre - it_1[0];
+                        var y1 = yre - it_1[1];
+                        var a = 1 / mathSin$3(mathACos((x0 * x1 + y0 * y1) / (mathSqrt$4(x0 * x0 + y0 * y0) * mathSqrt$4(x1 * x1 + y1 * y1))) / 2);
+                        var b = mathSqrt$4(it_1[0] * it_1[0] + it_1[1] * it_1[1]);
+                        cr0 = mathMin$3(icr, (innerRadius - b) / (a - 1));
+                        cr1 = mathMin$3(cr, (radius - b) / (a + 1));
+                    }
+                }
+            }
+            if (!(arc > e)) {
+                ctx.moveTo(x + xrs, y + yrs);
+            }
+            else if (cr1 > e) {
+                var ct0 = computeCornerTangents(xirs, yirs, xrs, yrs, radius, cr1, clockwise);
+                var ct1 = computeCornerTangents(xre, yre, xire, yire, radius, cr1, clockwise);
+                ctx.moveTo(x + ct0.cx + ct0.x01, y + ct0.cy + ct0.y01);
+                if (cr1 < cr) {
+                    ctx.arc(x + ct0.cx, y + ct0.cy, cr1, mathATan2(ct0.y01, ct0.x01), mathATan2(ct1.y01, ct1.x01), !clockwise);
+                }
+                else {
+                    ctx.arc(x + ct0.cx, y + ct0.cy, cr1, mathATan2(ct0.y01, ct0.x01), mathATan2(ct0.y11, ct0.x11), !clockwise);
+                    ctx.arc(x, y, radius, mathATan2(ct0.cy + ct0.y11, ct0.cx + ct0.x11), mathATan2(ct1.cy + ct1.y11, ct1.cx + ct1.x11), !clockwise);
+                    ctx.arc(x + ct1.cx, y + ct1.cy, cr1, mathATan2(ct1.y11, ct1.x11), mathATan2(ct1.y01, ct1.x01), !clockwise);
+                }
+            }
+            else {
+                ctx.moveTo(x + xrs, y + yrs);
+                ctx.arc(x, y, radius, startAngle, endAngle, !clockwise);
+            }
+            if (!(innerRadius > e)) {
+                ctx.lineTo(x + xire, y + yire);
+            }
+            else if (cr0 > e) {
+                var ct0 = computeCornerTangents(xire, yire, xre, yre, innerRadius, -cr0, clockwise);
+                var ct1 = computeCornerTangents(xrs, yrs, xirs, yirs, innerRadius, -cr0, clockwise);
+                ctx.lineTo(x + ct0.cx + ct0.x01, y + ct0.cy + ct0.y01);
+                if (cr0 < icr) {
+                    ctx.arc(x + ct0.cx, y + ct0.cy, cr0, mathATan2(ct0.y01, ct0.x01), mathATan2(ct1.y01, ct1.x01), !clockwise);
+                }
+                else {
+                    ctx.arc(x + ct0.cx, y + ct0.cy, cr0, mathATan2(ct0.y01, ct0.x01), mathATan2(ct0.y11, ct0.x11), !clockwise);
+                    ctx.arc(x, y, innerRadius, mathATan2(ct0.cy + ct0.y11, ct0.cx + ct0.x11), mathATan2(ct1.cy + ct1.y11, ct1.cx + ct1.x11), clockwise);
+                    ctx.arc(x + ct1.cx, y + ct1.cy, cr0, mathATan2(ct1.y11, ct1.x11), mathATan2(ct1.y01, ct1.x01), !clockwise);
+                }
+            }
+            else {
+                ctx.lineTo(x + xire, y + yire);
+                ctx.arc(x, y, innerRadius, endAngle, startAngle, clockwise);
+            }
+        }
+        ctx.closePath();
+    }
+
     var SectorShape = (function () {
         function SectorShape() {
             this.cx = 0;
@@ -11395,6 +12094,8 @@
             this.startAngle = 0;
             this.endAngle = Math.PI * 2;
             this.clockwise = true;
+            this.cornerRadius = 0;
+            this.innerCornerRadius = 0;
         }
         return SectorShape;
     }());
@@ -11407,23 +12108,7 @@
             return new SectorShape();
         };
         Sector.prototype.buildPath = function (ctx, shape) {
-            var x = shape.cx;
-            var y = shape.cy;
-            var r0 = Math.max(shape.r0 || 0, 0);
-            var r = Math.max(shape.r, 0);
-            var startAngle = shape.startAngle;
-            var endAngle = shape.endAngle;
-            var clockwise = shape.clockwise;
-            var unitX = Math.cos(startAngle);
-            var unitY = Math.sin(startAngle);
-            ctx.moveTo(unitX * r0 + x, unitY * r0 + y);
-            ctx.lineTo(unitX * r + x, unitY * r + y);
-            ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
-            ctx.lineTo(Math.cos(endAngle) * r0 + x, Math.sin(endAngle) * r0 + y);
-            if (r0 !== 0) {
-                ctx.arc(x, y, r0, endAngle, startAngle, clockwise);
-            }
-            ctx.closePath();
+            buildPath$2(ctx, shape);
         };
         Sector.prototype.isZeroArea = function () {
             return this.shape.startAngle === this.shape.endAngle
@@ -11433,7 +12118,7 @@
     }(Path));
     Sector.prototype.type = 'sector';
 
-    var PI$3 = Math.PI;
+    var PI$4 = Math.PI;
     var cos$2 = Math.cos;
     var sin$2 = Math.sin;
     var StarShape = (function () {
@@ -11464,11 +12149,11 @@
             var r0 = shape.r0;
             if (r0 == null) {
                 r0 = n > 4
-                    ? r * cos$2(2 * PI$3 / n) / cos$2(PI$3 / n)
+                    ? r * cos$2(2 * PI$4 / n) / cos$2(PI$4 / n)
                     : r / 3;
             }
-            var dStep = PI$3 / n;
-            var deg = -PI$3 / 2;
+            var dStep = PI$4 / n;
+            var deg = -PI$4 / 2;
             var xStart = x + r * cos$2(deg);
             var yStart = y + r * sin$2(deg);
             deg += dStep;
@@ -11730,6 +12415,7 @@
     var ZRender = (function () {
         function ZRender(id, dom, opts) {
             var _this = this;
+            this._sleepAfterStill = 10;
             this._stillFrameAccum = 0;
             this._needsRefresh = true;
             this._needsRefreshHover = true;
@@ -11766,11 +12452,17 @@
             this.animation.start();
         }
         ZRender.prototype.add = function (el) {
+            if (!el) {
+                return;
+            }
             this.storage.addRoot(el);
             el.addSelfToZr(this);
             this.refresh();
         };
         ZRender.prototype.remove = function (el) {
+            if (!el) {
+                return;
+            }
             this.storage.delRoot(el);
             el.removeSelfFromZr(this);
             this.refresh();
@@ -11800,7 +12492,7 @@
         };
         ZRender.prototype.refreshImmediately = function (fromInside) {
             if (!fromInside) {
-                this.animation.update();
+                this.animation.update(true);
             }
             this._needsRefresh = false;
             this.painter.refresh();
@@ -11817,7 +12509,7 @@
             var triggerRendered;
             if (this._needsRefresh) {
                 triggerRendered = true;
-                this.refreshImmediately(fromInside);
+                this.refreshImmediately(true);
             }
             if (this._needsRefreshHover) {
                 triggerRendered = true;
@@ -11827,12 +12519,15 @@
                 this._stillFrameAccum = 0;
                 this.trigger('rendered');
             }
-            else {
+            else if (this._sleepAfterStill > 0) {
                 this._stillFrameAccum++;
-                if (this._stillFrameAccum > 10) {
+                if (this._stillFrameAccum > this._sleepAfterStill) {
                     this.animation.stop();
                 }
             }
+        };
+        ZRender.prototype.setSleepAfterStill = function (stillFramesCount) {
+            this._sleepAfterStill = stillFramesCount;
         };
         ZRender.prototype.wakeUp = function () {
             this.animation.start();
@@ -11934,7 +12629,7 @@
     function registerPainter(name, Ctor) {
         painterCtors[name] = Ctor;
     }
-    var version = '5.0.0-alpha.2';
+    var version = '5.0.0-beta.1';
 
     function createLinearGradient(ctx, obj, rect) {
         var x = obj.x == null ? 0 : obj.x;
@@ -11978,6 +12673,19 @@
             canvasGradient.addColorStop(colorStops[i].offset, colorStops[i].color);
         }
         return canvasGradient;
+    }
+
+    function normalizeLineDash(lineType, lineWidth) {
+        if (!lineType || lineType === 'solid' || !(lineWidth > 0)) {
+            return null;
+        }
+        lineWidth = lineWidth || 1;
+        return lineType === 'dashed'
+            ? [4 * lineWidth, 2 * lineWidth]
+            : lineType === 'dotted'
+                ? [lineWidth]
+                : isNumber(lineType)
+                    ? [lineType] : isArray(lineType) ? lineType : null;
     }
 
     var pathProxyForDraw = new PathProxy(true);
@@ -12089,7 +12797,7 @@
                 }
             }
         }
-        var lineDash = style.lineDash;
+        var lineDash = style.lineDash && style.lineWidth > 0 && normalizeLineDash(style.lineDash, style.lineWidth);
         var lineDashOffset = style.lineDashOffset;
         var ctxLineDash = !!ctx.setLineDash;
         var scale = el.getGlobalScale();
@@ -12195,8 +12903,9 @@
             ctx.font = style.font || DEFAULT_FONT;
             ctx.textAlign = style.textAlign;
             ctx.textBaseline = style.textBaseline;
+            var hasLineDash = void 0;
             if (ctx.setLineDash) {
-                var lineDash = style.lineDash;
+                var lineDash = style.lineDash && style.lineWidth > 0 && normalizeLineDash(style.lineDash, style.lineWidth);
                 var lineDashOffset = style.lineDashOffset;
                 if (lineDash) {
                     var lineScale_2 = (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1;
@@ -12206,9 +12915,10 @@
                         });
                         lineDashOffset /= lineScale_2;
                     }
+                    ctx.setLineDash(lineDash);
+                    ctx.lineDashOffset = lineDashOffset;
+                    hasLineDash = true;
                 }
-                ctx.setLineDash(lineDash || []);
-                ctx.lineDashOffset = lineDashOffset;
             }
             if (style.strokeFirst) {
                 if (styleHasStroke(style)) {
@@ -12225,6 +12935,9 @@
                 if (styleHasStroke(style)) {
                     ctx.strokeText(text, style.x, style.y);
                 }
+            }
+            if (hasLineDash) {
+                ctx.setLineDash([]);
             }
         }
     }
@@ -12343,6 +13056,9 @@
     var tmpRect = new BoundingRect(0, 0, 0, 0);
     var viewRect = new BoundingRect(0, 0, 0, 0);
     function isDisplayableCulled(el, width, height) {
+        if (!width || !height) {
+            return false;
+        }
         tmpRect.copy(el.getBoundingRect());
         if (el.transform) {
             tmpRect.applyTransform(el.transform);
@@ -12421,7 +13137,7 @@
             || el.style.opacity === 0
             || (el.culling && isDisplayableCulled(el, scope.viewWidth, scope.viewHeight))
             || (m && !m[0] && !m[3])) {
-            el.__dirty = 0;
+            el.__dirty &= ~Element.REDARAW_BIT;
             return;
         }
         var clipPaths = el.__clipPaths;
@@ -13350,14 +14066,13 @@
         return document.createElementNS('http://www.w3.org/2000/svg', name);
     }
 
-    var CMD$3 = PathProxy.CMD;
     var NONE = 'none';
     var mathRound = Math.round;
-    var mathSin$3 = Math.sin;
-    var mathCos$3 = Math.cos;
-    var PI$4 = Math.PI;
-    var PI2$5 = Math.PI * 2;
-    var degree = 180 / PI$4;
+    var mathSin$4 = Math.sin;
+    var mathCos$4 = Math.cos;
+    var PI$5 = Math.PI;
+    var PI2$6 = Math.PI * 2;
+    var degree = 180 / PI$5;
     var EPSILON$3 = 1e-4;
     function round4(val) {
         return mathRound(val * 1e4) / 1e4;
@@ -13418,7 +14133,7 @@
             attr(svgEl, 'stroke-width', (strokeScale_1 ? strokeWidth / strokeScale_1 : 0) + '');
             attr(svgEl, 'paint-order', style.strokeFirst ? 'stroke' : 'fill');
             attr(svgEl, 'stroke-opacity', (style.strokeOpacity != null ? style.strokeOpacity * opacity : opacity) + '');
-            var lineDash = style.lineDash;
+            var lineDash = style.lineDash && strokeWidth > 0 && normalizeLineDash(style.lineDash, strokeWidth);
             if (lineDash) {
                 var lineDashOffset = style.lineDashOffset;
                 if (strokeScale_1 && strokeScale_1 !== 1) {
@@ -13444,117 +14159,97 @@
             attr(svgEl, 'stroke', NONE);
         }
     }
-    function pathDataToString(path) {
-        if (!path) {
-            return '';
+    var SVGPathRebuilder = (function () {
+        function SVGPathRebuilder() {
         }
-        var str = [];
-        var data = path.data;
-        var dataLength = path.len();
-        var x;
-        var y;
-        for (var i = 0; i < dataLength;) {
-            var cmd = data[i++];
-            var cmdStr = '';
-            var nData = 0;
-            switch (cmd) {
-                case CMD$3.M:
-                    cmdStr = 'M';
-                    nData = 2;
-                    break;
-                case CMD$3.L:
-                    cmdStr = 'L';
-                    nData = 2;
-                    break;
-                case CMD$3.Q:
-                    cmdStr = 'Q';
-                    nData = 4;
-                    break;
-                case CMD$3.C:
-                    cmdStr = 'C';
-                    nData = 6;
-                    break;
-                case CMD$3.A:
-                    var cx = data[i++];
-                    var cy = data[i++];
-                    var rx = data[i++];
-                    var ry = data[i++];
-                    var theta = data[i++];
-                    var dTheta = data[i++];
-                    var psi = data[i++];
-                    var clockwise = data[i++];
-                    var dThetaPositive = Math.abs(dTheta);
-                    var isCircle = isAroundZero$1(dThetaPositive - PI2$5)
-                        || (clockwise ? dTheta >= PI2$5 : -dTheta >= PI2$5);
-                    var unifiedTheta = dTheta > 0 ? dTheta % PI2$5 : (dTheta % PI2$5 + PI2$5);
-                    var large = false;
-                    if (isCircle) {
-                        large = true;
-                    }
-                    else if (isAroundZero$1(dThetaPositive)) {
-                        large = false;
-                    }
-                    else {
-                        large = (unifiedTheta >= PI$4) === !!clockwise;
-                    }
-                    var x0 = round4(cx + rx * mathCos$3(theta));
-                    var y0 = round4(cy + ry * mathSin$3(theta));
-                    if (isCircle) {
-                        if (clockwise) {
-                            dTheta = PI2$5 - 1e-4;
-                        }
-                        else {
-                            dTheta = -PI2$5 + 1e-4;
-                        }
-                        large = true;
-                        if (i === 9) {
-                            str.push('M', x0, y0);
-                        }
-                    }
-                    x = round4(cx + rx * mathCos$3(theta + dTheta));
-                    y = round4(cy + ry * mathSin$3(theta + dTheta));
-                    if (isNaN(x0) || isNaN(y0) || isNaN(rx) || isNaN(ry) || isNaN(psi) || isNaN(degree) || isNaN(x) || isNaN(y)) {
-                        return '';
-                    }
-                    str.push('A', round4(rx), round4(ry), mathRound(psi * degree), +large, +clockwise, x, y);
-                    break;
-                case CMD$3.Z:
-                    cmdStr = 'Z';
-                    break;
-                case CMD$3.R:
-                    x = round4(data[i++]);
-                    y = round4(data[i++]);
-                    var w = round4(data[i++]);
-                    var h = round4(data[i++]);
-                    if (isNaN(x) || isNaN(y) || isNaN(w) || isNaN(h)) {
-                        return '';
-                    }
-                    str.push('M', x, y, 'L', x + w, y, 'L', x + w, y + h, 'L', x, y + h, 'L', x, y);
-                    break;
+        SVGPathRebuilder.prototype.reset = function () {
+            this._d = [];
+            this._str = '';
+        };
+        SVGPathRebuilder.prototype.moveTo = function (x, y) {
+            this._add('M', x, y);
+        };
+        SVGPathRebuilder.prototype.lineTo = function (x, y) {
+            this._add('L', x, y);
+        };
+        SVGPathRebuilder.prototype.bezierCurveTo = function (x, y, x2, y2, x3, y3) {
+            this._add('C', x, y, x2, y2, x3, y3);
+        };
+        SVGPathRebuilder.prototype.quadraticCurveTo = function (x, y, x2, y2) {
+            this._add('Q', x, y, x2, y2);
+        };
+        SVGPathRebuilder.prototype.arc = function (cx, cy, r, startAngle, endAngle, anticlockwise) {
+            this.ellipse(cx, cy, r, r, 0, startAngle, endAngle, anticlockwise);
+        };
+        SVGPathRebuilder.prototype.ellipse = function (cx, cy, rx, ry, psi, startAngle, endAngle, anticlockwise) {
+            var firstCmd = this._d.length === 0;
+            var dTheta = endAngle - startAngle;
+            var clockwise = !anticlockwise;
+            var dThetaPositive = Math.abs(dTheta);
+            var isCircle = isAroundZero$1(dThetaPositive - PI2$6)
+                || (clockwise ? dTheta >= PI2$6 : -dTheta >= PI2$6);
+            var unifiedTheta = dTheta > 0 ? dTheta % PI2$6 : (dTheta % PI2$6 + PI2$6);
+            var large = false;
+            if (isCircle) {
+                large = true;
             }
-            cmdStr && str.push(cmdStr);
-            for (var j = 0; j < nData; j++) {
-                var val = round4(data[i++]);
-                if (isNaN(val)) {
-                    return '';
+            else if (isAroundZero$1(dThetaPositive)) {
+                large = false;
+            }
+            else {
+                large = (unifiedTheta >= PI$5) === !!clockwise;
+            }
+            var x0 = round4(cx + rx * mathCos$4(startAngle));
+            var y0 = round4(cy + ry * mathSin$4(startAngle));
+            if (isCircle) {
+                if (clockwise) {
+                    dTheta = PI2$6 - 1e-4;
                 }
-                str.push(val);
+                else {
+                    dTheta = -PI2$6 + 1e-4;
+                }
+                large = true;
+                if (firstCmd) {
+                    this._d.push('M', x0, y0);
+                }
             }
-        }
-        return str.join(' ');
-    }
-    function wrapSVGBuildPath(el) {
-        if (!el.__svgBuildPath) {
-            var oldBuildPath_1 = el.buildPath;
-            el.__svgBuildPath = el.buildPath = function (path, shape, inBundle) {
-                oldBuildPath_1.call(this, el.path, shape, inBundle);
-                el.__svgPathStr = pathDataToString(el.path);
-            };
-            if (!el.shapeChanged()) {
-                el.__svgPathStr = pathDataToString(el.path);
+            var x = round4(cx + rx * mathCos$4(startAngle + dTheta));
+            var y = round4(cy + ry * mathSin$4(startAngle + dTheta));
+            if (isNaN(x0) || isNaN(y0) || isNaN(rx) || isNaN(ry) || isNaN(psi) || isNaN(degree) || isNaN(x) || isNaN(y)) {
+                return '';
             }
-        }
-    }
+            this._d.push('A', round4(rx), round4(ry), mathRound(psi * degree), +large, +clockwise, x, y);
+        };
+        SVGPathRebuilder.prototype.rect = function (x, y, w, h) {
+            this._add('M', x, y);
+            this._add('L', x + w, y);
+            this._add('L', x + w, y + h);
+            this._add('L', x, y + h);
+            this._add('L', x, y);
+        };
+        SVGPathRebuilder.prototype.closePath = function () {
+            this._add('Z');
+        };
+        SVGPathRebuilder.prototype._add = function (cmd, a, b, c, d, e, f, g, h) {
+            this._d.push(cmd);
+            for (var i = 1; i < arguments.length; i++) {
+                var val = arguments[i];
+                if (isNaN(val)) {
+                    this._invalid = true;
+                    return;
+                }
+                this._d.push(round4(val));
+            }
+        };
+        SVGPathRebuilder.prototype.generateStr = function () {
+            this._str = this._invalid ? '' : this._d.join(' ');
+            this._d = [];
+        };
+        SVGPathRebuilder.prototype.getStr = function () {
+            return this._str;
+        };
+        return SVGPathRebuilder;
+    }());
     var svgPath = {
         brush: function (el) {
             var style = el.style;
@@ -13567,13 +14262,24 @@
                 el.createPathProxy();
             }
             var path = el.path;
-            wrapSVGBuildPath(el);
             if (el.shapeChanged()) {
                 path.beginPath();
                 el.buildPath(path, el.shape);
                 el.pathUpdated();
             }
-            attr(svgEl, 'd', el.__svgPathStr);
+            var pathVersion = path.getVersion();
+            var elExt = el;
+            var svgPathBuilder = elExt.__svgPathBuilder;
+            if (elExt.__svgPathVersion !== pathVersion || !svgPathBuilder || el.style.strokePercent < 1) {
+                if (!svgPathBuilder) {
+                    svgPathBuilder = elExt.__svgPathBuilder = new SVGPathRebuilder();
+                }
+                svgPathBuilder.reset();
+                path.rebuildPath(svgPathBuilder, el.style.strokePercent);
+                svgPathBuilder.generateStr();
+                elExt.__svgPathVersion = pathVersion;
+            }
+            attr(svgEl, 'd', svgPathBuilder.getStr());
             bindStyle(svgEl, style, el);
             setTransform(svgEl, el.transform);
         }
@@ -14572,6 +15278,7 @@
     exports.getInstance = getInstance;
     exports.init = init;
     exports.matrix = matrix;
+    exports.morphPath = morphPath;
     exports.parseSVG = parseSVG;
     exports.path = path;
     exports.registerPainter = registerPainter;

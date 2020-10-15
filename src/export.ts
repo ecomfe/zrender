@@ -8,6 +8,7 @@ import * as vector from './core/vector';
 import * as colorTool from './tool/color';
 import * as pathTool from './tool/path';
 import {parseSVG} from './tool/parseSVG';
+import {morphPath} from './tool/morphPath';
 
 export {default as Point} from './core/Point';
 
@@ -51,3 +52,4 @@ export {pathTool as path};
 export {zrUtil as util};
 
 export {parseSVG};
+export {morphPath};

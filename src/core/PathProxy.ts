@@ -57,11 +57,64 @@ const PI2 = PI * 2;
 
 const hasTypedArray = typeof Float32Array !== 'undefined';
 
+const tmpAngles: number[] = [];
+
+function modPI2(radian: number) {
+    // It's much more stable to mod N instedof PI
+    const n = Math.round(radian / PI * 1e8) / 1e8;
+    return (n % 2) * PI;
+}
+/**
+ * Normalize start and end angles.
+ * startAngle will be normalized to 0 ~ PI*2
+ * sweepAngle(endAngle - startAngle) will be normalized to 0 ~ PI*2 if clockwise.
+ * -PI*2 ~ 0 if anticlockwise.
+ */
+export function normalizeArcAngles(angles: number[], anticlockwise: boolean): void {
+    let newStartAngle = modPI2(angles[0]);
+    if (newStartAngle < 0) {
+        // Normlize to 0 - PI2
+        newStartAngle += PI2;
+    }
+
+    let delta = newStartAngle - angles[0];
+    let newEndAngle = angles[1];
+    newEndAngle += delta;
+
+    // https://github.com/chromium/chromium/blob/c20d681c9c067c4e15bb1408f17114b9e8cba294/third_party/blink/renderer/modules/canvas/canvas2d/canvas_path.cc#L184
+    // Is circle
+    if (!anticlockwise && newEndAngle - newStartAngle >= PI2) {
+        newEndAngle = newStartAngle + PI2;
+    }
+    else if (anticlockwise && newStartAngle - newEndAngle >= PI2) {
+        newEndAngle = newStartAngle - PI2;
+    }
+    // Make startAngle < endAngle when clockwise, otherwise endAngle < startAngle.
+    // The sweep angle can never been larger than P2.
+    else if (!anticlockwise && newStartAngle > newEndAngle) {
+        newEndAngle = newStartAngle +
+            (PI2 - modPI2(newStartAngle - newEndAngle));
+    }
+    else if (anticlockwise && newStartAngle < newEndAngle) {
+        newEndAngle = newStartAngle -
+            (PI2 - modPI2(newEndAngle - newStartAngle));
+    }
+
+    angles[0] = newStartAngle;
+    angles[1] = newEndAngle;
+}
+
+
 export default class PathProxy {
 
     dpr = 1
 
     data: number[] | Float32Array
+
+    /**
+     * Version is for detecing if the path has been changed.
+     */
+    private _version = 0
 
     private _saveData: boolean
 
@@ -83,13 +136,9 @@ export default class PathProxy {
     private _uy: number
 
     private _lineDash: number[]
-
     private _needsDash: boolean
-
     private _dashOffset: number
-
     private _dashIdx: number
-
     private _dashSum: number
 
     static CMD = CMD
@@ -102,6 +151,18 @@ export default class PathProxy {
         if (this._saveData) {
             this.data = [];
         }
+    }
+
+    increaseVersion() {
+        this._version++;
+    }
+
+    /**
+     * Version can be used outside for compare if the path is changed.
+     * For example to determine if need to update svg d str in svg renderer.
+     */
+    getVersion() {
+        return this._version;
     }
 
     /**
@@ -152,6 +213,9 @@ export default class PathProxy {
             this._pathSegLen = null;
             this._pathLen = 0;
         }
+
+        // Update version
+        this._version++;
     }
 
     moveTo(x: number, y: number) {
@@ -214,30 +278,15 @@ export default class PathProxy {
     }
 
     arc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise?: boolean) {
-        // Normalize delta to 0 - PI2
+        tmpAngles[0] = startAngle;
+        tmpAngles[1] = endAngle;
+        normalizeArcAngles(tmpAngles, anticlockwise);
+
+        startAngle = tmpAngles[0];
+        endAngle = tmpAngles[1];
+
         let delta = endAngle - startAngle;
 
-        /// TODO
-        // if (delta < 0) {
-        //     const n = Math.round(delta / PI * 1e6) / 1e6;
-        //     // Convert to positive
-        //     // It's much more stable to mod N.
-        //     delta = PI2 + (n % 2) * PI;
-        // }
-        // else {
-        //     delta = mathMin(delta, PI2);
-        // }
-
-        // // Convert to -PI2 ~ PI2, -PI2 is anticlockwise
-        // if (anticlockwise && delta > 0) {
-        //     // Convert delta to negative
-        //     delta = delta - PI2;
-        //     if (Math.abs(delta) < 1e-6) {   // is circle.
-        //         delta = delta - PI2;
-        //     }
-        // }
-
-        endAngle = startAngle + delta;
 
         this.addData(
             CMD.A, cx, cy, r, r, startAngle, delta, 0, anticlockwise ? 0 : 1
@@ -573,10 +622,11 @@ export default class PathProxy {
         let y0 = 0;
 
         let i;
-        for (i = 0; i < data.length;) {
+        for (i = 0; i < this._len;) {
             const cmd = data[i++] as number;
 
-            if (i === 1) {
+            const isFirst = i === 1;
+            if (isFirst) {
                 // 如果第一个命令是 L, C, Q
                 // 则 previous point 同绘制命令的第一个 point
                 // 第一个命令为 Arc 的情况下会在后面特殊处理
@@ -620,7 +670,6 @@ export default class PathProxy {
                     yi = data[i++];
                     break;
                 case CMD.A:
-                    // TODO Arc 判断的开销比较大
                     const cx = data[i++];
                     const cy = data[i++];
                     const rx = data[i++];
@@ -629,9 +678,9 @@ export default class PathProxy {
                     const endAngle = data[i++] + startAngle;
                     // TODO Arc 旋转
                     i += 1;
-                    const anticlockwise = 1 - data[i++];
+                    const anticlockwise = !data[i++];
 
-                    if (i === 1) {
+                    if (isFirst) {
                         // 直接使用 arc 命令
                         // 第一个命令起点还未定义
                         x0 = mathCos(startAngle) * rx + cx;
@@ -640,7 +689,7 @@ export default class PathProxy {
 
                     fromArc(
                         cx, cy, rx, ry, startAngle, endAngle,
-                        !!anticlockwise, min2, max2
+                        anticlockwise, min2, max2
                     );
 
                     xi = mathCos(endAngle) * rx + cx;
@@ -694,8 +743,9 @@ export default class PathProxy {
 
         for (let i = 0; i < len;) {
             const cmd = data[i++] as number;
+            const isFirst = i === 1;
 
-            if (i === 1) {
+            if (isFirst) {
                 // 如果第一个命令是 L, C, Q
                 // 则 previous point 同绘制命令的第一个 point
                 // 第一个命令为 Arc 的情况下会在后面特殊处理
@@ -763,7 +813,7 @@ export default class PathProxy {
                     i += 1;
                     const anticlockwise = !data[i++];
 
-                    if (i === 1) {
+                    if (isFirst) {
                         // 直接使用 arc 命令
                         // 第一个命令起点还未定义
                         x0 = mathCos(startAngle) * rx + cx;
@@ -811,7 +861,7 @@ export default class PathProxy {
      * Rebuild path will not consider javascript implemented line dash.
      * @param {CanvasRenderingContext2D} ctx
      */
-    rebuildPath(ctx: CanvasRenderingContext2D, percent: number) {
+    rebuildPath(ctx: PathRebuilder, percent: number) {
         const d = this.data;
         const ux = this._ux;
         const uy = this._uy;
@@ -844,8 +894,9 @@ export default class PathProxy {
 
         lo: for (let i = 0; i < len;) {
             const cmd = d[i++];
+            const isFirst = i === 1;
 
-            if (i === 1) {
+            if (isFirst) {
                 // 如果第一个命令是 L, C, Q
                 // 则 previous point 同绘制命令的第一个 point
                 // 第一个命令为 Arc 的情况下会在后面特殊处理
@@ -953,14 +1004,8 @@ export default class PathProxy {
                         }
                         accumLength += l;
                     }
-                    if (isEllipse) {
-                        ctx.translate(cx, cy);
-                        ctx.rotate(psi);
-                        ctx.scale(scaleX, scaleY);
-                        ctx.arc(0, 0, r, startAngle, endAngle, anticlockwise);
-                        ctx.scale(1 / scaleX, 1 / scaleY);
-                        ctx.rotate(-psi);
-                        ctx.translate(-cx, -cy);
+                    if (isEllipse && ctx.ellipse) {
+                        ctx.ellipse(cx, cy, rx, ry, psi, startAngle, endAngle, anticlockwise);
                     }
                     else {
                         ctx.arc(cx, cy, r, startAngle, endAngle, anticlockwise);
@@ -970,7 +1015,7 @@ export default class PathProxy {
                         break lo;
                     }
 
-                    if (i === 1) {
+                    if (isFirst) {
                         // 直接使用 arc 命令
                         // 第一个命令起点还未定义
                         x0 = mathCos(startAngle) * rx + cx;
@@ -1040,4 +1085,16 @@ export default class PathProxy {
         proto._ux = 0;
         proto._uy = 0;
     })()
+}
+
+
+export interface PathRebuilder {
+    moveTo(x: number, y: number): void
+    lineTo(x: number, y: number): void
+    bezierCurveTo(x: number, y: number, x2: number, y2: number, x3: number, y3: number): void
+    quadraticCurveTo(x: number, y: number, x2: number, y2: number): void
+    arc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise: boolean): void
+    ellipse(cx: number, cy: number, radiusX: number, radiusY: number, rotation: number, startAngle: number, endAngle: number, anticlockwise: boolean): void
+    rect(x: number, y: number, width: number, height: number): void
+    closePath(): void
 }

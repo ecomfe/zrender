@@ -281,7 +281,6 @@ class Track {
 
     private _finished: boolean
 
-
     private _needsSort: boolean = false
 
     private _isAllValueEqual = true
@@ -304,6 +303,11 @@ class Track {
 
     setFinished() {
         this._finished = true;
+        // Also set additive track to finished.
+        // Make sure the final value stopped on the latest track
+        if (this._additiveTrack) {
+            this._additiveTrack.setFinished();
+        }
     }
 
     needsAnimate() {
@@ -425,7 +429,9 @@ class Track {
 
         // Only apply additive animaiton on INTERPOLABLE SAME TYPE values.
         if (additiveTrack
-            && this.interpolable
+            // If two track both will be animated and have same value format.
+            && this.needsAnimate()
+            && additiveTrack.needsAnimate()
             && arrDim === additiveTrack.arrDim
             && this.isValueColor === additiveTrack.isValueColor
             && !additiveTrack._finished
@@ -641,30 +647,32 @@ class Track {
     private _addToTarget(target: any) {
         const arrDim = this.arrDim;
         const propName = this.propName;
+        const additiveValue = this._additiveValue;
 
         if (arrDim === 0) {
             if (this.isValueColor) {
                 // TODO reduce unnecessary parse
                 color.parse(target[propName], tmpRgba);
-                add1DArray(tmpRgba, tmpRgba, this._additiveValue as NumberArray, 1);
+                add1DArray(tmpRgba, tmpRgba, additiveValue as NumberArray, 1);
                 target[propName] = rgba2String(tmpRgba);
             }
             else {
                 // Add a difference value based on the change of previous frame.
-                target[propName] = target[propName] + this._additiveValue;
+                target[propName] = target[propName] + additiveValue;
             }
         }
         else if (arrDim === 1) {
-            add1DArray(target[propName], target[propName], this._additiveValue as NumberArray, 1);
+            add1DArray(target[propName], target[propName], additiveValue as NumberArray, 1);
         }
         else if (arrDim === 2) {
-            add2DArray(target[propName], target[propName], this._additiveValue as NumberArray[], 1);
+            add2DArray(target[propName], target[propName], additiveValue as NumberArray[], 1);
         }
     }
 }
 
 
 type DoneCallback = () => void;
+type AbortCallback = () => void;
 export type OnframeCallback<T> = (target: T, percent: number) => void;
 
 export type AnimationPropGetter<T> = (target: T, key: string) => InterpolatableType;
@@ -698,8 +706,10 @@ export default class Animator<T> {
 
     private _additiveAnimators: Animator<any>[]
 
-    private _doneList: DoneCallback[] = []
-    private _onframeList: OnframeCallback<T>[] = []
+    private _doneList: DoneCallback[]
+    private _onframeList: OnframeCallback<T>[]
+
+    private _abortedList: AbortCallback[]
 
     private _clip: Clip = null
 
@@ -782,15 +792,6 @@ export default class Animator<T> {
         return this;
     }
 
-    /**
-     * 添加动画每一帧的回调函数
-     * @param callback
-     */
-    during(callback: OnframeCallback<T>) {
-        this._onframeList.push(callback);
-        return this;
-    }
-
     pause() {
         this._clip.pause();
         this._paused = true;
@@ -806,15 +807,40 @@ export default class Animator<T> {
     }
 
     private _doneCallback() {
-        // Clear all tracks
-        this._tracks = null;
+        this._setTracksFinished();
         // Clear clip
         this._clip = null;
 
         const doneList = this._doneList;
-        const len = doneList.length;
-        for (let i = 0; i < len; i++) {
-            doneList[i].call(this);
+        if (doneList) {
+            const len = doneList.length;
+            for (let i = 0; i < len; i++) {
+                doneList[i].call(this);
+            }
+        }
+    }
+    private _abortedCallback() {
+        this._setTracksFinished();
+
+        const animation = this.animation;
+        const abortedList = this._abortedList;
+
+        if (animation) {
+            animation.removeClip(this._clip);
+        }
+        this._clip = null;
+
+        if (abortedList) {
+            for (let i = 0; i < abortedList.length; i++) {
+                abortedList[i].call(this);
+            }
+        }
+    }
+    private _setTracksFinished() {
+        const tracks = this._tracks;
+        const tracksKeys = this._trackKeys;
+        for (let i = 0; i < tracksKeys.length; i++) {
+            tracks[tracksKeys[i]].setFinished();
         }
     }
 
@@ -832,6 +858,7 @@ export default class Animator<T> {
         }
         return additiveTrack;
     }
+
     /**
      * Start the animation
      * @param easing
@@ -893,14 +920,14 @@ export default class Animator<T> {
                         // Because target may be changed.
                         tracks[i].step(self._target, percent);
                     }
-                    for (let i = 0; i < self._onframeList.length; i++) {
-                        self._onframeList[i](self._target, percent);
+                    const onframeList = self._onframeList;
+                    if (onframeList) {
+                        for (let i = 0; i < onframeList.length; i++) {
+                            onframeList[i](self._target, percent);
+                        }
                     }
                 },
                 ondestroy() {
-                    for (let i = 0; i < tracks.length; i++) {
-                        tracks[i].setFinished();
-                    }
                     self._doneCallback();
                 }
             });
@@ -932,15 +959,12 @@ export default class Animator<T> {
             return;
         }
         const clip = this._clip;
-        const animation = this.animation;
         if (forwardToLast) {
             // Move to last frame before stop
             clip.onframe(1);
         }
-        if (animation) {
-            animation.removeClip(clip);
-        }
-        this._clip = null;
+
+        this._abortedCallback();
     }
     /**
      * Set when animation delay starts
@@ -951,12 +975,38 @@ export default class Animator<T> {
         return this;
     }
     /**
+     * 添加动画每一帧的回调函数
+     * @param callback
+     */
+    during(cb: OnframeCallback<T>) {
+        if (cb) {
+            if (!this._onframeList) {
+                this._onframeList = [];
+            }
+            this._onframeList.push(cb);
+        }
+        return this;
+    }
+    /**
      * Add callback for animation end
      * @param cb
      */
     done(cb: DoneCallback) {
         if (cb) {
+            if (!this._doneList) {
+                this._doneList = [];
+            }
             this._doneList.push(cb);
+        }
+        return this;
+    }
+
+    aborted(cb: AbortCallback) {
+        if (cb) {
+            if (!this._abortedList) {
+                this._abortedList = [];
+            }
+            this._abortedList.push(cb);
         }
         return this;
     }
@@ -1005,9 +1055,8 @@ export default class Animator<T> {
             }
         }
         // Remove clip if all tracks has been aborted.
-        if (allAborted && this.animation) {
-            this.animation.removeClip(this._clip);
-            this._clip = null;
+        if (allAborted) {
+            this._abortedCallback();
         }
 
         return allAborted;
@@ -1069,4 +1118,5 @@ export default class Animator<T> {
             }
         }
     }
+
 }

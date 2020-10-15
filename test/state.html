@@ -93,6 +93,7 @@
 
         rect.stateTransition = {
             duration: config.animation ? 1000 : 0,
+            additive: true,
             easing: 'cubicOut'
         }
         allStates.forEach(function (stateName) {

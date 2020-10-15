@@ -77,6 +77,8 @@ class ZRender {
     handler: Handler
     animation: Animation
 
+    private _sleepAfterStill = 10;
+
     private _stillFrameAccum = 0;
 
     private _needsRefresh = true
@@ -131,9 +133,6 @@ class ZRender {
             : null;
         this.handler = new Handler(storage, painter, handerProxy, painter.root);
 
-        /**
-         * @type {module:zrender/animation/Animation}
-         */
         this.animation = new Animation({
             stage: {
                 update: () => this._flush(true)
@@ -146,6 +145,9 @@ class ZRender {
      * 添加元素
      */
     add(el: Element) {
+        if (!el) {
+            return
+        }
         this.storage.addRoot(el);
         el.addSelfToZr(this);
         this.refresh();
@@ -155,6 +157,9 @@ class ZRender {
      * 删除元素
      */
     remove(el: Element) {
+        if (!el) {
+            return
+        }
         this.storage.delRoot(el);
         el.removeSelfFromZr(this);
         this.refresh();
@@ -205,7 +210,8 @@ class ZRender {
 
         if (!fromInside) {
             // Update animation if refreshImmediately is invoked from outside.
-            this.animation.update();
+            // Not trigger stage update to call flush again. Which may refresh twice
+            this.animation.update(true);
         }
 
         // Clear needsRefresh ahead to avoid something wrong happens in refresh
@@ -244,7 +250,7 @@ class ZRender {
         const start = new Date().getTime();
         if (this._needsRefresh) {
             triggerRendered = true;
-            this.refreshImmediately(fromInside);
+            this.refreshImmediately(true);
         }
 
         if (this._needsRefreshHover) {
@@ -259,14 +265,21 @@ class ZRender {
                 elapsedTime: end - start
             });
         }
-        else {
+        else if (this._sleepAfterStill > 0) {
             this._stillFrameAccum++;
-
             // Stop the animiation after still for 10 frames.
-            if (this._stillFrameAccum > 10) {
+            if (this._stillFrameAccum > this._sleepAfterStill) {
                 this.animation.stop();
             }
         }
+    }
+
+    /**
+     * Set sleep after still for frames.
+     * Disable auto sleep when it's 0.
+     */
+    setSleepAfterStill(stillFramesCount: number) {
+        this._sleepAfterStill = stillFramesCount;
     }
 
     /**
@@ -507,7 +520,7 @@ export function registerPainter(name: string, Ctor: PainterBaseCtor) {
 /**
  * @type {string}
  */
-export const version = '5.0.0-alpha.2';
+export const version = '5.0.0-beta.1';
 
 
 export interface ZRenderType extends ZRender {};

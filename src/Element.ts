@@ -1,8 +1,11 @@
 import Transformable from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
-import Animator, {cloneValue, OnframeCallback} from './animation/Animator';
+import Animator, {cloneValue} from './animation/Animator';
 import { ZRenderType } from './zrender';
-import { Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes, TextVerticalAlign, TextAlign, MapToType } from './core/types';
+import {
+    Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes,
+    TextVerticalAlign, TextAlign, MapToType
+} from './core/types';
 import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
 import Eventful, {EventQuery, EventCallback} from './core/Eventful';
@@ -16,7 +19,8 @@ import {
     indexOf,
     logError,
     mixin,
-    isArrayLike
+    isArrayLike,
+    isTypedArray
 } from './core/util';
 import Polyline from './graphic/shape/Polyline';
 import Group from './graphic/Group';
@@ -31,6 +35,7 @@ export interface ElementAnimateConfig {
     easing?: AnimationEasing
     done?: Function
     during?: (percent: number) => void
+    aborted?: Function
 
     scope?: string
     /**
@@ -152,9 +157,6 @@ export interface ElementTextConfig {
      * In case position is not using builtin `inside` hints.
      */
     inside?: boolean
-
-    // TODO applyClip
-    // TODO align, verticalAlign??
 }
 export interface ElementTextGuideLineConfig {
     /**
@@ -162,6 +164,11 @@ export interface ElementTextGuideLineConfig {
      * Notice: Won't work
      */
     anchor?: Point
+
+    /**
+     * If above the target element.
+     */
+    showAbove?: boolean
 
     /**
      * Candidates of connectors. Used when autoCalculate is true and anchor is not specified.
@@ -222,6 +229,8 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
     draggable?: boolean
 
     silent?: boolean
+
+    ignoreClip?: boolean
     // From transform
     x?: number
     y?: number
@@ -259,7 +268,7 @@ const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = 
     originY: true,
     rotation: true,
     ignore: false
-}
+};
 
 export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
 export type ElementState = Pick<ElementProps, ElementStatePropNames> & ElementCommonState
@@ -321,6 +330,14 @@ class Element<Props extends ElementProps = ElementProps> {
     parent: Group
 
     animators: Animator<any>[] = []
+
+    /**
+     * If ignore clip from it's parent or hosts.
+     * Applied on itself and all it's children.
+     *
+     * NOTE: It won't affect the clipPath set on the children.
+     */
+    ignoreClip: boolean
 
     /**
      * If element is used as a component of other element.
@@ -574,7 +591,7 @@ class Element<Props extends ElementProps = ElementProps> {
             // Calculate text color
             const isInside = textConfig.inside == null  // Force to be inside or not.
                 ? (typeof textConfig.position === 'string' && textConfig.position.indexOf('inside') >= 0)
-                : textConfig.inside
+                : textConfig.inside;
             const innerTextDefaultStyle = this._innerTextDefaultStyle || (this._innerTextDefaultStyle = {});
 
             let textFill;
@@ -736,7 +753,7 @@ class Element<Props extends ElementProps = ElementProps> {
     saveCurrentToNormalState(toState: ElementState) {
         this._innerSaveToNormal(toState);
 
-        // If we are swtiching from normal to other state during animation.
+        // If we are switching from normal to other state during animation.
         // We need to save final value of animation to the normal state. Not interpolated value.
         const normalState = this._normalState;
         for (let i = 0; i < this.animators.length; i++) {
@@ -770,7 +787,9 @@ class Element<Props extends ElementProps = ElementProps> {
         this._savePrimaryToNormal(toState, normalState, PRIMARY_STATES_KEYS);
     }
 
-    protected _savePrimaryToNormal(toState: Dictionary<any>, normalState: Dictionary<any>, primaryKeys: readonly string[]) {
+    protected _savePrimaryToNormal(
+        toState: Dictionary<any>, normalState: Dictionary<any>, primaryKeys: readonly string[]
+    ) {
         for (let i = 0; i < primaryKeys.length; i++) {
             let key = primaryKeys[i];
             // Only save property that will be changed by toState
@@ -810,8 +829,8 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Clear all states.
      */
-    clearStates() {
-        this.useState(PRESERVED_NORMAL_STATE, false);
+    clearStates(noAnimation?: boolean) {
+        this.useState(PRESERVED_NORMAL_STATE, false, noAnimation);
         // TODO set _normalState to null?
     }
     /**
@@ -822,7 +841,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * @param keepCurrentState If keep current states.
      *      If not, it will inherit from the normal state.
      */
-    useState(stateName: string, keepCurrentStates?: boolean) {
+    useState(stateName: string, keepCurrentStates?: boolean, noAnimation?: boolean) {
         // Use preserved word __normal__
         // TODO: Only restore changed properties when restore to normal???
         const toNormalState = stateName === PRESERVED_NORMAL_STATE;
@@ -873,7 +892,7 @@ class Element<Props extends ElementProps = ElementProps> {
             state,
             this._normalState,
             keepCurrentStates,
-            !this.__inHover && animationCfg && animationCfg.duration > 0,
+            !noAnimation && !this.__inHover && animationCfg && animationCfg.duration > 0,
             animationCfg
         );
 
@@ -921,7 +940,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * Apply multiple states.
      * @param states States list.
      */
-    useStates(states: string[]) {
+    useStates(states: string[], noAnimation?: boolean) {
         if (!states.length) {
             this.clearStates();
         }
@@ -972,7 +991,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 mergedState,
                 this._normalState,
                 false,
-                !this.__inHover && animationCfg && animationCfg.duration > 0,
+                !noAnimation && !this.__inHover && animationCfg && animationCfg.duration > 0,
                 animationCfg
             );
 
@@ -989,8 +1008,7 @@ class Element<Props extends ElementProps = ElementProps> {
             this.currentStates = states.slice();
             this.markRedraw();
 
-
-            if (!useHoverLayer) {
+            if (!useHoverLayer && this.__inHover) {
                 // Leave hover layer after states update and markRedraw.
                 this._toggleHoverLayerFlag(false);
                 // NOTE: avoid unexpected refresh when moving out from hover layer!!
@@ -1144,7 +1162,7 @@ class Element<Props extends ElementProps = ElementProps> {
             // Not simply stop animation. Or it may have jump effect.
             for (let i = 0; i < this.animators.length; i++) {
                 const animator = this.animators[i];
-                const targetName = animator.targetName
+                const targetName = animator.targetName;
                 animator.__changeFinalValue(targetName
                     ? ((state || normalState) as any)[targetName]
                     : (state || normalState)
@@ -1518,11 +1536,15 @@ class Element<Props extends ElementProps = ElementProps> {
      */
 
     // Overload definitions
-    animateFrom(target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>, animationProps?: MapToType<Props, boolean>) {
+    animateFrom(
+        target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>, animationProps?: MapToType<Props, boolean>
+    ) {
         animateTo(this, target, cfg, animationProps, true);
     }
 
-    protected _transitionState(stateName: string, target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>) {
+    protected _transitionState(
+        stateName: string, target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>
+    ) {
         const animators = animateTo(this, target, cfg, animationProps);
         for (let i = 0; i < animators.length; i++) {
             animators[i].__fromStateTransition = stateName;
@@ -1559,7 +1581,9 @@ class Element<Props extends ElementProps = ElementProps> {
      *             verticalAlign: string. optional. use style.textVerticalAlign by default.
      *         }
      */
-    calculateTextPosition: (out: TextPositionCalculationResult, style: ElementTextConfig, rect: RectLike) => TextPositionCalculationResult
+    calculateTextPosition: (
+        out: TextPositionCalculationResult, style: ElementTextConfig, rect: RectLike
+    ) => TextPositionCalculationResult
 
 
     static REDARAW_BIT = 1;
@@ -1573,6 +1597,7 @@ class Element<Props extends ElementProps = ElementProps> {
         elProto.isGroup = false;
         elProto.draggable = false;
         elProto.dragging = false;
+        elProto.ignoreClip = false;
         elProto.__inHover = false;
         elProto.__dirty = Element.REDARAW_BIT;
 
@@ -1658,22 +1683,33 @@ function animateTo<T>(
         reverse
     );
 
-    let count = animators.length;
-    function done() {
-        count--;
-        if (!count) {
-            cfg.done && cfg.done();
+    let doneCount = animators.length;
+    let abortedCount = doneCount;
+    const cfgDone = cfg.done;
+    const cfgAborted = cfg.aborted;
+
+    const doneCb = cfgDone ? () => {
+        doneCount--;
+        if (!doneCount) {
+            cfgDone();
         }
-    }
+    } : null;
+
+    const abortedCb = cfgAborted ? () => {
+        abortedCount--;
+        if (!abortedCount) {
+            cfgAborted();
+        }
+    } : null;
 
     // No animators. This should be checked before animators[i].start(),
     // because 'done' may be executed immediately if no need to animate.
-    if (!count) {
-        cfg.done && cfg.done();
+    if (!doneCount) {
+        cfgDone && cfgDone();
     }
 
     // Adding during callback to the first animator
-    if (animators.length > 0 && typeof cfg.during === 'function') {
+    if (animators.length > 0 && cfg.during) {
         // TODO If there are two animators in animateTo, and the first one is stopped by other animator.
         animators[0].during((target, percent) => {
             cfg.during(percent);
@@ -1683,9 +1719,14 @@ function animateTo<T>(
     // Start after all animators created
     // Incase any animator is done immediately when all animation properties are not changed
     for (let i = 0; i < animators.length; i++) {
-        animators[i]
-            .done(done)
-            .start(cfg.easing, cfg.force);
+        const animator = animators[i];
+        if (doneCb) {
+            animator.done(doneCb);
+        }
+        if (abortedCb) {
+            animator.aborted(abortedCb);
+        }
+        animator.start(cfg.easing, cfg.force);
     }
 
     return animators;
@@ -1698,7 +1739,7 @@ function copyArrShallow(source: number[], target: number[], len: number) {
 }
 
 function is2DArray(value: any[]): value is number[][] {
-    return isArrayLike(value[0])
+    return isArrayLike(value[0]);
 }
 
 function copyValue(target: Dictionary<any>, source: Dictionary<any>, key: string) {
@@ -1707,28 +1748,37 @@ function copyValue(target: Dictionary<any>, source: Dictionary<any>, key: string
             target[key] = [];
         }
 
-        const sourceArr = source[key] as any[];
-        const targetArr = target[key] as any[];
-
-        const len0 = sourceArr.length;
-        if (is2DArray(sourceArr)) {
-            // NOTE: each item should have same length
-            const len1 = sourceArr[0].length;
-
-            for (let i = 0; i < len0; i++) {
-                if (!targetArr[i]) {
-                    targetArr[i] = Array.prototype.slice.call(sourceArr[i]);
-                }
-                else {
-                    copyArrShallow(targetArr[i], sourceArr[i], len1);
-                }
+        if (isTypedArray(source[key])) {
+            const len = source[key].length;
+            if (target[key].length !== len) {
+                target[key] = new (source[key].constructor)(len);
+                copyArrShallow(target[key], source[key], len);
             }
         }
         else {
-            copyArrShallow(targetArr, sourceArr, len0);
-        }
+            const sourceArr = source[key] as any[];
+            const targetArr = target[key] as any[];
 
-        targetArr.length = sourceArr.length;
+            const len0 = sourceArr.length;
+            if (is2DArray(sourceArr)) {
+                // NOTE: each item should have same length
+                const len1 = sourceArr[0].length;
+
+                for (let i = 0; i < len0; i++) {
+                    if (!targetArr[i]) {
+                        targetArr[i] = Array.prototype.slice.call(sourceArr[i]);
+                    }
+                    else {
+                        copyArrShallow(targetArr[i], sourceArr[i], len1);
+                    }
+                }
+            }
+            else {
+                copyArrShallow(targetArr, sourceArr, len0);
+            }
+
+            targetArr.length = sourceArr.length;
+        }
     }
     else {
         target[key] = source[key];

@@ -10,6 +10,7 @@ const mathAtan2 = Math.atan2;
 
 export default function (path: PathProxy, m: MatrixArray) {
     let data = path.data;
+    const len = path.len();
     let cmd;
     let nPoint: number;
     let i: number;
@@ -24,7 +25,7 @@ export default function (path: PathProxy, m: MatrixArray) {
     const A = CMD.A;
     const Q = CMD.Q;
 
-    for (i = 0, j = 0; i < data.length;) {
+    for (i = 0, j = 0; i < len;) {
         cmd = data[i++];
         j = i;
         nPoint = 0;
@@ -93,4 +94,6 @@ export default function (path: PathProxy, m: MatrixArray) {
             data[j++] = p[1];
         }
     }
+
+    path.increaseVersion();
 }

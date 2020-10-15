@@ -3,7 +3,6 @@ import * as line from './line';
 import * as cubic from './cubic';
 import * as quadratic from './quadratic';
 import * as arc from './arc';
-import {normalizeRadian} from './util';
 import * as curve from '../core/curve';
 import windingLine from './windingLine';
 
@@ -143,9 +142,9 @@ function windingQuadratic(
         }
     }
 }
-
 // TODO
 // Arc 旋转
+// startAngle, endAngle has been normalized by normalizeArcAngles
 function windingArc(
     cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise: boolean,
     x: number, y: number
@@ -162,7 +161,7 @@ function windingArc(
     if (dTheta < 1e-4) {
         return 0;
     }
-    if (dTheta % PI2 < 1e-4) {
+    if (dTheta >= PI2 - 1e-4) {
         // Is a circle
         startAngle = 0;
         endAngle = PI2;
@@ -175,16 +174,16 @@ function windingArc(
         }
     }
 
-    if (anticlockwise) {
-        const tmp = startAngle;
-        startAngle = normalizeRadian(endAngle);
-        endAngle = normalizeRadian(tmp);
-    }
-    else {
-        startAngle = normalizeRadian(startAngle);
-        endAngle = normalizeRadian(endAngle);
-    }
     if (startAngle > endAngle) {
+        // Swap, make sure startAngle is smaller than endAngle.
+        const tmp = startAngle;
+        startAngle = endAngle;
+        endAngle = tmp;
+    }
+    // endAngle - startAngle is normalized to 0 - 2*PI.
+    // So following will normalize them to 0 - 4*PI
+    if (startAngle < 0) {
+        startAngle += PI2;
         endAngle += PI2;
     }
 
@@ -211,9 +210,12 @@ function windingArc(
     return w;
 }
 
+
 function containPath(
-    data: PathData, lineWidth: number, isStroke: boolean, x: number, y: number
+    path: PathProxy, lineWidth: number, isStroke: boolean, x: number, y: number
 ): boolean {
+    const data = path.data;
+    const len = path.len();
     let w = 0;
     let xi = 0;
     let yi = 0;
@@ -222,8 +224,9 @@ function containPath(
     let x1;
     let y1;
 
-    for (let i = 0; i < data.length;) {
+    for (let i = 0; i < len;) {
         const cmd = data[i++];
+        const isFirst = i === 1;
         // Begin a new subpath
         if (cmd === CMD.M && i > 1) {
             // Close previous subpath
@@ -236,7 +239,7 @@ function containPath(
             // }
         }
 
-        if (i === 1) {
+        if (isFirst) {
             // 如果第一个命令是 L, C, Q
             // 则 previous point 同绘制命令的第一个 point
             //
@@ -322,7 +325,7 @@ function containPath(
                 x1 = Math.cos(theta) * rx + cx;
                 y1 = Math.sin(theta) * ry + cy;
                 // 不是直接使用 arc 命令
-                if (i > 1) {
+                if (!isFirst) {
                     w += windingLine(xi, yi, x1, y1, x, y);
                 }
                 else {
@@ -399,10 +402,10 @@ function containPath(
     return w !== 0;
 }
 
-export function contain(pathData: PathData, x: number, y: number): boolean {
-    return containPath(pathData, 0, false, x, y);
+export function contain(pathProxy: PathProxy, x: number, y: number): boolean {
+    return containPath(pathProxy, 0, false, x, y);
 }
 
-export function containStroke(pathData: PathData, lineWidth: number, x: number, y: number): boolean {
-    return containPath(pathData, lineWidth, true, x, y);
+export function containStroke(pathProxy: PathProxy, lineWidth: number, x: number, y: number): boolean {
+    return containPath(pathProxy, lineWidth, true, x, y);
 }

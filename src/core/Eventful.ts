@@ -219,7 +219,6 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
                     && hItem.query != null
                     && !eventProcessor.filter(eventType, hItem.query)
                 ) {
-                    i++;
                     continue;
                 }
 
@@ -267,14 +266,13 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
             const ctx = args[argLen - 1];
 
             const len = _h.length;
-            for (let i = 0; i < len;) {
+            for (let i = 0; i < len; i++) {
                 const hItem = _h[i];
                 if (eventProcessor
                     && eventProcessor.filter
                     && hItem.query != null
                     && !eventProcessor.filter(type, hItem.query)
                 ) {
-                    i++;
                     continue;
                 }
 

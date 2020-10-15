@@ -15,6 +15,9 @@ import { DEFAULT_FONT } from '../contain/text';
 import { IncrementalDisplayable } from '../export';
 import { MatrixArray } from '../core/matrix';
 import { map } from '../core/util';
+import { normalizeLineDash } from '../graphic/helper/dashStyle';
+import Element from '../Element';
+
 
 const pathProxyForDraw = new PathProxy(true);
 
@@ -159,7 +162,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         }
     }
 
-    let lineDash = style.lineDash;
+    let lineDash = style.lineDash && style.lineWidth > 0 && normalizeLineDash(style.lineDash, style.lineWidth);
     let lineDashOffset = style.lineDashOffset;
 
     const ctxLineDash = !!ctx.setLineDash;
@@ -313,8 +316,10 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
         ctx.font = style.font || DEFAULT_FONT;
         ctx.textAlign = style.textAlign;
         ctx.textBaseline = style.textBaseline;
+
+        let hasLineDash;
         if (ctx.setLineDash) {
-            let lineDash = style.lineDash;
+            let lineDash = style.lineDash && style.lineWidth > 0 && normalizeLineDash(style.lineDash, style.lineWidth);
             let lineDashOffset = style.lineDashOffset;
             if (lineDash) {
                 const lineScale = (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1;
@@ -324,9 +329,11 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
                     });
                     lineDashOffset /= lineScale;
                 }
+                ctx.setLineDash(lineDash);
+                ctx.lineDashOffset = lineDashOffset;
+
+                hasLineDash = true;
             }
-            ctx.setLineDash(lineDash || []);
-            ctx.lineDashOffset = lineDashOffset;
         }
 
         if (style.strokeFirst) {
@@ -345,7 +352,13 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
                 ctx.strokeText(text, style.x, style.y);
             }
         }
+
+        if (hasLineDash) {
+            // Remove lineDash
+            ctx.setLineDash([]);
+        }
     }
+
 }
 
 const SHADOW_NUMBER_PROPS = ['shadowBlur', 'shadowOffsetX', 'shadowOffsetY'] as const;
@@ -509,6 +522,23 @@ function setContextTransform(ctx: CanvasRenderingContext2D, el: Displayable) {
     }
 }
 
+
+const tmpRect = new BoundingRect(0, 0, 0, 0);
+const viewRect = new BoundingRect(0, 0, 0, 0);
+function isDisplayableCulled(el: Displayable, width: number, height: number) {
+    // Disable culling when width or height is 0
+    if (!width || !height) {
+        return false;
+    }
+    tmpRect.copy(el.getBoundingRect());
+    if (el.transform) {
+        tmpRect.applyTransform(el.transform);
+    }
+    viewRect.width = width;
+    viewRect.height = height;
+    return !tmpRect.intersect(viewRect);
+}
+
 function isClipPathChanged(clipPaths: Path[], prevClipPaths: Path[]): boolean {
     // displayable.__clipPaths can only be `null`/`undefined` or an non-empty array.
     if (clipPaths === prevClipPaths || (!clipPaths && !prevClipPaths)) {
@@ -614,6 +644,10 @@ function getStyle(el: Displayable, inHover?: boolean) {
     return inHover ? (el.__hoverStyle || el.style) : el.style;
 }
 
+export function brushSingle(ctx: CanvasRenderingContext2D, el: Displayable) {
+    brush(ctx, el, { inHover: false, viewWidth: 0, viewHeight: 0 }, true);
+}
+
 // Brush different type of elements.
 export function brush(
     ctx: CanvasRenderingContext2D,
@@ -626,7 +660,9 @@ export function brush(
     if (!el.shouldBePainted(scope.viewWidth, scope.viewHeight, false, false)) {
         // Needs to mark el rendered.
         // Or this element will always been rendered in progressive rendering.
-        el.__dirty = 0;
+        // But other dirty bit should not be cleared, otherwise it cause the shape
+        // can not be updated in this case.
+        el.__dirty &= ~Element.REDARAW_BIT;
         el.__isRendered = false;
         return;
     }

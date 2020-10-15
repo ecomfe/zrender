@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <style>
+        html {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        .chart {
+            height: 200px;
+        }
+        h1 {
+            background: #000;
+            color: #eee;
+            font-size: 18px;
+            text-align: center;
+            padding: 10px;
+            margin: 0 0 10px 0;
+        }
+    </style>
+
+    <h1>
+        Click "hide" "move to grey circle" "show" in turn<br>
+        The red circle should be in the grey circle finally.
+    </h1>
+    <button id="main0Btn1">hide</button>
+    <button id="main0Btn2">move to grey circle</button>
+    <button id="main0Btn3">show</button>
+    <div id="main0" class="chart"></div>
+
+
+    <script type="text/javascript">
+    (function () {
+        var zr = zrender.init(document.getElementById('main0'));
+
+        var circle = new zrender.Circle({
+            style: {
+                fill: 'red',
+            },
+            shape: {
+                cx: 100,
+                cy: 100,
+                r: 30
+            }
+        });
+
+        var targetBgCircle = new zrender.Circle({
+            style: {
+                fill: '#aaa',
+            },
+            shape: {
+                cx: 200,
+                cy: 100,
+                r: 40
+            },
+            z: -1
+        });
+
+        zr.add(circle);
+        zr.add(targetBgCircle);
+
+        document.getElementById('main0Btn1').onclick = function () {
+            circle.attr({
+                style: {
+                    opacity: 0
+                }
+            });
+        };
+        document.getElementById('main0Btn2').onclick = function () {
+            circle.attr({
+                shape: {
+                    cx: 200
+                }
+            });
+        };
+        document.getElementById('main0Btn3').onclick = function () {
+            circle.attr({
+                style: {
+                    opacity: 1
+                }
+            });
+        };
+    })();
+    </script>
+
+
+
+
+
+
+
+</body>
+</html>
