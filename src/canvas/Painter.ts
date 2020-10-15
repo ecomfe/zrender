@@ -362,6 +362,7 @@ export default class CanvasPainter implements PainterBase {
         needsRefreshHover: boolean
     } {
         const layerList = [];
+        const useDirtyRect = this._opts.useDirtyRect;
         for (let zi = 0; zi < this._zlevelList.length; zi++) {
             const zlevel = this._zlevelList[zi];
             const layer = this._layers[zlevel];
@@ -382,7 +383,7 @@ export default class CanvasPainter implements PainterBase {
             const layer = layerList[k];
             const ctx = layer.ctx;
 
-            const repaintRects = this._opts.useDirtyRect
+            const repaintRects = useDirtyRect
                 && layer.createRepaintRects(list, prevList, this._width, this._height);
 
             ctx.save();
@@ -425,7 +426,7 @@ export default class CanvasPainter implements PainterBase {
                         needsRefreshHover = true;
                     }
 
-                    this._doPaintEl(el, layer, repaintRect, scope, i === layer.__endIndex - 1);
+                    this._doPaintEl(el, layer, useDirtyRect, repaintRect, scope, i === layer.__endIndex - 1);
 
                     if (useTimer) {
                         // Date.now can be executed in 13,025,305 ops/second.
@@ -502,14 +503,15 @@ export default class CanvasPainter implements PainterBase {
     private _doPaintEl (
         el: Displayable,
         currentLayer: Layer,
+        useDirtyRect: boolean,
         repaintRect: BoundingRect,
         scope: BrushScope,
         isLast: boolean
     ) {
         const ctx = currentLayer.ctx;
-        if (repaintRect) {
+        if (useDirtyRect) {
             const paintRect = el.getPaintRect();
-            if (paintRect && paintRect.intersect(repaintRect)) {
+            if (!repaintRect || paintRect && paintRect.intersect(repaintRect)) {
                 brush(ctx, el, scope, isLast);
                 el.setPrevPaintRect(paintRect);
             }
