@@ -5,7 +5,7 @@ import CanvasPainter from './Painter';
 import { GradientObject } from '../graphic/Gradient';
 import { ZRCanvasRenderingContext } from '../core/types';
 import Eventful from '../core/Eventful';
-import { ElementEventCallback } from '../Element';
+import Element, { ElementEventCallback } from '../Element';
 import { getCanvasGradient } from './helper';
 import { createCanvasPattern } from './graphic';
 import Displayable from '../graphic/Displayable';
@@ -274,7 +274,7 @@ export default class Layer extends Eventful {
                  * or not painted this frame.
                  */
                 const shouldPaint = el.shouldBePainted(viewWidth, viewHeight, true, true);
-                const prevRect = el.__isRendered && (el.__dirty || !shouldPaint)
+                const prevRect = el.__isRendered && ((el.__dirty & Element.REDARAW_BIT) || !shouldPaint)
                     ? el.getPrevPaintRect()
                     : null;
                 if (prevRect && prevRect.isFinite()) {
@@ -286,7 +286,7 @@ export default class Layer extends Eventful {
                  * if the element should be brushed this frame and either being
                  * dirty or not rendered before.
                  */
-                const curRect = shouldPaint && (el.__dirty || !el.__isRendered)
+                const curRect = shouldPaint && ((el.__dirty & Element.REDARAW_BIT) || !el.__isRendered)
                     ? el.getPaintRect()
                     : null;
                 if (curRect && curRect.isFinite()) {

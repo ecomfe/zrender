@@ -480,7 +480,9 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     update() {
         this.updateTransform();
-        this.updateInnerText();
+        if (this.__dirty) {
+            this.updateInnerText();
+        }
     }
 
     updateInnerText(forceUpdate?: boolean) {
