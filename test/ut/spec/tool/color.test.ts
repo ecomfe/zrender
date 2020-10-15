@@ -1,6 +1,6 @@
 import * as colorTool from '../../../../src/tool/color';
 
-describe('colorTool', function() {
+describe('colorTool', function () {
 
 	it(`\`rgba(17, 263, 69)\` should be converted to [17, 263, 69, 1]`, function () {
 		expect(colorTool.parse('rgba(17, 263, 69)')).toEqual([17, 263, 69, 1]);
@@ -14,4 +14,4 @@ describe('colorTool', function() {
 		expect(colorTool.parse('#07f0')).toEqual([0, 119, 255, 0]);
 	});
 
-})
+});

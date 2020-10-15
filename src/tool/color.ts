@@ -183,8 +183,9 @@ export function parse(colorStr: string, rgbaArr?: number[]): number[] {
     // supports the forms #rgb, #rrggbb, #rgba, #rrggbbaa
     // #rrggbbaa(use the last pair of digits as alpha)
     // see https://drafts.csswg.org/css-color/#hex-notation
+    const strLen = str.length;
     if (str.charAt(0) === '#') {
-        if (str.length === 4 || str.length === 5) {
+        if (strLen === 4 || strLen === 5) {
             const iv = parseInt(str.slice(1, 4), 16);  // TODO(deanm): Stricter parsing.
             if (!(iv >= 0 && iv <= 0xfff)) {
                 setRgba(rgbaArr, 0, 0, 0, 1);
@@ -195,12 +196,12 @@ export function parse(colorStr: string, rgbaArr?: number[]): number[] {
                 ((iv & 0xf00) >> 4) | ((iv & 0xf00) >> 8),
                 (iv & 0xf0) | ((iv & 0xf0) >> 4),
                 (iv & 0xf) | ((iv & 0xf) << 4),
-                str.length === 5 ? parseInt(str.slice(4), 16) / 0xf : 1
+                strLen === 5 ? parseInt(str.slice(4), 16) / 0xf : 1
             );
             putToCache(colorStr, rgbaArr);
             return rgbaArr;
         }
-        else if (str.length === 7 || str.length === 9) {
+        else if (strLen === 7 || strLen === 9) {
             const iv = parseInt(str.slice(1, 7), 16);  // TODO(deanm): Stricter parsing.
             if (!(iv >= 0 && iv <= 0xffffff)) {
                 setRgba(rgbaArr, 0, 0, 0, 1);
@@ -210,7 +211,7 @@ export function parse(colorStr: string, rgbaArr?: number[]): number[] {
                 (iv & 0xff0000) >> 16,
                 (iv & 0xff00) >> 8,
                 iv & 0xff,
-                str.length === 9 ? parseInt(str.slice(7), 16) / 0xff : 1
+                strLen === 9 ? parseInt(str.slice(7), 16) / 0xff : 1
             );
             putToCache(colorStr, rgbaArr);
             return rgbaArr;
@@ -220,7 +221,7 @@ export function parse(colorStr: string, rgbaArr?: number[]): number[] {
     }
     let op = str.indexOf('(');
     let ep = str.indexOf(')');
-    if (op !== -1 && ep + 1 === str.length) {
+    if (op !== -1 && ep + 1 === strLen) {
         let fname = str.substr(0, op);
         let params: (number | string)[] = str.substr(op + 1, ep - (op + 1)).split(',');
         let alpha = 1;  // To allow case fallthrough.
