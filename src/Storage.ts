@@ -140,7 +140,7 @@ export default class Storage {
 
                 // Force to mark as dirty if group is dirty
                 if (el.__dirty) {
-                    child.markRedraw();
+                    child.__dirty |= Element.REDARAW_BIT;
                 }
 
                 this._updateAndAddDisplayable(child, clipPaths, includeIgnore);

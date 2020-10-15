@@ -250,7 +250,7 @@ class ZRender {
         const start = new Date().getTime();
         if (this._needsRefresh) {
             triggerRendered = true;
-            this.refreshImmediately(true);
+            this.refreshImmediately(fromInside);
         }
 
         if (this._needsRefreshHover) {
