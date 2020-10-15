@@ -134,6 +134,8 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     protected _paintRect: BoundingRect
     protected _prevPaintRect: BoundingRect
 
+    protected _dirtyRectTolerance: number
+
     /************* Properties will be inejected in other modules. *******************/
 
     // @deprecated.
@@ -259,46 +261,43 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     getPaintRect(): BoundingRect {
         let rect = this._paintRect;
         if (!this._paintRect || this.__dirty) {
+            const transform =  this.transform;
             const elRect = this.getBoundingRect();
 
-            const tmpRect = new BoundingRect(0, 0, 0, 0);
-            tmpRect.copy(elRect);
-            if (this.transform) {
-                tmpRect.applyTransform(this.transform);
-            }
-
             const style = this.style;
-            const shadowSize = style.shadowBlur || DEFAULT_COMMON_STYLE.shadowBlur;
-            const shadowOffsetX = style.shadowOffsetX || DEFAULT_COMMON_STYLE.shadowOffsetX;
-            const shadowOffsetY = style.shadowOffsetY || DEFAULT_COMMON_STYLE.shadowOffsetY;
+            const shadowSize = style.shadowBlur || 0;
+            const shadowOffsetX = style.shadowOffsetX || 0;
+            const shadowOffsetY = style.shadowOffsetY || 0;
 
-            rect = new BoundingRect(0, 0, 0, 0);
-            rect.copy(elRect);
-            if (this.transform) {
-                rect.applyTransform(this.transform);
+            rect = this._paintRect || (this._paintRect = new BoundingRect(0, 0, 0, 0));
+            if (transform) {
+                BoundingRect.applyTransform(rect, elRect, transform);
             }
-            rect.width += shadowSize * 2;
-            rect.height += shadowSize * 2;
-            rect.x += shadowOffsetX - shadowSize;
-            rect.y += shadowOffsetY - shadowSize;
+            else {
+                rect.copy(elRect);
+            }
 
-            rect.union(tmpRect);
+            if (shadowSize || shadowOffsetX || shadowOffsetY) {
+                rect.width += shadowSize * 2 + Math.abs(shadowOffsetX);
+                rect.height += shadowSize * 2 + Math.abs(shadowOffsetY);
+                rect.x = Math.min(rect.x, rect.x + shadowOffsetX - shadowSize);
+                rect.y = Math.min(rect.y, rect.y + shadowOffsetY - shadowSize);
+
+            }
 
             // For the accuracy tolerance of text height or line joint point
-            const tolerance = this.type === 'text' ? 10 : 0;
+            const tolerance = this._dirtyRectTolerance;
             rect.x = Math.floor(rect.x - tolerance);
             rect.y = Math.floor(rect.y - tolerance);
-            rect.width = Math.ceil(rect.width + tolerance * 2);
-            rect.height = Math.ceil(rect.height + tolerance * 2);
-
-            this._paintRect = rect;
+            rect.width = Math.ceil(rect.width + 1 + tolerance * 2);
+            rect.height = Math.ceil(rect.height + 1 + tolerance * 2);
         }
         return rect;
     }
 
     setPrevPaintRect(paintRect: BoundingRect) {
         if (paintRect) {
-            this._prevPaintRect = new BoundingRect(0, 0, 0, 0);
+            this._prevPaintRect = this._prevPaintRect || new BoundingRect(0, 0, 0, 0);
             this._prevPaintRect.copy(paintRect);
         }
         else {
@@ -590,6 +589,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         dispProto.rectHover = false;
         dispProto.incremental = false;
         dispProto._rect = null;
+        dispProto._dirtyRectTolerance = 0;
 
         dispProto.__dirty = Element.REDARAW_BIT | Displayable.STYLE_CHANGED_BIT;
     })()

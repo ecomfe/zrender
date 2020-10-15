@@ -450,6 +450,7 @@ export default class CanvasPainter implements PainterBase {
                     i = layer.__endIndex;
                 }
                 else {
+                    const dpr = this.dpr;
                     // Set repaintRect as clipPath
                     for (var r = 0; r < repaintRects.length; ++r) {
                         const rect = repaintRects[r];
@@ -457,10 +458,10 @@ export default class CanvasPainter implements PainterBase {
                         ctx.save();
                         ctx.beginPath();
                         ctx.rect(
-                            rect.x * this.dpr,
-                            rect.y * this.dpr,
-                            rect.width * this.dpr,
-                            rect.height * this.dpr
+                            rect.x * dpr,
+                            rect.y * dpr,
+                            rect.width * dpr,
+                            rect.height * dpr
                         );
                         ctx.clip();
 

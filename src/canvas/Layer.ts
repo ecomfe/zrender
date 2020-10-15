@@ -192,7 +192,64 @@ export default class Layer extends Eventful {
         }
 
         const mergedRepaintRects: BoundingRect[] = [];
-        const rects: BoundingRect[] = [];
+        const maxRepaintRectCount = this.maxRepaintRectCount;
+        let full = false;
+        const pendingRect = new BoundingRect(0, 0, 0, 0);
+
+        function addRectToMergePool(rect: BoundingRect) {
+            if (mergedRepaintRects.length === 0) {
+                // First rect, create new merged rect
+                const boundingRect = new BoundingRect(0, 0, 0, 0);
+                boundingRect.copy(rect);
+                mergedRepaintRects.push(boundingRect);
+            }
+            else {
+                let isMerged = false;
+                let minDeltaArea = Infinity;
+                let bestRectToMergeIdx = 0;
+                for (let i = 0; i < mergedRepaintRects.length; ++i) {
+                    const mergedRect = mergedRepaintRects[i];
+
+                    // Merge if has intersection
+                    if (mergedRect.intersect(rect)) {
+                        const pendingRect = new BoundingRect(0, 0, 0, 0);
+                        pendingRect.copy(mergedRect);
+                        pendingRect.union(rect);
+                        mergedRepaintRects[i] = pendingRect;
+                        isMerged = true;
+                        break;
+                    }
+                    else if (full) {
+                        // Merged to exists rectangles if full
+                        pendingRect.copy(rect);
+                        pendingRect.union(mergedRect);
+                        const aArea = rect.width * rect.height;
+                        const bArea = mergedRect.width * mergedRect.height;
+                        const pendingArea = pendingRect.width * pendingRect.height;
+                        const deltaArea = pendingArea - aArea - bArea;
+                        if (deltaArea < minDeltaArea) {
+                            minDeltaArea = minDeltaArea;
+                            bestRectToMergeIdx = i;
+                        }
+                    }
+                }
+
+                if (full) {
+                    mergedRepaintRects[bestRectToMergeIdx].union(rect);
+                    isMerged = true;
+                }
+
+                if (!isMerged) {
+                    // Create new merged rect if cannot merge with current
+                    const boundingRect = new BoundingRect(0, 0, 0, 0);
+                    boundingRect.copy(rect);
+                    mergedRepaintRects.push(boundingRect);
+                }
+                if (!full) {
+                    full = mergedRepaintRects.length >= maxRepaintRectCount;
+                }
+            }
+        }
 
         /**
          * Loop the paint list of this frame and get the dirty rects of elements
@@ -221,7 +278,7 @@ export default class Layer extends Eventful {
                     ? el.getPrevPaintRect()
                     : null;
                 if (prevRect && prevRect.isFinite()) {
-                    rects.push(prevRect);
+                    addRectToMergePool(prevRect);
                 }
 
                 /**
@@ -233,7 +290,7 @@ export default class Layer extends Eventful {
                     ? el.getPaintRect()
                     : null;
                 if (curRect && curRect.isFinite()) {
-                    rects.push(curRect);
+                    addRectToMergePool(curRect);
                 }
             }
         }
@@ -263,72 +320,9 @@ export default class Layer extends Eventful {
                 // el was removed
                 const prevRect = el.getPrevPaintRect();
                 if (prevRect && prevRect.isFinite()) {
-                    rects.push(prevRect);
+                    addRectToMergePool(prevRect);
                 }
             }
-        }
-
-        // Merge
-        util.each(rects, rect => {
-            if (mergedRepaintRects.length === 0) {
-                // First rect, create new merged rect
-                const boundingRect = new BoundingRect(0, 0, 0, 0);
-                boundingRect.copy(rect);
-                mergedRepaintRects.push(boundingRect);
-            }
-            else {
-                let isMerged = false;
-                for (let i = 0; i < mergedRepaintRects.length; ++i) {
-                    const mergedRect = mergedRepaintRects[i];
-
-                    // Merge if has intersection
-                    if (mergedRect.intersect(rect)) {
-                        const pendingRect = new BoundingRect(0, 0, 0, 0);
-                        pendingRect.copy(mergedRect);
-                        pendingRect.union(rect);
-                        mergedRepaintRects[i] = pendingRect;
-                        isMerged = true;
-                        break;
-                    }
-                }
-                if (!isMerged) {
-                    // Create new merged rect if cannot merge with current
-                    const boundingRect = new BoundingRect(0, 0, 0, 0);
-                    boundingRect.copy(rect);
-                    mergedRepaintRects.push(boundingRect);
-                }
-            }
-        });
-
-        // Decrease mergedRepaintRects counts to maxRepaintRectCount
-        const pendingRect = new BoundingRect(0, 0, 0, 0);
-        while (mergedRepaintRects.length > this.maxRepaintRectCount) {
-            let minDeltaArea = Number.MAX_VALUE;
-            let minAId: number = null;
-            let minBId: number = null;
-            for (let i = 0, len = mergedRepaintRects.length; i < len; ++i) {
-                for (let j = i + 1; j < len; ++j) {
-                    const aRect = mergedRepaintRects[i];
-                    const aArea = aRect.width * aRect.height;
-                    const bRect = mergedRepaintRects[j];
-                    const bArea = bRect.width * bRect.height;
-
-                    pendingRect.copy(aRect);
-                    pendingRect.union(bRect);
-                    const pendingArea = pendingRect.width * pendingRect.height;
-                    const deltaArea = pendingArea - aArea - bArea;
-
-                    if (deltaArea < minDeltaArea) {
-                        minDeltaArea = deltaArea;
-                        minAId = i;
-                        minBId = j;
-                    }
-                }
-            }
-
-            // Merge the smallest two
-            mergedRepaintRects[minAId].union(mergedRepaintRects[minBId]);
-            mergedRepaintRects.splice(minBId, 1);
         }
 
         // Merge intersected rects in the result
@@ -411,8 +405,10 @@ export default class Layer extends Eventful {
             );
         }
 
-        const doClear = (rect: BoundingRect) => {
-            ctx.clearRect(rect.x, rect.y, rect.width, rect.height);
+        const domBack = this.domBack;
+
+        function doClear(x: number, y: number, width: number, height: number) {
+            ctx.clearRect(x, y, width, height);
             if (clearColor && clearColor !== 'transparent') {
                 let clearColorGradientOrPattern;
                 // Gradient
@@ -441,32 +437,31 @@ export default class Layer extends Eventful {
                 }
                 ctx.save();
                 ctx.fillStyle = clearColorGradientOrPattern || (clearColor as string);
-                ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+                ctx.fillRect(x, y, width, height);
                 ctx.restore();
             }
 
             if (haveMotionBLur) {
-                const domBack = this.domBack;
                 ctx.save();
                 ctx.globalAlpha = lastFrameAlpha;
-                ctx.drawImage(domBack, rect.x, rect.y, rect.width, rect.height);
+                ctx.drawImage(domBack, x, y, width, height);
                 ctx.restore();
             }
         };
 
         if (!repaintRects || haveMotionBLur) {
             // Clear the full canvas
-            doClear(new BoundingRect(0, 0, width, height));
+            doClear(0, 0, width, height);
         }
         else if (repaintRects.length) {
             // Clear the repaint areas
             util.each(repaintRects, rect => {
-                doClear(new BoundingRect(
+                doClear(
                     rect.x * dpr,
                     rect.y * dpr,
                     rect.width * dpr,
                     rect.height * dpr
-                ));
+                );
             });
         }
     }

@@ -206,10 +206,10 @@ class BoundingRect {
      * If not having NaN or Infinity with attributes
      */
     isFinite(): boolean {
-        return !isNaN(this.x) && isFinite(this.x)
-            && !isNaN(this.y) && isFinite(this.y)
-            && !isNaN(this.width) && isFinite(this.width)
-            && !isNaN(this.height) && isFinite(this.height);
+        return isFinite(this.x)
+            && isFinite(this.y)
+            && isFinite(this.width)
+            && isFinite(this.height);
     }
 
     static create(rect: RectLike): BoundingRect {

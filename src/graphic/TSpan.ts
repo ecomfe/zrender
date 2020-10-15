@@ -99,7 +99,12 @@ class TSpan extends Displayable<TSpanProps> {
         return this._rect;
     }
 
+    protected static initDefaultProps = (function () {
+        const tspanProto = TSpan.prototype;
+        tspanProto._dirtyRectTolerance = 10;
+    })()
 }
 
 TSpan.prototype.type = 'tspan';
+
 export default TSpan;
