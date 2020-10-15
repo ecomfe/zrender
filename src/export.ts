@@ -53,3 +53,5 @@ export {zrUtil as util};
 
 export {parseSVG};
 export {morphPath};
+
+export {default as showDebugDirtyRect} from './debug/showDebugDirtyRect';

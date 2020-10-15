@@ -89,6 +89,8 @@ export default class Layer extends Eventful {
 
     maxRepaintRectCount = 5
 
+    private _paintRects: BoundingRect[]
+
     __painter: CanvasPainter
 
     __dirty = true
@@ -344,7 +346,16 @@ export default class Layer extends Eventful {
         }
         checkIntersection();
 
+        this._paintRects = mergedRepaintRects;
+
         return mergedRepaintRects;
+    }
+
+    /**
+     * Get paint rects for debug usage.
+     */
+    debugGetPaintRects() {
+        return (this._paintRects || []).slice();
     }
 
     resize(width: number, height: number) {
