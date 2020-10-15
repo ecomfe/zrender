@@ -173,6 +173,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
                 };
             }
 
+            decalEl.silent = true;
             decalEl.style.fill = style.fill ? style.decal : null;
             decalEl.style.stroke = style.stroke ? style.stroke : null;
 
