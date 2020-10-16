@@ -287,10 +287,12 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
             // For the accuracy tolerance of text height or line joint point
             const tolerance = this._dirtyRectTolerance;
-            rect.x = Math.floor(rect.x - tolerance);
-            rect.y = Math.floor(rect.y - tolerance);
-            rect.width = Math.ceil(rect.width + 1 + tolerance * 2);
-            rect.height = Math.ceil(rect.height + 1 + tolerance * 2);
+            if (!rect.isZero()) {
+                rect.x = Math.floor(rect.x - tolerance);
+                rect.y = Math.floor(rect.y - tolerance);
+                rect.width = Math.ceil(rect.width + 1 + tolerance * 2);
+                rect.height = Math.ceil(rect.height + 1 + tolerance * 2);
+            }
         }
         return rect;
     }
