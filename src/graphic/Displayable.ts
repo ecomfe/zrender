@@ -9,7 +9,6 @@ import { PropType, Dictionary, MapToType } from '../core/types';
 import Path from './Path';
 import { keys, extend, createObject } from '../core/util';
 import Animator from '../animation/Animator';
-import {BrushScope} from '../canvas/graphic';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
@@ -198,8 +197,9 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     ) {
         const m = this.transform;
         if (
+            this.ignore
             // Ignore invisible element
-            this.invisible
+            || this.invisible
             // Ignore transparent element
             || this.style.opacity === 0
             // Ignore culled element

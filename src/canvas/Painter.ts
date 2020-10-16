@@ -256,7 +256,9 @@ export default class CanvasPainter implements PainterBase {
             }
         }
 
-        this._prevDisplayList = list.slice();
+        if (this._opts.useDirtyRect) {
+            this._prevDisplayList = list.slice();
+        }
 
         return this;
     }
@@ -334,8 +336,8 @@ export default class CanvasPainter implements PainterBase {
             });
         }
         else {
-            util.each(this._layers, layer => {
-                layer.afterBrush();
+            this.eachLayer(layer => {
+                layer.afterBrush && layer.afterBrush();
             });
         }
     }
