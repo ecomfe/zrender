@@ -11,6 +11,7 @@ class DebugRect {
 
     constructor(style: Opts['style']) {
         const dom = this.dom = document.createElement('div');
+        dom.className = 'ec-debug-dirty-rect';
 
         style = Object.assign({}, style);
         Object.assign(style, {
@@ -76,9 +77,11 @@ export default function (zr: ZRenderType, opts?: Opts) {
 position:absolute;
 left:0;
 top:0;
-width:100%;
-height:100%;
+right:0;
+bottom:0;
+pointer-events:none;
 `;
+    debugViewRoot.className = 'ec-debug-dirty-rect-container';
 
     const debugRects: DebugRect[] = [];
     const dom = zr.dom;
@@ -90,21 +93,25 @@ height:100%;
 
     zr.on('rendered', function () {
         if (painter.getLayers) {
+            let idx = 0;
             painter.eachBuiltinLayer((layer) => {
-                const paintRects = layer.debugGetPaintRects();
-                let i;
-                for (i = 0; i < paintRects.length; i++) {
-                    if (!debugRects[i]) {
-                        debugRects[i] = new DebugRect(opts.style);
-                        debugViewRoot.appendChild(debugRects[i].dom);
-                    }
-                    debugRects[i].show();
-                    debugRects[i].update(paintRects[i]);
+                if (!layer.debugGetPaintRects) {
+                    return;
                 }
-                for (; i < debugRects.length; i++) {
-                    debugRects[i].hide();
+                const paintRects = layer.debugGetPaintRects();
+                for (let i = 0; i < paintRects.length; i++) {
+                    if (!debugRects[idx]) {
+                        debugRects[idx] = new DebugRect(opts.style);
+                        debugViewRoot.appendChild(debugRects[idx].dom);
+                    }
+                    debugRects[idx].show();
+                    debugRects[idx].update(paintRects[i]);
+                    idx++;
                 }
             });
+            for (let i = idx; i < debugRects.length; i++) {
+                debugRects[i].hide();
+            }
         }
     });
 }
