@@ -47,6 +47,13 @@ interface ImageProps extends DisplayableProps {
 
 export type ImageState = Pick<ImageProps, DisplayableStatePropNames> & ElementCommonState
 
+function isImageLike(source: unknown) {
+    return source
+        && typeof source !== 'string'
+        // Image source is an image, canvas, video.
+        && (source as HTMLImageElement).width && (source as HTMLImageElement).height;
+}
+
 class ZRImage extends Displayable<ImageProps> {
 
     style: ImageStyleProps
@@ -67,12 +74,18 @@ class ZRImage extends Displayable<ImageProps> {
     }
 
     getWidth(): number {
+        const style = this.style;
+        const imageSource = style.image;
+        if (isImageLike(imageSource)) {
+            return (imageSource as HTMLImageElement).width;
+        }
+
         if (!this.__image) {
             return 0;
         }
 
-        let width = this.style.width;
-        let height = this.style.height;
+        let width = style.width;
+        let height = style.height;
         if (width == null) {
             if (height == null) {
                 return this.__image.width;
@@ -88,12 +101,18 @@ class ZRImage extends Displayable<ImageProps> {
     }
 
     getHeight(): number {
+        const style = this.style;
+        const imageSource = style.image;
+        if (isImageLike(imageSource)) {
+            return (imageSource as HTMLImageElement).height;
+        }
+
         if (!this.__image) {
             return 0;
         }
 
-        let width = this.style.width;
-        let height = this.style.height;
+        let width = style.width;
+        let height = style.height;
         if (height == null) {
             if (width == null) {
                 return this.__image.height;
