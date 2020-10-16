@@ -1,11 +1,11 @@
-let wmUniqueIndex = 0;
+let wmUniqueIndex = Math.round(Math.random() * 9);
 
 export default class WeakMap<K extends object, V> {
 
     protected _id: string;
 
     constructor() {
-        this._id = '__\0ec_wm_' + wmUniqueIndex++ + '_' + Math.random().toFixed(5);
+        this._id = '__ec_inner_' + wmUniqueIndex++;
     }
 
     get(key: K): V {
@@ -13,7 +13,17 @@ export default class WeakMap<K extends object, V> {
     }
 
     set(key: K, value: V): WeakMap<K, V> {
-        (this._guard(key) as any)[this._id] = value;
+        const target = this._guard(key) as any;
+        if (typeof Object.defineProperty === 'function') {
+            Object.defineProperty(target, this._id, {
+                value: value,
+                enumerable: false,
+                configurable: false
+            });
+        }
+        else {
+            target[this._id] = value;
+        }
         return this;
     }
 
