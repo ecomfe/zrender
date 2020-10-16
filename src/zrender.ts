@@ -510,7 +510,7 @@ export function registerPainter(name: string, Ctor: PainterBaseCtor) {
 /**
  * @type {string}
  */
-export const version = '5.0.0-alpha.2';
+export const version = '5.0.0-beta.1';
 
 
 export interface ZRenderType extends ZRender {};

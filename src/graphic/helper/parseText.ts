@@ -260,6 +260,9 @@ class RichTextToken {
     width: number
     height: number
 
+    // Inner height exclude padding
+    innerHeight: number
+
     // Width and height of actual text content.
     contentHeight: number
     contentWidth: number
@@ -372,12 +375,14 @@ export function parseRichText(text: string, style: TextStyleProps) {
                 // as box height of the block.
                 tokenStyle.height, token.contentHeight
             );
-            token.lineHeight = retrieve3(
-                tokenStyle.lineHeight, style.lineHeight, tokenHeight
-            );
+            token.innerHeight = tokenHeight;
 
             textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
             token.height = tokenHeight;
+            // Inlcude padding in lineHeight.
+            token.lineHeight = retrieve3(
+                tokenStyle.lineHeight, style.lineHeight, tokenHeight
+            );
 
             token.align = tokenStyle && tokenStyle.align || style.align;
             token.verticalAlign = tokenStyle && tokenStyle.verticalAlign || 'middle';

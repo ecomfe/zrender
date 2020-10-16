@@ -303,6 +303,11 @@ class Track {
 
     setFinished() {
         this._finished = true;
+        // Also set additive track to finished.
+        // Make sure the final value stopped on the latest track
+        if (this._additiveTrack) {
+            this._additiveTrack.setFinished();
+        }
     }
 
     needsAnimate() {
@@ -424,10 +429,11 @@ class Track {
 
         // Only apply additive animaiton on INTERPOLABLE SAME TYPE values.
         if (additiveTrack
-            && this.interpolable
+            // If two track both will be animated and have same value format.
+            && this.needsAnimate()
+            && additiveTrack.needsAnimate()
             && arrDim === additiveTrack.arrDim
             && this.isValueColor === additiveTrack.isValueColor
-            && additiveTrack.needsAnimate()
             && !additiveTrack._finished
         ) {
             this._additiveTrack = additiveTrack;

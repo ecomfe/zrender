@@ -622,7 +622,7 @@ export default class PathProxy {
         let y0 = 0;
 
         let i;
-        for (i = 0; i < data.length;) {
+        for (i = 0; i < this._len;) {
             const cmd = data[i++] as number;
 
             const isFirst = i === 1;
