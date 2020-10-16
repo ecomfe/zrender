@@ -447,8 +447,9 @@ export default class Layer extends Eventful {
                 else if (util.isPatternObject(clearColor)) {
                     clearColorGradientOrPattern = createCanvasPattern(
                         ctx, clearColor, {
-                            dirty: function () {
+                            dirty() {
                                 // TODO
+                                self.setUnpainted();
                                 self.__painter.refresh();
                             }
                         }

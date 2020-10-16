@@ -133,7 +133,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     protected _paintRect: BoundingRect
     protected _prevPaintRect: BoundingRect
 
-    protected _dirtyRectTolerance: number
+    dirtyRectTolerance: number
 
     /************* Properties will be inejected in other modules. *******************/
 
@@ -286,7 +286,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             }
 
             // For the accuracy tolerance of text height or line joint point
-            const tolerance = this._dirtyRectTolerance;
+            const tolerance = this.dirtyRectTolerance;
             if (!rect.isZero()) {
                 rect.x = Math.floor(rect.x - tolerance);
                 rect.y = Math.floor(rect.y - tolerance);
@@ -591,7 +591,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         dispProto.rectHover = false;
         dispProto.incremental = false;
         dispProto._rect = null;
-        dispProto._dirtyRectTolerance = 0;
+        dispProto.dirtyRectTolerance = 0;
 
         dispProto.__dirty = Element.REDARAW_BIT | Displayable.STYLE_CHANGED_BIT;
     })()

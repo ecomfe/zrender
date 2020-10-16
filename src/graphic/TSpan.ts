@@ -101,7 +101,8 @@ class TSpan extends Displayable<TSpanProps> {
 
     protected static initDefaultProps = (function () {
         const tspanProto = TSpan.prototype;
-        tspanProto._dirtyRectTolerance = 10;
+        // TODO Calculate tolerance smarter
+        tspanProto.dirtyRectTolerance = 10;
     })()
 }
 

@@ -43,7 +43,7 @@ pointer-events: none;
     hide() {
         this.dom.style.opacity = '0';
     }
-    show() {
+    show(autoHideDelay?: number) {
         clearTimeout(this._hideTimeout);
 
         this.dom.style.opacity = '1';
@@ -51,7 +51,7 @@ pointer-events: none;
         // Auto hide after 2 second
         this._hideTimeout = setTimeout(() => {
             this.hide();
-        }, 2000) as unknown as number;
+        }, autoHideDelay || 1000) as unknown as number;
     }
 
 }
@@ -61,6 +61,8 @@ interface Opts {
         backgroundColor?: string
         color?: string
     }
+
+    autoHideDelay?: number
 }
 
 export default function (zr: ZRenderType, opts?: Opts) {
@@ -108,7 +110,7 @@ pointer-events:none;
                         debugRects[idx] = new DebugRect(opts.style);
                         debugViewRoot.appendChild(debugRects[idx].dom);
                     }
-                    debugRects[idx].show();
+                    debugRects[idx].show(opts.autoHideDelay);
                     debugRects[idx].update(paintRects[i]);
                     idx++;
                 }
