@@ -356,6 +356,11 @@ class Element<Props extends ElementProps = ElementProps> {
     __dirty: number
 
     /**
+     * If element was painted on the screen
+     */
+    __isRendered: boolean;
+
+    /**
      * If element has been moved to the hover layer.
      *
      * If so, dirty will only trigger the zrender refresh hover layer
@@ -475,7 +480,9 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     update() {
         this.updateTransform();
-        this.updateInnerText();
+        if (this.__dirty) {
+            this.updateInnerText();
+        }
     }
 
     updateInnerText(forceUpdate?: boolean) {
@@ -1553,6 +1560,9 @@ class Element<Props extends ElementProps = ElementProps> {
         return null;
     }
 
+    getPaintRect(): BoundingRect {
+        return null;
+    }
 
     /**
      * The string value of `textPosition` needs to be calculated to a real postion.
