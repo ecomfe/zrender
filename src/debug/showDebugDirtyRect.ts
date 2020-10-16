@@ -100,6 +100,10 @@ pointer-events:none;
                 }
                 const paintRects = layer.debugGetPaintRects();
                 for (let i = 0; i < paintRects.length; i++) {
+                    if (!paintRects[i].width || !paintRects[i].height) {
+                        continue;
+                    }
+
                     if (!debugRects[idx]) {
                         debugRects[idx] = new DebugRect(opts.style);
                         debugViewRoot.appendChild(debugRects[idx].dom);

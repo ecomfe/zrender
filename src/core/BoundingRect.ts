@@ -212,6 +212,10 @@ class BoundingRect {
             && isFinite(this.height);
     }
 
+    isZero(): boolean {
+        return this.width === 0 || this.height === 0;
+    }
+
     static create(rect: RectLike): BoundingRect {
         return new BoundingRect(rect.x, rect.y, rect.width, rect.height);
     }

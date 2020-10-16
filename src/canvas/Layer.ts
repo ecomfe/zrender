@@ -199,6 +199,10 @@ export default class Layer extends Eventful {
         const pendingRect = new BoundingRect(0, 0, 0, 0);
 
         function addRectToMergePool(rect: BoundingRect) {
+            if (!rect.isFinite() || rect.isZero()) {
+                return;
+            }
+
             if (mergedRepaintRects.length === 0) {
                 // First rect, create new merged rect
                 const boundingRect = new BoundingRect(0, 0, 0, 0);
@@ -279,7 +283,7 @@ export default class Layer extends Eventful {
                 const prevRect = el.__isRendered && ((el.__dirty & Element.REDARAW_BIT) || !shouldPaint)
                     ? el.getPrevPaintRect()
                     : null;
-                if (prevRect && prevRect.isFinite()) {
+                if (prevRect) {
                     addRectToMergePool(prevRect);
                 }
 
@@ -291,7 +295,7 @@ export default class Layer extends Eventful {
                 const curRect = shouldPaint && ((el.__dirty & Element.REDARAW_BIT) || !el.__isRendered)
                     ? el.getPaintRect()
                     : null;
-                if (curRect && curRect.isFinite()) {
+                if (curRect) {
                     addRectToMergePool(curRect);
                 }
             }
@@ -321,30 +325,34 @@ export default class Layer extends Eventful {
             if (el && (!shouldPaint || !el.__zr) && el.__isRendered) {
                 // el was removed
                 const prevRect = el.getPrevPaintRect();
-                if (prevRect && prevRect.isFinite()) {
+                if (prevRect) {
                     addRectToMergePool(prevRect);
                 }
             }
         }
 
         // Merge intersected rects in the result
-        function checkIntersection() {
-            if (mergedRepaintRects.length > 1) {
-                for (let i = 0; i < mergedRepaintRects.length; ++i) {
-                    for (let j = i + 1; j < mergedRepaintRects.length; ++j) {
-                        if (mergedRepaintRects[i] && mergedRepaintRects[j]
-                            && mergedRepaintRects[i].intersect(mergedRepaintRects[j])
-                        ) {
-                            mergedRepaintRects[i].union(mergedRepaintRects[j]);
-                            mergedRepaintRects.splice(j, 1);
-                            checkIntersection();
-                            return;
-                        }
+        let hasIntersections;
+        do {
+            hasIntersections = false;
+            for (let i = 0; i < mergedRepaintRects.length;) {
+                if (mergedRepaintRects[i].isZero()) {
+                    mergedRepaintRects.splice(i, 1);
+                    continue;
+                }
+                for (let j = i + 1; j < mergedRepaintRects.length;) {
+                    if (mergedRepaintRects[i].intersect(mergedRepaintRects[j])) {
+                        hasIntersections = true;
+                        mergedRepaintRects[i].union(mergedRepaintRects[j]);
+                        mergedRepaintRects.splice(j, 1);
+                    }
+                    else {
+                        j++;
                     }
                 }
+                i++;
             }
-        }
-        checkIntersection();
+        } while (hasIntersections)
 
         this._paintRects = mergedRepaintRects;
 
