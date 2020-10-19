@@ -78,6 +78,10 @@ function attrXLink(el: SVGElement, key: string, val: string) {
     el.setAttributeNS('http://www.w3.org/1999/xlink', key, val);
 }
 
+function attrXML(el: SVGElement, key: string, val: string) {
+    el.setAttributeNS('http://www.w3.org/XML/1998/namespace', key, val);
+}
+
 function bindStyle(svgEl: SVGElement, style: PathStyleProps, el?: Path): void
 function bindStyle(svgEl: SVGElement, style: TSpanStyleProps, el?: TSpan): void
 function bindStyle(svgEl: SVGElement, style: ImageStyleProps, el?: ZRImage): void
@@ -275,8 +279,6 @@ const svgPath: SVGProxy<Path> = {
         }
         const path = el.path;
 
-        // wrapSVGBuildPath(el as PathWithSVGBuildPath);
-
         if (el.shapeChanged()) {
             path.beginPath();
             el.buildPath(path, el.shape);
@@ -385,6 +387,7 @@ const svgText: SVGProxy<TSpan> = {
         let textSvgEl = el.__svgEl as SVGTextElement;
         if (!textSvgEl) {
             textSvgEl = createElement('text') as SVGTextElement;
+            attrXML(textSvgEl, 'xml:space', 'preserve');
             el.__svgEl = textSvgEl;
         }
 
