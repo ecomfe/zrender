@@ -7,7 +7,12 @@ export interface PatternObject {
 
     image: ImageLike | string
     repeat: CanvasPatternRepeat
+
+    x?: number
+    y?: number
     rotation?: number
+    scaleX?: number
+    scaleY?: number
 
     // Cached image. Which is created in the canvas painter.
     __image?: ImageLike
@@ -19,14 +24,24 @@ class Pattern {
 
     image: ImageLike | string
     repeat: CanvasPatternRepeat
-    rotation: number
 
-    constructor(image: ImageLike | string, repeat: CanvasPatternRepeat, rotation?: number) {
+    x: number
+    y: number
+    rotation: number
+    scaleX: number
+    scaleY: number
+
+    constructor(image: ImageLike | string, repeat: CanvasPatternRepeat) {
         // Should do nothing more in this constructor. Because gradient can be
         // declard by `color: {image: ...}`, where this constructor will not be called.
         this.image = image;
         this.repeat = repeat;
-        this.rotation = rotation || 0;
+
+        this.x = 0;
+        this.y = 0;
+        this.rotation = 0;
+        this.scaleX = 1;
+        this.scaleY = 1;
     }
 }
 

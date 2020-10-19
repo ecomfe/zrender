@@ -65,9 +65,11 @@ export function createCanvasPattern(
     const image = createOrUpdateImage(pattern.image, pattern.__image, el);
     if (isImageReady(image)) {
         const canvasPattern = ctx.createPattern(image, pattern.repeat || 'repeat');
-        if (pattern.rotation && typeof DOMMatrix === 'function') {
+        if (typeof DOMMatrix === 'function') {
             const matrix = new DOMMatrix();
             matrix.rotateSelf(0, 0, pattern.rotation / Math.PI * 180);
+            matrix.scaleSelf(pattern.scaleX, pattern.scaleY);
+            matrix.translateSelf(pattern.x, pattern.y);
             canvasPattern.setTransform(matrix);
         }
         return canvasPattern;
