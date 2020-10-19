@@ -18,7 +18,7 @@ export default class WeakMap<K extends object, V> {
             Object.defineProperty(target, this._id, {
                 value: value,
                 enumerable: false,
-                configurable: false
+                configurable: true
             });
         }
         else {

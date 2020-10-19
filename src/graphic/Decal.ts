@@ -32,6 +32,9 @@ export interface DecalObject {
     maxTileWidth?: number,
     // boundary of largest tile height
     maxTileHeight?: number
+
+    // If option has changed
+    dirty?: boolean
 }
 
 class Decal {
@@ -55,6 +58,8 @@ class Decal {
 
     pattern: Pattern
     canvasPattern: CanvasPattern
+
+    dirty: boolean
 
     constructor(decalObject: DecalObject) {
         decalObject = decalObject || {};
