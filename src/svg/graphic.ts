@@ -408,7 +408,8 @@ const svgText: SVGProxy<TSpan> = {
         const y = adjustTextY(style.y || 0, getLineHeight(font), style.textBaseline);
         const textAlign = TEXT_ALIGN_TO_ANCHOR[style.textAlign as keyof typeof TEXT_ALIGN_TO_ANCHOR]
             || style.textAlign;
-        attr(textSvgEl, 'dominant-baseline', 'middle');
+
+        attr(textSvgEl, 'dominant-baseline', 'central');
         attr(textSvgEl, 'text-anchor', textAlign);
         attr(textSvgEl, 'x', x + '');
         attr(textSvgEl, 'y', y + '');
