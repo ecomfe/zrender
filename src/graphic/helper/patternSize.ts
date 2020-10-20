@@ -1,0 +1,1 @@
+function getPatternSize(pattern: PatternObject)

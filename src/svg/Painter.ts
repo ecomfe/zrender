@@ -10,6 +10,7 @@ import ZRImage from '../graphic/Image';
 import TSpan from '../graphic/TSpan';
 import arrayDiff from '../core/arrayDiff';
 import GradientManager from './helper/GradientManager';
+import PatternManager from './helper/PatternManager';
 import ClippathManager from './helper/ClippathManager';
 import ShadowManager from './helper/ShadowManager';
 import {
@@ -22,6 +23,7 @@ import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
 import { GradientObject } from '../graphic/Gradient';
 import { PainterBase } from '../PainterBase';
+import {PatternObject} from '../graphic/Pattern';
 
 function parseInt10(val: string) {
     return parseInt(val, 10);
@@ -93,6 +95,7 @@ class SVGPainter implements PainterBase {
     private _backgroundNode: SVGRectElement
 
     private _gradientManager: GradientManager
+    private _patternManager: PatternManager
     private _clipPathManager: ClippathManager
     private _shadowManager: ShadowManager
 
@@ -119,6 +122,7 @@ class SVGPainter implements PainterBase {
         svgDom.appendChild(svgRoot);
 
         this._gradientManager = new GradientManager(zrId, svgRoot);
+        this._patternManager = new PatternManager(zrId, svgRoot);
         this._clipPathManager = new ClippathManager(zrId, svgRoot);
         this._shadowManager = new ShadowManager(zrId, svgRoot);
 
@@ -192,6 +196,7 @@ class SVGPainter implements PainterBase {
 
     _paintList(list: Displayable[]) {
         this._gradientManager.markAllUnused();
+        this._patternManager.markAllUnused();
         this._clipPathManager.markAllUnused();
         this._shadowManager.markAllUnused();
 
@@ -217,6 +222,10 @@ class SVGPainter implements PainterBase {
                             .update(displayable.style.fill as GradientObject);
                         this._gradientManager
                             .update(displayable.style.stroke as GradientObject);
+                        this._patternManager
+                            .update(displayable.style.fill as PatternObject);
+                        this._patternManager
+                            .update(displayable.style.stroke as PatternObject);
                         this._shadowManager
                             .update(svgElement, displayable);
                     }
@@ -261,6 +270,8 @@ class SVGPainter implements PainterBase {
                     // zrender.Text only create textSvgElement.
                     this._gradientManager
                         .addWithoutUpdate(svgElement, displayable);
+                    this._patternManager
+                        .addWithoutUpdate(svgElement, displayable);
                     this._shadowManager
                         .addWithoutUpdate(svgElement, displayable);
                     this._clipPathManager.markUsed(displayable);
@@ -273,6 +284,10 @@ class SVGPainter implements PainterBase {
 
                     this._gradientManager.markUsed(displayable);
                     this._gradientManager
+                        .addWithoutUpdate(svgElement, displayable);
+
+                    this._patternManager.markUsed(displayable);
+                    this._patternManager
                         .addWithoutUpdate(svgElement, displayable);
 
                     this._shadowManager.markUsed(displayable);
@@ -288,6 +303,7 @@ class SVGPainter implements PainterBase {
         }
 
         this._gradientManager.removeUnused();
+        this._patternManager.removeUnused();
         this._clipPathManager.removeUnused();
         this._shadowManager.removeUnused();
 

@@ -3,6 +3,8 @@ import { ImageLike } from '../core/types';
 type CanvasPatternRepeat = 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat'
 
 export interface PatternObject {
+    id?: number
+
     type: 'pattern'
 
     image: ImageLike | string

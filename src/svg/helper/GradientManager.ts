@@ -125,8 +125,13 @@ export default class GradientManager extends Definable {
     update(gradient: GradientObject) {
         const that = this;
         this.doUpdate(gradient, function () {
+            const dom = (gradient as GradientObjectExtended).__dom;
+            if (!dom) {
+                return;
+            }
+
+            const tagName = dom.tagName;
             const type = gradient.type;
-            const tagName = (gradient as GradientObjectExtended).__dom.tagName;
             if (type === 'linear' && tagName === 'linearGradient'
                 || type === 'radial' && tagName === 'radialGradient'
             ) {
