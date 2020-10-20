@@ -272,8 +272,8 @@ function brushImage(ctx: CanvasRenderingContext2D, el: ZRImage, style: ImageStyl
 
     const x = style.x || 0;
     const y = style.y || 0;
-    let width = style.width;
-    let height = style.height;
+    let width = el.getWidth();
+    let height = el.getHeight();
     const aspect = image.width / image.height;
     if (width == null && height != null) {
         // Keep image/height ratio
@@ -664,23 +664,13 @@ export function brush(
 ) {
     const m = el.transform;
 
-    if (
-        // Ignore invisible element
-        el.invisible
-        // Ignore transparent element
-        || el.style.opacity === 0
-        // Ignore culled element
-        || (el.culling && isDisplayableCulled(el, scope.viewWidth, scope.viewHeight))
-        // Ignore scale 0 element, in some environment like node-canvas
-        // Draw a scale 0 element can cause all following draw wrong
-        // And setTransform with scale 0 will cause set back transform failed.
-        || (m && !m[0] && !m[3])
-    ) {
+    if (!el.shouldBePainted(scope.viewWidth, scope.viewHeight, false, false)) {
         // Needs to mark el rendered.
         // Or this element will always been rendered in progressive rendering.
         // But other dirty bit should not be cleared, otherwise it cause the shape
         // can not be updated in this case.
         el.__dirty &= ~Element.REDARAW_BIT;
+        el.__isRendered = false;
         return;
     }
 
@@ -735,6 +725,7 @@ export function brush(
     //  ctx.fill();
     // )
     if (scope.allClipped) {
+        el.__isRendered = false;
         return;
     }
 
@@ -823,6 +814,7 @@ export function brush(
 
     // Mark as painted.
     el.__dirty = 0;
+    el.__isRendered = true;
 }
 
 function brushIncremental(

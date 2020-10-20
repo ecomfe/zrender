@@ -37,7 +37,7 @@ export interface PathStyleProps extends CommonStyleProps {
      * case that `null`/`undefined` can not be set.
      * (e.g., emphasis.lineStyle in echarts)
      */
-    lineDash?: false | number[]
+    lineDash?: false | number[] | 'solid' | 'dashed' | 'dotted'
     lineDashOffset?: number
 
     lineWidth?: number
@@ -333,7 +333,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         }
         this._rect = rect;
 
-        if (this.hasStroke()) {
+        if (this.hasStroke() && this.path && this.path.len() > 0) {
             // Needs update rect with stroke lineWidth when
             // 1. Element changes scale or lineWidth
             // 2. Shape is changed
@@ -347,7 +347,8 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
                 // Only add extra hover lineWidth when there are no fill
                 if (!this.hasFill()) {
-                    w = Math.max(w, this.strokeContainThreshold || 4);
+                    const strokeContainThreshold = this.strokeContainThreshold;
+                    w = Math.max(w, strokeContainThreshold == null ? 4 : strokeContainThreshold);
                 }
                 // Consider line width
                 // Line scale can't be 0;
@@ -374,7 +375,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         y = localPos[1];
 
         if (rect.contain(x, y)) {
-            const pathData = this.path.data;
+            const pathProxy = this.path;
             if (this.hasStroke()) {
                 let lineWidth = style.lineWidth;
                 let lineScale = style.strokeNoScale ? this.getLineScale() : 1;
@@ -385,14 +386,14 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
                         lineWidth = Math.max(lineWidth, this.strokeContainThreshold);
                     }
                     if (pathContain.containStroke(
-                        pathData, lineWidth / lineScale, x, y
+                        pathProxy, lineWidth / lineScale, x, y
                     )) {
                         return true;
                     }
                 }
             }
             if (this.hasFill()) {
-                return pathContain.contain(pathData, x, y);
+                return pathContain.contain(pathProxy, x, y);
             }
         }
         return false;

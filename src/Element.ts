@@ -356,6 +356,11 @@ class Element<Props extends ElementProps = ElementProps> {
     __dirty: number
 
     /**
+     * If element was painted on the screen
+     */
+    __isRendered: boolean;
+
+    /**
      * If element has been moved to the hover layer.
      *
      * If so, dirty will only trigger the zrender refresh hover layer
@@ -475,7 +480,9 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     update() {
         this.updateTransform();
-        this.updateInnerText();
+        if (this.__dirty) {
+            this.updateInnerText();
+        }
     }
 
     updateInnerText(forceUpdate?: boolean) {
@@ -748,7 +755,7 @@ class Element<Props extends ElementProps = ElementProps> {
     saveCurrentToNormalState(toState: ElementState) {
         this._innerSaveToNormal(toState);
 
-        // If we are swtiching from normal to other state during animation.
+        // If we are switching from normal to other state during animation.
         // We need to save final value of animation to the normal state. Not interpolated value.
         const normalState = this._normalState;
         for (let i = 0; i < this.animators.length; i++) {
@@ -1553,6 +1560,9 @@ class Element<Props extends ElementProps = ElementProps> {
         return null;
     }
 
+    getPaintRect(): BoundingRect {
+        return null;
+    }
 
     /**
      * The string value of `textPosition` needs to be calculated to a real postion.
@@ -1747,29 +1757,30 @@ function copyValue(target: Dictionary<any>, source: Dictionary<any>, key: string
                 copyArrShallow(target[key], source[key], len);
             }
         }
+        else {
+            const sourceArr = source[key] as any[];
+            const targetArr = target[key] as any[];
 
-        const sourceArr = source[key] as any[];
-        const targetArr = target[key] as any[];
+            const len0 = sourceArr.length;
+            if (is2DArray(sourceArr)) {
+                // NOTE: each item should have same length
+                const len1 = sourceArr[0].length;
 
-        const len0 = sourceArr.length;
-        if (is2DArray(sourceArr)) {
-            // NOTE: each item should have same length
-            const len1 = sourceArr[0].length;
-
-            for (let i = 0; i < len0; i++) {
-                if (!targetArr[i]) {
-                    targetArr[i] = Array.prototype.slice.call(sourceArr[i]);
-                }
-                else {
-                    copyArrShallow(targetArr[i], sourceArr[i], len1);
+                for (let i = 0; i < len0; i++) {
+                    if (!targetArr[i]) {
+                        targetArr[i] = Array.prototype.slice.call(sourceArr[i]);
+                    }
+                    else {
+                        copyArrShallow(targetArr[i], sourceArr[i], len1);
+                    }
                 }
             }
-        }
-        else {
-            copyArrShallow(targetArr, sourceArr, len0);
-        }
+            else {
+                copyArrShallow(targetArr, sourceArr, len0);
+            }
 
-        targetArr.length = sourceArr.length;
+            targetArr.length = sourceArr.length;
+        }
     }
     else {
         target[key] = source[key];

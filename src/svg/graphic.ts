@@ -78,6 +78,10 @@ function attrXLink(el: SVGElement, key: string, val: string) {
     el.setAttributeNS('http://www.w3.org/1999/xlink', key, val);
 }
 
+function attrXML(el: SVGElement, key: string, val: string) {
+    el.setAttributeNS('http://www.w3.org/XML/1998/namespace', key, val);
+}
+
 function bindStyle(svgEl: SVGElement, style: PathStyleProps, el?: Path): void
 function bindStyle(svgEl: SVGElement, style: TSpanStyleProps, el?: TSpan): void
 function bindStyle(svgEl: SVGElement, style: ImageStyleProps, el?: ZRImage): void
@@ -275,8 +279,6 @@ const svgPath: SVGProxy<Path> = {
         }
         const path = el.path;
 
-        // wrapSVGBuildPath(el as PathWithSVGBuildPath);
-
         if (el.shapeChanged()) {
             path.beginPath();
             el.buildPath(path, el.shape);
@@ -385,6 +387,7 @@ const svgText: SVGProxy<TSpan> = {
         let textSvgEl = el.__svgEl as SVGTextElement;
         if (!textSvgEl) {
             textSvgEl = createElement('text') as SVGTextElement;
+            attrXML(textSvgEl, 'xml:space', 'preserve');
             el.__svgEl = textSvgEl;
         }
 
@@ -405,7 +408,8 @@ const svgText: SVGProxy<TSpan> = {
         const y = adjustTextY(style.y || 0, getLineHeight(font), style.textBaseline);
         const textAlign = TEXT_ALIGN_TO_ANCHOR[style.textAlign as keyof typeof TEXT_ALIGN_TO_ANCHOR]
             || style.textAlign;
-        attr(textSvgEl, 'dominant-baseline', 'middle');
+
+        attr(textSvgEl, 'dominant-baseline', 'central');
         attr(textSvgEl, 'text-anchor', textAlign);
         attr(textSvgEl, 'x', x + '');
         attr(textSvgEl, 'y', y + '');

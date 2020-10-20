@@ -47,6 +47,13 @@ interface ImageProps extends DisplayableProps {
 
 export type ImageState = Pick<ImageProps, DisplayableStatePropNames> & ElementCommonState
 
+function isImageLike(source: unknown) {
+    return source
+        && typeof source !== 'string'
+        // Image source is an image, canvas, video.
+        && (source as HTMLImageElement).width && (source as HTMLImageElement).height;
+}
+
 class ZRImage extends Displayable<ImageProps> {
 
     style: ImageStyleProps
@@ -66,6 +73,60 @@ class ZRImage extends Displayable<ImageProps> {
         return createObject(DEFAULT_IMAGE_STYLE, obj);
     }
 
+    getWidth(): number {
+        const style = this.style;
+        const imageSource = style.image;
+        if (isImageLike(imageSource)) {
+            return (imageSource as HTMLImageElement).width;
+        }
+
+        if (!this.__image) {
+            return 0;
+        }
+
+        let width = style.width;
+        let height = style.height;
+        if (width == null) {
+            if (height == null) {
+                return this.__image.width;
+            }
+            else {
+                const aspect = this.__image.width / this.__image.height;
+                return aspect * height;
+            }
+        }
+        else {
+            return width;
+        }
+    }
+
+    getHeight(): number {
+        const style = this.style;
+        const imageSource = style.image;
+        if (isImageLike(imageSource)) {
+            return (imageSource as HTMLImageElement).height;
+        }
+
+        if (!this.__image) {
+            return 0;
+        }
+
+        let width = style.width;
+        let height = style.height;
+        if (height == null) {
+            if (width == null) {
+                return this.__image.height;
+            }
+            else {
+                const aspect = this.__image.height / this.__image.width;
+                return aspect * width;
+            }
+        }
+        else {
+            return height;
+        }
+    }
+
     protected _getAnimationStyleProps() {
         return DEFAULT_IMAGE_ANIMATION_PROPS;
     }
@@ -74,7 +135,7 @@ class ZRImage extends Displayable<ImageProps> {
         const style = this.style;
         if (!this._rect) {
             this._rect = new BoundingRect(
-                style.x || 0, style.y || 0, style.width || 0, style.height || 0
+                style.x || 0, style.y || 0, this.getWidth(), this.getHeight()
             );
         }
         return this._rect;

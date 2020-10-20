@@ -130,6 +130,10 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     protected _normalState: DisplayableState
 
     protected _rect: BoundingRect
+    protected _paintRect: BoundingRect
+    protected _prevPaintRect: BoundingRect
+
+    dirtyRectTolerance: number
 
     /************* Properties will be inejected in other modules. *******************/
 
@@ -185,6 +189,52 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     innerBeforeBrush() {}
     innerAfterBrush() {}
 
+    shouldBePainted(
+        viewWidth: number,
+        viewHeight: number,
+        considerClipPath: boolean,
+        considerAncestors: boolean
+    ) {
+        const m = this.transform;
+        if (
+            this.ignore
+            // Ignore invisible element
+            || this.invisible
+            // Ignore transparent element
+            || this.style.opacity === 0
+            // Ignore culled element
+            || (this.culling
+                && isDisplayableCulled(this, viewWidth, viewHeight)
+            )
+            // Ignore scale 0 element, in some environment like node-canvas
+            // Draw a scale 0 element can cause all following draw wrong
+            // And setTransform with scale 0 will cause set back transform failed.
+            || (m && !m[0] && !m[3])
+        ) {
+            return false;
+        }
+
+        if (considerClipPath && this.__clipPaths) {
+            for (let i = 0; i < this.__clipPaths.length; ++i) {
+                if (this.__clipPaths[i].isZeroArea()) {
+                    return false;
+                }
+            }
+        }
+
+        if (considerAncestors && this.parent) {
+            let parent = this.parent;
+            while (parent) {
+                if (parent.ignore) {
+                    return false;
+                }
+                parent = parent.parent;
+            }
+        }
+
+        return true;
+    }
+
     /**
      * If displayable element contain coord x, y
      */
@@ -206,6 +256,59 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         const coord = this.transformCoordToLocal(x, y);
         const rect = this.getBoundingRect();
         return rect.contain(coord[0], coord[1]);
+    }
+
+    getPaintRect(): BoundingRect {
+        let rect = this._paintRect;
+        if (!this._paintRect || this.__dirty) {
+            const transform =  this.transform;
+            const elRect = this.getBoundingRect();
+
+            const style = this.style;
+            const shadowSize = style.shadowBlur || 0;
+            const shadowOffsetX = style.shadowOffsetX || 0;
+            const shadowOffsetY = style.shadowOffsetY || 0;
+
+            rect = this._paintRect || (this._paintRect = new BoundingRect(0, 0, 0, 0));
+            if (transform) {
+                BoundingRect.applyTransform(rect, elRect, transform);
+            }
+            else {
+                rect.copy(elRect);
+            }
+
+            if (shadowSize || shadowOffsetX || shadowOffsetY) {
+                rect.width += shadowSize * 2 + Math.abs(shadowOffsetX);
+                rect.height += shadowSize * 2 + Math.abs(shadowOffsetY);
+                rect.x = Math.min(rect.x, rect.x + shadowOffsetX - shadowSize);
+                rect.y = Math.min(rect.y, rect.y + shadowOffsetY - shadowSize);
+
+            }
+
+            // For the accuracy tolerance of text height or line joint point
+            const tolerance = this.dirtyRectTolerance;
+            if (!rect.isZero()) {
+                rect.x = Math.floor(rect.x - tolerance);
+                rect.y = Math.floor(rect.y - tolerance);
+                rect.width = Math.ceil(rect.width + 1 + tolerance * 2);
+                rect.height = Math.ceil(rect.height + 1 + tolerance * 2);
+            }
+        }
+        return rect;
+    }
+
+    setPrevPaintRect(paintRect: BoundingRect) {
+        if (paintRect) {
+            this._prevPaintRect = this._prevPaintRect || new BoundingRect(0, 0, 0, 0);
+            this._prevPaintRect.copy(paintRect);
+        }
+        else {
+            this._prevPaintRect = null;
+        }
+    }
+
+    getPrevPaintRect(): BoundingRect {
+        return this._prevPaintRect;
     }
 
     /**
@@ -488,9 +591,22 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         dispProto.rectHover = false;
         dispProto.incremental = false;
         dispProto._rect = null;
+        dispProto.dirtyRectTolerance = 0;
 
         dispProto.__dirty = Element.REDARAW_BIT | Displayable.STYLE_CHANGED_BIT;
     })()
+}
+
+const tmpRect = new BoundingRect(0, 0, 0, 0);
+const viewRect = new BoundingRect(0, 0, 0, 0);
+function isDisplayableCulled(el: Displayable, width: number, height: number) {
+    tmpRect.copy(el.getBoundingRect());
+    if (el.transform) {
+        tmpRect.applyTransform(el.transform);
+    }
+    viewRect.width = width;
+    viewRect.height = height;
+    return !tmpRect.intersect(viewRect);
 }
 
 export default Displayable;
