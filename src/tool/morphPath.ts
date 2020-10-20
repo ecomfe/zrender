@@ -1,12 +1,13 @@
 import PathProxy from '../core/PathProxy';
 import { cubicSubdivide } from '../core/curve';
 import Path from '../graphic/Path';
-import { ElementAnimateConfig } from '../Element';
-import { defaults, isArray } from '../core/util';
+import Element, { ElementAnimateConfig } from '../Element';
+import { defaults, assert, noop, clone } from '../core/util';
 import { lerp } from '../core/vector';
 import Rect from '../graphic/shape/Rect';
 import Sector from '../graphic/shape/Sector';
-import Circle from '../graphic/shape/Circle';
+import { ZRenderType } from '../zrender';
+
 const CMD = PathProxy.CMD;
 const PI2 = Math.PI * 2;
 
@@ -15,6 +16,21 @@ const PROP_WH = ['width', 'height'] as const;
 
 const tmpArr: number[] = [];
 
+
+interface CombiningPath extends Path {
+    __combiningSubList: Path[];
+    __oldAddSelfToZr: Element['addSelfToZr'];
+    __oldRemoveSelfFromZr: Element['removeSelfFromZr'];
+    __oldBuildPath: Path['buildPath'];
+    // See `Stroage['_updateAndAddDisplayable']`
+    childrenRef(): Path[];
+}
+
+export type MorphDividingMethod = 'split' | 'duplicate';
+
+export interface CombineSeparateConfig extends ElementAnimateConfig {
+    dividingMethod?: MorphDividingMethod;
+}
 
 function aroundEqual(a: number, b: number) {
     return Math.abs(a - b) < 1e-5;
@@ -522,97 +538,68 @@ function findBestMorphingRotation(
  * Morphing from old path to new path.
  */
 export function morphPath(
-    // `fromPathInput` only provides the current path state, which will
+    // `fromPath` only provides the current path state, which will
     // not be rendered or kept.
-    // If array, length must be greater than 0.
-    // Note: should be able to handle `fromPathInput` that has been morphing.
-    fromPathInput: Path | Path[],
-    // `toPathInput` is the target path that will be rendered and kept.
-    // Note that `toPathInput` and `fromPathInput` might be the same.
+    // Note:
+    // should be able to handle `isIndividualMorphingPath(fromPath)` is `ture`.
+    fromPath: Path,
+    // `toPath` is the target path that will be rendered and kept.
+    // Note:
+    // (1) `toPath` and `fromPath` might be the same.
     // e.g., when triggering the same transition repeatly.
-    toPathInput: Path,
+    // (2) should be able to handle `isIndividualMorphingPath(toPath)` is `ture`.
+    toPath: Path,
     animationOpts: ElementAnimateConfig
 ): Path {
     let fromPathProxy: PathProxy;
     let toPathProxy: PathProxy;
-    let fromPathArray = isArray(fromPathInput) ? fromPathInput : null;
 
-    if (!fromPathInput || (fromPathArray && !fromPathArray.length) || !toPathInput) {
-        return toPathInput;
+    if (!fromPath || !toPath) {
+        return toPath;
     }
 
     // Calculate the current path into `fromPathProxy` from `fromPathInput`.
-    if (fromPathArray) {
-        fromPathProxy = new PathProxy(false);
-        fromPathProxy.beginPath();
-        for (let i = 0; i < fromPathArray.length; i++) {
-            fromPathArray[i].buildPath(fromPathProxy, fromPathArray[i].shape, true);
-        }
+    !fromPath.path && fromPath.createPathProxy();
+    fromPathProxy = fromPath.path;
+    fromPathProxy.beginPath();
+    fromPath.buildPath(fromPathProxy, fromPath.shape);
+
+    // Calculate the target path into `toPathProxy` from `toPath`.
+    !toPath.path && toPath.createPathProxy();
+    toPathProxy = toPath.path;
+    // From and to might be the same path.
+    toPathProxy === fromPathProxy && (toPathProxy = new PathProxy(false));
+    toPathProxy.beginPath();
+    // toPath should always calculate the final state rather than morphing state.
+    if (isIndividualMorphingPath(toPath)) {
+        toPath.__oldBuildPath(toPathProxy, toPath.shape);
     }
     else {
-        const fromPath = fromPathInput as Path;
-        !fromPath.path && fromPath.createPathProxy();
-        fromPathProxy = fromPath.path;
-        fromPathProxy.beginPath();
-        fromPath.buildPath(fromPathProxy, fromPath.shape);
-    }
-
-    // If `fromPathInput` is an array or `fromPathInput` is a morphing path which
-    // contain splitted fragements, we split `toPathInput` to make transition
-    // animation effect: many-merge-to-one.
-    let toSplitCountExpected: number = fromPathArray
-        ? fromPathArray.length
-        : isPathMorphing(fromPathInput as Path)
-        ? (fromPathInput as MorphingPath).__morphingData.length
-        : null;
-    toSplitCountExpected <= 1 && (toSplitCountExpected = null);
-
-    // Calculate the target path into `toPathProxy` from `toPathInput`.
-    if (toSplitCountExpected != null) {
-        const toPathsSplitted: Path[] = splitShape(toPathInput, toSplitCountExpected);
-        toPathProxy = new PathProxy(false);
-        toPathProxy.beginPath();
-        for (let i = 0; i < toPathsSplitted.length; i++) {
-            toPathsSplitted[i].buildPath(toPathProxy, toPathsSplitted[i].shape, true);
-        }
-    }
-    else {
-        !toPathInput.path && toPathInput.createPathProxy();
-        toPathProxy = toPathInput.path;
-        // From and to might be the same path.
-        toPathProxy === fromPathProxy && (toPathProxy = new PathProxy(false));
-        toPathProxy.beginPath();
-        // toPath should always calculate the final state rather morphing state.
-        if (isPathMorphing(toPathInput)) {
-            toPathInput.__oldBuildPath(toPathProxy, toPathInput.shape);
-        }
-        else {
-            toPathInput.buildPath(toPathProxy, toPathInput.shape);
-        }
+        toPath.buildPath(toPathProxy, toPath.shape);
     }
 
     const [fromBezierCurves, toBezierCurves] =
         alignBezierCurves(pathToBezierCurves(fromPathProxy), pathToBezierCurves(toPathProxy));
 
     const morphingData = findBestMorphingRotation(fromBezierCurves, toBezierCurves, 10, Math.PI);
-    const morphingPath = convertToMorphingPath(toPathInput, morphingData, 0);
+    becomeIndividualMorphingPath(toPath, morphingData, 0);
 
     const oldDone = animationOpts && animationOpts.done;
     const oldAborted = animationOpts && animationOpts.aborted;
     const oldDuring = animationOpts && animationOpts.during;
 
-    morphingPath.animateTo({
+    toPath.animateTo({
         __morphT: 1
     } as any, defaults({
         during(p) {
-            morphingPath.dirtyShape();
+            toPath.dirtyShape();
             oldDuring && oldDuring(p);
         },
         done() {
-            restoreToOriginalPath(morphingPath);
+            restoreIndividualMorphingPath(toPath);
             // Cleanup.
-            morphingPath.createPathProxy();
-            morphingPath.dirtyShape();
+            toPath.createPathProxy();
+            toPath.dirtyShape();
             oldDone && oldDone();
         },
         aborted() {
@@ -620,7 +607,7 @@ export function morphPath(
         }
     } as ElementAnimateConfig, animationOpts));
 
-    return toPathInput;
+    return toPath;
 }
 
 function morphingPathBuildPath(
@@ -670,46 +657,291 @@ function morphingPathBuildPath(
     }
 };
 
-function convertToMorphingPath(
+function becomeIndividualMorphingPath(
     path: Path,
     morphingData: MorphingData,
     morphT: number
-): MorphingPath {
-    const morphingPath = path as MorphingPath;
-
-    morphingPath.__morphingData = morphingData;
-
-    if (!morphingPath.__oldBuildPath) {
-        morphingPath.__oldBuildPath = morphingPath.buildPath;
+): void {
+    if (isIndividualMorphingPath(path)) {
+        updateIndividualMorphingPath(path, morphingData, morphT);
+        return;
     }
 
+    const morphingPath = path as MorphingPath;
+    morphingPath.__oldBuildPath = morphingPath.buildPath;
     morphingPath.buildPath = morphingPathBuildPath;
+    updateIndividualMorphingPath(morphingPath, morphingData, morphT);
+}
 
+function updateIndividualMorphingPath(
+    morphingPath: MorphingPath,
+    morphingData: MorphingData,
+    morphT: number
+): void {
+    morphingPath.__morphingData = morphingData;
     morphingPath.__morphT = morphT;
-
-    return morphingPath;
 }
 
-function restoreToOriginalPath(morphingPath: MorphingPath): void {
-    morphingPath.buildPath = morphingPath.__oldBuildPath;
-    morphingPath.__oldBuildPath = morphingPath.__morphingData = null;
+function restoreIndividualMorphingPath(path: Path): void {
+    if (isIndividualMorphingPath(path)) {
+        path.buildPath = path.__oldBuildPath;
+        path.__oldBuildPath = path.__morphingData = null;
+    }
 }
 
-export function isPathMorphing(path: Path): path is MorphingPath {
+function isIndividualMorphingPath(path: Path): path is MorphingPath {
     return (path as MorphingPath).__oldBuildPath != null;
+}
+
+export function isCombiningPath(path: Path): path is CombiningPath {
+    return !!(path as CombiningPath).__combiningSubList;
+}
+
+export function isInAnyMorphing(path: Path): boolean {
+    return isIndividualMorphingPath(path) || isCombiningPath(path);
 }
 
 
 /**
- *
- * @param splitCount Must be greater than 0.
- * @return Never be null/undefined. If not splitted, return empty [].
+ * Make combining morphing from many paths to one.
+ * Make the MorphingKind of `toPath` become `'COMBINING'`.
  */
-function splitShape(path: Path, splitCount: number): Path[] {
-    const resultPaths: Path[] = [];
+export function combine(
+    fromPathList: Path[],
+    toPath: Path,
+    animationOpts: CombineSeparateConfig
+): {
+    // The length of `fromIndividuals` and `toIndividuals` are the same as `count`.
+    fromIndividuals: Path[];
+    toIndividuals: Path[];
+    count: number;
+} {
+    const fromIndividuals: Path[] = [];
+    let separateCount = 0;
+    for (let i = 0; i < fromPathList.length; i++) {
+        const fromPath = fromPathList[i];
+        if (isCombiningPath(fromPath)) {
+            // If fromPath is combining, use the combineFromList as the from.
+            const fromCombiningSubList = fromPath.__combiningSubList;
+            for (let j = 0; j < fromCombiningSubList.length; j++) {
+                fromIndividuals.push(fromCombiningSubList[j]);
+            }
+            separateCount += fromCombiningSubList.length;
+        }
+        else {
+            fromIndividuals.push(fromPath);
+            separateCount++;
+        }
+    }
 
-    if (splitCount <= 0) {
+    // fromPathList.length is 0.
+    if (!separateCount) {
+        return;
+    }
+
+    // PENDING: more separate strategies other than `divideShape`?
+    const dividingMethod = animationOpts ? animationOpts.dividingMethod : null;
+    const toPathSplittedList = divideShape(toPath, separateCount, dividingMethod);
+    assert(toPathSplittedList.length === separateCount);
+
+    const oldDone = animationOpts && animationOpts.done;
+    const oldAborted = animationOpts && animationOpts.aborted;
+    const oldDuring = animationOpts && animationOpts.during;
+
+    let doneCount = 0;
+    let abortedCalled = false;
+    const morphAnimationOpts = defaults({
+        during(p) {
+            oldDuring && oldDuring(p);
+        },
+        done() {
+            doneCount++;
+            if (doneCount === toPathSplittedList.length) {
+                restoreCombiningPath(toPath);
+                oldDone && oldDone();
+            }
+        },
+        aborted() {
+            // PENDING: is it logically correct?
+            if (!abortedCalled) {
+                abortedCalled = true;
+                oldAborted && oldAborted();
+            }
+        }
+    } as ElementAnimateConfig, animationOpts);
+
+    for (let i = 0; i < separateCount; i++) {
+        const from = fromIndividuals[i];
+        const to = toPathSplittedList[i];
+        sharePropsToPath(toPath, to, true);
+        morphPath(from, to, morphAnimationOpts);
+    }
+
+    becomeCombiningPath(toPath, toPathSplittedList);
+
+    return {
+        fromIndividuals,
+        toIndividuals: toPathSplittedList,
+        count: separateCount
+    };
+}
+
+
+// PENDING: This is NOT a good implementation to decorate path methods.
+// Potential flaw: when get path by `group.childAt(i)`,
+// it might return the `combiningSubList` group, which is not expected.
+// Probably this feature should be implemented same as the way of rich text?
+function becomeCombiningPath(path: Path, combiningSubList: Path[]): void {
+    if (isCombiningPath(path)) {
+        updateCombiningPathSubList(path, combiningSubList);
+        return;
+    }
+
+    const combiningPath = path as CombiningPath;
+
+    updateCombiningPathSubList(combiningPath, combiningSubList);
+
+    // PENDING: Too tricky. error-prone.
+    // Decorate methods. Do not do it repeatly.
+    combiningPath.__oldAddSelfToZr = path.addSelfToZr;
+    combiningPath.__oldRemoveSelfFromZr = path.removeSelfFromZr;
+    combiningPath.addSelfToZr = combiningAddSelfToZr;
+    combiningPath.removeSelfFromZr = combiningRemoveSelfFromZr;
+    combiningPath.__oldBuildPath = combiningPath.buildPath;
+    combiningPath.buildPath = noop;
+    combiningPath.childrenRef = combiningChildrenRef;
+
+    // PENDING: bounding rect?
+}
+
+function restoreCombiningPath(path: Path): void {
+    if (!isCombiningPath(path)) {
+        return;
+    }
+
+    const combiningPath = path as CombiningPath;
+
+    updateCombiningPathSubList(combiningPath, null);
+
+    combiningPath.addSelfToZr = combiningPath.__oldAddSelfToZr;
+    combiningPath.removeSelfFromZr = combiningPath.__oldRemoveSelfFromZr;
+    combiningPath.buildPath = combiningPath.__oldBuildPath;
+    combiningPath.childrenRef =
+        combiningPath.__combiningSubList =
+        combiningPath.__oldAddSelfToZr =
+        combiningPath.__oldRemoveSelfFromZr =
+        combiningPath.__oldBuildPath = null;
+}
+
+// Especially, `combiningSubList` is null/undefined means that remove sub list.
+function updateCombiningPathSubList(combiningPath: CombiningPath, combiningSubList: Path[]): void {
+    if (combiningPath.__combiningSubList !== combiningSubList) {
+        combiningPathSubListAddRemoveWithZr(combiningPath, 'removeSelfFromZr');
+        combiningPath.__combiningSubList = combiningSubList;
+        combiningPathSubListAddRemoveWithZr(combiningPath, 'addSelfToZr');
+    }
+}
+
+function combiningAddSelfToZr(this: CombiningPath, zr: ZRenderType): void {
+    this.__oldAddSelfToZr(zr);
+    combiningPathSubListAddRemoveWithZr(this, 'addSelfToZr');
+}
+
+function combiningPathSubListAddRemoveWithZr(
+    path: CombiningPath,
+    method: 'addSelfToZr' | 'removeSelfFromZr'
+): void {
+    const combiningSubList = path.__combiningSubList;
+    const zr = path.__zr;
+    if (combiningSubList && zr) {
+        for (let i = 0; i < combiningSubList.length; i++) {
+            const child = combiningSubList[i];
+            child[method](zr);
+        }
+    }
+}
+
+function combiningRemoveSelfFromZr(this: CombiningPath, zr: ZRenderType): void {
+    this.__oldRemoveSelfFromZr(zr);
+    const combiningSubList = this.__combiningSubList;
+    for (let i = 0; i < combiningSubList.length; i++) {
+        const child = combiningSubList[i];
+        child.removeSelfFromZr(zr);
+    }
+}
+
+function combiningChildrenRef(this: CombiningPath): Path[] {
+    return this.__combiningSubList;
+}
+
+
+/**
+ * Make separate morphing from one path to many paths.
+ * Make the MorphingKind of `toPath` become `'ONE_ONE'`.
+ */
+export function separate(
+    fromPath: Path,
+    toPathList: Path[],
+    animationOpts: CombineSeparateConfig
+): void {
+    const toPathListLen = toPathList.length;
+    let fromPathList: Path[];
+    const dividingMethod = animationOpts ? animationOpts.dividingMethod : null;
+
+    // This case most happen when a combining path is called to reverse the animation
+    // to its original separated state.
+    if (isCombiningPath(fromPath)) {
+        const fromCombiningSubList = fromPath.__combiningSubList;
+        if (fromCombiningSubList.length === toPathListLen) {
+            fromPathList = fromCombiningSubList;
+        }
+        // The fromPath is a `CombiningPath` and its combiningSubCount is different from toPathList.length
+        // At present we do not make "continuous" animation for this case. It's might bring complicated logic.
+        else {
+            fromPathList = divideShape(fromPath, toPathListLen, dividingMethod);
+        }
+    }
+    else {
+        fromPathList = divideShape(fromPath, toPathListLen, dividingMethod);
+    }
+
+    assert(fromPathList.length === toPathListLen);
+    for (let i = 0; i < toPathListLen; i++) {
+        sharePropsToPath(fromPath, fromPathList[i], false);
+        morphPath(fromPathList[i], toPathList[i], animationOpts);
+    }
+}
+
+
+/**
+ * TODO: triangulate separate
+ *
+ * @return Never be null/undefined, may empty [].
+ */
+function divideShape(
+    path: Path,
+    separateCount: number,
+    // By default 'split'.
+    dividingMethod?: MorphDividingMethod
+): Path[] {
+    return dividingMethod === 'duplicate'
+        ? duplicateShape(path, separateCount)
+        : splitShape(path, separateCount);
+}
+
+/**
+ * @return Never be null/undefined, may empty [].
+ */
+function splitShape(
+    path: Path,
+    separateCount: number
+): Path[] {
+    const resultPaths: Path[] = [];
+    if (separateCount <= 0) {
         return resultPaths;
+    }
+    if (separateCount === 1) {
+        return duplicateShape(path, separateCount);
     }
 
     if (path instanceof Rect) {
@@ -717,10 +949,10 @@ function splitShape(path: Path, splitCount: number): Path[] {
         const splitPropIdx = toPathShape.height > toPathShape.width ? 1 : 0;
         const propWH = PROP_WH[splitPropIdx];
         const propXY = PROP_XY[splitPropIdx];
-        const subWH = toPathShape[propWH] / splitCount;
+        const subWH = toPathShape[propWH] / separateCount;
         let xyCurr = toPathShape[propXY];
 
-        for (let i = 0; i < splitCount; i++, xyCurr += subWH) {
+        for (let i = 0; i < separateCount; i++, xyCurr += subWH) {
             const subShape = {
                 x: toPathShape.x,
                 y: toPathShape.y,
@@ -728,12 +960,11 @@ function splitShape(path: Path, splitCount: number): Path[] {
                 height: toPathShape.height
             };
             subShape[propXY] = xyCurr;
-            subShape[propWH] = i < splitCount - 1
+            subShape[propWH] = i < separateCount - 1
                 ? subWH
                 : toPathShape[propXY] + toPathShape[propWH] - xyCurr;
             const splitted = new Rect({ shape: subShape });
             resultPaths.push(splitted);
-            sharePropsWithSplittedPath(splitted, path);
         }
     }
     else if (path instanceof Sector) {
@@ -742,9 +973,9 @@ function splitShape(path: Path, splitCount: number): Path[] {
         const startAngle = toPathShape.startAngle;
         const endAngle = toPathShape.endAngle;
         const endAngleNormalized = normalizeRadian(startAngle, toPathShape.endAngle, clockwise);
-        const step = (endAngleNormalized - startAngle) / splitCount;
+        const step = (endAngleNormalized - startAngle) / separateCount;
         let angleCurr = startAngle;
-        for (let i = 0; i < splitCount; i++, angleCurr += step) {
+        for (let i = 0; i < separateCount; i++, angleCurr += step) {
             const splitted = new Sector({
                 shape: {
                     cx: toPathShape.cx,
@@ -753,32 +984,39 @@ function splitShape(path: Path, splitCount: number): Path[] {
                     r0: toPathShape.r0,
                     clockwise: clockwise,
                     startAngle: angleCurr,
-                    endAngle: i === splitCount - 1 ? endAngle : angleCurr + step
+                    endAngle: i === separateCount - 1 ? endAngle : angleCurr + step
                 }
             });
             resultPaths.push(splitted);
-            sharePropsWithSplittedPath(splitted, path);
         }
     }
-    else if (path instanceof Circle) {
-        const toPathShape = path.shape;
-        for (let i = 0; i < splitCount; i++) {
-            const splitted = new Circle({
-                shape: {
-                    cx: toPathShape.cx,
-                    cy: toPathShape.cy,
-                    r: toPathShape.r
-                }
-            });
-            resultPaths.push(splitted);
-            sharePropsWithSplittedPath(splitted, path);
-        }
-    }
-    // TODO: more
+    // TODO: triangulate path and split.
+    // And should consider path is morphing.
     else {
-        resultPaths.push(path);
+        return duplicateShape(path, separateCount);
     }
 
+    return resultPaths;
+}
+
+/**
+ * @return Never be null/undefined, may empty [].
+ */
+function duplicateShape(
+    path: Path,
+    separateCount: number
+): Path[] {
+    const resultPaths: Path[] = [];
+    if (separateCount <= 0) {
+        return resultPaths;
+    }
+    const ctor = path.constructor;
+    for (let i = 0; i < separateCount; i++) {
+        const sub = new (ctor as any)({
+            shape: clone(path.shape)
+        });
+        resultPaths.push(sub);
+    }
     return resultPaths;
 }
 
@@ -792,39 +1030,20 @@ function normalizeRadian(start: number, end: number, clockwise: boolean): number
     );
 }
 
+function sharePropsToPath(srcPath: Path, tarPath: Path, willClone: boolean): void {
+    tarPath.x = srcPath.x;
+    tarPath.y = srcPath.y;
+    tarPath.scaleX = srcPath.scaleX;
+    tarPath.scaleY = srcPath.scaleY;
+    tarPath.originX = srcPath.originX;
+    tarPath.originY = srcPath.originY;
 
-function sharePropsWithSplittedPath(splitted: Path, srcPath: Path): void {
-    splitted.x = srcPath.x;
-    splitted.y = srcPath.y;
-    splitted.scaleX = srcPath.scaleX;
-    splitted.scaleY = srcPath.scaleY;
-    splitted.originX = srcPath.originX;
-    splitted.originY = srcPath.originY;
-    // Just carry the style, will not be modifed, so do not copy.
-    splitted.style = srcPath.style;
-}
+    // If just carry the style, will not be modifed, so do not copy.
+    tarPath.style = willClone
+        ? clone(srcPath.style)
+        : srcPath.style;
 
-/**
- * Split a path to multiple paths for morph.
- *
- * @param splitCount Must be greater than 0.
- * @return Never be null/undefined. If not splitted, return empty [].
- */
-export function splitShapeForMorphingFrom(path: Path, splitCount: number): Path[] {
-    // Consider the case: multiple scatter points are merging to one bar but not finished.
-    // At that time, trigger reverse animation, which intend to split the bar to those original
-    // scatter points. In this case, we need to split that morphing path.
-    const morphingData = (path as MorphingPath).__morphingData;
-    if (isPathMorphing(path) && morphingData.length === splitCount) {
-        const resultPaths: Path[] = [];
-        for (let i = 0; i < splitCount; i++) {
-            const splitted: Path = new (path.constructor as any)();
-            resultPaths.push(splitted);
-            convertToMorphingPath(splitted, [morphingData[i]], path.__morphT);
-            sharePropsWithSplittedPath(splitted, path);
-        }
-        return resultPaths;
-    }
-
-    return splitShape(path, splitCount);
+    tarPath.zlevel = srcPath.zlevel;
+    tarPath.z = srcPath.z;
+    tarPath.z2 = srcPath.z2;
 }
