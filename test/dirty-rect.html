@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Dirty Rectangle</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+    <div id="main" style="width:1000px;height:800px;"></div>
+    <script type="text/javascript">
+        var zr = zrender.init(document.getElementById('main'), {
+            useDirtyRect: true
+        });
+
+        var text = new zrender.Text({
+            style: {
+                fill: 'white',
+                text: 'Start'
+            },
+            zlevel: 1
+        });
+        var circle = new zrender.Circle({
+            scale: [1, 1],
+            shape: {
+                cx: 50,
+                cy: 50,
+                r: 50
+            },
+            style: {
+                fill: '#f0f',
+                opacity: 0.8,
+                shadowColor: 'red',
+                shadowBlur: 30,
+                shadowOffsetX: 20,
+                shadowOffsetY: -20
+            },
+            textContent: text,
+            textConfig: {
+                position: 'inside'
+            },
+            zlevel: 1,
+            x: 100,
+            y: 200
+        });
+        zr.add(circle);
+
+        setTimeout(function () {
+            text.attr({
+                style: {
+                    text: 'End'
+                }
+            })
+        }, 2000);
+
+        setTimeout(function () {
+            circle.attr({
+                style: {
+                    fill: 'blue'
+                },
+                ignore: false
+            });
+        }, 4000);
+
+        text.animateTo({
+            style: {
+                fill: '#444'
+            }
+        }, {
+            duration: 3000
+        });
+
+        var singleText = new zrender.Text({
+            style: {
+                fill: 'blue',
+                text: 'This text should be removed in the end'
+            },
+            x: 100,
+            y: 100
+        });
+        zr.add(singleText);
+
+        var textIgnored = new zrender.Text({
+            style: {
+                fill: 'blue',
+                text: 'This text should be shown in the end'
+            },
+            x: 100,
+            y: 200,
+            ignore: true
+        });
+        zr.add(textIgnored);
+
+        var textNotIgnored = new zrender.Text({
+            style: {
+                fill: 'blue',
+                text: 'This text should not be shown in the end'
+            },
+            x: 100,
+            y: 300,
+            ignore: false
+        });
+        zr.add(textNotIgnored);
+
+        circle.animateTo({
+            shape: {
+                cx: 800,
+                cy: 200
+            }
+        }, {
+            duration: 3000
+        });
+
+        var rects = [];
+        for (var i = 0; i < 20; ++i) {
+            var rect = new zrender.Rect({
+                shape: {
+                    x: 0,
+                    y: 0,
+                    width: 100 * Math.random(),
+                    height: 100 * Math.random()
+                },
+                style: {
+                    fill: 'rgba(200, 0, 0, 0.4)'
+                },
+                position: [800 * Math.random(), 400 * Math.random()],
+                scale: [
+                    4 * Math.random(),
+                    4 * Math.random()
+                ],
+                rotation: Math.random() * Math.PI
+            });
+
+            rect.on('mouseover', function (el) {
+                // console.log('hover', el);
+                el.target.attr('style', {
+                    fill: 'rgba(0, 200, 200, 0.5)'
+                });
+            });
+
+            rect.on('mouseout', function (el) {
+                // console.log('out');
+                el.target.attr('style', {
+                    fill: 'rgba(200, 0, 0, 0.4)'
+                });
+            });
+
+            rects.push(rect);
+            zr.add(rect);
+        }
+
+        var a = new zrender.Rect({
+            shape: {
+                x: 0,
+                y: 0,
+                width: 300,
+                height: 200
+            },
+            style: {
+                fill: 'rgba(0, 200, 0, 0.4)'
+            },
+            position: [100, 100],
+            scale: [
+                5 * Math.random(),
+                5 * Math.random()
+            ],
+            rotation: Math.random() * Math.PI
+        });
+        zr.add(a);
+
+        setTimeout(function () {
+            zr.remove(a);
+            circle.removeTextContent();
+            zr.remove(singleText);
+
+            textIgnored.ignore = false;
+            textNotIgnored.ignore = true;
+        }, 5000);
+        setInterval(function () {
+            for (var i = 0; i < 2; ++i) {
+                rects[i].attr('position', [800 * Math.random(), 400 * Math.random()]);
+            }
+        }, 3000);
+    </script>
+
+</body>
+</html>

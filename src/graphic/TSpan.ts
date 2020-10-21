@@ -26,8 +26,9 @@ export const DEFAULT_TSPAN_STYLE: TSpanStyleProps = defaults({
     x: 0,
     y: 0,
     textAlign: 'left',
-    textBaseline: 'top'
-}, DEFAULT_PATH_STYLE);
+    textBaseline: 'top',
+    miterLimit: 2
+} as TSpanStyleProps, DEFAULT_PATH_STYLE);
 
 
 interface TSpanProps extends DisplayableProps {
@@ -99,7 +100,13 @@ class TSpan extends Displayable<TSpanProps> {
         return this._rect;
     }
 
+    protected static initDefaultProps = (function () {
+        const tspanProto = TSpan.prototype;
+        // TODO Calculate tolerance smarter
+        tspanProto.dirtyRectTolerance = 10;
+    })()
 }
 
 TSpan.prototype.type = 'tspan';
+
 export default TSpan;

@@ -12,6 +12,7 @@ import { PatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
 import { brush, BrushScope } from './graphic';
 import { PainterBase } from '../PainterBase';
+import BoundingRect from '../core/BoundingRect';
 import Element from '../Element';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
@@ -68,7 +69,8 @@ function createRoot(width: number, height: number) {
 interface CanvasPainterOption {
     devicePixelRatio?: number
     width?: number | string  // Can be 10 / 10px / auto
-    height?: number | string
+    height?: number | string,
+    useDirtyRect?: boolean
 }
 
 export default class CanvasPainter implements PainterBase {
@@ -86,6 +88,8 @@ export default class CanvasPainter implements PainterBase {
     private _opts: CanvasPainterOption
 
     private _zlevelList: number[] = []
+
+    private _prevDisplayList: Displayable[] = []
 
     private _layers: {[key: number]: Layer} = {} // key is zlevel
 
@@ -150,6 +154,8 @@ export default class CanvasPainter implements PainterBase {
         this.storage = storage;
 
         const zlevelList: number[] = this._zlevelList;
+
+        this._prevDisplayList = [];
 
         const layers = this._layers;
 
@@ -231,14 +237,14 @@ export default class CanvasPainter implements PainterBase {
      * @param paintAll 强制绘制所有displayable
      */
     refresh(paintAll?: boolean) {
-
         const list = this.storage.getDisplayList(true);
+        const prevList = this._prevDisplayList;
 
         const zlevelList = this._zlevelList;
 
         this._redrawId = Math.random();
 
-        this._paintList(list, paintAll, this._redrawId);
+        this._paintList(list, prevList, paintAll, this._redrawId);
 
         // Paint custum layers
         for (let i = 0; i < zlevelList.length; i++) {
@@ -248,6 +254,10 @@ export default class CanvasPainter implements PainterBase {
                 const clearColor = i === 0 ? this._backgroundColor : null;
                 layer.refresh(clearColor);
             }
+        }
+
+        if (this._opts.useDirtyRect) {
+            this._prevDisplayList = list.slice();
         }
 
         return this;
@@ -300,7 +310,7 @@ export default class CanvasPainter implements PainterBase {
         return this.getLayer(HOVER_LAYER_ZLEVEL);
     }
 
-    private _paintList(list: Displayable[], paintAll: boolean, redrawId?: number) {
+    private _paintList(list: Displayable[], prevList: Displayable[], paintAll: boolean, redrawId?: number) {
         if (this._redrawId !== redrawId) {
             return;
         }
@@ -309,7 +319,7 @@ export default class CanvasPainter implements PainterBase {
 
         this._updateLayerStatus(list);
 
-        const {finished, needsRefreshHover} = this._doPaintList(list, paintAll);
+        const {finished, needsRefreshHover} = this._doPaintList(list, prevList, paintAll);
 
         if (this._needsManuallyCompositing) {
             this._compositeManually();
@@ -322,7 +332,12 @@ export default class CanvasPainter implements PainterBase {
         if (!finished) {
             const self = this;
             requestAnimationFrame(function () {
-                self._paintList(list, paintAll, redrawId);
+                self._paintList(list, prevList, paintAll, redrawId);
+            });
+        }
+        else {
+            this.eachLayer(layer => {
+                layer.afterBrush && layer.afterBrush();
             });
         }
     }
@@ -340,11 +355,16 @@ export default class CanvasPainter implements PainterBase {
         });
     }
 
-    private _doPaintList(list: Displayable[], paintAll?: boolean): {
+    private _doPaintList(
+        list: Displayable[],
+        prevList: Displayable[],
+        paintAll?: boolean
+    ): {
         finished: boolean
         needsRefreshHover: boolean
     } {
         const layerList = [];
+        const useDirtyRect = this._opts.useDirtyRect;
         for (let zi = 0; zi < this._zlevelList.length; zi++) {
             const zlevel = this._zlevelList[zi];
             const layer = this._layers[zlevel];
@@ -364,13 +384,9 @@ export default class CanvasPainter implements PainterBase {
         for (let k = 0; k < layerList.length; k++) {
             const layer = layerList[k];
             const ctx = layer.ctx;
-            const scope: BrushScope = {
-                inHover: false,
-                allClipped: false,
-                prevEl: null,
-                viewWidth: this._width,
-                viewHeight: this._height
-            };
+
+            const repaintRects = useDirtyRect
+                && layer.createRepaintRects(list, prevList, this._width, this._height);
 
             ctx.save();
 
@@ -383,12 +399,12 @@ export default class CanvasPainter implements PainterBase {
                 ? this._backgroundColor : null;
             // All elements in this layer are cleared.
             if (layer.__startIndex === layer.__endIndex) {
-                layer.clear(false, clearColor);
+                layer.clear(false, clearColor, repaintRects);
             }
             else if (start === layer.__startIndex) {
                 const firstEl = list[start];
                 if (!firstEl.incremental || !(firstEl as IncrementalDisplayable).notClear || paintAll) {
-                    layer.clear(false, clearColor);
+                    layer.clear(false, clearColor, repaintRects);
                 }
             }
             if (start === -1) {
@@ -396,24 +412,72 @@ export default class CanvasPainter implements PainterBase {
                 start = layer.__startIndex;
             }
             let i: number;
-            for (i = start; i < layer.__endIndex; i++) {
-                const el = list[i];
+            const repaint = (repaintRect?: BoundingRect) => {
+                const scope: BrushScope = {
+                    inHover: false,
+                    allClipped: false,
+                    prevEl: null,
+                    viewWidth: this._width,
+                    viewHeight: this._height
+                };
 
-                if (el.__inHover) {
-                    needsRefreshHover = true;
-                }
+                for (i = start; i < layer.__endIndex; i++) {
+                    const el = list[i];
 
-                brush(ctx, el, scope, i === layer.__endIndex - 1);
+                    if (el.__inHover) {
+                        needsRefreshHover = true;
+                    }
 
-                if (useTimer) {
-                    // Date.now can be executed in 13,025,305 ops/second.
-                    const dTime = Date.now() - startTime;
-                    // Give 15 millisecond to draw.
-                    // The rest elements will be drawn in the next frame.
-                    if (dTime > 15) {
-                        break;
+                    this._doPaintEl(el, layer, useDirtyRect, repaintRect, scope, i === layer.__endIndex - 1);
+
+                    if (useTimer) {
+                        // Date.now can be executed in 13,025,305 ops/second.
+                        const dTime = Date.now() - startTime;
+                        // Give 15 millisecond to draw.
+                        // The rest elements will be drawn in the next frame.
+                        if (dTime > 15) {
+                            break;
+                        }
                     }
                 }
+
+                if (scope.prevElClipPaths) {
+                    // Needs restore the state. If last drawn element is in the clipping area.
+                    ctx.restore();
+                }
+            };
+
+            if (repaintRects) {
+                if (repaintRects.length === 0) {
+                    // Nothing to repaint, mark as finished
+                    i = layer.__endIndex;
+                }
+                else {
+                    const dpr = this.dpr;
+                    // Set repaintRect as clipPath
+                    for (var r = 0; r < repaintRects.length; ++r) {
+                        const rect = repaintRects[r];
+
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.rect(
+                            rect.x * dpr,
+                            rect.y * dpr,
+                            rect.width * dpr,
+                            rect.height * dpr
+                        );
+                        ctx.clip();
+
+                        repaint(rect);
+                        ctx.restore();
+                    }
+                }
+            }
+            else {
+                // Paint all once
+                ctx.save();
+                repaint();
+                ctx.restore();
             }
 
             layer.__drawIndex = i;
@@ -421,13 +485,6 @@ export default class CanvasPainter implements PainterBase {
             if (layer.__drawIndex < layer.__endIndex) {
                 finished = false;
             }
-
-            if (scope.prevElClipPaths) {
-                // Needs restore the state. If last drawn element is in the clipping area.
-                ctx.restore();
-            }
-
-            ctx.restore();
         }
 
         if (env.wxa) {
@@ -443,6 +500,27 @@ export default class CanvasPainter implements PainterBase {
             finished,
             needsRefreshHover
         };
+    }
+
+    private _doPaintEl (
+        el: Displayable,
+        currentLayer: Layer,
+        useDirtyRect: boolean,
+        repaintRect: BoundingRect,
+        scope: BrushScope,
+        isLast: boolean
+    ) {
+        const ctx = currentLayer.ctx;
+        if (useDirtyRect) {
+            const paintRect = el.getPaintRect();
+            if (!repaintRect || paintRect && paintRect.intersect(repaintRect)) {
+                brush(ctx, el, scope, isLast);
+                el.setPrevPaintRect(paintRect);
+            }
+        }
+        else {
+            brush(ctx, el, scope, isLast);
+        }
     }
 
     /**
@@ -705,6 +783,10 @@ export default class CanvasPainter implements PainterBase {
 
     setBackgroundColor(backgroundColor: string | GradientObject | PatternObject) {
         this._backgroundColor = backgroundColor;
+
+        util.each(this._layers, layer => {
+            layer.setUnpainted();
+        });
     }
 
     /**

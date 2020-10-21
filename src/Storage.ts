@@ -52,9 +52,11 @@ export default class Storage {
     }
 
     /**
-     * 返回所有图形的绘制队列
-     * @param update 是否在返回前更新该数组
-     * @param includeIgnore 是否包含 ignore 的数组, 在 update 为 true 的时候有效
+     * get a list of elements to be rendered
+     *
+     * @param {boolean} update whether to update elements before return
+     * @param {DisplayParams} params options
+     * @return {Displayable[]} a list of elements
      */
     getDisplayList(update?: boolean, includeIgnore?: boolean): Displayable[] {
         includeIgnore = includeIgnore || false;
@@ -90,7 +92,6 @@ export default class Storage {
         clipPaths: Path[],
         includeIgnore?: boolean
     ) {
-
         if (el.ignore && !includeIgnore) {
             return;
         }
@@ -139,7 +140,7 @@ export default class Storage {
 
                 // Force to mark as dirty if group is dirty
                 if (el.__dirty) {
-                    child.markRedraw();
+                    child.__dirty |= Element.REDARAW_BIT;
                 }
 
                 this._updateAndAddDisplayable(child, clipPaths, includeIgnore);

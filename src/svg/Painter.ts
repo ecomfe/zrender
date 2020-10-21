@@ -414,8 +414,9 @@ class SVGPainter implements PainterBase {
     }
 
     clear() {
-        if (this._viewport) {
-            this.root.removeChild(this._viewport);
+        const viewportNode = this._viewport;
+        if (viewportNode && viewportNode.parentNode) {
+            viewportNode.parentNode.removeChild(viewportNode);
         }
     }
 

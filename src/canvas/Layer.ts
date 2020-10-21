@@ -5,9 +5,11 @@ import CanvasPainter from './Painter';
 import { GradientObject } from '../graphic/Gradient';
 import { ZRCanvasRenderingContext } from '../core/types';
 import Eventful from '../core/Eventful';
-import { ElementEventCallback } from '../Element';
+import Element, { ElementEventCallback } from '../Element';
 import { getCanvasGradient } from './helper';
 import { createCanvasPattern } from './graphic';
+import Displayable from '../graphic/Displayable';
+import BoundingRect from '../core/BoundingRect';
 
 function returnFalse() {
     return false;
@@ -85,15 +87,24 @@ export default class Layer extends Eventful {
 
     zlevel = 0
 
+    maxRepaintRectCount = 5
+
+    private _paintRects: BoundingRect[]
+
     __painter: CanvasPainter
 
     __dirty = true
+    __firstTimePaint = true
 
     __used = false
 
     __drawIndex = 0
     __startIndex = 0
     __endIndex = 0
+
+    // indices in the previous frame
+    __prevStartIndex: number = null
+    __prevEndIndex: number = null
 
     __builtin__: boolean
 
@@ -139,9 +150,18 @@ export default class Layer extends Eventful {
         return this.__endIndex - this.__startIndex;
     }
 
+    afterBrush() {
+        this.__prevStartIndex = this.__startIndex;
+        this.__prevEndIndex = this.__endIndex;
+    }
+
     initContext() {
         this.ctx = this.dom.getContext('2d');
         (this.ctx as ZRCanvasRenderingContext).dpr = this.dpr;
+    }
+
+    setUnpainted() {
+        this.__firstTimePaint = true;
     }
 
     createBackBuffer() {
@@ -153,6 +173,197 @@ export default class Layer extends Eventful {
         if (dpr !== 1) {
             this.ctxBack.scale(dpr, dpr);
         }
+    }
+
+    /**
+     * Create repaint list when using dirty rect rendering.
+     *
+     * @param displayList current rendering list
+     * @param prevList last frame rendering list
+     * @return repaint rects. null for the first frame, [] for no element dirty
+     */
+    createRepaintRects(
+        displayList: Displayable[],
+        prevList: Displayable[],
+        viewWidth: number,
+        viewHeight: number
+    ) {
+        if (this.__firstTimePaint) {
+            this.__firstTimePaint = false;
+            return null;
+        }
+
+        const mergedRepaintRects: BoundingRect[] = [];
+        const maxRepaintRectCount = this.maxRepaintRectCount;
+        let full = false;
+        const pendingRect = new BoundingRect(0, 0, 0, 0);
+
+        function addRectToMergePool(rect: BoundingRect) {
+            if (!rect.isFinite() || rect.isZero()) {
+                return;
+            }
+
+            if (mergedRepaintRects.length === 0) {
+                // First rect, create new merged rect
+                const boundingRect = new BoundingRect(0, 0, 0, 0);
+                boundingRect.copy(rect);
+                mergedRepaintRects.push(boundingRect);
+            }
+            else {
+                let isMerged = false;
+                let minDeltaArea = Infinity;
+                let bestRectToMergeIdx = 0;
+                for (let i = 0; i < mergedRepaintRects.length; ++i) {
+                    const mergedRect = mergedRepaintRects[i];
+
+                    // Merge if has intersection
+                    if (mergedRect.intersect(rect)) {
+                        const pendingRect = new BoundingRect(0, 0, 0, 0);
+                        pendingRect.copy(mergedRect);
+                        pendingRect.union(rect);
+                        mergedRepaintRects[i] = pendingRect;
+                        isMerged = true;
+                        break;
+                    }
+                    else if (full) {
+                        // Merged to exists rectangles if full
+                        pendingRect.copy(rect);
+                        pendingRect.union(mergedRect);
+                        const aArea = rect.width * rect.height;
+                        const bArea = mergedRect.width * mergedRect.height;
+                        const pendingArea = pendingRect.width * pendingRect.height;
+                        const deltaArea = pendingArea - aArea - bArea;
+                        if (deltaArea < minDeltaArea) {
+                            minDeltaArea = minDeltaArea;
+                            bestRectToMergeIdx = i;
+                        }
+                    }
+                }
+
+                if (full) {
+                    mergedRepaintRects[bestRectToMergeIdx].union(rect);
+                    isMerged = true;
+                }
+
+                if (!isMerged) {
+                    // Create new merged rect if cannot merge with current
+                    const boundingRect = new BoundingRect(0, 0, 0, 0);
+                    boundingRect.copy(rect);
+                    mergedRepaintRects.push(boundingRect);
+                }
+                if (!full) {
+                    full = mergedRepaintRects.length >= maxRepaintRectCount;
+                }
+            }
+        }
+
+        /**
+         * Loop the paint list of this frame and get the dirty rects of elements
+         * in this frame.
+         */
+        for (let i = this.__startIndex; i < this.__endIndex; ++i) {
+            const el = displayList[i];
+            if (el) {
+                /**
+                 * `shouldPaint` is true only when the element is not ignored or
+                 * invisible and all its ancestors are not ignored.
+                 * `shouldPaint` being true means it will be brushed this frame.
+                 *
+                 * `__isRendered` being true means the element is currently on
+                 * the canvas.
+                 *
+                 * `__dirty` being true means the element should be brushed this
+                 * frame.
+                 *
+                 * We only need to repaint the element's previous painting rect
+                 * if it's currently on the canvas and needs repaint this frame
+                 * or not painted this frame.
+                 */
+                const shouldPaint = el.shouldBePainted(viewWidth, viewHeight, true, true);
+                const prevRect = el.__isRendered && ((el.__dirty & Element.REDARAW_BIT) || !shouldPaint)
+                    ? el.getPrevPaintRect()
+                    : null;
+                if (prevRect) {
+                    addRectToMergePool(prevRect);
+                }
+
+                /**
+                 * On the other hand, we only need to paint the current rect
+                 * if the element should be brushed this frame and either being
+                 * dirty or not rendered before.
+                 */
+                const curRect = shouldPaint && ((el.__dirty & Element.REDARAW_BIT) || !el.__isRendered)
+                    ? el.getPaintRect()
+                    : null;
+                if (curRect) {
+                    addRectToMergePool(curRect);
+                }
+            }
+        }
+
+        /**
+         * The above loop calculates the dirty rects of elements that are in the
+         * paint list this frame, which does not include those elements removed
+         * in this frame. So we loop the `prevList` to get the removed elements.
+         */
+        for (let i = this.__prevStartIndex; i < this.__prevEndIndex; ++i) {
+            const el = prevList[i];
+            /**
+             * Consider the elements whose ancestors are invisible, they should
+             * not be painted and their previous painting rects should be
+             * cleared if they are rendered on the canvas (`__isRendered` being
+             * true). `!shouldPaint` means the element is not brushed in this
+             * frame.
+             *
+             * `!el.__zr` means it's removed from the storage.
+             *
+             * In conclusion, an element needs to repaint the previous painting
+             * rect if and only if it's not painted this frame and was
+             * previously painted on the canvas.
+             */
+            const shouldPaint = el.shouldBePainted(viewWidth, viewHeight, true, true);
+            if (el && (!shouldPaint || !el.__zr) && el.__isRendered) {
+                // el was removed
+                const prevRect = el.getPrevPaintRect();
+                if (prevRect) {
+                    addRectToMergePool(prevRect);
+                }
+            }
+        }
+
+        // Merge intersected rects in the result
+        let hasIntersections;
+        do {
+            hasIntersections = false;
+            for (let i = 0; i < mergedRepaintRects.length;) {
+                if (mergedRepaintRects[i].isZero()) {
+                    mergedRepaintRects.splice(i, 1);
+                    continue;
+                }
+                for (let j = i + 1; j < mergedRepaintRects.length;) {
+                    if (mergedRepaintRects[i].intersect(mergedRepaintRects[j])) {
+                        hasIntersections = true;
+                        mergedRepaintRects[i].union(mergedRepaintRects[j]);
+                        mergedRepaintRects.splice(j, 1);
+                    }
+                    else {
+                        j++;
+                    }
+                }
+                i++;
+            }
+        } while (hasIntersections)
+
+        this._paintRects = mergedRepaintRects;
+
+        return mergedRepaintRects;
+    }
+
+    /**
+     * Get paint rects for debug usage.
+     */
+    debugGetPaintRects() {
+        return (this._paintRects || []).slice();
     }
 
     resize(width: number, height: number) {
@@ -183,7 +394,11 @@ export default class Layer extends Eventful {
     /**
      * 清空该层画布
      */
-    clear(clearAll?: boolean, clearColor?: string | GradientObject | PatternObject) {
+    clear(
+        clearAll?: boolean,
+        clearColor?: string | GradientObject | PatternObject,
+        repaintRects?: BoundingRect[]
+    ) {
         const dom = this.dom;
         const ctx = this.ctx;
         const width = dom.width;
@@ -209,45 +424,65 @@ export default class Layer extends Eventful {
             );
         }
 
-        ctx.clearRect(0, 0, width, height);
-        if (clearColor && clearColor !== 'transparent') {
-            let clearColorGradientOrPattern;
-            // Gradient
-            if (util.isGradientObject(clearColor)) {
-                // Cache canvas gradient
-                clearColorGradientOrPattern = clearColor.__canvasGradient
-                    || getCanvasGradient(ctx, clearColor, {
-                        x: 0,
-                        y: 0,
-                        width: width,
-                        height: height
-                    });
+        const domBack = this.domBack;
 
-                clearColor.__canvasGradient = clearColorGradientOrPattern;
-            }
-            // Pattern
-            else if (util.isPatternObject(clearColor)) {
-                clearColorGradientOrPattern = createCanvasPattern(
-                    ctx, clearColor, {
-                        dirty: function () {
-                            // TODO
-                            self.__painter.refresh();
+        function doClear(x: number, y: number, width: number, height: number) {
+            ctx.clearRect(x, y, width, height);
+            if (clearColor && clearColor !== 'transparent') {
+                let clearColorGradientOrPattern;
+                // Gradient
+                if (util.isGradientObject(clearColor)) {
+                    // Cache canvas gradient
+                    clearColorGradientOrPattern = clearColor.__canvasGradient
+                        || getCanvasGradient(ctx, clearColor, {
+                            x: 0,
+                            y: 0,
+                            width: width,
+                            height: height
+                        });
+
+                    clearColor.__canvasGradient = clearColorGradientOrPattern;
+                }
+                // Pattern
+                else if (util.isPatternObject(clearColor)) {
+                    clearColorGradientOrPattern = createCanvasPattern(
+                        ctx, clearColor, {
+                            dirty() {
+                                // TODO
+                                self.setUnpainted();
+                                self.__painter.refresh();
+                            }
                         }
-                    }
-                );
+                    );
+                }
+                ctx.save();
+                ctx.fillStyle = clearColorGradientOrPattern || (clearColor as string);
+                ctx.fillRect(x, y, width, height);
+                ctx.restore();
             }
-            ctx.save();
-            ctx.fillStyle = clearColorGradientOrPattern || (clearColor as string);
-            ctx.fillRect(0, 0, width, height);
-            ctx.restore();
-        }
 
-        if (haveMotionBLur) {
-            const domBack = this.domBack;
-            ctx.save();
-            ctx.globalAlpha = lastFrameAlpha;
-            ctx.drawImage(domBack, 0, 0, width, height);
-            ctx.restore();
+            if (haveMotionBLur) {
+                ctx.save();
+                ctx.globalAlpha = lastFrameAlpha;
+                ctx.drawImage(domBack, x, y, width, height);
+                ctx.restore();
+            }
+        };
+
+        if (!repaintRects || haveMotionBLur) {
+            // Clear the full canvas
+            doClear(0, 0, width, height);
+        }
+        else if (repaintRects.length) {
+            // Clear the repaint areas
+            util.each(repaintRects, rect => {
+                doClear(
+                    rect.x * dpr,
+                    rect.y * dpr,
+                    rect.width * dpr,
+                    rect.height * dpr
+                );
+            });
         }
     }
 
@@ -256,7 +491,6 @@ export default class Layer extends Eventful {
 
     // Interface of renderToCanvas in getRenderedCanvas
     renderToCanvas: (ctx: CanvasRenderingContext2D) => void
-
 
     // Events
     onclick: ElementEventCallback<unknown, this>

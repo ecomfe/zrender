@@ -318,7 +318,6 @@ class ZRText extends Displayable<TextProps> {
         }
     }
 
-
     getComputedTransform() {
         if (this.__hostTarget) {
             // Update host target transform

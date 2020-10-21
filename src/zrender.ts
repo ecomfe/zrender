@@ -118,6 +118,11 @@ class ZRender {
         if (!painterCtors[rendererType]) {
             throw new Error(`Renderer '${rendererType}' is not imported. Please import it first.`);
         }
+
+        opts.useDirtyRect = opts.useDirtyRect == null
+            ? false
+            : opts.useDirtyRect;
+
         const painter = new painterCtors[rendererType](dom, storage, opts, id);
 
         this.storage = storage;
@@ -242,19 +247,23 @@ class ZRender {
     private _flush(fromInside?: boolean) {
         let triggerRendered;
 
+        const start = new Date().getTime();
         if (this._needsRefresh) {
             triggerRendered = true;
-            this.refreshImmediately(true);
+            this.refreshImmediately(fromInside);
         }
 
         if (this._needsRefreshHover) {
             triggerRendered = true;
             this.refreshHoverImmediately();
         }
+        const end = new Date().getTime();
 
         if (triggerRendered) {
             this._stillFrameAccum = 0;
-            this.trigger('rendered');
+            this.trigger('rendered', {
+                elapsedTime: end - start
+            });
         }
         else if (this._sleepAfterStill > 0) {
             this._stillFrameAccum++;
@@ -466,6 +475,7 @@ export interface ZRenderInitOpt {
     devicePixelRatio?: number
     width?: number | string // 10, 10px, 'auto'
     height?: number | string
+    useDirtyRect?: boolean
 }
 
 /**

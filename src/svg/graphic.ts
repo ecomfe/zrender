@@ -31,6 +31,9 @@ const EPSILON = 1e-4;
 
 type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;
 
+function round3(val: number) {
+    return mathRound(val * 1e3) / 1e3;
+}
 function round4(val: number) {
     return mathRound(val * 1e4) / 1e4;
 }
@@ -49,20 +52,17 @@ function pathHasStroke(style: AllStyleOption): style is PathStyleProps {
     return stroke != null && stroke !== NONE;
 }
 
-function reduceNumberString(n: number, precision: number) {
-    // Avoid large string of matrix
-    // PENDING If have precision issue when scaled
-    return n > 1 ? +n.toFixed(precision) : +n.toPrecision(precision);
-}
 function setTransform(svgEl: SVGElement, m: matrix.MatrixArray) {
     if (m) {
         attr(svgEl, 'transform', 'matrix('
-            + reduceNumberString(m[0], 3) + ','
-            + reduceNumberString(m[1], 3) + ','
-            + reduceNumberString(m[2], 3) + ','
-            + reduceNumberString(m[3], 3) + ','
-            + reduceNumberString(m[4], 4) + ','
-            + reduceNumberString(m[5], 4)
+            // Avoid large string of matrix
+            // PENDING If have precision issue when scaled
+            + round3(m[0]) + ','
+            + round3(m[1]) + ','
+            + round3(m[2]) + ','
+            + round3(m[3]) + ','
+            + round4(m[4]) + ','
+            + round4(m[5])
          + ')');
     }
 }
@@ -76,6 +76,10 @@ function attr(el: SVGElement, key: string, val: string) {
 
 function attrXLink(el: SVGElement, key: string, val: string) {
     el.setAttributeNS('http://www.w3.org/1999/xlink', key, val);
+}
+
+function attrXML(el: SVGElement, key: string, val: string) {
+    el.setAttributeNS('http://www.w3.org/XML/1998/namespace', key, val);
 }
 
 function bindStyle(svgEl: SVGElement, style: PathStyleProps, el?: Path): void
@@ -275,8 +279,6 @@ const svgPath: SVGProxy<Path> = {
         }
         const path = el.path;
 
-        // wrapSVGBuildPath(el as PathWithSVGBuildPath);
-
         if (el.shapeChanged()) {
             path.beginPath();
             el.buildPath(path, el.shape);
@@ -378,13 +380,14 @@ const svgText: SVGProxy<TSpan> = {
         let text = style.text;
         // Convert to string
         text != null && (text += '');
-        if (!text) {
+        if (!text || isNaN(style.x) || isNaN(style.y)) {
             return;
         }
 
         let textSvgEl = el.__svgEl as SVGTextElement;
         if (!textSvgEl) {
             textSvgEl = createElement('text') as SVGTextElement;
+            attrXML(textSvgEl, 'xml:space', 'preserve');
             el.__svgEl = textSvgEl;
         }
 
@@ -405,7 +408,8 @@ const svgText: SVGProxy<TSpan> = {
         const y = adjustTextY(style.y || 0, getLineHeight(font), style.textBaseline);
         const textAlign = TEXT_ALIGN_TO_ANCHOR[style.textAlign as keyof typeof TEXT_ALIGN_TO_ANCHOR]
             || style.textAlign;
-        attr(textSvgEl, 'dominant-baseline', 'middle');
+
+        attr(textSvgEl, 'dominant-baseline', 'central');
         attr(textSvgEl, 'text-anchor', textAlign);
         attr(textSvgEl, 'x', x + '');
         attr(textSvgEl, 'y', y + '');

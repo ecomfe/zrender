@@ -295,7 +295,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         }
         this._rect = rect;
 
-        if (this.hasStroke()) {
+        if (this.hasStroke() && this.path && this.path.len() > 0) {
             // Needs update rect with stroke lineWidth when
             // 1. Element changes scale or lineWidth
             // 2. Shape is changed
