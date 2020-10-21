@@ -32,6 +32,14 @@ export interface CombineSeparateConfig extends ElementAnimateConfig {
     dividingMethod?: MorphDividingMethod;
 }
 
+export interface CombineSeparateResult {
+    // The length of `fromIndividuals`, `toIndividuals`
+    // are the same as `count`.
+    fromIndividuals: Path[];
+    toIndividuals: Path[];
+    count: number;
+}
+
 function aroundEqual(a: number, b: number) {
     return Math.abs(a - b) < 1e-5;
 }
@@ -709,13 +717,10 @@ export function isInAnyMorphing(path: Path): boolean {
 export function combine(
     fromPathList: Path[],
     toPath: Path,
-    animationOpts: CombineSeparateConfig
-): {
-    // The length of `fromIndividuals` and `toIndividuals` are the same as `count`.
-    fromIndividuals: Path[];
-    toIndividuals: Path[];
-    count: number;
-} {
+    animationOpts: CombineSeparateConfig,
+    copyPropsWhenDivided?: (srcPath: Path, tarPath: Path, needClone: boolean) => void
+): CombineSeparateResult {
+
     const fromIndividuals: Path[] = [];
     let separateCount = 0;
     for (let i = 0; i < fromPathList.length; i++) {
@@ -773,14 +778,14 @@ export function combine(
     for (let i = 0; i < separateCount; i++) {
         const from = fromIndividuals[i];
         const to = toPathSplittedList[i];
-        sharePropsToPath(toPath, to, true);
+        copyPropsWhenDivided && copyPropsWhenDivided(toPath, to, true);
         morphPath(from, to, morphAnimationOpts);
     }
 
     becomeCombiningPath(toPath, toPathSplittedList);
 
     return {
-        fromIndividuals,
+        fromIndividuals: fromIndividuals,
         toIndividuals: toPathSplittedList,
         count: separateCount
     };
@@ -882,11 +887,13 @@ function combiningChildrenRef(this: CombiningPath): Path[] {
 export function separate(
     fromPath: Path,
     toPathList: Path[],
-    animationOpts: CombineSeparateConfig
-): void {
+    animationOpts: CombineSeparateConfig,
+    copyPropsWhenDivided?: (srcPath: Path, tarPath: Path, needClone: boolean) => void
+): CombineSeparateResult {
     const toPathListLen = toPathList.length;
     let fromPathList: Path[];
     const dividingMethod = animationOpts ? animationOpts.dividingMethod : null;
+    let copyProps = false;
 
     // This case most happen when a combining path is called to reverse the animation
     // to its original separated state.
@@ -899,17 +906,27 @@ export function separate(
         // At present we do not make "continuous" animation for this case. It's might bring complicated logic.
         else {
             fromPathList = divideShape(fromPath, toPathListLen, dividingMethod);
+            copyProps = true;
         }
     }
     else {
         fromPathList = divideShape(fromPath, toPathListLen, dividingMethod);
+        copyProps = true;
     }
 
     assert(fromPathList.length === toPathListLen);
     for (let i = 0; i < toPathListLen; i++) {
-        sharePropsToPath(fromPath, fromPathList[i], false);
+        if (copyProps && copyPropsWhenDivided) {
+            copyPropsWhenDivided(fromPath, fromPathList[i], false);
+        }
         morphPath(fromPathList[i], toPathList[i], animationOpts);
     }
+
+    return {
+        fromIndividuals: fromPathList,
+        toIndividuals: toPathList,
+        count: toPathListLen
+    };
 }
 
 
@@ -1028,22 +1045,4 @@ function normalizeRadian(start: number, end: number, clockwise: boolean): number
     return end + PI2 * (
         Math[clockwise ? 'ceil' : 'floor']((start - end) / PI2)
     );
-}
-
-function sharePropsToPath(srcPath: Path, tarPath: Path, willClone: boolean): void {
-    tarPath.x = srcPath.x;
-    tarPath.y = srcPath.y;
-    tarPath.scaleX = srcPath.scaleX;
-    tarPath.scaleY = srcPath.scaleY;
-    tarPath.originX = srcPath.originX;
-    tarPath.originY = srcPath.originY;
-
-    // If just carry the style, will not be modifed, so do not copy.
-    tarPath.style = willClone
-        ? clone(srcPath.style)
-        : srcPath.style;
-
-    tarPath.zlevel = srcPath.zlevel;
-    tarPath.z = srcPath.z;
-    tarPath.z2 = srcPath.z2;
 }
