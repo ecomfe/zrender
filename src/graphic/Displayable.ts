@@ -506,7 +506,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
                 this._transitionState(stateName, {
                     style: targetStyle
-                } as Props, animationCfg, this._getAnimationStyleProps() as MapToType<Props, boolean>);
+                } as Props, animationCfg, this.getAnimationStyleProps() as MapToType<Props, boolean>);
             }
             else {
                 this.useStyle(targetStyle);
@@ -552,7 +552,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         return targetStyle;
     }
 
-    protected _getAnimationStyleProps() {
+    getAnimationStyleProps() {
         return DEFAULT_COMMON_ANIMATION_PROPS;
     }
 

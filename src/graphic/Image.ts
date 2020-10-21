@@ -127,7 +127,7 @@ class ZRImage extends Displayable<ImageProps> {
         }
     }
 
-    protected _getAnimationStyleProps() {
+    getAnimationStyleProps() {
         return DEFAULT_IMAGE_ANIMATION_PROPS;
     }
 

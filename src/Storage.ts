@@ -131,7 +131,7 @@ export default class Storage {
             }
         }
 
-        // ZRText and Group may use children
+        // ZRText and Group and combining morphing Path may use children
         if ((el as Group).childrenRef) {
             const children = (el as Group).childrenRef();
 
