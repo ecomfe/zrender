@@ -32,7 +32,7 @@ export function findExistImage(newImageOrSrc: string | ImageLike): ImageLike {
  * @param newImageOrSrc
  * @param image Existent image.
  * @param hostEl For calling `dirty`.
- * @param cb params: (image, cbPayload)
+ * @param onload params: (image, cbPayload)
  * @param cbPayload Payload on cb calling.
  * @return image
  */
@@ -40,7 +40,7 @@ export function createOrUpdateImage<T>(
     newImageOrSrc: string | ImageLike,
     image: ImageLike,
     hostEl: { dirty: () => void },
-    cb?: (image: ImageLike, payload: T) => void,
+    onload?: (image: ImageLike, payload: T) => void,
     cbPayload?: T
 ) {
     if (!newImageOrSrc) {
@@ -57,7 +57,7 @@ export function createOrUpdateImage<T>(
         // is different, this method is responsible for load.
         const cachedImgObj = globalImageCache.get(newImageOrSrc);
 
-        const pendingWrap = {hostEl: hostEl, cb: cb, cbPayload: cbPayload};
+        const pendingWrap = {hostEl: hostEl, cb: onload, cbPayload: cbPayload};
 
         if (cachedImgObj) {
             image = cachedImgObj.image;

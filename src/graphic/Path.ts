@@ -124,7 +124,7 @@ export type PathState = Pick<PathProps, PathStatePropNames> & {
 
 const pathCopyParams = [
     'x', 'y', 'rotation', 'scaleX', 'scaleY', 'originX', 'originY', 'invisible',
-    'culling', 'z', 'z2', 'zlevel'
+    'culling', 'z', 'z2', 'zlevel', 'parent'
 ] as const;
 
 class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
@@ -174,8 +174,12 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
             }
 
             decalEl.silent = true;
+
+            decalEl.setStyle(style);
             decalEl.style.fill = style.fill ? style.decal : null;
-            decalEl.style.stroke = style.stroke ? style.stroke : null;
+            decalEl.style.decal = null;
+            decalEl.style.shadowColor = null;
+            style.strokeFirst && (decalEl.style.stroke = null);
 
             for (let i = 0; i < pathCopyParams.length; ++i) {
                 (decalEl as any)[pathCopyParams[i]] = this[pathCopyParams[i]];

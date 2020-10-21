@@ -8,6 +8,8 @@ import * as zrUtil from '../../core/util';
 import Displayable from '../../graphic/Displayable';
 import {PatternObject} from '../../graphic/Pattern';
 import LRU from '../../core/LRU';
+import {createOrUpdateImage} from '../../graphic/helper/image';
+import {ImageLike} from '../../core/types';
 
 function isPattern(value: PatternObject): value is PatternObject {
     return value && !!value.image;
@@ -152,11 +154,6 @@ export default class PatternManager extends Definable {
                 imageSrc = pattern.image.toDataURL();
             }
 
-            if (imageSrc === img.getAttribute('href')) {
-                // The same as old pattern image
-                return;
-            }
-
             if (imageSrc) {
                 const x = pattern.x || 0;
                 const y = pattern.y || 0;
@@ -170,14 +167,19 @@ export default class PatternManager extends Definable {
                 img.setAttribute('x', '0');
                 img.setAttribute('y', '0');
 
-                getPatternSize(pattern, (width, height) => {
-                    const w = width + '';
-                    const h = height + '';
-                    img.setAttribute('width', w);
-                    img.setAttribute('height', h);
-                    patternDom.setAttribute('width', w);
-                    patternDom.setAttribute('height', h);
+                // No need to re-render so dirty is empty
+                const hostEl = {
+                    dirty: () => {}
+                };
+                const createdImage = createOrUpdateImage(imageSrc, img as any, hostEl, img => {
+                    patternDom.setAttribute('width', img.width + '');
+                    patternDom.setAttribute('height', img.height + '');
                 });
+                if (createdImage && createdImage.width && createdImage.height) {
+                    // Loaded before
+                    patternDom.setAttribute('width', createdImage.width + '');
+                    patternDom.setAttribute('height', createdImage.height + '');
+                }
 
                 patternDom.appendChild(img);
                 patternDomMap.set(pattern, patternDom);
