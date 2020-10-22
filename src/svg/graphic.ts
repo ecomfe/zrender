@@ -3,7 +3,7 @@
 // 2. Image: sx, sy, sw, sh
 
 import {createElement} from './core';
-import PathProxy, { PathRebuilder } from '../core/PathProxy';
+import { PathRebuilder } from '../core/PathProxy';
 import * as matrix from '../core/matrix';
 import { Path } from '../export';
 import { PathStyleProps } from '../graphic/Path';
@@ -16,8 +16,6 @@ import { normalizeLineDash } from '../graphic/helper/dashStyle';
 export interface SVGProxy<T> {
     brush(el: T): void
 }
-
-const CMD = PathProxy.CMD;
 
 const NONE = 'none';
 const mathRound = Math.round;

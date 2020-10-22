@@ -199,6 +199,16 @@ class SVGPainter implements PainterBase {
         this._backgroundNode = bgNode;
     }
 
+    createSVGElement(tag: string): SVGElement {
+        return createElement(tag);
+    }
+
+    paintOne(el: Displayable): SVGElement {
+        const svgProxy = getSvgProxy(el);
+        svgProxy && (svgProxy as SVGProxy<Displayable>).brush(el);
+        return getSvgElement(el);
+    }
+
     _paintList(list: Displayable[]) {
         const gradientManager = this._gradientManager;
         const patternManager = this._patternManager;

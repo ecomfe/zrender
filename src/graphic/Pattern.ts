@@ -8,6 +8,14 @@ export interface PatternObject {
     type: 'pattern'
 
     image: ImageLike | string
+    /**
+     * svg element can only be used in svg renderer currently.
+     * svgWidth, svgHeight defines width and height used for pattern.
+     */
+    svgElement: SVGElement
+    svgWidth: number
+    svgHeight: number
+
     repeat: CanvasPatternRepeat
 
     x?: number
@@ -25,6 +33,11 @@ class Pattern {
     type: 'pattern'
 
     image: ImageLike | string
+    /**
+     * svg element can only be used in svg renderer currently.
+     */
+    svgElement: SVGElement
+
     repeat: CanvasPatternRepeat
 
     x: number
