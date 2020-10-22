@@ -240,7 +240,7 @@ class SVGPainter implements PainterBase {
 
         const diff = arrayDiff(visibleList, newVisibleList);
         let prevSvgElement;
-        let storedPrevSvgElement;
+        let topPrevSvgElement;
 
         // NOTE: First do remove, in case element moved to the head and do remove
         // after add
@@ -269,15 +269,15 @@ class SVGPainter implements PainterBase {
                 // Update clipPath
                 const clipGroup = clipPathManager.update(displayable, prevDisplayable);
                 if (clipGroup !== currentClipGroup) {
+                    // First pop to top level.
+                    prevSvgElement = topPrevSvgElement;
                     if (clipGroup) {
+                        // Enter second level of clipping group.
                         prevSvgElement ? insertAfter(svgRoot, clipGroup, prevSvgElement)
                             : prepend(svgRoot, clipGroup);
-                        storedPrevSvgElement = clipGroup;
+                        topPrevSvgElement = clipGroup;
+                        // Reset prevSvgElement in second level.
                         prevSvgElement = null;
-                    }
-                    else {
-                        // Pop to top level
-                        prevSvgElement = storedPrevSvgElement;
                     }
                     currentClipGroup = clipGroup;
                 }
@@ -291,7 +291,7 @@ class SVGPainter implements PainterBase {
 
                 prevSvgElement = svgElement || prevSvgElement;
                 if (!currentClipGroup) {
-                    storedPrevSvgElement = prevSvgElement;
+                    topPrevSvgElement = prevSvgElement;
                 }
 
                 gradientManager.markUsed(displayable);
