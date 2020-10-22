@@ -235,7 +235,10 @@ class SVGPathRebuilder implements PathRebuilder {
         this._add('L', x, y);
     }
     closePath() {
-        this._add('Z');
+        // Not use Z as first command
+        if (this._d.length > 0) {
+            this._add('Z');
+        }
     }
 
     _add(cmd: string, a?: number, b?: number, c?: number, d?: number, e?: number, f?: number, g?: number, h?: number) {
