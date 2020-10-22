@@ -156,7 +156,7 @@ export default class PatternManager extends Definable {
             if (imageSrc) {
                 const x = pattern.x || 0;
                 const y = pattern.y || 0;
-                const rotation = pattern.rotation / Math.PI * 180;
+                const rotation = (pattern.rotation || 0) / Math.PI * 180;
                 const scaleX = pattern.scaleX || 1;
                 const scaleY = pattern.scaleY || 1;
                 const transform = `translate(${x}, ${y}) rotate(${rotation}) scale(${scaleX}, ${scaleY})`;
