@@ -3,13 +3,21 @@ import { ImageLike } from '../core/types';
 type CanvasPatternRepeat = 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat'
 
 export interface PatternObject {
+    id?: number
+
     type: 'pattern'
 
     image: ImageLike | string
     repeat: CanvasPatternRepeat
 
+    x?: number
+    y?: number
+    rotation?: number
+    scaleX?: number
+    scaleY?: number
+
     // Cached image. Which is created in the canvas painter.
-    __image: ImageLike
+    __image?: ImageLike
 }
 
 class Pattern {
@@ -19,11 +27,23 @@ class Pattern {
     image: ImageLike | string
     repeat: CanvasPatternRepeat
 
+    x: number
+    y: number
+    rotation: number
+    scaleX: number
+    scaleY: number
+
     constructor(image: ImageLike | string, repeat: CanvasPatternRepeat) {
         // Should do nothing more in this constructor. Because gradient can be
         // declard by `color: {image: ...}`, where this constructor will not be called.
         this.image = image;
         this.repeat = repeat;
+
+        this.x = 0;
+        this.y = 0;
+        this.rotation = 0;
+        this.scaleX = 1;
+        this.scaleY = 1;
     }
 }
 

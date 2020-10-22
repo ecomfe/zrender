@@ -18,7 +18,6 @@ import { map } from '../core/util';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
 import Element from '../Element';
 
-
 const pathProxyForDraw = new PathProxy(true);
 
 // Not use el#hasStroke because style may be different.
@@ -65,7 +64,15 @@ export function createCanvasPattern(
 ): CanvasPattern {
     const image = createOrUpdateImage(pattern.image, pattern.__image, el);
     if (isImageReady(image)) {
-        return ctx.createPattern(image, pattern.repeat || 'repeat');
+        const canvasPattern = ctx.createPattern(image, pattern.repeat || 'repeat');
+        if (typeof DOMMatrix === 'function') {
+            const matrix = new DOMMatrix();
+            matrix.rotateSelf(0, 0, (pattern.rotation || 0) / Math.PI * 180);
+            matrix.scaleSelf((pattern.scaleX || 1), (pattern.scaleY || 1));
+            matrix.translateSelf((pattern.x || 0), (pattern.y || 0));
+            canvasPattern.setTransform(matrix);
+        }
+        return canvasPattern;
     }
 }
 

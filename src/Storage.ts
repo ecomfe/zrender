@@ -177,6 +177,12 @@ export default class Storage {
             this._displayList[this._displayListLen++] = disp;
         }
 
+        // Add decal
+        const decalEl = (el as Path).getDecalElement && (el as Path).getDecalElement();
+        if (decalEl) {
+            this._updateAndAddDisplayable(decalEl, clipPaths, includeIgnore);
+        }
+
         // Add attached text element and guide line.
         const textGuide = el.getTextGuideLine();
         if (textGuide) {

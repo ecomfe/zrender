@@ -10,7 +10,8 @@ import ZRImage from '../graphic/Image';
 import TSpan from '../graphic/TSpan';
 import arrayDiff from '../core/arrayDiff';
 import GradientManager from './helper/GradientManager';
-import ClippathManager, { hasClipPath } from './helper/ClippathManager';
+import PatternManager from './helper/PatternManager';
+import ClippathManager, {hasClipPath} from './helper/ClippathManager';
 import ShadowManager from './helper/ShadowManager';
 import {
     path as svgPath,
@@ -22,7 +23,7 @@ import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
 import { GradientObject } from '../graphic/Gradient';
 import { PainterBase } from '../PainterBase';
-import { isClipPathChanged } from '../canvas/helper';
+import {PatternObject} from '../graphic/Pattern';
 
 function parseInt10(val: string) {
     return parseInt(val, 10);
@@ -99,6 +100,7 @@ class SVGPainter implements PainterBase {
     private _backgroundNode: SVGRectElement
 
     private _gradientManager: GradientManager
+    private _patternManager: PatternManager
     private _clipPathManager: ClippathManager
     private _shadowManager: ShadowManager
 
@@ -125,6 +127,7 @@ class SVGPainter implements PainterBase {
         svgDom.appendChild(svgRoot);
 
         this._gradientManager = new GradientManager(zrId, svgRoot);
+        this._patternManager = new PatternManager(zrId, svgRoot);
         this._clipPathManager = new ClippathManager(zrId, svgRoot);
         this._shadowManager = new ShadowManager(zrId, svgRoot);
 
@@ -198,10 +201,12 @@ class SVGPainter implements PainterBase {
 
     _paintList(list: Displayable[]) {
         const gradientManager = this._gradientManager;
+        const patternManager = this._patternManager;
         const clipPathManager = this._clipPathManager;
         const shadowManager = this._shadowManager;
 
         gradientManager.markAllUnused();
+        patternManager.markAllUnused();
         clipPathManager.markAllUnused();
         shadowManager.markAllUnused();
 
@@ -224,6 +229,8 @@ class SVGPainter implements PainterBase {
                     if (displayable.style) {
                         gradientManager.update(displayable.style.fill as GradientObject);
                         gradientManager.update(displayable.style.stroke as GradientObject);
+                        patternManager.update(displayable.style.fill as PatternObject);
+                        patternManager.update(displayable.style.stroke as PatternObject);
                         shadowManager.update(svgElement, displayable);
                     }
 
@@ -297,6 +304,9 @@ class SVGPainter implements PainterBase {
                 gradientManager.markUsed(displayable);
                 gradientManager.addWithoutUpdate(svgElement, displayable);
 
+                patternManager.markUsed(displayable);
+                patternManager.addWithoutUpdate(svgElement, displayable);
+
                 shadowManager.markUsed(displayable);
                 shadowManager.addWithoutUpdate(svgElement, displayable);
 
@@ -307,6 +317,7 @@ class SVGPainter implements PainterBase {
         }
 
         gradientManager.removeUnused();
+        patternManager.removeUnused();
         clipPathManager.removeUnused();
         shadowManager.removeUnused();
 

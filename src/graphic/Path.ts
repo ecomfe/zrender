@@ -7,7 +7,7 @@ import Displayable, { DisplayableProps,
 import Element, { ElementAnimateConfig } from '../Element';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
-import { PatternObject } from './Pattern';
+import Pattern, { PatternObject } from './Pattern';
 import { Dictionary, PropType, MapToType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
@@ -21,6 +21,8 @@ import { DARK_LABEL_COLOR, LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, LIGHTER_LABEL
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
     stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
+    decal?: Pattern
+
     /**
      * Still experimental, not works weel on arc with edge cases(large angle).
      */
@@ -121,6 +123,11 @@ export type PathState = Pick<PathProps, PathStatePropNames> & {
     hoverLayer?: boolean
 }
 
+const pathCopyParams = [
+    'x', 'y', 'rotation', 'scaleX', 'scaleY', 'originX', 'originY', 'invisible',
+    'culling', 'z', 'z2', 'zlevel', 'parent'
+] as const;
+
 class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
     path: PathProxy
@@ -144,12 +151,48 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
     protected _normalState: PathState
 
+    protected _decalEl: Path
+
     // Must have an initial value on shape.
     // It will be assigned by default value.
     shape: Dictionary<any>
 
     constructor(opts?: Props) {
         super(opts);
+    }
+
+    update() {
+        super.update();
+
+        const style = this.style;
+        if (style.decal) {
+            const decalEl: Path = this._decalEl
+                = this._decalEl || new Path();
+            if (decalEl.buildPath === Path.prototype.buildPath) {
+                decalEl.buildPath = ctx => {
+                    this.buildPath(ctx, this.shape);
+                };
+            }
+
+            decalEl.silent = true;
+
+            decalEl.setStyle(style);
+            decalEl.style.fill = style.fill ? style.decal : null;
+            decalEl.style.decal = null;
+            decalEl.style.shadowColor = null;
+            style.strokeFirst && (decalEl.style.stroke = null);
+
+            for (let i = 0; i < pathCopyParams.length; ++i) {
+                (decalEl as any)[pathCopyParams[i]] = this[pathCopyParams[i]];
+            }
+        }
+        else if (this._decalEl) {
+            this._decalEl = null;
+        }
+    }
+
+    getDecalElement() {
+        return this._decalEl;
     }
 
     protected _init(props?: Props) {
@@ -368,6 +411,9 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         this.__dirty |= Path.SHAPE_CHANGED_BIT;
         if (this._rect) {
             this._rect = null;
+        }
+        if (this._decalEl) {
+            this._decalEl.dirtyShape();
         }
         this.markRedraw();
     }
