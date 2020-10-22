@@ -191,6 +191,8 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
             for (let i = 0; i < pathCopyParams.length; ++i) {
                 (decalEl as any)[pathCopyParams[i]] = this[pathCopyParams[i]];
             }
+
+            decalEl.__dirty |= Element.REDARAW_BIT;
         }
         else if (this._decalEl) {
             this._decalEl = null;
