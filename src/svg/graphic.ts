@@ -31,6 +31,9 @@ const EPSILON = 1e-4;
 
 type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;
 
+function round3(val: number) {
+    return mathRound(val * 1e3) / 1e3;
+}
 function round4(val: number) {
     return mathRound(val * 1e4) / 1e4;
 }
@@ -49,20 +52,17 @@ function pathHasStroke(style: AllStyleOption): style is PathStyleProps {
     return stroke != null && stroke !== NONE;
 }
 
-function reduceNumberString(n: number, precision: number) {
-    // Avoid large string of matrix
-    // PENDING If have precision issue when scaled
-    return n > 1 ? +n.toFixed(precision) : +n.toPrecision(precision);
-}
 function setTransform(svgEl: SVGElement, m: matrix.MatrixArray) {
     if (m) {
         attr(svgEl, 'transform', 'matrix('
-            + reduceNumberString(m[0], 3) + ','
-            + reduceNumberString(m[1], 3) + ','
-            + reduceNumberString(m[2], 3) + ','
-            + reduceNumberString(m[3], 3) + ','
-            + reduceNumberString(m[4], 4) + ','
-            + reduceNumberString(m[5], 4)
+            // Avoid large string of matrix
+            // PENDING If have precision issue when scaled
+            + round3(m[0]) + ','
+            + round3(m[1]) + ','
+            + round3(m[2]) + ','
+            + round3(m[3]) + ','
+            + round4(m[4]) + ','
+            + round4(m[5])
          + ')');
     }
 }
@@ -380,7 +380,7 @@ const svgText: SVGProxy<TSpan> = {
         let text = style.text;
         // Convert to string
         text != null && (text += '');
-        if (!text) {
+        if (!text || isNaN(style.x) || isNaN(style.y)) {
             return;
         }
 

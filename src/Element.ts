@@ -684,10 +684,11 @@ class Element<Props extends ElementProps = ElementProps> {
         if (!colorArr) {
             colorArr = [255, 255, 255, 1];
         }
-        // Assume blending on a white background.
+        // Assume blending on a white / black(dark) background.
         const alpha = colorArr[3];
+        const isDark = this.__zr.isDarkMode();
         for (let i = 0; i < 3; i++) {
-            colorArr[i] = colorArr[i] * alpha + 255 * (1 - alpha);
+            colorArr[i] = colorArr[i] * alpha + (isDark ? 0 : 255) * (1 - alpha);
         }
         colorArr[3] = 1;
         return stringify(colorArr, 'rgba');
@@ -1222,6 +1223,8 @@ class Element<Props extends ElementProps = ElementProps> {
 
     /**
      * Set clip path
+     *
+     * clipPath can't be shared between two elements.
      */
     setClipPath(clipPath: Path) {
         // Remove previous clip path

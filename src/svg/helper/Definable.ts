@@ -169,11 +169,13 @@ export default class Definable {
 
         let doms: SVGElement[] = [];
         zrUtil.each(this._tagNames, function (tagName) {
-            const tags = defs.getElementsByTagName(tagName);
+            const tags = defs.getElementsByTagName(tagName) as HTMLCollectionOf<SVGElement>;
             // Note that tags is HTMLCollection, which is array-like
             // rather than real array.
             // So `doms.concat(tags)` add tags as one object.
-            doms = doms.concat([].slice.call(tags));
+            for (let i = 0; i < tags.length; i++) {
+                doms.push(tags[i]);
+            }
         });
 
         return doms;
@@ -199,11 +201,16 @@ export default class Definable {
      * @param dom DOM to mark
      */
     markDomUsed(dom: SVGElement) {
-        if (dom) {
-            (dom as any)[this._markLabel] = MARK_USED;
-        }
+        dom && ((dom as any)[this._markLabel] = MARK_USED);
     };
 
+    markDomUnused(dom: SVGElement) {
+        dom && ((dom as any)[this._markLabel] = MARK_UNUSED);
+    };
+
+    isDomUnused(dom: SVGElement) {
+        return dom && (dom as any)[this._markLabel] !== MARK_USED;
+    }
 
     /**
      * Remove unused DOMs defined in <defs>
@@ -216,9 +223,8 @@ export default class Definable {
         }
 
         const doms = this.getDoms();
-        const that = this;
-        zrUtil.each(doms, function (dom) {
-            if ((dom as any)[that._markLabel] !== MARK_USED) {
+        zrUtil.each(doms, (dom) => {
+            if (this.isDomUnused(dom)) {
                 // Remove gradient
                 defs.removeChild(dom);
             }

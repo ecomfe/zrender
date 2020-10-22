@@ -11,7 +11,7 @@ import TSpan from '../graphic/TSpan';
 import arrayDiff from '../core/arrayDiff';
 import GradientManager from './helper/GradientManager';
 import PatternManager from './helper/PatternManager';
-import ClippathManager from './helper/ClippathManager';
+import ClippathManager, {hasClipPath} from './helper/ClippathManager';
 import ShadowManager from './helper/ShadowManager';
 import {
     path as svgPath,
@@ -67,6 +67,11 @@ function prepend(parent: SVGElement, child: SVGElement) {
 function remove(parent: SVGElement, child: SVGElement) {
     if (child && parent && child.parentNode === parent) {
         parent.removeChild(child);
+    }
+}
+function removeFromMyParent(child: SVGElement) {
+    if (child && child.parentNode) {
+        child.parentNode.removeChild(child);
     }
 }
 
@@ -195,16 +200,22 @@ class SVGPainter implements PainterBase {
     }
 
     _paintList(list: Displayable[]) {
-        this._gradientManager.markAllUnused();
-        this._patternManager.markAllUnused();
-        this._clipPathManager.markAllUnused();
-        this._shadowManager.markAllUnused();
+        const gradientManager = this._gradientManager;
+        const patternManager = this._patternManager;
+        const clipPathManager = this._clipPathManager;
+        const shadowManager = this._shadowManager;
+
+        gradientManager.markAllUnused();
+        patternManager.markAllUnused();
+        clipPathManager.markAllUnused();
+        shadowManager.markAllUnused();
 
         const svgRoot = this._svgRoot;
         const visibleList = this._visibleList;
         const listLen = list.length;
 
         const newVisibleList = [];
+
         for (let i = 0; i < listLen; i++) {
             const displayable = list[i];
             const svgProxy = getSvgProxy(displayable);
@@ -213,21 +224,14 @@ class SVGPainter implements PainterBase {
                 if (displayable.__dirty || !svgElement) {
                     svgProxy && (svgProxy as SVGProxy<Displayable>).brush(displayable);
 
-                    // Update clipPath
-                    this._clipPathManager.update(displayable);
 
                     // Update gradient and shadow
                     if (displayable.style) {
-                        this._gradientManager
-                            .update(displayable.style.fill as GradientObject);
-                        this._gradientManager
-                            .update(displayable.style.stroke as GradientObject);
-                        this._patternManager
-                            .update(displayable.style.fill as PatternObject);
-                        this._patternManager
-                            .update(displayable.style.stroke as PatternObject);
-                        this._shadowManager
-                            .update(svgElement, displayable);
+                        gradientManager.update(displayable.style.fill as GradientObject);
+                        gradientManager.update(displayable.style.stroke as GradientObject);
+                        patternManager.update(displayable.style.fill as PatternObject);
+                        patternManager.update(displayable.style.stroke as PatternObject);
+                        shadowManager.update(svgElement, displayable);
                     }
 
                     displayable.__dirty = 0;
@@ -237,13 +241,15 @@ class SVGPainter implements PainterBase {
                 if (getSvgElement(displayable)) {
                     newVisibleList.push(displayable);
                 }
+
             }
         }
 
         const diff = arrayDiff(visibleList, newVisibleList);
         let prevSvgElement;
+        let topPrevSvgElement;
 
-        // First do remove, in case element moved to the head and do remove
+        // NOTE: First do remove, in case element moved to the head and do remove
         // after add
         for (let i = 0; i < diff.length; i++) {
             const item = diff[i];
@@ -251,61 +257,69 @@ class SVGPainter implements PainterBase {
                 for (let k = 0; k < item.count; k++) {
                     const displayable = visibleList[item.indices[k]];
                     const svgElement = getSvgElement(displayable);
-                    remove(svgRoot, svgElement);
+                    hasClipPath(displayable) ? removeFromMyParent(svgElement)
+                        : remove(svgRoot, svgElement);
                 }
             }
         }
+
+        let prevDisplayable;
+        let currentClipGroup;
         for (let i = 0; i < diff.length; i++) {
             const item = diff[i];
-            if (item.added) {
-                for (let k = 0; k < item.count; k++) {
-                    const displayable = newVisibleList[item.indices[k]];
-                    const svgElement = getSvgElement(displayable);
-                    prevSvgElement
-                        ? insertAfter(svgRoot, svgElement, prevSvgElement)
-                        : prepend(svgRoot, svgElement);
-
-                    prevSvgElement = svgElement || prevSvgElement;
-
-                    // zrender.Text only create textSvgElement.
-                    this._gradientManager
-                        .addWithoutUpdate(svgElement, displayable);
-                    this._patternManager
-                        .addWithoutUpdate(svgElement, displayable);
-                    this._shadowManager
-                        .addWithoutUpdate(svgElement, displayable);
-                    this._clipPathManager.markUsed(displayable);
-                }
+            const isAdd = item.added;
+            if (item.removed) {
+                continue;
             }
-            else if (!item.removed) {
-                for (let k = 0; k < item.count; k++) {
-                    const displayable = newVisibleList[item.indices[k]];
-                    const svgElement = getSvgElement(displayable);
-
-                    this._gradientManager.markUsed(displayable);
-                    this._gradientManager
-                        .addWithoutUpdate(svgElement, displayable);
-
-                    this._patternManager.markUsed(displayable);
-                    this._patternManager
-                        .addWithoutUpdate(svgElement, displayable);
-
-                    this._shadowManager.markUsed(displayable);
-                    this._shadowManager
-                        .addWithoutUpdate(svgElement, displayable);
-
-                    this._clipPathManager.markUsed(displayable);
-
-                    prevSvgElement = svgElement
-                        || prevSvgElement;
+            for (let k = 0; k < item.count; k++) {
+                const displayable = newVisibleList[item.indices[k]];
+                // Update clipPath
+                const clipGroup = clipPathManager.update(displayable, prevDisplayable);
+                if (clipGroup !== currentClipGroup) {
+                    // First pop to top level.
+                    prevSvgElement = topPrevSvgElement;
+                    if (clipGroup) {
+                        // Enter second level of clipping group.
+                        prevSvgElement ? insertAfter(svgRoot, clipGroup, prevSvgElement)
+                            : prepend(svgRoot, clipGroup);
+                        topPrevSvgElement = clipGroup;
+                        // Reset prevSvgElement in second level.
+                        prevSvgElement = null;
+                    }
+                    currentClipGroup = clipGroup;
                 }
+
+                const svgElement = getSvgElement(displayable);
+                // if (isAdd) {
+                prevSvgElement
+                    ? insertAfter(currentClipGroup || svgRoot, svgElement, prevSvgElement)
+                    : prepend(currentClipGroup || svgRoot, svgElement);
+                // }
+
+                prevSvgElement = svgElement || prevSvgElement;
+                if (!currentClipGroup) {
+                    topPrevSvgElement = prevSvgElement;
+                }
+
+                gradientManager.markUsed(displayable);
+                gradientManager.addWithoutUpdate(svgElement, displayable);
+
+                patternManager.markUsed(displayable);
+                patternManager.addWithoutUpdate(svgElement, displayable);
+
+                shadowManager.markUsed(displayable);
+                shadowManager.addWithoutUpdate(svgElement, displayable);
+
+                clipPathManager.markUsed(displayable);
+
+                prevDisplayable = displayable;
             }
         }
 
-        this._gradientManager.removeUnused();
-        this._patternManager.removeUnused();
-        this._clipPathManager.removeUnused();
-        this._shadowManager.removeUnused();
+        gradientManager.removeUnused();
+        patternManager.removeUnused();
+        clipPathManager.removeUnused();
+        shadowManager.removeUnused();
 
         this._visibleList = newVisibleList;
     }
@@ -430,8 +444,9 @@ class SVGPainter implements PainterBase {
     }
 
     clear() {
-        if (this._viewport) {
-            this.root.removeChild(this._viewport);
+        const viewportNode = this._viewport;
+        if (viewportNode && viewportNode.parentNode) {
+            viewportNode.parentNode.removeChild(viewportNode);
         }
     }
 

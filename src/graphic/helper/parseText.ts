@@ -353,6 +353,13 @@ export function parseRichText(text: string, style: TextStyleProps) {
     const truncateLine = style.lineOverflow === 'truncate';
 
     let prevToken: RichTextToken;
+
+    function finishLine(line: RichTextLine, lineWidth: number, lineHeight: number) {
+        line.width = lineWidth;
+        line.lineHeight = lineHeight;
+        calculatedHeight += lineHeight;
+        calculatedWidth = Math.max(calculatedWidth, lineWidth);
+    }
     // Calculate layout info of tokens.
     outer: for (let i = 0; i < contentBlock.lines.length; i++) {
         const line = contentBlock.lines[i];
@@ -392,6 +399,7 @@ export function parseRichText(text: string, style: TextStyleProps) {
                 // prevToken.text =
                 if (j > 0) {
                     line.tokens = line.tokens.slice(0, j);
+                    finishLine(line, lineWidth, lineHeight);
                     contentBlock.lines = contentBlock.lines.slice(0, i + 1);
                 }
                 else {
@@ -458,11 +466,7 @@ export function parseRichText(text: string, style: TextStyleProps) {
             prevToken = token;
         }
 
-        line.width = lineWidth;
-        line.lineHeight = lineHeight;
-
-        calculatedHeight += lineHeight;
-        calculatedWidth = Math.max(calculatedWidth, lineWidth);
+        finishLine(line, lineWidth, lineHeight);
     }
 
     contentBlock.outerWidth = contentBlock.width = retrieve2(topWidth, calculatedWidth);
