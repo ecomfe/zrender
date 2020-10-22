@@ -137,7 +137,9 @@ export default class Definable {
      */
     addDom(dom: SVGElement) {
         const defs = this.getDefs(true);
-        defs.appendChild(dom);
+        if (dom.parentNode !== defs) {
+            defs.appendChild(dom);
+        }
     }
 
 

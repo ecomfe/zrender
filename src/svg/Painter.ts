@@ -219,14 +219,13 @@ class SVGPainter implements PainterBase {
         for (let i = 0; i < listLen; i++) {
             const displayable = list[i];
             const svgProxy = getSvgProxy(displayable);
-            const svgElement = getSvgElement(displayable);
+            let svgElement = getSvgElement(displayable);
             if (!displayable.invisible) {
                 if (displayable.__dirty || !svgElement) {
                     svgProxy && (svgProxy as SVGProxy<Displayable>).brush(displayable);
-
-
+                    svgElement = getSvgElement(displayable);
                     // Update gradient and shadow
-                    if (displayable.style) {
+                    if (svgElement && displayable.style) {
                         gradientManager.update(displayable.style.fill as GradientObject);
                         gradientManager.update(displayable.style.stroke as GradientObject);
                         patternManager.update(displayable.style.fill as PatternObject);
@@ -238,7 +237,7 @@ class SVGPainter implements PainterBase {
                 }
 
                 // May have optimizations and ignore brush(like empty string in TSpan)
-                if (getSvgElement(displayable)) {
+                if (svgElement) {
                     newVisibleList.push(displayable);
                 }
 
@@ -306,9 +305,6 @@ class SVGPainter implements PainterBase {
 
                 patternManager.markUsed(displayable);
                 patternManager.addWithoutUpdate(svgElement, displayable);
-
-                shadowManager.markUsed(displayable);
-                shadowManager.addWithoutUpdate(svgElement, displayable);
 
                 clipPathManager.markUsed(displayable);
 

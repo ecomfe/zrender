@@ -9,7 +9,6 @@ import Displayable from '../../graphic/Displayable';
 import {PatternObject} from '../../graphic/Pattern';
 import LRU from '../../core/LRU';
 import {createOrUpdateImage} from '../../graphic/helper/image';
-import {ImageLike} from '../../core/types';
 
 function isPattern(value: PatternObject): value is PatternObject {
     return value && !!value.image;
@@ -212,49 +211,3 @@ type CachedImageObj = {
     width: number,
     height: number
 };
-
-function getPatternSize(
-    pattern: PatternObject,
-    cb?: (width: number, height: number) => void
-) {
-    if (pattern.image instanceof HTMLImageElement) {
-        if (typeof cb === 'function') {
-            cb(pattern.image.width, pattern.image.height);
-        }
-        return;
-    }
-
-    let src;
-    if (typeof pattern.image === 'string') {
-        src = pattern.image;
-        const size = patternSizeCache.get(src);
-        if (size) {
-            if (typeof cb === 'function') {
-                cb(size.width, size.height);
-            }
-            return;
-        }
-    }
-    else if (pattern.image instanceof HTMLCanvasElement) {
-        src = pattern.image.toDataURL();
-    }
-
-    if (src) {
-        const img = new Image();
-        img.onload = () => {
-            if (typeof pattern.image === 'string') {
-                patternSizeCache.put(
-                    pattern.image,
-                    {
-                        width: img.width,
-                        height: img.height
-                    }
-                );
-            }
-            if (typeof cb === 'function') {
-                cb(img.width, img.height);
-            }
-        };
-        img.src = src;
-    }
-}
