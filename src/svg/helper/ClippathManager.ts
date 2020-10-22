@@ -168,6 +168,9 @@ export default class ClippathManager extends Definable {
             if (!this.isDomUnused(group)) {
                 newRefGroupsMap[key] = group;
             }
+            else if (group.parentNode) {
+                group.parentNode.removeChild(group);
+            }
         }
         this._refGroups = newRefGroupsMap;
     }
