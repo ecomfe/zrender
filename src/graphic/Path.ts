@@ -176,11 +176,17 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
             decalEl.silent = true;
 
-            decalEl.setStyle(style);
-            decalEl.style.fill = style.fill ? style.decal : null;
-            decalEl.style.decal = null;
-            decalEl.style.shadowColor = null;
-            style.strokeFirst && (decalEl.style.stroke = null);
+            const decalElStyle = decalEl.style;
+
+            for (let key in style) {
+                if ((decalElStyle as any)[key] !== (style as any)[key]) {
+                    (decalElStyle as any)[key] = (style as any)[key];
+                }
+            }
+            decalElStyle.fill = style.fill ? style.decal : null;
+            decalElStyle.decal = null;
+            decalElStyle.shadowColor = null;
+            style.strokeFirst && (decalElStyle.stroke = null);
 
             for (let i = 0; i < pathCopyParams.length; ++i) {
                 (decalEl as any)[pathCopyParams[i]] = this[pathCopyParams[i]];
