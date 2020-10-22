@@ -21,7 +21,7 @@ import { DARK_LABEL_COLOR, LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, LIGHTER_LABEL
 export interface PathStyleProps extends CommonStyleProps {
     fill?: string | PatternObject | LinearGradientObject | RadialGradientObject
     stroke?: string | PatternObject | LinearGradientObject | RadialGradientObject
-    decal?: Pattern
+    decal?: PatternObject
 
     /**
      * Still experimental, not works weel on arc with edge cases(large angle).
