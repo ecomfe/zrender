@@ -10,7 +10,7 @@ import { WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/type
 import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
-import { brush, BrushScope } from './graphic';
+import { brush, BrushScope, brushSingle } from './graphic';
 import { PainterBase } from '../PainterBase';
 import BoundingRect from '../core/BoundingRect';
 import Element from '../Element';
@@ -308,6 +308,10 @@ export default class CanvasPainter implements PainterBase {
 
     getHoverLayer() {
         return this.getLayer(HOVER_LAYER_ZLEVEL);
+    }
+
+    paintOne(ctx: CanvasRenderingContext2D, el: Displayable) {
+        brushSingle(ctx, el);
     }
 
     private _paintList(list: Displayable[], prevList: Displayable[], paintAll: boolean, redrawId?: number) {

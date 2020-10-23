@@ -6,55 +6,25 @@
 import Definable from './Definable';
 import Displayable from '../../graphic/Displayable';
 import { PathStyleProps } from '../../graphic/Path';
+import { Dictionary } from '../../core/types';
+import { each } from '../../core/util';
 
 
 type DisplayableExtended = Displayable & {
     _shadowDom: SVGElement
-    _shadowDomId: number
 }
 /**
  * Manages SVG shadow elements.
  *
  */
 export default class ShadowManager extends Definable {
+
+    private _shadowDomMap: Dictionary<SVGFilterElement> = {}
+    private _shadowDomPool: SVGFilterElement[] = []
+
     constructor(zrId: number, svgRoot: SVGElement) {
         super(zrId, svgRoot, ['filter'], '__filter_in_use__', '_shadowDom');
     }
-
-    /**
-     * Create new shadow DOM for fill or stroke if not exist,
-     * but will not update shadow if exists.
-     */
-    addWithoutUpdate(
-        svgElement: SVGElement, // SVG element to paint
-        displayable: Displayable    // zrender displayable element
-    ) {
-        if (displayable && hasShadow(displayable.style)) {
-
-            // Create dom in <defs> if not exists
-            let dom: SVGElement;
-            if ((displayable as DisplayableExtended)._shadowDom) {
-                // Gradient exists
-                dom = (displayable as DisplayableExtended)._shadowDom;
-
-                const defs = this.getDefs(true);
-                if (!defs.contains((displayable as DisplayableExtended)._shadowDom)) {
-                    // _shadowDom is no longer in defs, recreate
-                    this.addDom(dom);
-                }
-            }
-            else {
-                // New dom
-                dom = this.add(displayable);
-            }
-
-            this.markUsed(displayable);
-
-            const id = dom.getAttribute('id');
-            svgElement.style.filter = 'url(#' + id + ')';
-        }
-    }
-
 
     /**
      * Add a new shadow tag in <defs>
@@ -62,22 +32,17 @@ export default class ShadowManager extends Definable {
      * @param displayable  zrender displayable element
      * @return created DOM
      */
-    add(displayable: Displayable): SVGElement {
-        const dom = this.createElement('filter');
+    private _getFromPool(): SVGFilterElement {
+        let shadowDom = this._shadowDomPool.pop();    // Try to get one from trash.
+        if (!shadowDom) {
+            shadowDom = this.createElement('filter') as SVGFilterElement;
+            shadowDom.setAttribute('id', 'zr' + this._zrId + '-shadow-' + this.nextId++);
+            const domChild = this.createElement('feDropShadow')
+            shadowDom.appendChild(domChild);
+            this.addDom(shadowDom);
+        }
 
-        // Set dom id with shadow id, since each shadow instance
-        // will have no more than one dom element.
-        // id may exists before for those dirty elements, in which case
-        // id should remain the same, and other attributes should be
-        // updated.
-        (displayable as DisplayableExtended)._shadowDomId = (displayable as DisplayableExtended)._shadowDomId || this.nextId++;
-        dom.setAttribute('id', 'zr' + this._zrId
-            + '-shadow-' + (displayable as DisplayableExtended)._shadowDomId);
-
-        this.updateDom(displayable, dom);
-        this.addDom(dom);
-
-        return dom;
+        return shadowDom;
     }
 
 
@@ -87,10 +52,14 @@ export default class ShadowManager extends Definable {
     update(svgElement: SVGElement, displayable: Displayable) {
         const style = displayable.style;
         if (hasShadow(style)) {
-            const that = this;
-            super.doUpdate(displayable, function () {
-                that.updateDom(displayable, (displayable as DisplayableExtended)._shadowDom);
-            });
+            // Try getting shadow from cache.
+            const shadowKey = getShadowKey(displayable);
+            let shadowDom = (displayable as DisplayableExtended)._shadowDom = this._shadowDomMap[shadowKey];
+            if (!shadowDom) {
+                shadowDom = this._getFromPool();
+                this._shadowDomMap[shadowKey] = shadowDom;
+            }
+            this.updateDom(svgElement, displayable, shadowDom);
         }
         else {
             // Remove shadow
@@ -103,8 +72,8 @@ export default class ShadowManager extends Definable {
      * Remove DOM and clear parent filter
      */
     remove(svgElement: SVGElement, displayable: Displayable) {
-        if ((displayable as DisplayableExtended)._shadowDomId != null) {
-            this.removeDom(svgElement);
+        if ((displayable as DisplayableExtended)._shadowDom != null) {
+            (displayable as DisplayableExtended)._shadowDom = null;
             svgElement.style.filter = '';
         }
     }
@@ -114,40 +83,24 @@ export default class ShadowManager extends Definable {
      * Update shadow dom
      *
      * @param displayable  zrender displayable element
-     * @param dom DOM to update
+     * @param shadowDom DOM to update
      */
-    updateDom(displayable: Displayable, dom: SVGElement) {
-        const domChildArr = dom.getElementsByTagName('feDropShadow');
-        const domChild = domChildArr.length
-            ? domChildArr[0]
-            : this.createElement('feDropShadow');
+    updateDom(svgElement: SVGElement, displayable: Displayable, shadowDom: SVGElement) {
+        let domChild = shadowDom.children[0];
 
         const style = displayable.style;
-        const scaleX = displayable.scaleX || 1;
-        const scaleY = displayable.scaleY || 1;
-
-        // TODO: textBoxShadowBlur is not supported yet
-        let offsetX;
-        let offsetY;
-        let blur;
-        let color;
-        if (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY) {
-            offsetX = style.shadowOffsetX || 0;
-            offsetY = style.shadowOffsetY || 0;
-            blur = style.shadowBlur;
-            color = style.shadowColor;
-        }
-        else if (style.textShadowBlur) {
-            offsetX = style.textShadowOffsetX || 0;
-            offsetY = style.textShadowOffsetY || 0;
-            blur = style.textShadowBlur;
-            color = style.textShadowColor;
-        }
-        else {
-            // Remove shadow
-            this.removeDom(dom);
+        const globalScale = displayable.getGlobalScale();
+        const scaleX = globalScale[0];
+        const scaleY = globalScale[1];
+        if (!scaleX || !scaleY) {
             return;
         }
+
+        // TODO: textBoxShadowBlur is not supported yet
+        let offsetX = style.shadowOffsetX || 0;
+        let offsetY = style.shadowOffsetY || 0;
+        let blur = style.shadowBlur;
+        let color = style.shadowColor;
 
         domChild.setAttribute('dx', offsetX / scaleX + '');
         domChild.setAttribute('dy', offsetY / scaleY + '');
@@ -161,29 +114,37 @@ export default class ShadowManager extends Definable {
         domChild.setAttribute('stdDeviation', stdDeviation);
 
         // Fix filter clipping problem
-        dom.setAttribute('x', '-100%');
-        dom.setAttribute('y', '-100%');
-        dom.setAttribute('width', Math.ceil(blur / 2 * 200) + '%');
-        dom.setAttribute('height', Math.ceil(blur / 2 * 200) + '%');
-
-        dom.appendChild(domChild);
+        shadowDom.setAttribute('x', '-100%');
+        shadowDom.setAttribute('y', '-100%');
+        shadowDom.setAttribute('width', '300%');
+        shadowDom.setAttribute('height', '300%');
 
         // Store dom element in shadow, to avoid creating multiple
         // dom instances for the same shadow element
-        (displayable as DisplayableExtended)._shadowDom = dom;
+        (displayable as DisplayableExtended)._shadowDom = shadowDom;
+
+        const id = shadowDom.getAttribute('id');
+        svgElement.style.filter = 'url(#' + id + ')';
     }
 
-    /**
-     * Mark a single shadow to be used
-     *
-     * @param displayable displayable element
-     */
-    markUsed(displayable: Displayable) {
-        if ((displayable as DisplayableExtended)._shadowDom) {
-            super.markDomUsed((displayable as DisplayableExtended)._shadowDom);
+    removeUnused() {
+        const defs = this.getDefs(false);
+        if (!defs) {
+            // Nothing to remove
+            return;
         }
-    }
+        let shadowDomsPool = this._shadowDomPool;
 
+        let currentUsedShadow = 0;
+        for (let key in this._shadowDomMap) {
+            const dom = this._shadowDomMap[key];
+            shadowDomsPool.push(dom);
+            currentUsedShadow++;
+        }
+
+        // Reset the map.
+        this._shadowDomMap = {};
+    }
 }
 
 
@@ -191,4 +152,17 @@ function hasShadow(style: PathStyleProps) {
     // TODO: textBoxShadowBlur is not supported yet
     return style
         && (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY);
+}
+
+function getShadowKey(displayable: Displayable) {
+    const style = displayable.style;
+    const globalScale = displayable.getGlobalScale();
+    return [
+        style.shadowColor,
+        (style.shadowBlur || 0).toFixed(2), // Reduce the precision
+        (style.shadowOffsetX || 0).toFixed(2),
+        (style.shadowOffsetY || 0).toFixed(2),
+        globalScale[0],
+        globalScale[1]
+    ].join(',');
 }

@@ -5,21 +5,68 @@
 
 import Definable from './Definable';
 import * as zrUtil from '../../core/util';
-import * as matrix from '../../core/matrix';
 import Displayable from '../../graphic/Displayable';
 import Path from '../../graphic/Path';
 import {SVGProxy} from '../graphic';
+import { Dictionary } from '../../core/types';
+import { isClipPathChanged } from '../../canvas/helper';
 
 type PathExtended = Path & {
     _dom: SVGElement
-    _textDom: SVGElement
+}
+
+function generateClipPathsKey(clipPaths: Path[]) {
+    let key: number[] = [];
+    if (clipPaths) {
+        for (let i = 0; i < clipPaths.length; i++) {
+            const clipPath = clipPaths[i];
+            key.push(clipPath.id);
+        }
+    }
+    return key.join(',');
+}
+
+export function hasClipPath(displayable: Displayable) {
+    const clipPaths = displayable.__clipPaths;
+    return clipPaths && clipPaths.length > 0;
 }
 /**
  * Manages SVG clipPath elements.
  */
 export default class ClippathManager extends Definable {
+
+    private _refGroups: Dictionary<SVGElement> = {};
+    private _keyDuplicateCount: Dictionary<number> = {};
+
     constructor(zrId: number, svgRoot: SVGElement) {
         super(zrId, svgRoot, 'clipPath', '__clippath_in_use__');
+    }
+
+    markAllUnused() {
+        super.markAllUnused();
+        for (let key in this._refGroups) {
+            this.markDomUnused(this._refGroups[key]);
+        }
+        this._keyDuplicateCount = {};
+    }
+
+
+    private _getClipPathGroup(displayable: Displayable, prevDisplayable: Displayable) {
+        if (!hasClipPath(displayable)) {
+            return;
+        }
+        const clipPaths = displayable.__clipPaths;
+
+        const keyDuplicateCount = this._keyDuplicateCount;
+        let clipPathKey = generateClipPathsKey(clipPaths);
+        if (isClipPathChanged(clipPaths, prevDisplayable && prevDisplayable.__clipPaths)) {
+            keyDuplicateCount[clipPathKey] = keyDuplicateCount[clipPathKey] || 0;
+            keyDuplicateCount[clipPathKey] && (clipPathKey += '-' + keyDuplicateCount[clipPathKey]);
+            keyDuplicateCount[clipPathKey]++;
+        }
+
+        return this._refGroups[clipPathKey]
+            || (this._refGroups[clipPathKey] = this.createElement('g'));
     }
 
     /**
@@ -27,13 +74,13 @@ export default class ClippathManager extends Definable {
      *
      * @param displayable displayable element
      */
-    update(displayable: Displayable) {
-        const svgEl = this.getSvgElement(displayable);
-        if (svgEl) {
-            this.updateDom(svgEl, displayable.__clipPaths, false);
+    update(displayable: Displayable, prevDisplayable: Displayable) {
+        const clipGroup = this._getClipPathGroup(displayable, prevDisplayable);
+        if (clipGroup) {
+            this.markDomUsed(clipGroup);
+            this.updateDom(clipGroup, displayable.__clipPaths);
         }
-
-        this.markUsed(displayable);
+        return clipGroup;
     };
 
 
@@ -41,11 +88,7 @@ export default class ClippathManager extends Definable {
      * Create an SVGElement of displayable and create a <clipPath> of its
      * clipPath
      */
-    updateDom(
-        parentEl: SVGElement,
-        clipPaths: Path[],  // clipPaths of parent element
-        isText: boolean // if parent element is Text
-    ) {
+    updateDom(parentEl: SVGElement, clipPaths: Path[]) {
         if (clipPaths && clipPaths.length > 0) {
             // Has clipPath, create <clipPath> with the first clipPath
             const defs = this.getDefs(true);
@@ -53,12 +96,10 @@ export default class ClippathManager extends Definable {
             let clipPathEl;
             let id;
 
-            const domKey: '_textDom' | '_dom' = isText ? '_textDom' : '_dom';
-
-            if (clipPath[domKey]) {
+            if (clipPath._dom) {
                 // Use a dom that is already in <defs>
-                id = clipPath[domKey].getAttribute('id');
-                clipPathEl = clipPath[domKey];
+                id = clipPath._dom.getAttribute('id');
+                clipPathEl = clipPath._dom;
 
                 // Use a dom that is already in <defs>
                 if (!defs.contains(clipPathEl)) {
@@ -75,58 +116,23 @@ export default class ClippathManager extends Definable {
                 clipPathEl.setAttribute('id', id);
                 defs.appendChild(clipPathEl);
 
-                clipPath[domKey] = clipPathEl;
+                clipPath._dom = clipPathEl;
             }
 
             // Build path and add to <clipPath>
             const svgProxy = this.getSvgProxy(clipPath);
-            if (clipPath.transform
-                && clipPath.parent.invTransform
-                && !isText
-            ) {
-                /**
-                 * If a clipPath has a parent with transform, the transform
-                 * of parent should not be considered when setting transform
-                 * of clipPath. So we need to transform back from parent's
-                 * transform, which is done by multiplying parent's inverse
-                 * transform.
-                 */
-                // Store old transform
-                const transform = Array.prototype.slice.call(
-                    clipPath.transform
-                );
-
-                // Transform back from parent, and brush path
-                matrix.mul(
-                    clipPath.transform,
-                    clipPath.parent.invTransform,
-                    clipPath.transform
-                );
-                (svgProxy as SVGProxy<Path>).brush(clipPath);
-
-                // Set back transform of clipPath
-                clipPath.transform = transform;
-            }
-            else {
-                (svgProxy as SVGProxy<Path>).brush(clipPath);
-            }
+            (svgProxy as SVGProxy<Path>).brush(clipPath);
 
             const pathEl = this.getSvgElement(clipPath);
 
             clipPathEl.innerHTML = '';
-            /**
-             * Use `cloneNode()` here to appendChild to multiple parents,
-             * which may happend when Text and other shapes are using the same
-             * clipPath. Since Text will create an extra clipPath DOM due to
-             * different transform rules.
-             */
-            clipPathEl.appendChild(pathEl.cloneNode());
+            clipPathEl.appendChild(pathEl);
 
             parentEl.setAttribute('clip-path', 'url(#' + id + ')');
 
             if (clipPaths.length > 1) {
                 // Make the other clipPaths recursively
-                this.updateDom(clipPathEl, clipPaths.slice(1), isText);
+                this.updateDom(clipPathEl, clipPaths.slice(1));
             }
         }
         else {
@@ -149,10 +155,23 @@ export default class ClippathManager extends Definable {
                 if (clipPath._dom) {
                     super.markDomUsed(clipPath._dom);
                 }
-                if (clipPath._textDom) {
-                    super.markDomUsed(clipPath._textDom);
-                }
             });
         }
     };
+
+    removeUnused() {
+        super.removeUnused();
+
+        const newRefGroupsMap: Dictionary<SVGElement> = {};
+        for (let key in this._refGroups) {
+            const group = this._refGroups[key];
+            if (!this.isDomUnused(group)) {
+                newRefGroupsMap[key] = group;
+            }
+            else if (group.parentNode) {
+                group.parentNode.removeChild(group);
+            }
+        }
+        this._refGroups = newRefGroupsMap;
+    }
 }

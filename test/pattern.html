@@ -16,7 +16,9 @@
     </style>
     <div id="main"></div>
     <script type="text/javascript">
-        var zr = zrender.init(document.getElementById('main'));
+        var zr = zrender.init(document.getElementById('main'), {
+            renderer: 'svg'
+        });
 
         const circle = new zrender.Circle({
             shape: {
@@ -35,7 +37,10 @@
                     textFill: 'white',
                     fontSize: 40
                 }
-            })
+            }),
+            textConfig: {
+                position: 'inside'
+            }
         });
         zr.add(circle);
 
@@ -59,7 +64,10 @@
                         textFill: 'white',
                         fontSize: 40
                     }
-                })
+                }),
+                textConfig: {
+                    position: 'inside'
+                }
             });
             zr.add(circle);
         }

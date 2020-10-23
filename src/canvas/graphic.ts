@@ -7,7 +7,7 @@ import { RadialGradientObject } from '../graphic/RadialGradient';
 import { ZRCanvasRenderingContext } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { createOrUpdateImage, isImageReady } from '../graphic/helper/image';
-import { getCanvasGradient } from './helper';
+import { getCanvasGradient, isClipPathChanged } from './helper';
 import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import TSpan, {TSpanStyleProps} from '../graphic/TSpan';
@@ -17,7 +17,6 @@ import { MatrixArray } from '../core/matrix';
 import { map } from '../core/util';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
 import Element from '../Element';
-
 
 const pathProxyForDraw = new PathProxy(true);
 
@@ -65,7 +64,15 @@ export function createCanvasPattern(
 ): CanvasPattern {
     const image = createOrUpdateImage(pattern.image, pattern.__image, el);
     if (isImageReady(image)) {
-        return ctx.createPattern(image, pattern.repeat || 'repeat');
+        const canvasPattern = ctx.createPattern(image, pattern.repeat || 'repeat');
+        if (typeof DOMMatrix === 'function') {
+            const matrix = new DOMMatrix();
+            matrix.rotateSelf(0, 0, (pattern.rotation || 0) / Math.PI * 180);
+            matrix.scaleSelf((pattern.scaleX || 1), (pattern.scaleY || 1));
+            matrix.translateSelf((pattern.x || 0), (pattern.y || 0));
+            canvasPattern.setTransform(matrix);
+        }
+        return canvasPattern;
     }
 }
 
@@ -520,39 +527,6 @@ function setContextTransform(ctx: CanvasRenderingContext2D, el: Displayable) {
     else {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-}
-
-
-const tmpRect = new BoundingRect(0, 0, 0, 0);
-const viewRect = new BoundingRect(0, 0, 0, 0);
-function isDisplayableCulled(el: Displayable, width: number, height: number) {
-    // Disable culling when width or height is 0
-    if (!width || !height) {
-        return false;
-    }
-    tmpRect.copy(el.getBoundingRect());
-    if (el.transform) {
-        tmpRect.applyTransform(el.transform);
-    }
-    viewRect.width = width;
-    viewRect.height = height;
-    return !tmpRect.intersect(viewRect);
-}
-
-function isClipPathChanged(clipPaths: Path[], prevClipPaths: Path[]): boolean {
-    // displayable.__clipPaths can only be `null`/`undefined` or an non-empty array.
-    if (clipPaths === prevClipPaths || (!clipPaths && !prevClipPaths)) {
-        return false;
-    }
-    if (!clipPaths || !prevClipPaths || (clipPaths.length !== prevClipPaths.length)) {
-        return true;
-    }
-    for (let i = 0; i < clipPaths.length; i++) {
-        if (clipPaths[i] !== prevClipPaths[i]) {
-            return true;
-        }
-    }
-    return false;
 }
 
 function updateClipStatus(clipPaths: Path[], ctx: CanvasRenderingContext2D, scope: BrushScope) {

@@ -1223,6 +1223,8 @@ class Element<Props extends ElementProps = ElementProps> {
 
     /**
      * Set clip path
+     *
+     * clipPath can't be shared between two elements.
      */
     setClipPath(clipPath: Path) {
         // Remove previous clip path
