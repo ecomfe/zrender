@@ -7,6 +7,7 @@ import { lerp } from '../core/vector';
 import Rect from '../graphic/shape/Rect';
 import Sector from '../graphic/shape/Sector';
 import { ZRenderType } from '../zrender';
+import Group from '../graphic/Group';
 
 const CMD = PathProxy.CMD;
 const PI2 = Math.PI * 2;
@@ -718,7 +719,7 @@ export function combine(
     fromPathList: Path[],
     toPath: Path,
     animationOpts: CombineSeparateConfig,
-    copyPropsWhenDivided?: (srcPath: Path, tarPath: Path, needClone: boolean) => void
+    copyPropsIfDivided?: (srcPath: Path, tarPath: Path, needClone: boolean) => void
 ): CombineSeparateResult {
 
     const fromIndividuals: Path[] = [];
@@ -778,7 +779,7 @@ export function combine(
     for (let i = 0; i < separateCount; i++) {
         const from = fromIndividuals[i];
         const to = toPathSplittedList[i];
-        copyPropsWhenDivided && copyPropsWhenDivided(toPath, to, true);
+        copyPropsIfDivided && copyPropsIfDivided(toPath, to, true);
         morphPath(from, to, morphAnimationOpts);
     }
 
@@ -838,11 +839,20 @@ function restoreCombiningPath(path: Path): void {
         combiningPath.__oldBuildPath = null;
 }
 
-// Especially, `combiningSubList` is null/undefined means that remove sub list.
-function updateCombiningPathSubList(combiningPath: CombiningPath, combiningSubList: Path[]): void {
+function updateCombiningPathSubList(
+    combiningPath: CombiningPath,
+    // Especially, `combiningSubList` is null/undefined means that remove sub list.
+    combiningSubList: Path[]
+): void {
     if (combiningPath.__combiningSubList !== combiningSubList) {
         combiningPathSubListAddRemoveWithZr(combiningPath, 'removeSelfFromZr');
         combiningPath.__combiningSubList = combiningSubList;
+        if (combiningSubList) {
+            for (let i = 0; i < combiningSubList.length; i++) {
+                // Tricky: make `updateTransform` work in `Transformable`. The parent can only be Group.
+                combiningSubList[i].parent = combiningPath as unknown as Group;
+            }
+        }
         combiningPathSubListAddRemoveWithZr(combiningPath, 'addSelfToZr');
     }
 }
@@ -888,7 +898,7 @@ export function separate(
     fromPath: Path,
     toPathList: Path[],
     animationOpts: CombineSeparateConfig,
-    copyPropsWhenDivided?: (srcPath: Path, tarPath: Path, needClone: boolean) => void
+    copyPropsIfDivided?: (srcPath: Path, tarPath: Path, needClone: boolean) => void
 ): CombineSeparateResult {
     const toPathListLen = toPathList.length;
     let fromPathList: Path[];
@@ -898,6 +908,10 @@ export function separate(
     // This case most happen when a combining path is called to reverse the animation
     // to its original separated state.
     if (isCombiningPath(fromPath)) {
+        // [CATEAT]:
+        // do not `restoreCombiningPath`, because it will cause the sub paths been removed
+        // from its host, so that the original "global transform" can not be gotten any more.
+
         const fromCombiningSubList = fromPath.__combiningSubList;
         if (fromCombiningSubList.length === toPathListLen) {
             fromPathList = fromCombiningSubList;
@@ -916,8 +930,8 @@ export function separate(
 
     assert(fromPathList.length === toPathListLen);
     for (let i = 0; i < toPathListLen; i++) {
-        if (copyProps && copyPropsWhenDivided) {
-            copyPropsWhenDivided(fromPath, fromPathList[i], false);
+        if (copyProps && copyPropsIfDivided) {
+            copyPropsIfDivided(fromPath, fromPathList[i], false);
         }
         morphPath(fromPathList[i], toPathList[i], animationOpts);
     }
