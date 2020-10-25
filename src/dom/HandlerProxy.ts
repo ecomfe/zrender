@@ -219,6 +219,12 @@ const localDOMHandlers: DomHandlersMap = {
     },
 
     mouseout(event: ZRRawEvent) {
+        // For SVG rendering, there are SVG elements inside `this.dom`.
+        // (especially in decal case). Should not to handle those "mouseout".
+        if (event.target !== this.dom) {
+            return;
+        }
+
         event = normalizeEvent(this.dom, event);
 
         // Similarly to the browser did on `document` and touch event,
