@@ -28,7 +28,7 @@ import CanvasPainter from './canvas/Painter';
  */
 
 /**
- * [Drag outside]:
+ * [DRAG_OUTSIDE]:
  *
  * That is, triggering `mousemove` and `mouseup` event when the pointer is out of the
  * zrender area when dragging. That is important for the improvement of the user experience
@@ -51,24 +51,28 @@ import CanvasPainter from './canvas/Painter';
  * `document`.
  * If we implement some other `HandlerProxy` only for touch device, that would be easier.
  * The touch event support this feature by default.
+ * The term "pointer capture" is from the spec:
+ * https://www.w3.org/TR/pointerevents2/#idl-def-element-setpointercapture-pointerid
  *
  * Note:
- * There might be some cases that the mouse event can not be
- * received on `document`. For example,
- * (A) `useCapture` is not supported and some user defined event listeners on the ancestor
- * of zr dom throw Error .
- * (B) `useCapture` is not supported Some user defined event listeners on the ancestor of
+ * There might be some cases that the mouse event can not be received on `document`.
+ * For example,
+ * (A) When `useCapture` is not supported and some user defined event listeners on the ancestor
+ * of zr dom throw Error.
+ * (B) When `useCapture` is not supported and some user defined event listeners on the ancestor of
  * zr dom call `stopPropagation`.
- * In these cases, the `mousemove` event might be keep triggered event
- * if the mouse is released. We try to reduce the side-effect in those cases.
- * That is, do nothing (especially, `findHover`) in those cases. See `isOutsideBoundary`.
+ * In these cases, the `mousemove` event might be keep triggering event when the mouse is released.
+ * We try to reduce the side-effect in those cases, that is, use `isOutsideBoundary` to prevent
+ * it from do anything (especially, `findHover`).
+ * (`useCapture` mean, `addEvnetListener(listener, {capture: true})`, althought it may not be
+ * suppported in some environments.)
  *
  * Note:
  * If `HandlerProxy` listens to `document` with `useCapture`, `HandlerProxy` needs to
- * make sure `stopPropagation` and `preventDefault` doing nothing if and only if the event
- * target is not zrender dom. Becuase it is dangerous to enable users to call them in
- * `document` capture phase to prevent the propagation to any listener of the webpage.
- * But they are needed to work when the pointer inside the zrender dom.
+ * prevent user-registered-handler from calling `stopPropagation` and `preventDefault`
+ * when the `event.target` is not a zrender dom element. Otherwise the user-registered-handler
+ * may be able to prevent other elements (that not relevant to zrender) in the web page from receiving
+ * dom events.
  */
 
 const SILENT = 'silent';
@@ -467,7 +471,7 @@ function isHover(displayable: Displayable, x: number, y: number) {
 }
 
 /**
- * See [Drag outside].
+ * See [DRAG_OUTSIDE].
  */
 function isOutsideBoundary(handlerInstance: Handler, x: number, y: number) {
     const painter = handlerInstance.painter;

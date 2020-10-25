@@ -31,7 +31,7 @@ export default class Draggable {
         handler.on('mousemove', this._drag, this);
         handler.on('mouseup', this._dragEnd, this);
         // `mosuemove` and `mouseup` can be continue to fire when dragging.
-        // See [Drag outside] in `Handler.js`. So we do not need to trigger
+        // See [DRAG_OUTSIDE] in `Handler.js`. So we do not need to trigger
         // `_dragEnd` when globalout. That would brings better user experience.
         // this.on('globalout', this._dragEnd, this);
 

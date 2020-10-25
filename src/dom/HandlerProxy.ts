@@ -178,7 +178,7 @@ class FakeGlobalEvent {
 
     // we make the default methods on the event do nothing,
     // otherwise it is dangerous. See more details in
-    // [Drag outside] in `Handler.js`.
+    // [DRAG_OUTSIDE] in `Handler.js`.
     stopPropagation = zrUtil.noop
     stopImmediatePropagation = zrUtil.noop
     preventDefault = zrUtil.noop
@@ -481,7 +481,7 @@ function mountGlobalDOMEventListeners(instance: HandlerDomProxy, scope: DOMHandl
         zrUtil.each(globalNativeListenerNames.pointer, mount);
     }
     // Touch event has implemented "drag outside" so we do not mount global listener for touch event.
-    // (see https://www.w3.org/TR/touch-events/#the-touchmove-event)
+    // (see https://www.w3.org/TR/touch-events/#the-touchmove-event) (see also `DRAG_OUTSIDE`).
     // We do not consider "both-support-touch-and-mouse device" for this feature (see the comment of
     // `mountLocalDOMEventListeners`) to avoid bugs util some requirements come.
     else if (!env.touchEventsSupported) {
@@ -491,7 +491,7 @@ function mountGlobalDOMEventListeners(instance: HandlerDomProxy, scope: DOMHandl
     function mount(nativeEventName: string) {
         function nativeEventListener(event: ZRRawEvent) {
             event = getNativeEvent(event);
-            // See the reason in [Drag outside] in `Handler.js`
+            // See the reason in [DRAG_OUTSIDE] in `Handler.js`
             // This checking supports both `useCapture` or not.
             // PENDING: if there is performance issue in some devices,
             // we probably can not use `useCapture` and change a easier
@@ -503,7 +503,7 @@ function mountGlobalDOMEventListeners(instance: HandlerDomProxy, scope: DOMHandl
         }
         mountSingleDOMEventListener(
             scope, nativeEventName, nativeEventListener,
-            {capture: true} // See [Drag Outside] in `Handler.js`
+            {capture: true} // See [DRAG_OUTSIDE] in `Handler.js`
         );
     }
 }
@@ -569,8 +569,8 @@ export default class HandlerDomProxy extends Eventful {
 
     __lastTouchMoment: Date
 
+    // See [DRAG_OUTSIDE] in `Handler.ts`.
     __pointerCapturing = false
-
     // [x, y]
     __mayPointerCapture: VectorArray
 
@@ -602,13 +602,12 @@ export default class HandlerDomProxy extends Eventful {
     }
 
     /**
-     * See [Drag Outside] in `Handler.js`.
+     * See [DRAG_OUTSIDE] in `Handler.js`.
      * @implement
      * @param isPointerCapturing Should never be `null`/`undefined`.
      *        `true`: start to capture pointer if it is not capturing.
      *        `false`: end the capture if it is capturing.
      */
-
     __togglePointerCapture(isPointerCapturing?: boolean) {
         this.__mayPointerCapture = null;
 
