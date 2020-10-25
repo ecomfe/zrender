@@ -815,7 +815,7 @@ function brushIncremental(
         innerScope.prevEl = displayable;
     }
     // Render temporary displayables.
-    for (let i = 0, len = temporalDisplayables.length - 1; i < len; i++) {
+    for (let i = 0, len = temporalDisplayables.length; i < len; i++) {
         const displayable = temporalDisplayables[i];
         displayable.beforeBrush && displayable.beforeBrush();
         displayable.innerBeforeBrush();
