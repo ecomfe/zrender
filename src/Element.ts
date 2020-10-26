@@ -226,7 +226,7 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
     name?: string
     ignore?: boolean
     isGroup?: boolean
-    draggable?: boolean
+    draggable?: boolean | 'horizontal' | 'vertical'
 
     silent?: boolean
 
@@ -320,7 +320,7 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Whether it can be dragged.
      */
-    draggable: boolean | string
+    draggable: boolean | 'horizontal' | 'vertical'
 
     /**
      * Whether is it dragging.
