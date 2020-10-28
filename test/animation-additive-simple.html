@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="main"></div>
+    <script type="text/javascript">
+        var main = document.getElementById('main');
+        // 初始化zrender
+        var zr = zrender.init(main);
+
+        function createHexogon(text) {
+            return new zrender.Isogon({
+                x: 150,
+                y: 200,
+                shape: {
+                    cx: 0,
+                    cy: 0,
+                    r: 100,
+                    n: 6
+                },
+                style: {
+                    fill: 'red',
+                    lineWidth: 5
+                },
+                textContent: new zrender.Text({
+                    style: {
+                        fill: 'white',
+                        text
+                    }
+                })
+            });
+        }
+        var hexogonAdditive = createHexogon('Additive');
+        zr.add(hexogonAdditive);
+
+        var hexogonNormal = createHexogon('Normal');
+        zr.add(hexogonNormal);
+        hexogonNormal.x = 400;
+
+
+        let rotation = 0;
+        let sign = 1;
+        let scale = 1;
+
+        window.onclick = function () {
+            const rand = (Math.random() * 3) + 10;
+            rotation += rand * sign;
+
+            const scaleRand = Math.random() * 1;
+            scale += scaleRand * sign;
+            scale += scaleRand * sign;
+
+            sign = -sign;
+
+            hexogonAdditive.animateTo({
+                rotation,
+                scaleX: scale,
+                scaleY: scale
+            }, {
+                duration: 2000,
+                additive: true,
+                easing: 'cubicInOut'
+            });
+
+            hexogonNormal.animateTo({
+                rotation,
+                scale,
+                scaleX: scale,
+                scaleY: scale
+            }, {
+                duration: 2000,
+                easing: 'cubicInOut'
+            });
+        }
+    </script>
+</body>
+</html>

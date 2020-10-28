@@ -4,12 +4,15 @@
     <meta charset="utf-8" />
     <title>Performance</title>
     <script src="../dist/zrender.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/zrender@4.2.0/dist/zrender.js"></script> -->
+
+    <script src="data/text.js"></script>
 </head>
 <body>
     <div id="main" style="width:100%;height:400px;border:1px solid green"></div>
     <div>
         <input id="round" value="10"/>次
-        <input id="count" value="1000"/>个图形
+        <input id="count" value="10000"/>个图形
         <select id='shape'>
             <option value='circle'>circle</option>
             <option value='sector'>sector</option>
@@ -29,372 +32,184 @@
     </div>
     <div id="res">loading</div>
     <script type="text/javascript">
-            var  str = `
-　　——此开卷第一回也。作者自云：曾历过一番梦幻之后，故将真事隐去，而借
-通灵说此《石头记》一书也，故曰“甄士隐”云云。但书中所记何事何人?自己又
-云：“今风尘碌碌，一事无成，忽念及当日所有之女子：一一细考较去，觉其行止
-见识皆出我之上。我堂堂须眉诚不若彼裙钗，我实愧则有馀，悔又无益，大无可如
-何之日也。当此日，欲将已往所赖天恩祖德，锦衣纨之时，饫甘餍肥之日，背父
-兄教育之恩，负师友规训之德，以致今日一技无成、半生潦倒之罪，编述一集，以
-告天下；知我之负罪固多，然闺阁中历历有人，万不可因我之不肖，自护己短，一
-并使其泯灭也。所以蓬牖茅椽，绳床瓦灶，并不足妨我襟怀；况那晨风夕月，阶柳
-庭花，更觉得润人笔墨。我虽不学无文，又何妨用假语村言敷演出来?亦可使闺阁
-昭传。复可破一时之闷，醒同人之目，不亦宜乎？”故曰“贾雨村”云云。更于篇
-中间用“梦”“幻”等字，却是此书本旨，兼寓提醒阅者之意。
-　　看官你道此书从何而起?说来虽近荒唐，细玩颇有趣味。却说那女娲氏炼石补
-天之时，于大荒山无稽崖炼成高十二丈、见方二十四丈大的顽石三万六千五百零一
-块。那娲皇只用了三万六千五百块，单单剩下一块未用，弃在青埂峰下。谁知此石
-自经锻炼之后，灵性已通，自去自来，可大可小。因见众石俱得补天，独自己无才
-不得入选，遂自怨自愧，日夜悲哀。一日正当嗟悼之际，俄见一僧一道远远而来，
-生得骨格不凡，丰神迥异，来到这青埂峰下，席地坐谈。见着这块鲜莹明洁的石头，
-且又缩成扇坠一般，甚属可爱。那僧托于掌上，笑道：“形体倒也是个灵物了，只
-是没有实在的好处。须得再镌上几个字，使人人见了便知你是件奇物，然后携你到
-那昌明隆盛之邦、诗礼簪缨之族、花柳繁华地、温柔富贵乡那里去走一遭。”石头
-听了大喜，因问：“不知可镌何字?携到何方?望乞明示。”那僧笑道：“你且莫问，
-日后自然明白。”说毕，便袖了，同那道人飘然而去，竟不知投向何方。
-　　又不知过了几世几劫，因有个空空道人访道求仙，从这大荒山无稽崖青埂峰下
-经过。忽见一块大石，上面字迹分明，编述历历。空空道人乃从头一看，原来是无
-才补天、幻形入世，被那茫茫大士、渺渺真人携入红尘、引登彼岸的一块顽石；上
-面叙着堕落之乡、投胎之处，以及家庭琐事、闺阁闲情、诗词谜语，倒还全备。只
-是朝代年纪，失落无考。后面又有一偈云：
-无才可去补苍天，枉入红尘若许年。
-此系身前身后事，倩谁记去作奇传?
-空空道人看了一回，晓得这石头有些来历，遂向石头说道：“石兄，你这一段故事，
-据你自己说来，有些趣味，故镌写在此，意欲闻世传奇。据我看来：第一件，无朝
-代年纪可考；第二件，并无大贤大忠、理朝廷、治风俗的善政，其中只不过几个异
-样女子，或情或痴，或小才微善。我纵然抄去，也算不得一种奇书。”石头果然答
-道：“我师何必太痴!我想历来野史的朝代，无非假借汉、唐的名色；莫如我这石头
-所记不借此套，只按自己的事体情理，反倒新鲜别致。况且那野史中，或讪谤君相，
-或贬人妻女，奸淫凶恶，不可胜数；更有一种风月笔墨，其淫秽污臭最易坏人子弟。
-至于才子佳人等书，则又开口‘文君’，满篇‘子建’，千部一腔，千人一面，且终
-不能不涉淫滥。在作者不过要写出自己的两首情诗艳赋来，故假捏出男女二人名姓；
-又必旁添一小人拨乱其间，如戏中的小丑一般。更可厌者，‘之乎者也’，非理即文，
-大不近情，自相矛盾。竟不如我这半世亲见亲闻的几个女子，虽不敢说强似前代书
-中所有之人，但观其事迹原委，亦可消愁破闷；至于几首歪诗，也可以喷饭供酒。
-其间离合悲欢，兴衰际遇，俱是按迹循踪，不敢稍加穿凿，至失其真。只愿世人当
-那醉馀睡醒之时，或避事消愁之际，把此一玩，不但是洗旧翻新，却也省了些寿命
-筋力，不更去谋虚逐妄了。我师意为如何？”
-　　空空道人听如此说，思忖半晌，将这《石头记》再检阅一遍。因见上面大旨不
-过谈情，亦只是实录其事，绝无伤时诲淫之病，方从头至尾抄写回来，闻世传奇。
-从此空空道人因空见色，由色生情，传情入色，自色悟空，遂改名情僧，改《石头
-记》为《情僧录》。东鲁孔梅溪题曰《风月宝鉴》。后因曹雪芹于悼红轩中，披阅十
-载，增删五次，纂成目录，分出章回，又题曰《金陵十二钗》，并题一绝。即此便
-是《石头记》的缘起。诗云：
-满纸荒唐言，一把辛酸泪。
-都云作者痴，谁解其中味!
-　　《石头记》缘起既明，正不知那石头上面记着何人何事?看官请听。按那石上
-书云：当日地陷东南，这东南有个姑苏城，城中阊门，最是红尘中一二等富贵风流
-之地。这阊门外有个十里街，街内有个仁清巷，巷内有个古庙，因地方狭窄，人皆
-呼作“葫芦庙”。庙旁住着一家乡宦，姓甄名费字士隐，嫡妻封氏，性情贤淑，深
-明礼义。家中虽不甚富贵，然本地也推他为望族了。因这甄士隐禀性恬淡，不以功
-名为念，每日只以观花种竹、酌酒吟诗为乐，倒是神仙一流人物。只是一件不足：
-年过半百，膝下无儿，只有一女乳名英莲，年方三岁。
-　　一日炎夏永昼，士隐于书房闲坐，手倦抛书，伏几盹睡，不觉朦胧中走至一处，
-不辨是何地方。忽见那厢来了一僧一道，且行且谈。只听道人问道：“你携了此物，
-意欲何往？”那僧笑道：“你放心，如今现有一段风流公案正该了结，这一干风流
-冤家尚未投胎入世。趁此机会，就将此物夹带于中，使他去经历经历。”那道人道：
-“原来近日风流冤家又将造劫历世，但不知起于何处，落于何方？”那僧道：“此
-事说来好笑。只因当年这个石头，娲皇未用，自己却也落得逍遥自在，各处去游玩。
-一日来到警幻仙子处，那仙子知他有些来历，因留他在赤霞宫中，名他为赤霞宫神
-瑛侍者。他却常在西方灵河岸上行走，看见那灵河岸上三生石畔有棵绛珠仙草，十
-分娇娜可爱，遂日以甘露灌溉，这绛珠草始得久延岁月。后来既受天地精华，复得
-甘露滋养，遂脱了草木之胎，幻化人形，仅仅修成女体，终日游于离恨天外，饥餐
-秘情果，渴饮灌愁水。只因尚未酬报灌溉之德，故甚至五内郁结着一段缠绵不尽之
-意。常说：‘自己受了他雨露之惠，我并无此水可还。他若下世为人，我也同去走
-一遭，但把我一生所有的眼泪还他，也还得过了。’因此一事，就勾出多少风流冤
-家都要下凡，造历幻缘，那绛珠仙草也在其中。今日这石正该下世，我来特地将他
-仍带到警幻仙子案前，给他挂了号，同这些情鬼下凡，一了此案。”那道人道：“果
-是好笑，从来不闻有‘还泪’之说。趁此你我何不也下世度脱几个，岂不是一场功
-德？”那僧道：“正合吾意。你且同我到警幻仙子宫中将这蠢物交割清楚，待这一
-干风流孽鬼下世，你我再去。如今有一半落尘，然犹未全集。”道人道：“既如此，
-便随你去来。”
-　　却说甄士隐俱听得明白，遂不禁上前施礼，笑问道：“二位仙师请了。”那僧道
-也忙答礼相问。士隐因说道：“适闻仙师所谈因果，实人世罕闻者，但弟子愚拙，
-不能洞悉明白。若蒙大开痴顽，备细一闻，弟子洗耳谛听，稍能警省，亦可免沉沦
-之苦了。”二仙笑道：“此乃玄机，不可预泄。到那时只不要忘了我二人，便可跳出
-火坑矣。”士隐听了，不便再问，因笑道：“玄机固不可泄露，但适云‘蠢物’，不
-知为何，或可得见否？”那僧说：“若问此物，倒有一面之缘。”说着取出递与士隐。
-士隐接了看时，原来是块鲜明美玉，上面字迹分明，镌着“通灵宝玉”四字，后面
-还有几行小字。正欲细看时，那僧便说“已到幻境”，就强从手中夺了去，和那道
-人竟过了一座大石牌坊，上面大书四字，乃是“太虚幻境”。两边又有一副对联道：
-假作真时真亦假，
-无为有处有还无。
-　　士隐意欲也跟着过去，方举步时，忽听一声霹雳若山崩地陷，士隐大叫一声，
-定睛看时，只见烈日炎炎，芭蕉冉冉，梦中之事便忘了一半。又见奶母抱了英莲走
-来。士隐见女儿越发生得粉装玉琢，乖觉可喜，便伸手接来抱在怀中斗他玩耍一回；
-又带至街前，看那过会的热闹。方欲进来时，只见从那边来了一僧一道。那僧癞头
-跣足，那道跛足蓬头，疯疯癫癫，挥霍谈笑而至。及到了他门前，看见士隐抱着英
-莲，那僧便大哭起来，又向士隐道：“施主，你把这有命无运、累及爹娘之物抱在
-怀内作甚！”士隐听了，知是疯话，也不睬他。那僧还说：“舍我罢!舍我罢！”士隐
-不耐烦，便抱着女儿转身。才要进去，那僧乃指着他大笑，口内念了四句言词，道
-是：
-惯养娇生笑你痴，菱花空对雪澌澌。
-好防佳节元宵后，便是烟消火灭时。
-士隐听得明白，心下犹豫，意欲问他来历。只听道人说道：“你我不必同行，就此
-分手，各干营生去罢。三劫后我在北邙山等你，会齐了同往太虚幻境销号。”那僧
-道：“最妙，最妙！”说毕，二人一去，再不见个踪影了。
-　　士隐心中此时自忖：这两个人必有来历，很该问他一问，如今后悔却已晚了。
-这士隐正在痴想，忽见隔壁葫芦庙内寄居的一个穷儒，姓贾名化、表字时飞、别号
-雨村的走来。这贾雨村原系湖州人氏，也是诗书仕宦之族。因他生于末世，父母祖
-宗根基已尽，人口衰丧，只剩得他一身一口。在家乡无益，因进京求取功名，再整
-基业。自前岁来此，又淹蹇住了，暂寄庙中安身，每日卖文作字为生，故士隐常与
-他交接。当下雨村见了士隐，忙施礼陪笑道：“老先生倚门伫望，敢街市上有甚新
-闻么？”士隐笑道：“非也。适因小女啼哭，引他出来作耍，正是无聊的很。贾兄
-来得正好，请入小斋，彼此俱可消此永昼。”说着便令人送女儿进去，自携了雨村
-来至书房中，小童献茶。方谈得三五句话，忽家人飞报：“严老爷来拜。”士隐慌忙
-起身谢道：“恕诓驾之罪，且请略坐，弟即来奉陪。”雨村起身也让道：“老先生请
-便。晚生乃常造之客，稍候何妨。”说着士隐已出前厅去了。
-　　这里雨村且翻弄诗籍解闷，忽听得窗外有女子嗽声。雨村遂起身往外一看，原
-来是一个丫鬟在那里掐花儿，生的仪容不俗，眉目清秀，虽无十分姿色，却也有动
-人之处。雨村不觉看得呆了。那甄家丫鬟掐了花儿方欲走时，猛抬头见窗内有人：
-敝巾旧服，虽是贫窘，然生得腰圆背厚，面阔口方，更兼剑眉星眼，直鼻方腮。这
-丫鬟忙转身回避，心下自想：“这人生的这样雄壮，却又这样褴褛，我家并无这样
-贫窘亲友。想他定是主人常说的什么贾雨村了，怪道又说他‘必非久困之人，每每
-有意帮助周济他，只是没什么机会。’”如此一想，不免又回头一两次。雨村见他回
-头，便以为这女子心中有意于他，遂狂喜不禁，自谓此女子必是个巨眼英豪、风尘
-中之知己。一时小童进来，雨村打听得前面留饭，不可久待，遂从夹道中自便门出
-去了。士隐待客既散，知雨村已去，便也不去再邀。
-　　一日到了中秋佳节，士隐家宴已毕，又另具一席于书房，自己步月至庙中来邀
-雨村。原来雨村自那日见了甄家丫鬟曾回顾他两次，自谓是个知己，便时刻放在心
-上。今又正值中秋，不免对月有怀，因而口占五言一律云：
-未卜三生愿，频添一段愁。
-闷来时敛额，行去几回眸。
-自顾风前影，谁堪月下俦?
-蟾光如有意，先上玉人头。
-雨村吟罢，因又思及平生抱负，苦未逢时，乃又搔首对天长叹，复高吟一联云：
-玉在椟中求善价，钗于奁内待时飞。
-　　恰值士隐走来听见，笑道：“雨村兄真抱负不凡也！”雨村忙笑道：“不敢，不
-过偶吟前人之句，何期过誉如此。”因问：“老先生何兴至此？”士隐笑道：“今夜
-中秋，俗谓团圆之节，想尊兄旅寄僧房，不无寂寥之感。故特具小酌邀兄到敝斋一
-饮，不知可纳芹意否？”雨村听了，并不推辞，便笑道：“既蒙谬爱，何敢拂此盛
-情。”说着便同士隐复过这边书院中来了。
-　　须臾茶毕，早已设下杯盘，那美酒佳肴自不必说。二人归坐，先是款酌慢饮，
-渐次谈至兴浓，不觉飞觥献起来。当时街坊上家家箫管，户户笙歌，当头一轮明
-月，飞彩凝辉。二人愈添豪兴，酒到杯干。雨村此时已有七八分酒意，狂兴不禁，
-乃对月寓怀，口占一绝云：
-时逢三五便团，满把清光护玉栏。
-天上一轮才捧出，人间万姓仰头看。
-士隐听了大叫：“妙极!弟每谓兄必非久居人下者，今所吟之句，飞腾之兆已见，不
-日可接履于云霄之上了。可贺可贺！”乃亲斟一斗为贺。雨村饮干，忽叹道：“非晚
-生酒后狂言，若论时尚之学，晚生也或可去充数挂名。只是如今行李路费一概无措，
-神京路远，非赖卖字撰文即能到得。”士隐不待说完，便道：“兄何不早言!弟已久
-有此意，但每遇兄时并未谈及，故未敢唐突。今既如此，弟虽不才：‘义利’二字
-却还识得；且喜明岁正当大比，兄宜作速入都，春闱一捷，方不负兄之所学。其盘
-费馀事弟自代为处置，亦不枉兄之谬识矣。”当下即命小童进去速封五十两白银并
-两套冬衣，又云：“十九日乃黄道之期，兄可即买舟西上。待雄飞高举，明冬再晤，
-岂非大快之事！”雨村收了银衣，不过略谢一语，并不介意，仍是吃酒谈笑。那天
-已交三鼓，二人方散。
-　　士隐送雨村去后，回房一觉，直至红日三竿方醒。因思昨夜之事，意欲写荐书
-两封与雨村带至都中去，使雨村投谒个仕宦之家为寄身之地。因使人过去请时，那
-家人回来说：“和尚说，贾爷今日五鼓已进京去了，也曾留下话与和尚转达老爷，
-说：‘读书人不在黄道黑道，总以事理为要，不及面辞了。’”士隐听了，也只得罢
-了。
-　　真是闲处光阴易过，倏忽又是元宵佳节。士隐令家人霍启抱了英莲，去看社火
-花灯。半夜中霍启因要小解，便将英莲放在一家门槛上坐着。待他小解完了来抱时，
-那有英莲的踪影?急的霍启直寻了半夜。至天明不见，那霍启也不敢回来见主人，
-便逃往他乡去了。那士隐夫妇见女儿一夜不归，便知有些不好；再使几人去找寻，
-回来皆云影响全无。夫妻二人半世只生此女，一旦失去，何等烦恼，因此昼夜啼哭，
-几乎不顾性命。
-　　看看一月，士隐已先得病，夫人封氏也因思女构疾，日日请医问卦。不想这日
-三月十五，葫芦庙中炸供，那和尚不小心，油锅火逸，便烧着窗纸。此方人家俱用
-竹篱木壁，也是劫数应当如此，于是接二连三牵五挂四，将一条街烧得如火焰山一
-般。彼时虽有军民来救，那火已成了势了，如何救得下?直烧了一夜方息，也不知
-烧了多少人家。只可怜甄家在隔壁，早成了一堆瓦砾场了，只有他夫妇并几个家人
-的性命不曾伤了。急的士隐惟跌足长叹而已。与妻子商议，且到田庄上去住。偏值
-近年水旱不收，贼盗蜂起，官兵剿捕，田庄上又难以安身，只得将田地都折变了，
-携了妻子与两个丫鬟投他岳丈家去。
-　　他岳丈名唤封肃，本贯大如州人氏，虽是务农，家中却还殷实。今见女婿这等
-狼狈而来，心中便有些不乐。幸而士隐还有折变田产的银子在身边，拿出来托他随
-便置买些房地，以为后日衣食之计，那封肃便半用半赚的，略与他些薄田破屋。士
-隐乃读书之人，不惯生理稼穑等事，勉强支持了一二年，越发穷了。封肃见面时，
-便说些现成话儿；且人前人后又怨他不会过，只一味好吃懒做。士隐知道了，心中
-未免悔恨，再兼上年惊唬，急忿怨痛，暮年之人，那禁得贫病交攻，竟渐渐的露出
-了那下世的光景来。
-　　可巧这日拄了拐扎挣到街前散散心时，忽见那边来了一个跛足道人，疯狂落拓，
-麻鞋鹑衣，口内念着几句言词道：
-世人都晓神仙好，惟有功名忘不了。
-古今将相在何方？荒冢一堆草没了。
-世人都晓神仙好，只有金银忘不了。
-终朝只恨聚无多，及到多时眼闭了。
-世人都晓神仙好，只有娇妻忘不了。
-君生日日说恩情，君死又随人去了。
-世人都晓神仙好，只有儿孙忘不了。
-痴心父母古来多，孝顺子孙谁见了?
-士隐听了，便迎上来道：“你满口说些什么?只听见些‘好’‘了’‘好’‘了’。”那
-道人笑道：“你若果听见‘好’‘了’二字，还算你明白：可知世上万般，好便是了，
-了便是好。若不了，便不好；若要好，须是了。我这歌儿便叫《好了歌》。”士隐本
-是有夙慧的，一闻此言，心中早已悟彻，因笑道：“且住，待我将你这《好了歌》
-注解出来何如？”道人笑道：“你就请解。”士隐乃说道：
-　　陋室空堂，当年笏满床。衰草枯杨，曾为歌舞场。蛛丝儿结满雕粱，绿纱今又
-在蓬窗上。说甚么脂正浓、粉正香，如何两鬓又成霜?昨日黄土陇头埋白骨，今宵
-红绡帐底卧鸳鸯。
-金满箱，银满箱，转眼乞丐人皆谤。正叹他人命不长，那知自己归来丧?训有方，
-保不定日后作强梁。择膏粱，谁承望流落在烟花巷!因嫌纱帽小，致使锁枷扛。昨
-怜破袄寒，今嫌紫蟒长：乱烘烘你方唱罢我登场，反认他乡是故乡。甚荒唐，到头
-来都是“为他人作嫁衣裳”。
-　　那疯跛道人听了，拍掌大笑道：“解得切!解得切！”士隐便说一声“走罢”，将
-道人肩上的搭裢抢过来背上，竟不回家，同着疯道人飘飘而去。当下哄动街坊，众
-人当作一件新闻传说。封氏闻知此信，哭个死去活来。只得与父亲商议，遣人各处
-访寻，那讨音信?无奈何，只得依靠着他父母度日。幸而身边还有两个旧日的丫鬟
-伏侍，主仆三人，日夜作些针线，帮着父亲用度。那封肃虽然每日抱怨，也无可奈
-何了。
-　　这日那甄家的大丫鬟在门前买线，忽听得街上喝道之声。众人都说：“新太爷
-到任了！”丫鬟隐在门内看时，只见军牢快手一对一对过去，俄而大轿内抬着一个
-乌帽猩袍的官府来了。那丫鬟倒发了个怔，自思：“这官儿好面善?倒像在那里见过
-的。”于是进入房中，也就丢过不在心上。至晚间正待歇息之时，忽听一片声打的
-门响，许多人乱嚷，说：“本县太爷的差人来传人问话！”封肃听了，唬得目瞪口呆。
-　　不知有何祸事，且听下回分解。
-            `;
-            // 初始化zrender
-            zr = zrender.init(document.getElementById("main"));
-            width = zr.getWidth();
-            height = zr.getHeight();
-            isRunning = false;
-            document.getElementById('res').innerHTML = 'ready!<br/>';
-            document.getElementById('run').onclick = start;
-            document.getElementById('auto-run').onclick = autoStart;
+        // 初始化zrender
+        zr = zrender.init(document.getElementById("main"));
+        width = zr.getWidth();
+        height = zr.getHeight();
+        isRunning = false;
+        document.getElementById('res').innerHTML = 'ready!<br/>';
+        document.getElementById('run').onclick = start;
+        document.getElementById('auto-run').onclick = autoStart;
 
-            var ShapeClasses = {
-                circle: zrender.Circle,
-                sector: zrender.Sector,
-                ring: zrender.Ring,
-                ellipse: zrender.Ellipse,
-                rect: zrender.Rect,
-                text: zrender.Text,
-                heart: zrender.Heart,
-                droplet: zrender.Droplet,
-                line: zrender.Line,
-                image: zrender.Image,
-                star: zrender.Star,
-                isogon: zrender.Isogon
-            };
+        var ElClasses = {
+            circle: zrender.Circle,
+            sector: zrender.Sector,
+            ring: zrender.Ring,
+            rect: zrender.Rect,
+            text: zrender.Text,
+            line: zrender.Line,
+            image: zrender.Image
+        };
 
-            var t1 = 0;
-            var t2 = 0;
-            var t3 = 0;
-            var zr;
-            var isRunning;
-            var width;
-            var height;
-            var round;
-            var n;
-            var result;
-            var total;
-            var shapeType;
-            var img = new Image();
-            img.src = 'test.png';
-
-            function start() {
-                if (isRunning) {
-                    return;
+        var shapeMakers = {
+            circle() {
+                return {
+                    cx: Math.round(Math.random() * width),
+                    cy: Math.round(Math.random() * height),
+                    r: Math.random() * 30
                 }
-                isRunning = true;
-                document.getElementById('res').innerHTML += 'running ';
-
-                round = document.getElementById('round').value;
-                n = document.getElementById('count').value;
-                result = [];
-                total = 0;
-                shapeType = document.getElementById('shape').value;
-                setTimeout(run,50);
+            },
+            sector() {
+                return {
+                    cx: Math.round(Math.random() * width),
+                    cy: Math.round(Math.random() * height),
+                    r0: Math.round(Math.random() * 10),
+                    r: Math.random() * 30,
+                    startAngle : Math.round(Math.random() * 30),
+                    endAngle: Math.round(Math.random() * 180) + 30
+                }
+            },
+            ring() {
+                return {
+                    cx: Math.round(Math.random() * width),
+                    cy: Math.round(Math.random() * height),
+                    r0: Math.round(Math.random() * 10),
+                    r: Math.random() * 30,
+                }
+            },
+            rect() {
+                return {
+                    x: Math.round(Math.random() * width),
+                    y: Math.round(Math.random() * height),
+                    width: Math.round(Math.random() * 10),
+                    height: Math.round(Math.random() * 5)
+                }
+            },
+            line() {
+                return {
+                    x1: Math.round(Math.random() * width),
+                    y1: Math.round(Math.random() * height),
+                    x2: Math.round(Math.random() * width),
+                    y2: Math.round(Math.random() * height)
+                }
             }
+        }
 
-            var sList = [
-                'circle','sector','ring','ellipse','rect',
-                'text','heart','droplet','line','image','star','isogon'
-            ];
-            var autoIdx = 0;
-            var autoRun = false;
-            function autoStart() {
-                if (isRunning) {
-                    return;
-                }
+        var styleMakers = {
+            image() {
+                return {
+                    x: Math.round(Math.random() * width),
+                    y: Math.round(Math.random() * height),
+                    width: 10,
+                    height: 10,
+                    image: './asset/test.png'
+                };
+            },
+            text() {
+                return {
+                    text: elType == 'text' ? LARGE_TEXT_ZH.substr(
+                        Math.round(Math.random() * LARGE_TEXT_ZH.length),
+                        6
+                    ) : '',
+                    x: Math.round(Math.random() * width),
+                    y: Math.round(Math.random() * height)
+                };
+            }
+        }
+
+        var t1 = 0;
+        var t2 = 0;
+        var t3 = 0;
+        var zr;
+        var isRunning;
+        var width;
+        var height;
+        var round;
+        var n;
+        var result;
+        var total;
+        var elType;
+        var img = new Image();
+        img.src = 'asset/test.png';
+
+        function start() {
+            if (isRunning) {
+                return;
+            }
+            isRunning = true;
+            document.getElementById('res').innerHTML += 'running ';
+
+            round = document.getElementById('round').value;
+            n = document.getElementById('count').value;
+            result = [];
+            total = 0;
+            elType = document.getElementById('shape').value;
+            setTimeout(run,50);
+        }
+
+        var sList = [
+            'circle','sector','ring','ellipse','rect',
+            'text','heart','droplet','line','image','star','isogon'
+        ];
+        var autoIdx = 0;
+        var autoRun = false;
+        function autoStart() {
+            if (isRunning) {
+                return;
+            }
+            autoIdx = 0;
+            autoRun = true;
+            autoCheck();
+        }
+        function autoCheck() {
+            if (autoRun && autoIdx < sList.length) {
+                document.getElementById('shape').value = sList[autoIdx++];
+                start();
+            }
+            else {
+                autoRun = false;
                 autoIdx = 0;
-                autoRun = true;
+            }
+        }
+
+        function randomColor() {
+            var r = Math.round(Math.random() * 255);
+            var g = Math.round(Math.random() * 255);
+            var b = Math.round(Math.random() * 255);
+            return 'rgb(' + [r, g, b].join(',') + ')';
+        }
+
+        function run(){
+            var ShapeClass = ElClasses[elType];
+            var shapeMaker = shapeMakers[elType];
+            var styleMaker = styleMakers[elType];
+            if (round--) {
+                zr.clear();
+                var ticket = new Date();
+                for (var i = 0; i < n; i++) {
+                    zr.add(new ShapeClass({
+                        shape: shapeMaker && shapeMaker(),
+                        style: styleMaker ? styleMaker() : {
+                            fill: 'rgb(' + Math.round(i / n * 255) + ',0,0)'
+                        },
+                        silent: true
+                    }));
+                }
+                zr.refreshImmediately();
+                ticket = new Date() - ticket;
+                total += ticket;
+                result.push(ticket);
+                setTimeout(run,50);
+            }else {
+                isRunning = false;
+                document.getElementById('res').innerHTML +=
+                    n + '个' + elType +
+                    '平均render时间:' + Math.round(total/result.length)
+                    + 'ms : [' + result.join(',') + ']<br/>';
+                    console.log(t1, t2, t3); t1 = 0; t2 = 0; t3 = 0;
                 autoCheck();
             }
-            function autoCheck() {
-                if (autoRun && autoIdx < sList.length) {
-                    document.getElementById('shape').value = sList[autoIdx++];
-                    start();
-                }
-                else {
-                    autoRun = false;
-                    autoIdx = 0;
-                }
-            }
-
-            function randomColor() {
-                var r = Math.round(Math.random() * 255);
-                var g = Math.round(Math.random() * 255);
-                var b = Math.round(Math.random() * 255);
-                return 'rgb(' + [r, g, b].join(',') + ')';
-            }
-
-            function run(){
-                if (round--) {
-                    zr.clear();
-                    for (var i = 0; i < n; i++) {
-                        var ShapeClass = ShapeClasses[shapeType];
-                        zr.add(new ShapeClass({
-                            shape: {
-                                x: Math.round(Math.random() * width),
-                                y: Math.round(Math.random() * height),
-                                x1: Math.round(Math.random() * width),
-                                y1: Math.round(Math.random() * height),
-                                x2: Math.round(Math.random() * width),
-                                y2: Math.round(Math.random() * height),
-                                cx: Math.round(Math.random() * width),
-                                cy: Math.round(Math.random() * height),
-                                r0: Math.round(Math.random() * 10),
-                                r: shapeType === 'rect' ? 0 :
-                                    (shapeType != 'rose'
-                                        ? Math.round(Math.random() * 30)
-                                        : [5 + Math.round(Math.random() * 5),
-                                           10 + Math.round(Math.random() * 5),
-                                           15 + Math.round(Math.random() * 5)]
-                                        ),
-                                n: Math.round(Math.random() * 10 + 2),
-                                rx: Math.round(Math.random() * 10),
-                                ry: Math.round(Math.random() * 30),
-                                k: Math.round(Math.random() * 10),
-                                lineWidth : 1,
-                                width: Math.round(Math.random() * 10),
-                                height: Math.round(Math.random() * 5),
-                                startAngle : Math.round(Math.random() * 30),
-                                endAngle: Math.round(Math.random() * 180) + 30,
-                                image: img
-                            },
-                            style: {
-                                text: shapeType == 'text' ? str.substr(
-                                    Math.round(Math.random() * str.length),
-                                    6
-                                ) : '',
-                                x: Math.round(Math.random() * width),
-                                y: Math.round(Math.random() * height),
-                                // fill: randomColor()
-                                fill: 'rgb(' + Math.round(i / n * 255) + ',0,0)'
-                            },
-                            silent: true
-                        }));
-                    }
-                    var ticket = new Date();
-                    zr.refreshImmediately();
-                    ticket = new Date() - ticket;
-                    total += ticket;
-                    result.push(ticket);
-                    setTimeout(run,50);
-                }else {
-                    isRunning = false;
-                    document.getElementById('res').innerHTML +=
-                        n + '个' + shapeType +
-                        '平均render时间:' + Math.round(total/result.length)
-                        + 'ms : [' + result.join(',') + ']<br/>';
-                        console.log(t1, t2, t3); t1 = 0; t2 = 0; t3 = 0;
-                    autoCheck();
-                }
-            }
+        }
     </script>
-
 </body>
 </html>

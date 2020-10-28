@@ -65,6 +65,7 @@
             <label>textRotation:</label>
             <button onclick="startTextRotation();">Start</button>
             <button onclick="stopTextRotation();">Stop</button>
+            <button onclick="updateToURL('textRotation', 0.5 * Math.PI);">0.5 * Math.PI</button>
             <button onclick="updateToURL('textRotation', 0.1 * Math.PI);">0.1 * Math.PI</button>
             <button onclick="updateToURL('textRotation', -0.3 * Math.PI);">-0.3 * Math.PI</button>
             <button onclick="removeToURL('textRotation');">Remove</button>
@@ -73,25 +74,21 @@
                 var textRotation = _storage.textRotation;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.attr({
-                        style: {
-                            textRotation: clone(textRotation)
-                        }
+                    shape.getTextContent().attr({
+                        rotation: textRotation
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.attr({
-                        style: {
-                            textRotation: clone(textRotation)
-                        }
+                    shape.getTextContent().attr({
+                        rotation: clone(textRotation)
                     });
                 }
             };
             </script>
         </div>
 
-        <div class="control-block">
+        <!-- <div class="control-block">
             <label>textOrigin:</label>
             <button onclick="updateToURL('textOrigin', 'center');">'center'</button>
             <button onclick="updateToURL('textOrigin', [150, 70]);">[150, 70] (right-bottom-corner)</button>
@@ -99,28 +96,27 @@
             <script>
             _updaters.textOrigin = function () {
                 var textOrigin = _storage.textOrigin;
+
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.attr({
-                        style: {
-                            textOrigin: clone(textOrigin)
-                        }
+                    shape.getTextContent().attr({
+                        originX: textOrigin ? textOrigin[0] : 0,
+                        originY: textOrigin ? textOrigin[1] : 0
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.attr({
-                        style: {
-                            textOrigin: clone(textOrigin)
-                        }
+                    shape.getTextContent().attr({
+                        originX: textOrigin ? textOrigin[0] : 0,
+                        originY: textOrigin ? textOrigin[1] : 0
                     });
                 }
             };
             </script>
-        </div>
+        </div> -->
 
         <div class="control-block">
-            <label>textBackground:</label>
+            <label>background:</label>
             <button onclick="updateToURL('hasBg', 1);">Add</button>
             <button onclick="removeToURL('hasBg');">Remove</button>
             <script>
@@ -128,31 +124,31 @@
                 var hasBg = _storage.hasBg;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.attr({
+                    shape.getTextContent().attr({
                         style: {
-                            textBorderRadius: 3,
-                            textBackgroundColor: 'rgba(0, 255, 0, 0.3)',
-                            textBorderColor: '#191933',
-                            textBorderWidth: 2,
-                            textBoxShadowBlur: 5,
-                            textBoxShadowColor: '#1099ee',
-                            textBoxShadowOffsetX: 2,
-                            textBoxShadowOffsetY: 5
+                            borderRadius: 3,
+                            backgroundColor: 'rgba(0, 255, 0, 0.3)',
+                            borderColor: '#191933',
+                            borderWidth: 2,
+                            boxShadowBlur: 5,
+                            boxShadowColor: '#1099ee',
+                            boxShadowOffsetX: 2,
+                            boxShadowOffsetY: 5
                         }
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.attr({
+                    shape.getTextContent().attr({
                         style: {
-                            textBorderRadius: 8,
-                            textBackgroundColor: 'rgba(0, 255, 0, 0.3)',
-                            textBorderColor: '#191933',
-                            textBorderWidth: 2,
-                            textBoxShadowBlur: 5,
-                            textBoxShadowColor: '#1099ee',
-                            textBoxShadowOffsetX: 2,
-                            textBoxShadowOffsetY: 5
+                            borderRadius: 8,
+                            backgroundColor: 'rgba(0, 255, 0, 0.3)',
+                            borderColor: '#191933',
+                            borderWidth: 2,
+                            boxShadowBlur: 5,
+                            boxShadowColor: '#1099ee',
+                            boxShadowOffsetX: 2,
+                            boxShadowOffsetY: 5
                         }
                     });
                 }
@@ -170,18 +166,14 @@
                 var dist = _storage.textDistance;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.attr({
-                        style: {
-                            textDistance: clone(dist)
-                        }
+                    shape.setTextConfig({
+                        distance: dist
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.attr({
-                        style: {
-                            textDistance: clone(dist)
-                        }
+                    shape.setTextConfig({
+                        distance: dist
                     });
                 }
             };
@@ -198,18 +190,14 @@
                 var textPosition = _storage.textPosition;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.attr({
-                        style: {
-                            textPosition: textPosition
-                        }
+                    shape.setTextConfig({
+                        position: textPosition
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.attr({
-                        style: {
-                            textPosition: textPosition
-                        }
+                    shape.setTextConfig({
+                        position: textPosition
                     });
                 }
             };
@@ -217,25 +205,25 @@
         </div>
 
         <div class="control-block">
-            <label>textPadding:</label>
-            <button onclick="updateToURL('textPadding', [10, 20, 30, 40]);">[10, 20, 30, 40]</button>
-            <button onclick="updateToURL('textPadding', 50);">50</button>
-            <button onclick="removeToURL('textPadding');">Remove</button>
+            <label>padding:</label>
+            <button onclick="updateToURL('padding', [10, 20, 30, 40]);">[10, 20, 30, 40]</button>
+            <button onclick="updateToURL('padding', 50);">50</button>
+            <button onclick="removeToURL('padding');">Remove</button>
             <script>
-            _updaters.textPadding = function () {
+            _updaters.padding = function () {
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.attr({
+                    shape.getTextContent().attr({
                         style: {
-                            textPadding: clone(_storage.textPadding)
+                            padding: clone(_storage.padding)
                         }
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.attr({
+                    shape.getTextContent().attr({
                         style: {
-                            textPadding: clone(_storage.textPadding)
+                            padding: clone(_storage.padding)
                         }
                     });
                 }
@@ -254,17 +242,17 @@
                 var textAlign = _storage.textAlign;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.attr({
+                    shape.getTextContent().attr({
                         style: {
-                            textAlign: textAlign
+                            align: textAlign
                         }
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.attr({
+                    shape.getTextContent().attr({
                         style: {
-                            textAlign: textAlign
+                            align: textAlign
                         }
                     });
                 }
@@ -273,54 +261,54 @@
         </div>
 
         <div class="control-block">
-            <label>textVerticalAlign:</label>
-            <button onclick="updateToURL('textVerticalAlign', 'top');">'top'</button>
-            <button onclick="updateToURL('textVerticalAlign', 'middle');">'middle'</button>
-            <button onclick="updateToURL('textVerticalAlign', 'bottom');">'bottom'</button>
-            <button onclick="removeToURL('textVerticalAlign');">Remove</button>
+            <label>verticalAlign:</label>
+            <button onclick="updateToURL('verticalAlign', 'top');">'top'</button>
+            <button onclick="updateToURL('verticalAlign', 'middle');">'middle'</button>
+            <button onclick="updateToURL('verticalAlign', 'bottom');">'bottom'</button>
+            <button onclick="removeToURL('verticalAlign');">Remove</button>
             <script>
-            _updaters.textVerticalAlign = function (textVerticalAlign) {
-                var textVerticalAlign = _storage.textVerticalAlign;
+            _updaters.verticalAlign = function (verticalAlign) {
+                var verticalAlign = _storage.verticalAlign;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
-                    shape.attr({
+                    shape.getTextContent().attr({
                         style: {
-                            textVerticalAlign: textVerticalAlign
+                            verticalAlign: verticalAlign
                         }
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
-                    shape.attr({
+                    shape.getTextContent().attr({
                         style: {
-                            textVerticalAlign: textVerticalAlign
+                            verticalAlign: verticalAlign
                         }
                     });
                 }
             };
             </script>
         </div>
-
+<!--
         <div class="control-block">
             <label>transformText:</label>
             <button onclick="updateToURL('transformText', true);">Enable</button>
             <button onclick="removeToURL('transformText');">Remove</button>
             <script>
             </script>
-        </div>
+        </div> -->
 
         <div class="control-block">
-            <label>Add '\n' at char index 3 (only for red rect):</label>
+            <label>Add '\n' at char index 3 (only for plain text rect):</label>
             <button onclick="updateToURL('addLineBreak', true);">Add</button>
             <button onclick="removeToURL('addLineBreak');">Remove</button>
             <script>
             _updaters.addLineBreak = function () {
-                var textVerticalAlign = _storage.textVerticalAlign;
+                var verticalAlign = _storage.verticalAlign;
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
                     var text = shape.__zr_test_text;
                     text = text.substr(0, 3) + '\n' + text.substr(3, text.length - 1);
-                    shape.attr({
+                    shape.getTextContent().attr({
                         style: {
                             text: text
                         }
@@ -329,7 +317,7 @@
             };
             </script>
         </div>
-
+<!--
         <div class="control-block">
             <label>Add truncate (only for red rect):</label>
             <button onclick="updateToURL('truncate', {outerWidth: 50, outerHeight: 40, ellipsis: '...'});">{outerWidth: 50, outerHeight: 40, ellipsis: '...'}</button>
@@ -344,7 +332,7 @@
                     for (var j = 0; j < 5; j++) {
                         text += shape.__zr_test_text;
                     }
-                    shape.attr({
+                    shape.getTextContent().attr({
                         style: {
                             text: text,
                             truncate: truncate
@@ -354,7 +342,7 @@
             };
             </script>
         </div>
-
+ -->
     </div>
 
 
@@ -395,9 +383,15 @@
                     position: [(idx % 3) * 220, 120 * Math.floor(idx / 3)],
                     scale: [1, 1],
                     style: {
-                        fill: 'red',
-                        text: text,
-                        textPosition: textPos
+                        fill: zrender.color.random(),
+                    },
+                    textContent: new zrender.Text({
+                        style: {
+                            text: text
+                        }
+                    }),
+                    textConfig: {
+                        position: textPos
                     },
                     __zr_test_text: text,
                     shape: {
@@ -421,22 +415,28 @@
                 var shape = new zrender.Rect({
                     position: [(idx % 2) * 300, 150 * Math.floor(idx / 2)],
                     style: {
-                        fill: '#eeaaff',
-                        text: [
-                            '{j|' + text + '}',
-                            '我是 Rect Text, textDistance: 20',
-                            '整体的 textAlign textVerticalAlign 取默认值'
-                        ].join('\n'),
-                        textFill: 'red',
-                        font: '10px Arial',
-                        rich: {
-                            j: {
-                                font: '16px Arial',
-                                textFill: '#922889',
-                                textVerticalAlign: 'top'
+                        fill: '#eeaaff'
+                    },
+                    textContent: new zrender.Text({
+                        style: {
+                            text: [
+                                '{j|' + text + '}',
+                                '我是 Rect Text, textDistance: 20',
+                                '整体的 textAlign verticalAlign 取默认值'
+                            ].join('\n'),
+                            fill: 'red',
+                            font: '10px Arial',
+                            rich: {
+                                j: {
+                                    font: '16px Arial',
+                                    fill: '#922889',
+                                    verticalAlign: 'top'
+                                }
                             }
-                        },
-                        textPosition: textPos,
+                        }
+                    }),
+                    textConfig: {
+                        position: textPos
                     },
                     shape: {
                         x: 220,

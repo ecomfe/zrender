@@ -2,9 +2,10 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Animation</title>
+    <title>Benchmark</title>
     <script src="../dist/zrender.js"></script>
-    <script src="stats.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/zrender@4.2.0/dist/zrender.js"></script> -->
+    <script src="lib/stats.js"></script>
     <script src="https://d3js.org/d3.v4.min.js"></script>
 </head>
 <body style="margin:0px;">
@@ -270,11 +271,13 @@ function animate(rects, layout) {
         });
 
         // update what is drawn on screen
-        rects.forEach(function(rect, idx) {
-            rect.shape.x = rect.__point__.x;
-            rect.shape.y = rect.__point__.y;
-            rect.dirty(true);
-        });
+        for (let i = 0; i < rects.length; i++) {
+            var rect = rects[i];
+            var point = points[i];
+            rect.shape.x = point.x;
+            rect.shape.y = point.y;
+            rect.dirtyShape ? rect.dirtyShape() : rect.dirty(true);
+        }
 
         // if this animation is over
         if (t === 1) {
@@ -292,32 +295,28 @@ function animate(rects, layout) {
     });
 }
 zr.clear();
-var rects = points.map(function(pt) {
+console.time('init');
+var rects = [];
+for (var i = 0; i < points.length; i++) {
+    var pt = points[i];
     var rect = new zrender.Rect({
         shape: {
             width: pointWidth,
             height: pointWidth
         },
         style: {
-            fill: pt.color,
-            text: withText ? 'a' : null,
-            textFill: withText ? pt.color : null
+            fill: pt.color
+            // fill: 'green'
         },
-        silent: true,
-        __point__: pt
+        // autoBatch: true,
+        silent: true
     });
     zr.add(rect);
-    return rect;
-});
-
+    rects.push(rect);
+}
+console.timeEnd('init');
 // start off as a grid
 toGrid(points);
-
-rects.forEach(function(rect, idx) {
-    rect.shape.x = rect.__point__.x;
-    rect.shape.y = rect.__point__.y;
-    rect.dirty(true);
-});
 
 setTimeout(function () {
     // start the animation

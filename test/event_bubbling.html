@@ -38,9 +38,6 @@
         g1.on('click', function(e) {
             console.log('Group 1');
         });
-        g2.one('click', function(e) {
-            console.log('Group 2 should be triggered once');
-        });
         g3.on('click', function(e) {
             console.log('Group 3');
             e.cancelBubble = true;

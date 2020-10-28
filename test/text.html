@@ -19,14 +19,6 @@
 
     var showBoundingRect;
 
-    // requireES([
-    //     'zrender/src/zrender',
-    //     'zrender/src/graphic/Text',
-    //     'zrender/src/graphic/shape/Line',
-    //     'zrender/src/graphic/shape/Rect',
-    //     'zrender/src/vml/vml'
-    // ], function(zrender, Text, Line, Rect){
-
     var Text = zrender.Text;
     var Line = zrender.Line;
     var Rect = zrender.Rect;
@@ -36,6 +28,7 @@
     });
 
     showBoundingRect = function () {
+        console.time('boundingRect');
         zr.storage.traverse(function (el) {
             if (el.type === 'text') {
                 var rect = el.getBoundingRect();
@@ -44,18 +37,22 @@
                     shape: {
                         x: rect.x, y: rect.y, width: rect.width, height: rect.height
                     },
-                    position: el.position.slice(),
+                    x: el.x,
+                    y: el.y,
                     rotation: el.rotation,
-                    scale: el.scale.slice(),
-                    origin: el.origin && el.origin.slice(),
+                    scaleX: el.scaleX,
+                    scaleY: el.scaleY,
+                    originX: el.originX,
+                    originY: el.originY,
                     style: {
                         fill: null,
-                        stroke: 'blue',
+                        stroke: zrender.color.random(),
                         lineWidth: 1
                     }
                 }));
             }
         });
+        console.timeEnd('boundingRect');
     }
 
     var zrWidth = zr.getWidth();
@@ -101,65 +98,72 @@
             text: '国国国国\n国国国国国\n国国国国国国',
             width: 50,
             height: 50,
-            textFill: '#c0f',
-            textFont: '18px Microsoft Yahei'
+            fill: '#c0f',
+            font: '18px Microsoft Yahei'
         },
         draggable: true
     }));
 
     zr.add(new Text({
-        position : [100, 100],
+        x: 100,
+        y: 100,
         style: {
             x: 0,
             y: 0,
-            text: 'position\n[100, 100]\ntextStrokeWidth: 10',
+            text: 'position\n[100, 100]\nlineWidth: 10',
             width: 50,
             height: 50,
-            textFill: 'green',
-            textStroke: 'red',
-            textStrokeWidth: 10,
-            textFont: '18px Microsoft Yahei'
+            fill: 'green',
+            stroke: 'red',
+            lineWidth: 10,
+            font: '18px Microsoft Yahei'
         },
         draggable: true
     }));
 
     zr.add(new Text({
-        position : [200, 100],
+        x: 200,
+        y: 100,
         rotation: 2,
-        scale: [.5, .5],
+        scaleX: 0.5,
+        scaleY: 0.5,
         style: {
             x: 0,
             y: 0,
             text: 'position\n[200, 100],\nrotation: 2\nscale: 0.5',
             width: 50,
             height: 50,
-            textFill: '#c0f',
-            textFont: '18px Microsoft Yahei'
+            fill: '#c0f',
+            font: '18px Microsoft Yahei'
         },
         draggable: true
     }));
 
     zr.add(new Text({
-        position : [100, 200],
+        x: 100,
+        y: 200,
         rotation: -1,
-        origin: [0, 50],
-        scale: [.5, .5],
+        originX: 0,
+        originY: 50,
+        scaleX: .5,
+        scaleY: .5,
         style: {
             x: 0,
             y: 0,
-            text: 'position\n[100, 200],\nrotation: -1\nscale: 0.5\ntextAlign: middle\ntextVerticalAlign: bottom\norigin:[0, 50]',
+            text: 'position\n[100, 200],\nrotation: -1\nscale: 0.5\nalign: middle\nverticalAlign: bottom\norigin:[0, 50]',
             width: 50,
             height: 50,
-            textFill: '#c0f',
-            textFont: '18px Microsoft Yahei',
-            textAlign: 'middle',
-            textVerticalAlign: 'bottom'
+            fill: '#c0f',
+            font: '18px Microsoft Yahei',
+            align: 'middle',
+            verticalAlign: 'bottom'
         },
         draggable: true
     }));
 
     zr.add(new Rect({
-        position : [300, 100],
+        x: 300,
+        y: 100,
         shape: {
             x: 0, y: 0, width: 200, height: 16
         },
@@ -168,47 +172,51 @@
         }
     }));
     zr.add(new Text({
-        position : [300, 100],
+        x: 300,
+        y: 100,
         style: {
             x: 0,
             y: 0,
             text: '微软雅黑 no offset gg',
-            textFill: '#fff',
-            textFont: '16px Microsoft Yahei'
+            fill: '#fff',
+            font: '16px Microsoft Yahei'
         }
     }));
 
     zr.add(new Text({
-        position : [400, 50],
+        x: 400,
+        y: 50,
         style: {
             x: 0,
             y: 0,
-            text: 'position: [400, 50]\ntextAlign: right\ntextVerticalAlign: middle',
-            textFill: '#456',
-            textAlign: 'right',
-            textVerticalAlign: 'middle'
+            text: 'position: [400, 50]\nalign: right\nverticalAlign: middle',
+            fill: '#456',
+            align: 'right',
+            verticalAlign: 'middle'
         }
     }));
 
     zr.add(new Text({
-        position : [500, 50],
+        x: 500,
+        y: 50,
         style: {
             x: 0,
             y: 0,
-            text: 'position: [500, 50]\ntextAlign: center\ntextVerticalAlign: bottom',
-            textFill: '#456',
-            textAlign: 'center',
-            textVerticalAlign: 'bottom'
+            text: 'position: [500, 50]\nalign: center\nverticalAlign: bottom',
+            fill: '#456',
+            align: 'center',
+            verticalAlign: 'bottom'
         }
     }));
 
     zr.add(new Text({
-        position : [600, 0],
+        x: 600,
+        y: 0,
         style: {
             x: 0,
             y: 0,
             text: '阴影阴影\nshadow',
-            textFill: '#456',
+            fill: '#456',
             font: '18px Arial',
             textShadowBlur: 3,
             textShadowColor: '#893e95',
@@ -218,15 +226,16 @@
     }));
 
     zr.add(new Text({
-        position : [700, 0],
+        x: 700,
+        y: 0,
         style: {
             x: 0,
             y: 0,
-            text: '有文字背景没有框背景和 textPadding: 10 \nshadow',
-            textFill: '#ffe',
+            text: '有文字背景没有框背景和 padding: 10 \nshadow',
+            fill: '#ffe',
             font: '18px Arial',
-            textPadding: 10,
-            textBackgroundColor: 'rgba(124, 0, 123, 0.4)',
+            padding: 10,
+            backgroundColor: 'rgba(124, 0, 123, 0.4)',
             textShadowBlur: 3,
             textShadowColor: '#893e95',
             textShadowOffsetX: 5,
@@ -235,45 +244,47 @@
     }));
 
     zr.add(new Text({
-        position : [600, 100],
+        x: 600,
+        y: 100,
         rotation: -Math.PI / 16,
         style: {
             x: 0,
             y: 0,
             text: [
                 '有文字背景也有框背景',
-                'textBorderWidth: 2 和 textBorderRadius: 5',
-                'textPadding: [10, 20, 30, 40]',
+                'borderWidth: 2 和 borderRadius: 5',
+                'padding: [10, 20, 30, 40]',
                 'rotation: -Math.PI / 16'
             ].join('\n'),
-            textFill: '#ffe',
+            fill: '#ffe',
             font: '18px Arial',
-            textPadding: [10, 20, 30, 40],
-            textBackgroundColor: 'rgba(124, 0, 123, 0.4)',
-            textBorderColor: '#112233',
-            textBorderWidth: 2,
-            textBorderRadius: 5,
+            padding: [10, 20, 30, 40],
+            backgroundColor: 'rgba(124, 0, 123, 0.4)',
+            borderColor: '#112233',
+            borderWidth: 2,
+            borderRadius: 5,
             textShadowBlur: 2,
             textShadowColor: '#893e95',
             textShadowOffsetX: 2,
             textShadowOffsetY: 4,
-            textBoxShadowBlur: 5,
-            textBoxShadowColor: '#1099ee',
-            textBoxShadowOffsetX: 5,
-            textBoxShadowOffsetY: 10
+            boxShadowBlur: 5,
+            boxShadowColor: '#1099ee',
+            boxShadowOffsetX: 5,
+            boxShadowOffsetY: 10
         }
     }));
 
 
     zr.add(new Text({
-        position : [100, 300],
+        x: 100,
+        y: 300,
         style: {
             // Empty text but has background
             text: '',
             x: 0,
             y: 0,
-            textPadding: [10, 20, 30, 40],
-            textBackgroundColor: 'rgba(124, 0, 123, 0.4)'
+            padding: [10, 20, 30, 40],
+            backgroundColor: 'rgba(124, 0, 123, 0.4)'
         }
     }));
 
@@ -283,17 +294,17 @@
             x: 200,
             y: 300,
             text: [
-                'x: 200, y: 300{j|这行指定了 textLineHeight 100px (vertical top)}所以比较宽裕{k|vertical bottom}',
-                '{l|textPadding: [10, 20]}{m|textPadding: [10, 20, 30, 40], vertical: top}{o|width100}{n|width100}',
+                'x: 200, y: 300{j|这行指定了 lineHeight 100px (vertical top)}所以比较宽裕{k|vertical bottom}',
+                '{l|padding: [10, 20]}{m|padding: [10, 20, 30, 40], vertical: top}{o|width100}{n|width100}',
                 '默认样式red 18px',
                 '{a|富文本，样式a没定义}',
                 '{b|默认字体大小但有阴影}默认样式18px{c|绿色 30px}{b|这句非常非常长最长。阴影样式。中间有\n换行}',
-                '{c|textAlign: left}紧跟左{e|这两块}{f|在剩余区域居中}{d|textAlign: right}',
+                '{c|align: left}紧跟左{e|这两块}{f|在剩余区域居中}{d|align: right}',
                 '这是指定宽默认取lineHeight的图片{p|} 这是指定高宽的图片{q|}{r|}',
                 '这个自动获取长宽比的图片{s|}只高度指定',
-                '{g|textVerticalAlign: top}{h|最大文字}{i|textVerticalAlign: bottom}'
+                '{g|verticalAlign: top}{h|最大文字}{i|verticalAlign: bottom}'
             ].join('\n'),
-            textFill: 'red',
+            fill: 'red',
             font: '18px Arial',
             rich: {
                 b: {
@@ -304,99 +315,99 @@
                 },
                 c: {
                     font: '30px Microsoft YaHei',
-                    textFill: 'green'
+                    fill: 'green'
                 },
                 d: {
                     font: '22px Arial',
-                    textFill: '#871299',
-                    textAlign: 'right'
+                    fill: '#871299',
+                    align: 'right'
                 },
                 e: {
                     font: '22px Arial',
-                    textFill: '#367199',
-                    textAlign: 'center'
+                    fill: '#367199',
+                    align: 'center'
                 },
                 f: {
                     font: '12px Arial',
-                    textFill: '#941122',
-                    textBackgroundColor: '#eee',
-                    textPadding: [0,0,0,20],
-                    textWidth: 180,
-                    textAlign: 'center'
+                    fill: '#941122',
+                    backgroundColor: '#eee',
+                    padding: [0,0,0,20],
+                    width: 180,
+                    align: 'center'
                 },
                 g: {
                     font: '12px Arial',
-                    textVerticalAlign: 'top'
+                    verticalAlign: 'top'
                 },
                 h: {
                     font: '34px Arial'
                 },
                 i: {
                     font: '18px Arial',
-                    textVerticalAlign: 'bottom'
+                    verticalAlign: 'bottom'
                 },
                 j: {
                     font: '23px Arial',
-                    textFill: '#922889',
-                    textVerticalAlign: 'top',
-                    textLineHeight: 100
+                    fill: '#922889',
+                    verticalAlign: 'top',
+                    lineHeight: 100
                 },
                 k: {
                     font: '14px Arial',
-                    textFill: '#126354',
-                    textVerticalAlign: 'bottom'
+                    fill: '#126354',
+                    verticalAlign: 'bottom'
                 },
                 l: {
                     font: '18px Arial',
-                    textFill: '#331199',
-                    textBorderColor: '#11aa11',
-                    textBorderWidth: 2,
-                    textBorderRadius: 4,
-                    textBackgroundColor: 'rgba(0,0,0,0.1)',
-                    textPadding: [10, 20]
+                    fill: '#331199',
+                    borderColor: '#11aa11',
+                    borderWidth: 2,
+                    borderRadius: 4,
+                    backgroundColor: 'rgba(0,0,0,0.1)',
+                    padding: [10, 20]
                 },
                 m: {
                     font: '9px Arial',
-                    textFill: '#aabbcc',
-                    textBackgroundColor: '#224433',
-                    textBorderRadius: 8,
-                    textPadding: [10, 20, 30, 40],
-                    textVerticalAlign: 'top'
+                    fill: '#aabbcc',
+                    backgroundColor: '#224433',
+                    borderRadius: 8,
+                    padding: [10, 20, 30, 40],
+                    verticalAlign: 'top'
                 },
                 n: {
-                    textAlign: 'right',
-                    textVerticalAlign: 'bottom',
-                    textBackgroundColor: '#6712ab',
-                    textWidth: 100
+                    align: 'right',
+                    verticalAlign: 'bottom',
+                    backgroundColor: '#6712ab',
+                    width: 100
                 },
                 o: {
-                    textAlign: 'center',
-                    textWidth: 100,
-                    textBackgroundColor: '#99aa44'
+                    align: 'center',
+                    width: 100,
+                    backgroundColor: '#99aa44'
                 },
                 p: {
-                    textBackgroundColor: {
+                    backgroundColor: {
                         image: './data/hill-Qomolangma.png'
                     },
-                    textWidth: 100
+                    width: 100
                 },
                 q: {
-                    textBackgroundColor: {
+                    backgroundColor: {
                         image: './data/hill-Kilimanjaro.png'
                     },
-                    textWidth: 30,
-                    textHeight: 90
+                    width: 30,
+                    height: 90
                 },
                 r: {
-                    textBackgroundColor: {
+                    backgroundColor: {
                         image: './data/hill-Kilimanjaro.png'
                     },
-                    textWidth: 30,
-                    textHeight: 12,
-                    textVerticalAlign: 'bottom'
+                    width: 30,
+                    height: 12,
+                    verticalAlign: 'bottom'
                 },
                 s: {
-                    textBackgroundColor: {
+                    backgroundColor: {
                         image: './data/hill-Qomolangma.png'
                     }
                 }
@@ -407,56 +418,57 @@
 
     zr.add(new Text({
         rotation: -0.1,
-        position: [500, 900],
+        x: 500,
+        y: 900,
         style: {
             text: [
                 'position: [500, 900]{j|rotation: -0.1}',
-                '{l|且有 textPadding: [20, 30, 40, 50]}{m|textPadding, vertical: top}{o|width100}{n|width100}',
-                '整体的 textAlign center, textVerticalAlign middle'
+                '{l|且有 padding: [20, 30, 40, 50]}{m|padding, vertical: top}{o|width100}{n|width100}',
+                '整体的 textAlign center, verticalAlign middle'
             ].join('\n'),
-            textFill: 'red',
+            fill: 'red',
             font: '18px Arial',
-            textBorderRadius: 10,
-            textBackgroundColor: 'rgba(0, 255, 0, 0.3)',
-            textBorderColor: '#191933',
-            textBorderWidth: 4,
-            textPadding: [20, 30, 40, 50],
-            textVerticalAlign: 'middle',
-            textAlign: 'center',
+            borderRadius: 10,
+            backgroundColor: 'rgba(0, 255, 0, 0.3)',
+            borderColor: '#191933',
+            borderWidth: 4,
+            padding: [20, 30, 40, 50],
+            verticalAlign: 'middle',
+            align: 'center',
             rich: {
                 j: {
                     font: '23px Arial',
-                    textFill: '#922889',
-                    textVerticalAlign: 'top',
-                    textLineHeight: 100
+                    fill: '#922889',
+                    verticalAlign: 'top',
+                    lineHeight: 100
                 },
                 l: {
                     font: '18px Arial',
-                    textFill: '#331199',
-                    textBorderColor: '#11aa11',
-                    textBorderWidth: 2,
-                    textBorderRadius: 4,
-                    textBackgroundColor: 'rgba(0,0,0,0.1)',
-                    textPadding: [10, 20]
+                    fill: '#331199',
+                    borderColor: '#11aa11',
+                    borderWidth: 2,
+                    borderRadius: 4,
+                    backgroundColor: 'rgba(0,0,0,0.1)',
+                    padding: [10, 20]
                 },
                 m: {
                     font: '9px Arial',
-                    textFill: '#aabbcc',
-                    textBackgroundColor: '#224433',
-                    textBorderRadius: 8,
-                    textPadding: [10, 20, 30, 40],
-                    textVerticalAlign: 'top'
+                    fill: '#aabbcc',
+                    backgroundColor: '#224433',
+                    borderRadius: 8,
+                    padding: [10, 20, 30, 40],
+                    verticalAlign: 'top'
                 },
                 n: {
-                    textAlign: 'right',
-                    textVerticalAlign: 'bottom',
-                    textBackgroundColor: '#6712ab',
-                    textWidth: 100
+                    align: 'right',
+                    verticalAlign: 'bottom',
+                    backgroundColor: '#6712ab',
+                    width: 100
                 },
                 o: {
-                    textAlign: 'center',
-                    textWidth: 100,
-                    textBackgroundColor: '#99aa44'
+                    align: 'center',
+                    width: 100,
+                    backgroundColor: '#99aa44'
                 }
             }
         },
@@ -466,32 +478,33 @@
 
     zr.add(new Text({
         rotation: -0.1,
-        position: [500, 1300],
+        x: 500,
+        y: 1300,
         style: {
             text: [
                 'position: [500, 1300]{j|rotation: -0.1}',
-                '整体的 textAlign right, textVerticalAlign bottom',
-                'textBoxShadow'
+                '整体的 textAlign right, verticalAlign bottom',
+                'shadow'
             ].join('\n'),
-            textFill: 'red',
+            fill: 'red',
             font: '18px Arial',
-            textBorderRadius: 10,
-            textBackgroundColor: 'rgba(0, 255, 0, 0.3)',
-            textBorderColor: '#191933',
-            textBorderWidth: 4,
-            textBoxShadowBlur: 5,
-            textBoxShadowColor: '#1099ee',
-            textBoxShadowOffsetX: 5,
-            textBoxShadowOffsetY: 10,
-            textPadding: [20, 30, 40, 50],
-            textVerticalAlign: 'bottom',
-            textAlign: 'right',
+            borderRadius: 10,
+            backgroundColor: 'rgba(0, 255, 0, 0.3)',
+            borderColor: '#191933',
+            borderWidth: 4,
+            shadowBlur: 5,
+            shadowColor: '#1099ee',
+            shadowOffsetX: 5,
+            shadowOffsetY: 10,
+            padding: [20, 30, 40, 50],
+            verticalAlign: 'bottom',
+            align: 'right',
             rich: {
                 j: {
                     font: '23px Arial',
-                    textFill: '#922889',
-                    textVerticalAlign: 'top',
-                    textLineHeight: 100
+                    fill: '#922889',
+                    verticalAlign: 'top',
+                    lineHeight: 100
                 }
             }
         },
@@ -506,10 +519,10 @@
 
     function getDotStyle(color) {
         return {
-            textWidth: 12,
-            textHeight: 12,
-            textBorderRadius: 6,
-            textBackgroundColor: color
+            width: 12,
+            height: 12,
+            borderRadius: 6,
+            backgroundColor: color
         }
     }
     function genarateTooltipStyle(seriesName, items, colorList) {
@@ -535,15 +548,16 @@
 
     zr.add(new Text({
         rotation: -0.1,
-        position: [800, 1100],
+        x: 800,
+        y: 1100,
         style: {
             text: styles.text,
-            textFill: '#333',
+            fill: '#333',
             font: '18px Arial',
-            textBorderRadius: 10,
-            textBorderColor: '#191933',
-            textBorderWidth: 2,
-            textPadding: [20, 30, 40, 50],
+            borderRadius: 10,
+            borderColor: '#191933',
+            borderWidth: 2,
+            padding: [20, 30, 40, 50],
             rich: styles.rich
         },
         draggable: true

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #main {
+            margin-top: 80px;
+            height: 800px;
+        }
+        .controller {
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 5px;
+            border-bottom: 1px solid #aaa;
+            background: #fff;
+            z-index: 999;
+        }
+        #rotate-timer, #scale-timer {
+            color: red;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controller">
+        <div id="param">
+            param:
+            <input value="random" name="param" type="radio"/> random
+            <input value="fixed" name="param" type="radio" checked="checked"/> fixed (switch between positive/negative)
+        </div>
+        <div id="easing">
+            easing:
+            <input value="cubicInOut" name="easing" type="radio"/> cubicInOut
+            <input value="linear" name="easing" type="radio" checked="checked"/> linear
+        </div>
+        <div>
+            <button id="rotate">rotate</button>
+            <button id="rotate-and-scale">rotate and scale</button>
+            <button id="scale">scale</button>
+        </div>
+        <div>
+            Rotate remain: <span id="rotate-timer">-</span>ms Scale remain: <span id="scale-timer">-</span>ms
+        </div>
+    </div>
+    <div id="main"></div>
+
+    <script type="text/javascript">
+        var main = document.getElementById('main');
+        // 初始化zrender
+        var zr = zrender.init(main);
+
+
+        const MAX_SCALE_VALUE = 4;
+        const MIN_SCALE_VALUE = 1;
+        const DURATION = 3000;
+
+
+        function createHexogon(text, position, scale, isBackbone) {
+            const style = isBackbone
+                ? {
+                    fill: null,
+                    stroke: '#000',
+                    strokeNoScale: true,
+                    lineWidth: 2
+                }
+                : {
+                    fill: 'red',
+                    opacity: 0.6
+                };
+            return new zrender.Isogon({
+                position: position.slice(),
+                scale: scale.slice(),
+                shape: {
+                    cx: 0,
+                    cy: 0,
+                    r: 40,
+                    n: 6
+                },
+                style: style,
+                textConfig: {
+                    position: 'inside'
+                },
+                textContent: new zrender.Text({
+                    style: {
+                        fill: 'yellow',
+                        text
+                    }
+                })
+            });
+        }
+
+        let position;
+        let rotation = 0;
+        let scale = [MIN_SCALE_VALUE, MIN_SCALE_VALUE];
+        let maxScale = [MAX_SCALE_VALUE, MAX_SCALE_VALUE];
+        let rotationSign = 1;
+        let scaleSign = 1;
+
+
+        position = [180, 200];
+        zr.add(createHexogon(null, position, scale, true));
+        zr.add(createHexogon(null, position, maxScale, true));
+        const hexogonAdditive = createHexogon('animationTo\nAdditive', position, scale);
+        zr.add(hexogonAdditive);
+
+        position = [530, 200];
+        zr.add(createHexogon(null, position, scale, true));
+        zr.add(createHexogon(null, position, maxScale, true));
+        const hexogonNormal = createHexogon('animationTo\nNormal', position, scale);
+        zr.add(hexogonNormal);
+
+        position = [180, 550];
+        zr.add(createHexogon(null, position, scale, true));
+        zr.add(createHexogon(null, position, maxScale, true));
+        const hexogon2Additive = createHexogon('animationFrom\nAdditive', position, scale);
+        zr.add(hexogon2Additive);
+
+        position = [530, 550];
+        zr.add(createHexogon(null, position, scale, true));
+        zr.add(createHexogon(null, position, maxScale, true));
+        const hexogon2Normal = createHexogon('animationFrom\nNormal', position, scale);
+        zr.add(hexogon2Normal);
+
+
+
+        document.getElementById('rotate-and-scale').onclick = function () {
+            updateAnimation({updateRotate: true, updateScale: true});
+        };
+        document.getElementById('rotate').onclick = function () {
+            updateAnimation({updateRotate: true});
+        };
+        document.getElementById('scale').onclick = function () {
+            updateAnimation({updateScale: true});
+        };
+
+        zr.on('click', function () {
+            updateAnimation({updateRotate: true, updateScale: true});
+        });
+
+        function updateAnimation({updateRotate, updateScale}) {
+            const paramMode = getRadioValue('param');
+            const easing = getRadioValue('easing');
+
+            if (paramMode === 'random') {
+                if (updateRotate) {
+                    const rand = (Math.random() * 3) + 10;
+                    rotation += rand * rotationSign;
+                }
+                if (updateScale) {
+                    const scaleRand = Math.random() * 1;
+                    scale[0] += scaleRand * scaleSign;
+                    scale[1] += scaleRand * scaleSign;
+                }
+            }
+            else {
+                if (updateRotate) {
+                    rotation = Math.PI * 4 * rotationSign;
+                }
+                if (updateScale) {
+                    scale[0] = scaleSign > 0 ? MAX_SCALE_VALUE : MIN_SCALE_VALUE;
+                    scale[1] = scaleSign > 0 ? MAX_SCALE_VALUE : MIN_SCALE_VALUE;
+                }
+            }
+
+            {
+                const props = {};
+                if (updateRotate) {
+                    rotationSign = -rotationSign;
+                    props.rotation = rotation;
+                }
+                if (updateScale) {
+                    scaleSign = -scaleSign;
+                    props.scale = scale;
+                }
+                hexogonAdditive.animateTo(props, {
+                    duration: DURATION,
+                    easing: easing,
+                    additive: true
+                });
+                hexogonNormal.animateTo(props, {
+                    duration: DURATION,
+                    easing: easing
+                });
+            }
+
+            {
+                const currProps = {};
+                if (updateRotate) {
+                    currProps.rotation = hexogon2Additive.rotation;
+                    hexogon2Additive.rotation = rotation;
+                }
+                if (updateScale) {
+                    currProps.scale = hexogon2Additive.scale.slice();
+                    hexogon2Additive.scale = scale.slice();
+                }
+                hexogon2Additive.animateFrom(currProps, {
+                    duration: DURATION,
+                    easing: easing,
+                    additive: true
+                });
+            }
+
+            {
+                const currProps = {};
+                if (updateRotate) {
+                    currProps.rotation = hexogon2Normal.rotation;
+                    hexogon2Normal.rotation = rotation;
+                }
+                if (updateScale) {
+                    currProps.scale = hexogon2Normal.scale.slice();
+                    hexogon2Normal.scale = scale.slice();
+                }
+                hexogon2Normal.animateFrom(currProps, {
+                    duration: DURATION,
+                    easing: easing
+                });
+            }
+
+            updateRotate && resetTimer('rotate-timer');
+            updateScale && resetTimer('scale-timer');
+        }
+
+        function getRadioValue(containerId) {
+            const containerDom = document.getElementById(containerId);
+            const radios = containerDom.getElementsByTagName('input');
+            for (radioDom of radios) {
+                if (radioDom.checked) {
+                    return radioDom.getAttribute('value');
+                }
+            }
+        }
+
+        function resetTimer(containerId) {
+            const timerDom = document.getElementById(containerId);
+            let start = Date.now();
+            function next() {
+                let remain = DURATION - (Date.now() - start);
+                timerDom.innerHTML = Math.max(0, remain);
+                if (remain > 0) {
+                    requestAnimationFrame(next);
+                }
+            }
+            next();
+        }
+
+    </script>
+</body>
+</html>

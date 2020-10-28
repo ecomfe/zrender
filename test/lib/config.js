@@ -28,6 +28,7 @@
             baseUrl: baseUrl,
             paths: {
                 'zrender': './',
+                'tslib': 'node_modules/tslib/tslib.es6',
                 'data': 'test/data'
             },
             sourceMap: sourceMap

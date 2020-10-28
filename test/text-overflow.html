@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Text Overflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.js"></script>
+    <script src="../dist/zrender.js"></script>
+    <script src="lib/config.js"></script>
+    <SCript src="data/text.js"></SCript>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+    <div id="main"></div>
+
+    <script>
+    var zr = zrender.init(document.getElementById('main'), {
+        renderer: window.__ZRENDER__DEFAULT__RENDERER__
+    });
+    const config = {
+        search: '',
+        width: 400,
+        height: 400,
+        fontSize: 13,
+        fixedLineHeight: false,
+        lineHeight: 14,
+        rich: true,
+        breakAll: false
+    }
+
+
+    var enText = new zrender.Text({
+        style: {
+            text: LARGE_TEXT_EN,
+            fontSize: config.fontSize,
+            width: config.width,
+            padding: 10,
+            borderColor: '#000',
+            borderWidth: 1,
+
+            overflow: 'break',
+            lineOverflow: 'truncate',
+            ellipsis: '…'
+        }
+    });
+    zr.add(enText);
+
+    var cnText = new zrender.Text({
+        style: {
+            text: LARGE_TEXT_ZH,
+            fontSize: config.fontSize,
+            width: config.width,
+            padding: 10,
+            borderColor: '#000',
+            borderWidth: 1,
+
+            overflow: 'break',
+            lineOverflow: 'truncate',
+            ellipsis: '…',
+
+            x: config.width + 100
+        }
+    });
+    zr.add(cnText);
+
+    const TEXTS = [LARGE_TEXT_EN, LARGE_TEXT_ZH];
+    function update() {
+        enText.style.width = cnText.style.width = config.width;
+        enText.style.height = cnText.style.height = config.height;
+
+        enText.style.overflow = config.breakAll ? 'breakAll' : 'break';
+
+        cnText.style.x = config.width + 100;
+
+        enText.style.rich = cnText.style.rich = config.rich ? {
+            highlight: {
+                // padding: 4,
+                backgroundColor: 'yellow',
+                fontSize: 20
+            }
+        } : null;
+
+        [enText, cnText].forEach((text, idx) => {
+            text.style.fontSize = cnText.style.fontSize = config.fontSize;
+
+            if (config.search) {
+                text.style.text = TEXTS[idx].replace(
+                    new RegExp(config.search, 'g'), `{highlight|${config.search}}`
+                );
+            }
+            else {
+                text.style.text = TEXTS[idx];
+            }
+
+            if (!config.fixedLineHeight) {
+                text.style.lineHeight = null;
+            }
+            else {
+                text.style.lineHeight = config.lineHeight;
+            }
+
+            text.dirtyStyle();
+        });
+
+        console.time('render');
+        zr.refreshImmediately();
+        console.timeEnd('render');
+    }
+    const gui = new dat.GUI();
+    gui.add(config, 'search').onChange(update);
+    gui.add(config, 'width', 100, 700).onChange(update);
+    gui.add(config, 'height', 10, 1600).onChange(update);
+    gui.add(config, 'fontSize', 1, 30).onChange(update);
+    gui.add(config, 'fixedLineHeight').onChange(update);
+    gui.add(config, 'lineHeight', 12, 50).onChange(update);
+    gui.add(config, 'rich').onChange(update);
+    gui.add(config, 'breakAll').onChange(update);
+
+    update();
+    </script>
+</body>
+</html>

@@ -17,7 +17,7 @@
     });
 
     for (var i = 0; i < 16; ++i) {
-        var s = 0 + Math.PI / 4 * i;
+        var s = Math.PI / 4 * i;
         for (var j = 0; j < 16; ++j) {
             var e = Math.PI / 4 * j;
             var arc = new zrender.Arc({
@@ -27,7 +27,8 @@
                     r: 20
                 },
                 style: {
-                    stroke: '#aaa'
+                    stroke: '#aaa',
+                    fill: '#fff'
                 }
             });
             zr.add(arc);
@@ -47,9 +48,14 @@
             });
             zr.add(arc);
 
+            const PIChar = String.fromCharCode(0x03C0);
+
             var text = new zrender.Text({
                 style: {
-                    text: i + ',' + j,
+                    // align: 'center',
+                    // verticalAlign: 'center',
+                    // text: `${i / 4}${PIChar}\n${j / 4}${PIChar}`,
+                    text: `${i},${j}`,
                     fontSize: 12
                 },
                 position: [40 + 50 * i, 40 + 50 * j]
