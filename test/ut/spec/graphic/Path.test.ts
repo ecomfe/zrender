@@ -1,5 +1,4 @@
-import {Rect} from '../zrender';
-import {util} from '../zrender';
+import {Rect, util} from '../zrender';
 import { PathState } from '../../../../src/graphic/Path';
 
 describe('Path', function () {
