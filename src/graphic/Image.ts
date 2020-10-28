@@ -47,11 +47,11 @@ interface ImageProps extends DisplayableProps {
 
 export type ImageState = Pick<ImageProps, DisplayableStatePropNames> & ElementCommonState
 
-function isImageLike(source: unknown) {
-    return source
+function isImageLike(source: unknown): source is HTMLImageElement {
+    return !!(source
         && typeof source !== 'string'
         // Image source is an image, canvas, video.
-        && (source as HTMLImageElement).width && (source as HTMLImageElement).height;
+        && (source as HTMLImageElement).width && (source as HTMLImageElement).height);
 }
 
 class ZRImage extends Displayable<ImageProps> {
@@ -73,58 +73,37 @@ class ZRImage extends Displayable<ImageProps> {
         return createObject(DEFAULT_IMAGE_STYLE, obj);
     }
 
-    getWidth(): number {
+    private _getSize(dim: 'width' | 'height') {
         const style = this.style;
-        const imageSource = style.image;
-        if (isImageLike(imageSource)) {
-            return (imageSource as HTMLImageElement).width;
+
+        let size = style[dim];
+        if (size != null) {
+            return size;
         }
 
-        if (!this.__image) {
+        const imageSource = isImageLike(style.image)
+            ? style.image : this.__image;
+
+        if (!imageSource) {
             return 0;
         }
 
-        let width = style.width;
-        let height = style.height;
-        if (width == null) {
-            if (height == null) {
-                return this.__image.width;
-            }
-            else {
-                const aspect = this.__image.width / this.__image.height;
-                return aspect * height;
-            }
+        const otherDim = dim === 'width' ? 'height' : 'width';
+        let otherDimSize = style[otherDim];
+        if (otherDimSize == null) {
+            return imageSource[dim];
         }
         else {
-            return width;
+            return imageSource[dim] / imageSource[otherDim] * otherDimSize;
         }
     }
 
+    getWidth(): number {
+        return this._getSize('width');
+    }
+
     getHeight(): number {
-        const style = this.style;
-        const imageSource = style.image;
-        if (isImageLike(imageSource)) {
-            return (imageSource as HTMLImageElement).height;
-        }
-
-        if (!this.__image) {
-            return 0;
-        }
-
-        let width = style.width;
-        let height = style.height;
-        if (height == null) {
-            if (width == null) {
-                return this.__image.height;
-            }
-            else {
-                const aspect = this.__image.height / this.__image.width;
-                return aspect * width;
-            }
-        }
-        else {
-            return height;
-        }
+        return this._getSize('height');
     }
 
     getAnimationStyleProps() {
