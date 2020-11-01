@@ -36,7 +36,7 @@ export default class WeakMap<K extends object, V> {
     }
 
     has(key: K): boolean {
-        return (this._guard(key) as any)[this._id];
+        return !!(this._guard(key) as any)[this._id];
     }
 
     protected _guard(key: K): K {
