@@ -33,8 +33,12 @@ export interface ElementAnimateConfig {
     duration?: number
     delay?: number
     easing?: AnimationEasing
-    done?: Function
     during?: (percent: number) => void
+
+    // `done` will be called when all of the target props are "done" their animation.
+    done?: Function
+    // `aborted` will be called when all of the target props are "done" or "aborted"
+    // their animation and at least one "aborted" happened.
     aborted?: Function
 
     scope?: string
@@ -1688,28 +1692,33 @@ function animateTo<T>(
         reverse
     );
 
-    let doneCount = animators.length;
-    let abortedCount = doneCount;
+    let finishCount = animators.length;
+    let abortedHappened = false;
     const cfgDone = cfg.done;
     const cfgAborted = cfg.aborted;
 
-    const doneCb = cfgDone ? () => {
-        doneCount--;
-        if (!doneCount) {
-            cfgDone();
+    const doneCb = () => {
+        finishCount--;
+        if (finishCount <= 0) {
+            abortedHappened
+                ? (cfgAborted && cfgAborted())
+                : (cfgDone && cfgDone());
         }
-    } : null;
+    };
 
-    const abortedCb = cfgAborted ? () => {
-        abortedCount--;
-        if (!abortedCount) {
-            cfgAborted();
+    const abortedCb = () => {
+        abortedHappened = true;
+        finishCount--;
+        if (finishCount <= 0) {
+            abortedHappened
+                ? (cfgAborted && cfgAborted())
+                : (cfgDone && cfgDone());
         }
-    } : null;
+    };
 
     // No animators. This should be checked before animators[i].start(),
     // because 'done' may be executed immediately if no need to animate.
-    if (!doneCount) {
+    if (!finishCount) {
         cfgDone && cfgDone();
     }
 
