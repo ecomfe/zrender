@@ -261,7 +261,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     getPaintRect(): BoundingRect {
         let rect = this._paintRect;
         if (!this._paintRect || this.__dirty) {
-            const transform =  this.transform;
+            const transform = this.transform;
             const elRect = this.getBoundingRect();
 
             const style = this.style;
