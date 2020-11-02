@@ -109,6 +109,20 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         return;
     }
 
+    const clockwise = !!shape.clockwise;
+    const startAngle = shape.startAngle;
+    const endAngle = shape.endAngle;
+
+    // FIXME: whether normalizing angles is required?
+    const tmpAngles = [startAngle, endAngle];
+    normalizeArcAngles(tmpAngles, !clockwise);
+
+    const arc = mathAbs(tmpAngles[0] - tmpAngles[1]);
+    // no arc
+    if (!(arc > e)) {
+        return;
+    }
+
     if (!hasRadius) {
         // use innerRadius as radius if no radius
         radius = innerRadius;
@@ -124,17 +138,8 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
 
     const x = shape.cx;
     const y = shape.cy;
-    const clockwise = !!shape.clockwise;
-    const startAngle = shape.startAngle;
-    const endAngle = shape.endAngle;
     const cornerRadius = shape.cornerRadius || 0;
     const innerCornerRadius = shape.innerCornerRadius || 0;
-
-    // FIXME: whether normalizing angles is required?
-    const tmpAngles = [startAngle, endAngle];
-    normalizeArcAngles(tmpAngles, !clockwise);
-
-    const arc = mathAbs(tmpAngles[0] - tmpAngles[1]);
 
     // is a point
     if (!(radius > e)) {
