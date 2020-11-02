@@ -35,10 +35,12 @@ export interface ElementAnimateConfig {
     easing?: AnimationEasing
     during?: (percent: number) => void
 
-    // `done` will be called when all of the target props are "done" their animation.
+    // `done` will be called when all of the animations of the target props are
+    // "done" or "aborted", and at least one "done" happened.
+    // Common cases: animations declared, but some of them are aborted (e.g., by state change).
+    // The calling of `animationTo` done rather than aborted if at least one done happened.
     done?: Function
-    // `aborted` will be called when all of the target props are "done" or "aborted"
-    // their animation and at least one "aborted" happened.
+    // `aborted` will be called when all of the animations of the target props are "aborted".
     aborted?: Function
 
     scope?: string
@@ -1693,26 +1695,26 @@ function animateTo<T>(
     );
 
     let finishCount = animators.length;
-    let abortedHappened = false;
+    let doneHappened = false;
     const cfgDone = cfg.done;
     const cfgAborted = cfg.aborted;
 
     const doneCb = () => {
+        doneHappened = true;
         finishCount--;
         if (finishCount <= 0) {
-            abortedHappened
-                ? (cfgAborted && cfgAborted())
-                : (cfgDone && cfgDone());
+            doneHappened
+                ? (cfgDone && cfgDone())
+                : (cfgAborted && cfgAborted());
         }
     };
 
     const abortedCb = () => {
-        abortedHappened = true;
         finishCount--;
         if (finishCount <= 0) {
-            abortedHappened
-                ? (cfgAborted && cfgAborted())
-                : (cfgDone && cfgDone());
+            doneHappened
+                ? (cfgDone && cfgDone())
+                : (cfgAborted && cfgAborted());
         }
     };
 
