@@ -122,19 +122,19 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         innerRadius = tmp;
     }
 
-    const x = shape.cx;
-    const y = shape.cy;
     const clockwise = !!shape.clockwise;
     const startAngle = shape.startAngle;
     const endAngle = shape.endAngle;
-    const cornerRadius = shape.cornerRadius || 0;
-    const innerCornerRadius = shape.innerCornerRadius || 0;
 
     // FIXME: whether normalizing angles is required?
     const tmpAngles = [startAngle, endAngle];
     normalizeArcAngles(tmpAngles, !clockwise);
-
     const arc = mathAbs(tmpAngles[0] - tmpAngles[1]);
+
+    const x = shape.cx;
+    const y = shape.cy;
+    const cornerRadius = shape.cornerRadius || 0;
+    const innerCornerRadius = shape.innerCornerRadius || 0;
 
     // is a point
     if (!(radius > e)) {
@@ -230,7 +230,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         }
 
         // no inner ring, is a circular sector
-        if (!(innerRadius > e)) {
+        if (!(innerRadius > e) || !(arc > e)) {
             ctx.lineTo(x + xire, y + yire);
         }
         // the inner ring has corners
