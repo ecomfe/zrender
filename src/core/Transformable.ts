@@ -172,15 +172,16 @@ class Transformable {
             sy = Math.sqrt(sy);
         }
 
-        // rotation is inversed in zrender.
-        this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
-
         if (m[0] < 0) {
             sx = -sx;
         }
         if (m[3] < 0) {
             sy = -sy;
         }
+
+        // rotation is inversed in zrender.
+        this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
+
         // Flip can be both represented with rotation and negative scale.
         if (sx < 0 && sy < 0) {
             this.rotation += Math.PI;
