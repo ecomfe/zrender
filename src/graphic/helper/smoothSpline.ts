@@ -14,7 +14,7 @@ function interpolate(
             + v0 * t + p1;
 }
 
-export default function (points: VectorArray[], isLoop?: boolean): VectorArray[] {
+export default function smoothSpline(points: VectorArray[], isLoop?: boolean): VectorArray[] {
     const len = points.length;
     const ret = [];
 

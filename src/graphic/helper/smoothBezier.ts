@@ -23,7 +23,7 @@ import {
  *                           整个折线的包围盒做一个并集用来约束控制点。
  * @param 计算出来的控制点数组
  */
-export default function (
+export default function smoothBezier(
     points: VectorArray[],
     smooth?: number,
     isLoop?: boolean,

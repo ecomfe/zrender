@@ -65,7 +65,7 @@ interface Opts {
     autoHideDelay?: number
 }
 
-export default function (zr: ZRenderType, opts?: Opts) {
+export default function showDebugDirtyRect(zr: ZRenderType, opts?: Opts) {
     opts = opts || {};
     const painter = zr.painter as CanvasPainter;
     if (!painter.getLayers) {
