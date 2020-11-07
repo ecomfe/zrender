@@ -136,7 +136,7 @@ export default class Animation extends Eventful {
         animator.animation = null;
     }
 
-    update(notTriggerStageUpdate?: boolean) {
+    update(notTriggerFrameAndStageUpdate?: boolean) {
         const time = new Date().getTime() - this._pausedTime;
         const delta = time - this._time;
         let clip = this._clipsHead;
@@ -158,15 +158,15 @@ export default class Animation extends Eventful {
 
         this._time = time;
 
-        this.onframe(delta);
+        if (!notTriggerFrameAndStageUpdate) {
+            this.onframe(delta);
 
-        // 'frame' should be triggered before stage, because upper application
-        // depends on the sequence (e.g., echarts-stream and finish
-        // event judge)
-        this.trigger('frame', delta);
+            // 'frame' should be triggered before stage, because upper application
+            // depends on the sequence (e.g., echarts-stream and finish
+            // event judge)
+            this.trigger('frame', delta);
 
-        if (this.stage.update && !notTriggerStageUpdate) {
-            this.stage.update();
+            this.stage.update && this.stage.update();
         }
     }
 
