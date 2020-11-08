@@ -8,7 +8,7 @@ const points: VectorArray[] = [[], [], []];
 const mathSqrt = Math.sqrt;
 const mathAtan2 = Math.atan2;
 
-export default function (path: PathProxy, m: MatrixArray) {
+export default function transformPath(path: PathProxy, m: MatrixArray) {
     let data = path.data;
     const len = path.len();
     let cmd;
