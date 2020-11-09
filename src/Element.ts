@@ -1865,7 +1865,12 @@ function animateToShallow<T>(
 
     const keyLen = animatableKeys.length;
 
-    if (keyLen > 0 || cfg.force) {
+    if (keyLen > 0
+        // cfg.force is mainly for keep invoking onframe and ondone callback even if animation is not necessary.
+        // So if there is already has animators. There is no need to create another animator if not necessary.
+        // Or it will always add one more with empty target.
+        || (cfg.force && !animators.length)
+    ) {
         // Find last animator animating same prop.
         const existsAnimators = animatable.animators;
         let existsAnimatorsOnSameTarget: Animator<any>[] = [];
