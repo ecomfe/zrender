@@ -1804,13 +1804,13 @@
             if (isNotAroundZero(sy - 1)) {
                 sy = Math.sqrt(sy);
             }
-            this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
             if (m[0] < 0) {
                 sx = -sx;
             }
             if (m[3] < 0) {
                 sy = -sy;
             }
+            this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
             if (sx < 0 && sy < 0) {
                 this.rotation += Math.PI;
                 sx = -sx;
@@ -4780,23 +4780,28 @@
         cfg = cfg || {};
         var animators = [];
         animateToShallow(animatable, '', animatable, target, cfg, animationProps, animators, reverse);
-        var doneCount = animators.length;
-        var abortedCount = doneCount;
+        var finishCount = animators.length;
+        var doneHappened = false;
         var cfgDone = cfg.done;
         var cfgAborted = cfg.aborted;
-        var doneCb = cfgDone ? function () {
-            doneCount--;
-            if (!doneCount) {
-                cfgDone();
+        var doneCb = function () {
+            doneHappened = true;
+            finishCount--;
+            if (finishCount <= 0) {
+                doneHappened
+                    ? (cfgDone && cfgDone())
+                    : (cfgAborted && cfgAborted());
             }
-        } : null;
-        var abortedCb = cfgAborted ? function () {
-            abortedCount--;
-            if (!abortedCount) {
-                cfgAborted();
+        };
+        var abortedCb = function () {
+            finishCount--;
+            if (finishCount <= 0) {
+                doneHappened
+                    ? (cfgDone && cfgDone())
+                    : (cfgAborted && cfgAborted());
             }
-        } : null;
-        if (!doneCount) {
+        };
+        if (!finishCount) {
             cfgDone && cfgDone();
         }
         if (animators.length > 0 && cfg.during) {
@@ -4897,7 +4902,8 @@
             }
         }
         var keyLen = animatableKeys.length;
-        if (keyLen > 0 || cfg.force) {
+        if (keyLen > 0
+            || (cfg.force && !animators.length)) {
             var existsAnimators = animatable.animators;
             var existsAnimatorsOnSameTarget = [];
             for (var i = 0; i < existsAnimators.length; i++) {
@@ -5711,7 +5717,7 @@
             }
             animator.animation = null;
         };
-        Animation.prototype.update = function (notTriggerStageUpdate) {
+        Animation.prototype.update = function (notTriggerFrameAndStageUpdate) {
             var time = new Date().getTime() - this._pausedTime;
             var delta = time - this._time;
             var clip = this._clipsHead;
@@ -5728,10 +5734,10 @@
                 }
             }
             this._time = time;
-            this.onframe(delta);
-            this.trigger('frame', delta);
-            if (this.stage.update && !notTriggerStageUpdate) {
-                this.stage.update();
+            if (!notTriggerFrameAndStageUpdate) {
+                this.onframe(delta);
+                this.trigger('frame', delta);
+                this.stage.update && this.stage.update();
             }
         };
         Animation.prototype._startLoop = function () {
@@ -8423,7 +8429,7 @@
     var points = [[], [], []];
     var mathSqrt$2 = Math.sqrt;
     var mathAtan2 = Math.atan2;
-    function transformPath (path, m) {
+    function transformPath(path, m) {
         var data = path.data;
         var len = path.len();
         var cmd;
@@ -9029,9 +9035,9 @@
         }, DEFAULT_COMMON_ANIMATION_PROPS.style)
     };
     function isImageLike(source) {
-        return source
+        return !!(source
             && typeof source !== 'string'
-            && source.width && source.height;
+            && source.width && source.height);
     }
     var ZRImage = (function (_super) {
         __extends(ZRImage, _super);
@@ -9041,53 +9047,31 @@
         ZRImage.prototype.createStyle = function (obj) {
             return createObject(DEFAULT_IMAGE_STYLE, obj);
         };
-        ZRImage.prototype.getWidth = function () {
+        ZRImage.prototype._getSize = function (dim) {
             var style = this.style;
-            var imageSource = style.image;
-            if (isImageLike(imageSource)) {
-                return imageSource.width;
+            var size = style[dim];
+            if (size != null) {
+                return size;
             }
-            if (!this.__image) {
+            var imageSource = isImageLike(style.image)
+                ? style.image : this.__image;
+            if (!imageSource) {
                 return 0;
             }
-            var width = style.width;
-            var height = style.height;
-            if (width == null) {
-                if (height == null) {
-                    return this.__image.width;
-                }
-                else {
-                    var aspect = this.__image.width / this.__image.height;
-                    return aspect * height;
-                }
+            var otherDim = dim === 'width' ? 'height' : 'width';
+            var otherDimSize = style[otherDim];
+            if (otherDimSize == null) {
+                return imageSource[dim];
             }
             else {
-                return width;
+                return imageSource[dim] / imageSource[otherDim] * otherDimSize;
             }
         };
+        ZRImage.prototype.getWidth = function () {
+            return this._getSize('width');
+        };
         ZRImage.prototype.getHeight = function () {
-            var style = this.style;
-            var imageSource = style.image;
-            if (isImageLike(imageSource)) {
-                return imageSource.height;
-            }
-            if (!this.__image) {
-                return 0;
-            }
-            var width = style.width;
-            var height = style.height;
-            if (height == null) {
-                if (width == null) {
-                    return this.__image.height;
-                }
-                else {
-                    var aspect = this.__image.height / this.__image.width;
-                    return aspect * width;
-                }
-            }
-            else {
-                return height;
-            }
+            return this._getSize('height');
         };
         ZRImage.prototype.getAnimationStyleProps = function () {
             return DEFAULT_IMAGE_ANIMATION_PROPS;
@@ -9422,7 +9406,7 @@
             + (-3 * (p1 - p2) - 2 * v0 - v1) * t2
             + v0 * t + p1;
     }
-    function smoothSpline (points, isLoop) {
+    function smoothSpline(points, isLoop) {
         var len = points.length;
         var ret = [];
         var distance$1 = 0;
@@ -9459,7 +9443,7 @@
         return ret;
     }
 
-    function smoothBezier (points, smooth, isLoop, constraint) {
+    function smoothBezier(points, smooth, isLoop, constraint) {
         var cps = [];
         var v = [];
         var v1 = [];
@@ -10279,16 +10263,16 @@
             radius = innerRadius;
             innerRadius = tmp;
         }
-        var x = shape.cx;
-        var y = shape.cy;
         var clockwise = !!shape.clockwise;
         var startAngle = shape.startAngle;
         var endAngle = shape.endAngle;
-        var cornerRadius = shape.cornerRadius || 0;
-        var innerCornerRadius = shape.innerCornerRadius || 0;
         var tmpAngles = [startAngle, endAngle];
         normalizeArcAngles(tmpAngles, !clockwise);
         var arc = mathAbs$1(tmpAngles[0] - tmpAngles[1]);
+        var x = shape.cx;
+        var y = shape.cy;
+        var cornerRadius = shape.cornerRadius || 0;
+        var innerCornerRadius = shape.innerCornerRadius || 0;
         if (!(radius > e)) {
             ctx.moveTo(x, y);
         }
@@ -10353,7 +10337,7 @@
                 ctx.moveTo(x + xrs, y + yrs);
                 ctx.arc(x, y, radius, startAngle, endAngle, !clockwise);
             }
-            if (!(innerRadius > e)) {
+            if (!(innerRadius > e) || !(arc > e)) {
                 ctx.lineTo(x + xire, y + yire);
             }
             else if (cr0 > e) {
@@ -12678,7 +12662,7 @@
         };
         return DebugRect;
     }());
-    function showDebugDirtyRect (zr, opts) {
+    function showDebugDirtyRect(zr, opts) {
         opts = opts || {};
         var painter = zr.painter;
         if (!painter.getLayers) {
@@ -12983,7 +12967,7 @@
     function registerPainter(name, Ctor) {
         painterCtors[name] = Ctor;
     }
-    var version = '5.0.0-beta.2';
+    var version = '5.0.0';
 
     function createLinearGradient(ctx, obj, rect) {
         var x = obj.x == null ? 0 : obj.x;
@@ -15052,7 +15036,7 @@
     function clonePath(path) {
         return { newPos: path.newPos, components: path.components.slice(0) };
     }
-    function arrayDiff (oldArr, newArr, equal) {
+    function arrayDiff(oldArr, newArr, equal) {
         return diff(oldArr, newArr, equal);
     }
 
