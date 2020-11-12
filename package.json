@@ -1,6 +1,6 @@
 {
   "name": "zrender",
-  "version": "4.3.2",
+  "version": "5.0.0",
   "description": "A lightweight canvas library.",
   "keywords": [
     "canvas",
@@ -11,25 +11,40 @@
     "url": "https://github.com/ecomfe/zrender.git"
   },
   "scripts": {
-    "prepublish": "node build/build.js --prepublish",
-    "build": "node build/build.js --release",
-    "dev": "node build/build.js --watch",
-    "test": "node build/build.js",
-    "lint": "./node_modules/.bin/eslint src"
+    "prepublish": "npm run release",
+    "build": "npm run build:bundle && npm run build:cjs && npm run build:esm",
+    "release": "node build/build.js --minify && npm run build:cjs && npm run build:esm",
+    "build:bundle": "node build/build.js",
+    "build:cjs": "npx tsc -m CommonJS --outDir lib",
+    "build:esm": "npx tsc -m ES2015 --outDir esm",
+    "watch:bundle": "node build/build.js --watch",
+    "watch:esm": "npx tsc -w -m ES2015 --outDir esm",
+    "watch:cjs": "npx tsc -w -m CommonJS --outDir lib",
+    "test": "npx jest --config test/ut/jest.config.js"
   },
   "license": "BSD-3-Clause",
+  "types": "index.d.ts",
+  "module": "index.esm.js",
+  "main": "index.js",
+  "dependencies": {
+    "tslib": "1.10.0"
+  },
   "devDependencies": {
-    "@babel/core": "7.3.4",
-    "@babel/helper-module-transforms": "7.2.2",
-    "@babel/helper-simple-access": "7.1.0",
-    "@babel/template": "7.2.2",
-    "@babel/types": "7.0.0-beta.31",
-    "assert": "1.4.1",
+    "@microsoft/api-extractor": "^7.7.2",
+    "@types/jest": "^25.1.2",
+    "@typescript-eslint/eslint-plugin": "^2.24.0",
+    "@typescript-eslint/parser": "^2.24.0",
+    "chalk": "^3.0.0",
     "commander": "2.11.0",
+    "eslint": "6.3.0",
     "fs-extra": "4.0.2",
-    "jsdiff": "1.1.1",
-    "rollup": "0.50.0",
-    "rollup-plugin-uglify": "2.0.1",
-    "eslint": "6.3.0"
+    "jest": "^25.1.0",
+    "jsdom": "^16.0.0",
+    "rollup": "^1.28.0",
+    "rollup-plugin-typescript2": "^0.25.3",
+    "rollup-plugin-uglify": "^6.0.4",
+    "ts-jest": "^25.2.0",
+    "typescript": "3.8.3",
+    "uglify-js": "^3.10.0"
   }
 }

@@ -4,13 +4,14 @@
     <meta charset="utf-8" />
     <title>Animation</title>
     <script src="../dist/zrender.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/zrender@4.2.0/dist/zrender.js"></script> -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
 
     <h2>Move mouse. It is expected that animation start immediately without lag.</h2>
     <div>
-        Circles: <input id="count" value="1800" /> &nbsp;&nbsp;
+        Circles: <input id="count" value="5000" /> &nbsp;&nbsp;
         Throttle Rate: <input id="throttle-rate" value="50" />
         <button id="ok">OK</button>
     </div>
@@ -74,7 +75,8 @@
                         r: 3
                     },
                     style: {
-                        fill: gradient
+                        fill: 'red',
+                        opacity: 0.2
                     },
                     onclick: (function (i) {
                         return function () {
@@ -88,6 +90,7 @@
             }
 
             var update = throttle(function (point) {
+                console.time('animation');
                 for (var i = 0; i < els.length; i++) {
                     var el = els[i];
                     var dist = Math.pow(
@@ -108,7 +111,7 @@
 
                     // el.animateTo({
                     //     position: targetPostion
-                    // }, 3000, 0, 'elasticOut');
+                    // }, { duration: 3000, easing: 'elasticOut' });
 
                     // el.stopAnimation().animate('')
                     //     .all(3000, {
@@ -122,11 +125,14 @@
                         })
                         .start('elasticOut');
                 }
+
+                console.timeEnd('animation');
             }, throttleRate);
 
             zr.on('mousemove', function (e) {
                 update([e.offsetX, e.offsetY]);
             });
+
         }
 
 

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Path to Bezier</title>
+    <script src="lib/rollup.browser.js"></script>
+    <script src="lib/requireES.js"></script>
+    <script src="lib/config.js"></script>
+</head>
+<body>
+    <style>
+        html, bod {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+    <canvas id="main" width="800" height="800"></canvas>
+    <script>
+        requireES([
+            "zrender/esm/core/PathProxy",
+            "zrender/esm/tool/morphPath"
+        ], function(PathProxy, {pathToBezierCurves, alignBezierCurves}) {
+
+            const canvas = document.querySelector('#main');
+            const ctx = canvas.getContext('2d');
+
+            function drawBezier(data) {
+                ctx.beginPath();
+                for (let i = 0; i < data.length;) {
+                    i === 0 && ctx.moveTo(data[i++], data[i++]);
+                    ctx.bezierCurveTo(data[i++], data[i++], data[i++], data[i++], data[i++], data[i++]);
+                }
+            }
+
+            function buildCircle() {
+                const circleArgs = [200, 200, 100, 0, Math.PI * 2, true];
+                const circlePath = new PathProxy.default();
+                circlePath.beginPath();
+                circlePath.arc.apply(circlePath, circleArgs);
+                const arr = pathToBezierCurves(circlePath);
+
+                ctx.beginPath();
+                ctx.arc.apply(ctx, circleArgs);
+                ctx.strokeStyle = 'green';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 1;
+                drawBezier(arr[0]);
+                ctx.stroke();
+
+                return arr;
+            }
+
+            function buildPolygon() {
+                const polygonPoints = [];
+                const N = 10;
+                const dStep = 2 * Math.PI / N;
+                for (let i = 0; i < N; i++) {
+                    polygonPoints.push(
+                        [400 + Math.cos(i * dStep) * 80, 150 + Math.sin(i * dStep) * 80]
+                    );
+                }
+
+                const polygonPath = new PathProxy.default();
+                for (let i = 0; i < polygonPoints.length; i++) {
+                    const x = polygonPoints[i][0];
+                    const y = polygonPoints[i][1];
+                    i === 0 ? polygonPath.moveTo(x, y) : polygonPath.lineTo(x, y);
+                }
+                polygonPath.closePath();
+                const arr = pathToBezierCurves(polygonPath);
+
+                ctx.beginPath();
+                ctx.strokeStyle = 'green';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < polygonPoints.length; i++) {
+                    const x = polygonPoints[i][0];
+                    const y = polygonPoints[i][1];
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 1;
+                drawBezier(arr[0]);
+                ctx.stroke();
+
+                return arr;
+            }
+
+            const circleCurves = buildCircle();
+            const polygonCurves = buildPolygon();
+
+
+            const newCurves = alignBezierCurves(circleCurves, polygonCurves);
+            ctx.translate(0, 300);
+            ctx.strokeStyle = 'blue';
+            drawBezier(newCurves[0][0]);
+            ctx.stroke();
+            drawBezier(newCurves[1][0]);
+            ctx.stroke();
+        });
+    </script>
+</body>
+</html>

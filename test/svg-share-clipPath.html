@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Image</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <div id="main"></div>
+    <div style="position: absolute; left: 10px; top: 10px">
+        <button onclick="toggleClipPath1()">Toggle ClipPath 1</button>
+        <button onclick="toggleClipPath2()">Toggle ClipPath 2</button>
+    </div>
+    <script type="text/javascript">
+        var zr = zrender.init(document.getElementById('main'), {
+            renderer: 'svg'
+        });
+        console.profile('init');
+        const circle1 = new zrender.Circle({
+            shape: {
+                cx: 200,
+                cy: 200,
+                r: 180
+            }
+        });
+        const circle2 = new zrender.Circle({
+            shape: {
+                cx: 1000,
+                cy: 200,
+                r: 180
+            }
+        });
+        const group1 = new zrender.Group();
+        const group2 = new zrender.Group();
+        group1.setClipPath(circle1);
+        group2.setClipPath(circle2);
+
+        let showClipPath1 = true;
+        let showClipPath2 = true;
+
+        for (let k = 0; k < 3; k++) {
+            for (var i = 0; i < 10; i++) {
+                for (var j = 0; j < 10; j++) {
+                    var image = new zrender.Image({
+                        x: i * 40 + k * 400,
+                        y: j * 40,
+                        style: {
+                            x: 0,
+                            y: 0,
+                            image: 'asset/test.png',
+                            width: 40,
+                            height: 40
+                        }
+                    });
+                    (k === 0
+                        ? group1
+                        : k === 1 ? zr : group2).add(image);
+                }
+            }
+        }
+
+        function toggleClipPath1() {
+            showClipPath1 ? group1.removeClipPath() : group1.setClipPath(circle1);
+            showClipPath1 = !showClipPath1;
+        }
+        function toggleClipPath2() {
+            showClipPath2 ? group2.removeClipPath() : group2.setClipPath(circle2);
+            showClipPath2 = !showClipPath2;
+        }
+
+        zr.add(group1);
+        zr.add(group2);
+        console.profileEnd('init');
+    </script>
+</body>
+</html>

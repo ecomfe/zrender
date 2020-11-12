@@ -43,7 +43,7 @@ local.properties
 *.sln.docstates
 
 # Build results
-[Dd]ebug/
+# [Dd]ebug/
 [Rr]elease/
 *_i.c
 *_p.c
@@ -163,4 +163,5 @@ pip-log.txt
 
 
 /lib
+/esm
 node_modules

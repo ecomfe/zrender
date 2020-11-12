@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/astrobench@0.1.2/src/style.css">
+
+    <script src="../dist/zrender.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/zrender@4.2.0/dist/zrender.js"></script> -->
+    <title>Element Operation</title>
+</head>
+<body>
+    <div id="astrobench"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/astrobench@0.1.2/dist/astrobench.js"></script>
+
+    <script type="text/javascript">
+        let zr = zrender.init(document.createElement('canvas'));
+        // Stop timeline to avoid trigger render
+        zr.animation.stop();
+
+        const commonOpts = {
+            teardown() {
+                zr.clear();
+            }
+        }
+        suite('Create Element', function (suite) {
+            bench('Group', function () {
+                const group = new zrender.Group();
+                zr.add(group);
+            }, commonOpts);
+
+            bench('Rect', function () {
+                const rect = new zrender.Rect();
+                zr.add(rect);
+            }, commonOpts);
+
+            bench('Circle', function () {
+                const circle = new zrender.Circle();
+                zr.add(circle);
+            }, commonOpts);
+
+            bench('Image', function () {
+                const image = new zrender.Image();
+                zr.add(image);
+            }, commonOpts);
+
+            bench('Text', function () {
+                const text = new zrender.Text();
+                zr.add(text);
+            }, commonOpts);
+        });
+
+        suite('Attr', function (suite) {
+
+            let group;
+            let rect;
+
+            const attrCommonOpts = Object.assign({
+                setup() {
+                    group = new zrender.Group();
+                    zr.add(group);
+                    rect = new zrender.Rect();
+                    zr.add(rect);
+                }
+            }, commonOpts)
+
+            bench('Group#attr(transform)', function () {
+                group.attr({
+                    x: 10,
+                    y: 10
+                });
+            }, attrCommonOpts);
+
+            bench('Rect#setShape', function () {
+                rect.setShape({
+                    x: 10,
+                    y: 10,
+                    width: 100,
+                    height: 100
+                });
+            }, attrCommonOpts);
+
+            bench('Rect#setStyle', function () {
+                rect.setStyle({
+                    fill: 'red',
+                    stroke: 'black',
+                    lineWidth: 2
+                })
+            }, attrCommonOpts);
+        });
+
+
+        suite('Animation', function (suite) {
+
+            let rect;
+
+            const attrCommonOpts = Object.assign({
+                setup() {
+                    rect = new zrender.Rect();
+                    zr.add(rect);
+                }
+            }, commonOpts)
+
+            bench('Animation#animate(position)', function () {
+                const animator = zr.animation.animate(rect)
+                    .when(1000, {
+                        x: 10,
+                        y: 10
+                    })
+                    .during(function () {
+                        rect.dirty()
+                    })
+                    .start();
+                animator.stop();
+            }, attrCommonOpts);
+
+            bench('Element#animate(position)', function () {
+                rect.animate()
+                    .when(1000, {
+                        x: 10,
+                        y: 10
+                    })
+                    .start();
+                // Stop immediately
+                rect.stopAnimation();
+            }, attrCommonOpts);
+
+            bench('Element#animateTo(position)', function () {
+                rect.animateTo({
+                    x: 10,
+                    y: 10
+                }, { duration: 1000});
+                rect.stopAnimation();
+            }, attrCommonOpts);
+
+            bench('Element#animateTo(shape)', function () {
+                rect.animateTo({
+                    shape: {
+                        x: 10,
+                        y: 10,
+                        width: 100,
+                        height: 100
+                    }
+                }, { duration: 1000});
+                rect.stopAnimation();
+            }, attrCommonOpts);
+
+            bench('Element#animateTo(style)', function () {
+                rect.animateTo({
+                    style: {
+                        fill: 'red',
+                        stroke: 'green',
+                        lineWidth: 2
+                    }
+                }, { duration: 1000});
+                rect.stopAnimation();
+            }, attrCommonOpts);
+
+        });
+
+
+
+        suite('State', function (suite) {
+
+            let rect;
+
+            const attrCommonOpts = Object.assign({
+                setup() {
+                    rect = new zrender.Rect();
+                    rect.states = {
+                        emphasis: {
+                            style: {
+                                fill: 'red',
+                                stroke: 'blue'
+                            },
+                            shape: {
+                                width: 100,
+                                height: 100
+                            }
+                        },
+                        selected: {
+                            style: {
+                                fill: 'purple',
+                                lineWidth: 1
+                            }
+                        }
+                    }
+                    zr.add(rect);
+                }
+            }, commonOpts)
+
+            bench('Animation#useState', function () {
+                rect.useState('emphasis');
+                rect.useState('selected');
+            }, attrCommonOpts);
+
+            bench('Element#useStates', function () {
+                rect.useStates(['emphasis', 'selected']);
+            }, attrCommonOpts);
+
+            bench('Element#clearStates', function () {
+                rect.useState('selected');
+                rect.clearStates();
+            }, attrCommonOpts);
+
+        });
+    </script>
+</body>
+</html>

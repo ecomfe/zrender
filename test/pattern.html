@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Image</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <div id="main"></div>
+    <script type="text/javascript">
+        var zr = zrender.init(document.getElementById('main'), {
+            renderer: 'svg'
+        });
+
+        const circle = new zrender.Circle({
+            shape: {
+                r: 200,
+                cx: 400,
+                cy: 400
+            },
+            style: {
+                fill: {
+                    image: 'asset/test.png'
+                }
+            },
+            textContent: new zrender.Text({
+                style: {
+                    text: '图片路径',
+                    textFill: 'white',
+                    fontSize: 40
+                }
+            }),
+            textConfig: {
+                position: 'inside'
+            }
+        });
+        zr.add(circle);
+
+
+        const img = new Image();
+        img.onload = function () {
+            const circle = new zrender.Circle({
+                shape: {
+                    r: 200,
+                    cx: 800,
+                    cy: 400
+                },
+                style: {
+                    fill: {
+                        image: img
+                    }
+                },
+                textContent: new zrender.Text({
+                    style: {
+                        text: '图片对象',
+                        textFill: 'white',
+                        fontSize: 40
+                    }
+                }),
+                textConfig: {
+                    position: 'inside'
+                }
+            });
+            zr.add(circle);
+        }
+        img.src = 'asset/test.png';
+
+        zr.add(circle);
+    </script>
+</body>
+</html>

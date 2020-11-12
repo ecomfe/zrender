@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Text Color</title>
+    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.js"></script>
+    <script src="../dist/zrender.js"></script>
+    <script src="lib/config.js"></script>
+    <SCript src="data/text.js"></SCript>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+    <div id="main"></div>
+
+    <script>
+        const zr = zrender.init(document.getElementById('main'), {
+            renderer: window.__ZRENDER__DEFAULT__RENDERER__
+        });
+
+        const rects = [];
+        const RECT_WIDTH = 100;
+        const RECT_HEIGHT = 50;
+        const RECT_MARGIN = 40;
+
+        for (let i = 0; i < 100; i++) {
+            const rect = new zrender.Rect({
+                shape: {
+                    width: RECT_WIDTH,
+                    height: RECT_HEIGHT
+                },
+                textContent: new zrender.Text({
+                    style: {
+                        text: `A Text in Rect(${i})`,
+                        fontWeight: 'bold',
+                        fontSize: 12
+                    }
+                }),
+                textConfig: {
+                    position: 'inside'
+                },
+                style: {
+                    fill: zrender.color.random()
+                }
+            });
+            rects.push(rect);
+            zr.add(rect);
+        }
+
+        function layoutRects() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            let x = RECT_MARGIN;
+            let y = RECT_MARGIN;
+            for (let i = 0; i < rects.length; i++) {
+                const rect = rects[i];
+                if (x + RECT_WIDTH + RECT_MARGIN > width) {
+                    x = RECT_MARGIN;
+                    y += RECT_HEIGHT + RECT_MARGIN;
+                }
+
+                rect.x = x;
+                rect.y = y;
+                rect.markRedraw();
+
+                x += RECT_WIDTH + RECT_MARGIN;
+            }
+        }
+
+        const config = {
+            fontSize: 12,
+            position: 'inside',
+            backgroundColor: '#fff'
+        }
+
+        function update() {
+            rects.forEach(function (rect) {
+                rect.getTextContent().setStyle({
+                    fontSize: config.fontSize
+                });
+                rect.setTextConfig({
+                    position: config.position
+                });
+            });
+
+            zr.setBackgroundColor(config.backgroundColor);
+        }
+
+        const gui = new dat.GUI();
+
+        gui.add(config, 'fontSize', 10, 30).onChange(update);
+        gui.add(config, 'position', {
+            inside: 'inside',
+            outside: 'top'
+        }).onChange(update);
+        gui.addColor(config, 'backgroundColor').onChange(update);
+
+        update();
+
+        window.onresize = function () {
+            layoutRects();
+            zr.resize();
+        };
+        layoutRects();
+    </script>
+</body>
+</html>

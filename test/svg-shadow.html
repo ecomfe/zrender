@@ -8,29 +8,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
-    <div id="main" style="width:1000px;height:800px;"></div>
+    <div id="main-canvas" style="width:1000px;height:200px;"></div>
+    <div id="main-svg" style="width:1000px;height:200px;"></div>
+    <div style="position: absolute; left: 10px; top: 10px">
+        <button onclick="toggleShadow()">Toggle Shadow</button>
+    </div>
     <script type="text/javascript">
     // 初始化zrender
-    var zr = zrender.init(document.getElementById('main'), {
-        renderer: window.__ZRENDER__DEFAULT__RENDERER__ || 'svg'
+    var zrCanvas = zrender.init(document.getElementById('main-canvas'));
+    var zrSvg = zrender.init(document.getElementById('main-svg'), {
+        renderer: 'svg'
     });
 
-    var rect = new zrender.Rect({
-        shape: {
-            x: 60,
-            y: 60,
-            width: 50,
-            height: 50
-        },
-        style: {
-            fill: 'red',
-            shadowBlur: 5,
-            shadowColor: 'blue',
-            shadowOffsetX: 10,
-            shadowOffsetY: 10
+    const rects = [];
+    let displayShadow = true;
+
+    for (let k = 0; k < 2; k++) {
+        for (let i = 0; i < 10; i++) {
+            const rect = new zrender.Rect({
+                shape: {
+                    width: 25,
+                    height: 25
+                },
+                x: 60 + i * 60,
+                y: 60,
+                scaleX: 2,
+                scaleY: 2,
+                style: {
+                    fill: 'red',
+                    shadowBlur: i * 3,
+                    shadowColor: 'blue',
+                    shadowOffsetX: 10,
+                    shadowOffsetY: 10
+                }
+            });
+            rect.__shadowBlur = i * 3;
+            rects.push(rect);
+            (k ? zrSvg : zrCanvas).add(rect);
         }
-    });
-    zr.add(rect);
+    }
+
+    function toggleShadow() {
+        displayShadow = !displayShadow;
+        rects.forEach(function (rect) {
+            rect.style.shadowBlur = displayShadow ? rect.__shadowBlur : 0;
+            rect.markRedraw();
+        });
+    }
     </script>
 
 </body>

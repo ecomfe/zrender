@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.js"></script>
+    <script src="../dist/zrender.js"></script>
+    <script src="lib/config.js"></script>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+    <div id="main"></div>
+    <script type="text/javascript">
+        const zr = zrender.init(document.getElementById('main'), {
+            renderer: window.__ZRENDER__DEFAULT__RENDERER__
+        });
+
+        const shapes = [
+        {
+            ctor: zrender.Circle,
+            label: 'Circle',
+            shape: {
+                r: 100
+            }
+        }, {
+            ctor: zrender.Rect,
+            label: 'Rect',
+            shape: {
+                width: 100,
+                height: 100
+            }
+        },
+        {
+            ctor: zrender.Sector,
+            label: 'Sector',
+            shape: {
+                startAngle: 1,
+                endAngle: 5,
+                r0: 50,
+                r: 100
+            }
+        },
+        {
+            ctor: zrender.Polyline,
+            label: 'Polyline',
+            shape: {
+                points: [[50, 50], [200, 10], [100, 200], [50, 150], [10, 70]]
+            }
+        },
+        {
+            ctor: zrender.Polyline,
+            label: 'Smoothed Polyline',
+            shape: {
+                points: [[50, 50], [200, 10], [100, 200], [50, 150], [10, 70]],
+                smooth: 0.5
+            }
+        }];
+
+        const els = [];
+
+        let x = 20;
+        let y = 20;
+
+        shapes.forEach(function (shapeDef) {
+            const el = new shapeDef.ctor({
+                shape: shapeDef.shape,
+                style: {
+                    fill: 'none',
+                    stroke: '#000',
+                    lineWidth: 5
+                },
+                textContent: new zrender.Text({
+                    style: {
+                        text: shapeDef.label,
+                        fill: '#000'
+                    }
+                }),
+                textConfig: {
+                    position: 'inside'
+                }
+            });
+
+            const rect = el.getBoundingRect();
+            el.x = -rect.x + x;
+            el.y = -rect.y + y;
+
+            x += rect.width + 20;
+
+            els.push(el);
+            zr.add(el);
+        });
+
+        function update() {
+            els.forEach(function (el) {
+                el.setStyle({
+                    strokePercent: config.percent
+                })
+            });
+        }
+
+        const config = {
+            percent: 0,
+            animatePercent: true
+        };
+
+        const gui = new dat.GUI();
+        gui.add(config, 'percent', 0, 1).onChange(update);
+        gui.add(config, 'animatePercent');
+
+        setInterval(function () {
+            if (config.animatePercent) {
+                config.percent = (config.percent + 0.01) % 1;
+                gui.updateDisplay();
+                update();
+            }
+        }, 20);
+
+        update();
+    </script>
+</body>
+</html>
