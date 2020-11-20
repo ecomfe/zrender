@@ -19,6 +19,14 @@ function isRadialGradient(value: GradientObject): value is RadialGradientObject 
     return value.type === 'radial';
 }
 
+function isGradient(value: GradientObject | string): value is GradientObject {
+    return value && (
+        (value as GradientObject).type === 'linear'
+        || (value as GradientObject).type === 'radial'
+    );
+}
+
+
 type GradientObjectExtended = GradientObject & {
     __dom: SVGElement
 }
@@ -51,10 +59,7 @@ export default class GradientManager extends Definable {
             const that = this;
             zrUtil.each(['fill', 'stroke'], function (fillOrStroke: 'fill' | 'stroke') {
                 let value = displayable.style[fillOrStroke] as GradientObject;
-                if (value
-                    && (value.type === 'linear'
-                    || value.type === 'radial')
-                ) {
+                if (isGradient(value)) {
                     const gradient = value as GradientObjectExtended;
                     const defs = that.getDefs(true);
 
@@ -120,9 +125,13 @@ export default class GradientManager extends Definable {
     /**
      * Update gradient.
      *
-     * @param {Gradient} gradient zr gradient instance
+     * @param gradient zr gradient instance or color string
      */
-    update(gradient: GradientObject) {
+    update(gradient: GradientObject | string) {
+        if (!isGradient(gradient)) {
+            return;
+        }
+
         const that = this;
         this.doUpdate(gradient, function () {
             const dom = (gradient as GradientObjectExtended).__dom;
