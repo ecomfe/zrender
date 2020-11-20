@@ -24,6 +24,7 @@ import Storage from '../Storage';
 import { GradientObject } from '../graphic/Gradient';
 import { PainterBase } from '../PainterBase';
 import {PatternObject} from '../graphic/Pattern';
+import env from '../core/env'
 
 function parseInt10(val: string) {
     return parseInt(val, 10);
@@ -116,7 +117,8 @@ class SVGPainter implements PainterBase {
         this._opts = opts = util.extend({}, opts || {});
 
         const svgDom = createElement('svg');
-        svgDom.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        // IE: avoid getting double xmlns attributes when exporting to svg
+        env.browser.ie || svgDom.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
         svgDom.setAttribute('version', '1.1');
         svgDom.setAttribute('baseProfile', 'full');
         svgDom.style.cssText = 'user-select:none;position:absolute;left:0;top:0;';
@@ -458,7 +460,15 @@ class SVGPainter implements PainterBase {
 
     toDataURL() {
         this.refresh();
-        const html = encodeURIComponent(this._svgDom.outerHTML.replace(/></g, '>\n\r<'));
+        const outerHTML = this._svgDom.outerHTML
+            // outerHTML of `svg` tag is not supported in IE, use `parentNode.innerHTML` instead
+            // PENDING: Or use `new XMLSerializer().serializeToString(svg)`?
+            || (this._svgDom.parentNode && this._svgDom.parentNode as HTMLElement).innerHTML;
+        const html = encodeURIComponent(
+            outerHTML
+                .replace(/></g, '>\n\r<')
+                // PENDING: remove &quot; ?
+                .replace(/&quot;/g, ''));
         return 'data:image/svg+xml;charset=UTF-8,' + html;
     }
     refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];
