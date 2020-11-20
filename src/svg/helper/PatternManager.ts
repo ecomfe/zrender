@@ -9,6 +9,7 @@ import Displayable from '../../graphic/Displayable';
 import {PatternObject} from '../../graphic/Pattern';
 import LRU from '../../core/LRU';
 import {createOrUpdateImage} from '../../graphic/helper/image';
+import WeakMap from '../../core/WeakMap';
 
 function isPattern(value: PatternObject): value is PatternObject {
     return value && (!!value.image || !!value.svgElement);
