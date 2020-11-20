@@ -324,7 +324,7 @@ class ZRender {
      */
     refreshHoverImmediately() {
         this._needsRefreshHover = false;
-        if (this.painter.refreshHover) {
+        if (this.painter.refreshHover && this.painter.getType() === 'canvas') {
             this.painter.refreshHover();
         }
     }
