@@ -118,7 +118,7 @@
             args[_i] = arguments[_i];
         }
         if (typeof console !== 'undefined') {
-            console.error.apply(args);
+            console.error.apply(console, args);
         }
     }
     function clone(source) {
@@ -3144,7 +3144,7 @@
             this._clip = null;
             this._target = target;
             this._loop = loop;
-            if (loop) {
+            if (loop && additiveTo) {
                 logError('Can\' use additive animation on looped animation.');
                 return;
             }
@@ -12882,7 +12882,7 @@
         };
         ZRender.prototype.refreshHoverImmediately = function () {
             this._needsRefreshHover = false;
-            if (this.painter.refreshHover) {
+            if (this.painter.refreshHover && this.painter.getType() === 'canvas') {
                 this.painter.refreshHover();
             }
         };
@@ -12967,7 +12967,7 @@
     function registerPainter(name, Ctor) {
         painterCtors[name] = Ctor;
     }
-    var version = '5.0.0';
+    var version = '5.0.1';
 
     function createLinearGradient(ctx, obj, rect) {
         var x = obj.x == null ? 0 : obj.x;
@@ -15187,6 +15187,10 @@
     function isRadialGradient(value) {
         return value.type === 'radial';
     }
+    function isGradient(value) {
+        return value && (value.type === 'linear'
+            || value.type === 'radial');
+    }
     var GradientManager = (function (_super) {
         __extends(GradientManager, _super);
         function GradientManager(zrId, svgRoot) {
@@ -15197,9 +15201,7 @@
                 var that_1 = this;
                 each(['fill', 'stroke'], function (fillOrStroke) {
                     var value = displayable.style[fillOrStroke];
-                    if (value
-                        && (value.type === 'linear'
-                            || value.type === 'radial')) {
+                    if (isGradient(value)) {
                         var gradient = value;
                         var defs = that_1.getDefs(true);
                         var dom = void 0;
@@ -15239,6 +15241,9 @@
             return dom;
         };
         GradientManager.prototype.update = function (gradient) {
+            if (!isGradient(gradient)) {
+                return;
+            }
             var that = this;
             this.doUpdate(gradient, function () {
                 var dom = gradient.__dom;
@@ -15312,6 +15317,47 @@
         };
         return GradientManager;
     }(Definable));
+
+    var wmUniqueIndex = Math.round(Math.random() * 9);
+    var WeakMap = (function () {
+        function WeakMap() {
+            this._id = '__ec_inner_' + wmUniqueIndex++;
+        }
+        WeakMap.prototype.get = function (key) {
+            return this._guard(key)[this._id];
+        };
+        WeakMap.prototype.set = function (key, value) {
+            var target = this._guard(key);
+            if (typeof Object.defineProperty === 'function') {
+                Object.defineProperty(target, this._id, {
+                    value: value,
+                    enumerable: false,
+                    configurable: true
+                });
+            }
+            else {
+                target[this._id] = value;
+            }
+            return this;
+        };
+        WeakMap.prototype["delete"] = function (key) {
+            if (this.has(key)) {
+                delete this._guard(key)[this._id];
+                return true;
+            }
+            return false;
+        };
+        WeakMap.prototype.has = function (key) {
+            return !!this._guard(key)[this._id];
+        };
+        WeakMap.prototype._guard = function (key) {
+            if (key !== Object(key)) {
+                throw TypeError('Value of WeakMap is not a non-null object.');
+            }
+            return key;
+        };
+        return WeakMap;
+    }());
 
     function isPattern(value) {
         return value && (!!value.image || !!value.svgElement);
@@ -15440,7 +15486,7 @@
                     _super.prototype.markDomUsed.call(this, patternDomMap.get(displayable.style.fill));
                 }
                 if (isPattern(displayable.style.stroke)) {
-                    _super.prototype.markDomUsed.call(this, patternDomMap.get(displayable.style.fill));
+                    _super.prototype.markDomUsed.call(this, patternDomMap.get(displayable.style.stroke));
                 }
             }
         };
