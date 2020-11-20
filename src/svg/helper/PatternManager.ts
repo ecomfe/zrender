@@ -211,7 +211,7 @@ export default class PatternManager extends Definable {
                 super.markDomUsed(patternDomMap.get(displayable.style.fill));
             }
             if (isPattern(displayable.style.stroke)) {
-                super.markDomUsed(patternDomMap.get(displayable.style.fill));
+                super.markDomUsed(patternDomMap.get(displayable.style.stroke));
             }
         }
     }
