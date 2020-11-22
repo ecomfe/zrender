@@ -24,7 +24,6 @@ import Storage from '../Storage';
 import { GradientObject } from '../graphic/Gradient';
 import { PainterBase } from '../PainterBase';
 import {PatternObject} from '../graphic/Pattern';
-import env from '../core/env'
 
 function parseInt10(val: string) {
     return parseInt(val, 10);
@@ -117,8 +116,9 @@ class SVGPainter implements PainterBase {
         this._opts = opts = util.extend({}, opts || {});
 
         const svgDom = createElement('svg');
-        // IE: avoid getting double xmlns attributes when exporting to svg
-        env.browser.ie || svgDom.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        svgDom.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns', 'http://www.w3.org/2000/svg');
+        svgDom.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xlink', 'http://www.w3.org/1999/xlink');
+
         svgDom.setAttribute('version', '1.1');
         svgDom.setAttribute('baseProfile', 'full');
         svgDom.style.cssText = 'user-select:none;position:absolute;left:0;top:0;';
@@ -468,7 +468,7 @@ class SVGPainter implements PainterBase {
             outerHTML
                 .replace(/></g, '>\n\r<')
                 // PENDING: remove &quot; ?
-                .replace(/&quot;/g, ''));
+                .replace(/url\(&quot;([^)]*)&quot;\)/gm, 'url($1)'));
         return 'data:image/svg+xml;charset=UTF-8,' + html;
     }
     refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];
