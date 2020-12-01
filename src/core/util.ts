@@ -54,9 +54,9 @@ export function guid(): number {
     return idStart++;
 }
 
-export function logError(...args: string[]) {
+export function logError(...args: any[]) {
     if (typeof console !== 'undefined') {
-        console.error.apply(args);
+        console.error.apply(console, args);
     }
 }
 /**

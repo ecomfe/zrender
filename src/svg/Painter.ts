@@ -238,10 +238,10 @@ class SVGPainter implements PainterBase {
                     svgElement = getSvgElement(displayable);
                     // Update gradient and shadow
                     if (svgElement && displayable.style) {
-                        gradientManager.update(displayable.style.fill as GradientObject);
-                        gradientManager.update(displayable.style.stroke as GradientObject);
-                        patternManager.update(displayable.style.fill as PatternObject);
-                        patternManager.update(displayable.style.stroke as PatternObject);
+                        gradientManager.update(displayable.style.fill);
+                        gradientManager.update(displayable.style.stroke);
+                        patternManager.update(displayable.style.fill);
+                        patternManager.update(displayable.style.stroke);
                         shadowManager.update(svgElement, displayable);
                     }
 
