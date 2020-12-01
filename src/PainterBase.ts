@@ -1,10 +1,8 @@
 import Path from './graphic/Path';
-import TSpan from './graphic/TSpan';
 import ZRImage from './graphic/Image';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
 import { Dictionary } from './core/types';
-import Displayable from './graphic/Displayable';
 
 interface PainterOption {
     width?: number | string  // Can be 10 / 10px / auto

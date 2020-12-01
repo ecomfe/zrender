@@ -716,7 +716,7 @@ export default class Animator<T> {
     constructor(target: T, loop: boolean, additiveTo?: Animator<any>[]) {
         this._target = target;
         this._loop = loop;
-        if (loop) {
+        if (loop && additiveTo) {
             logError('Can\' use additive animation on looped animation.');
             return;
         }

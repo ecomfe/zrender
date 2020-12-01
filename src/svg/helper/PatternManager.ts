@@ -9,9 +9,10 @@ import Displayable from '../../graphic/Displayable';
 import {PatternObject} from '../../graphic/Pattern';
 import LRU from '../../core/LRU';
 import {createOrUpdateImage} from '../../graphic/helper/image';
+import WeakMap from '../../core/WeakMap';
 
-function isPattern(value: PatternObject): value is PatternObject {
-    return value && (!!value.image || !!value.svgElement);
+function isPattern(value: PatternObject | string): value is PatternObject {
+    return value && (!!(value as PatternObject).image || !!(value as PatternObject).svgElement);
 }
 
 const patternDomMap = new WeakMap<PatternObject, SVGElement>();
@@ -101,9 +102,9 @@ export default class PatternManager extends Definable {
     /**
      * Update pattern.
      *
-     * @param {Pattern} pattern zr pattern instance
+     * @param pattern zr pattern instance or color string
      */
-    update(pattern: PatternObject) {
+    update(pattern: PatternObject | string) {
         if (!isPattern(pattern)) {
             return;
         }
@@ -210,7 +211,7 @@ export default class PatternManager extends Definable {
                 super.markDomUsed(patternDomMap.get(displayable.style.fill));
             }
             if (isPattern(displayable.style.stroke)) {
-                super.markDomUsed(patternDomMap.get(displayable.style.fill));
+                super.markDomUsed(patternDomMap.get(displayable.style.stroke));
             }
         }
     }
