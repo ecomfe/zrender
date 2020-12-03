@@ -5,8 +5,7 @@
 import {createElement} from './core';
 import { PathRebuilder } from '../core/PathProxy';
 import * as matrix from '../core/matrix';
-import { Path } from '../export';
-import { PathStyleProps } from '../graphic/Path';
+import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import { DEFAULT_FONT, getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
@@ -163,7 +162,16 @@ class SVGPathRebuilder implements PathRebuilder {
     arc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise: boolean) {
         this.ellipse(cx, cy, r, r, 0, startAngle, endAngle, anticlockwise);
     }
-    ellipse(cx: number, cy: number, rx: number, ry: number, psi: number, startAngle: number, endAngle: number, anticlockwise: boolean) {
+    ellipse(
+        cx: number,
+        cy: number,
+        rx: number,
+        ry: number,
+        psi: number,
+        startAngle: number,
+        endAngle: number,
+        anticlockwise: boolean
+    ) {
 
         const firstCmd = this._d.length === 0;
 
@@ -217,7 +225,7 @@ class SVGPathRebuilder implements PathRebuilder {
         const x = round4(cx + rx * mathCos(startAngle + dTheta));
         const y = round4(cy + ry * mathSin(startAngle + dTheta));
 
-        if (isNaN(x0) || isNaN(y0) || isNaN(rx) || isNaN(ry) || isNaN(psi) || isNaN(degree) || isNaN(x)  || isNaN(y)) {
+        if (isNaN(x0) || isNaN(y0) || isNaN(rx) || isNaN(ry) || isNaN(psi) || isNaN(degree) || isNaN(x) || isNaN(y)) {
             return '';
         }
 

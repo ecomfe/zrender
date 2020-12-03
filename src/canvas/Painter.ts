@@ -4,8 +4,8 @@ import Layer, { LayerConfig } from './Layer';
 import requestAnimationFrame from '../animation/requestAnimationFrame';
 import ZRImage from '../graphic/Image';
 import env from '../core/env';
-import { Path, IncrementalDisplayable } from '../export';
 import Displayable from '../graphic/Displayable';
+import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 import { WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/types';
 import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
@@ -14,6 +14,7 @@ import { brush, BrushScope, brushSingle } from './graphic';
 import { PainterBase } from '../PainterBase';
 import BoundingRect from '../core/BoundingRect';
 import Element from '../Element';
+import Path from '../graphic/Path';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 const CANVAS_ZLEVEL = 314159;
@@ -506,7 +507,7 @@ export default class CanvasPainter implements PainterBase {
         };
     }
 
-    private _doPaintEl (
+    private _doPaintEl(
         el: Displayable,
         currentLayer: Layer,
         useDirtyRect: boolean,

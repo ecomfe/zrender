@@ -1,4 +1,3 @@
-import './graphic';
 import {registerPainter} from '../zrender';
 import Painter from './Painter';
 

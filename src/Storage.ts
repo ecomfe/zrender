@@ -7,7 +7,7 @@ import Element from './Element';
 // https://jsfiddle.net/pissang/jr4x7mdm/8/
 import timsort from './core/timsort';
 import Displayable from './graphic/Displayable';
-import { Path } from './export';
+import Path from './graphic/Path';
 
 let invalidZErrorLogged = false;
 function logInvalidZError() {

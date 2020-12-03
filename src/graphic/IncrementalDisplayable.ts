@@ -10,7 +10,7 @@
 import Displayble from './Displayable';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
-import { Group } from '../export';
+import Group from '../graphic/Group';
 
 const m: MatrixArray = [];
 // TODO Style override ?

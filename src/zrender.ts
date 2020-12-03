@@ -20,13 +20,14 @@ import { Dictionary, ElementEventName } from './core/types';
 import { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
-import { Path, Group } from './export';
 import { EventCallback } from './core/Eventful';
 import TSpan from './graphic/TSpan';
 import ZRImage from './graphic/Image';
 import Displayable from './graphic/Displayable';
 import { lum } from './tool/color';
 import { DARK_MODE_THRESHOLD } from './config';
+import Path from './graphic/Path';
+import Group from './graphic/Group';
 
 
 const useVML = !env.canvasSupported;
@@ -146,7 +147,7 @@ class ZRender {
      */
     add(el: Element) {
         if (!el) {
-            return
+            return;
         }
         this.storage.addRoot(el);
         el.addSelfToZr(this);
@@ -158,7 +159,7 @@ class ZRender {
      */
     remove(el: Element) {
         if (!el) {
-            return
+            return;
         }
         this.storage.delRoot(el);
         el.removeSelfFromZr(this);
