@@ -85,6 +85,13 @@ function bindStyle(svgEl: SVGElement, style: TSpanStyleProps, el?: TSpan): void
 function bindStyle(svgEl: SVGElement, style: ImageStyleProps, el?: ZRImage): void
 function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan | ZRImage) {
     const opacity = style.opacity == null ? 1 : style.opacity;
+
+    // only set opacity. stroke and fill cannot be applied to svg image
+    if (el instanceof ZRImage) {
+        svgEl.style.opacity = opacity + '';
+        return;
+    }
+
     if (pathHasFill(style)) {
         let fill = style.fill;
         fill = fill === 'transparent' ? NONE : fill;
@@ -348,6 +355,7 @@ const svgImage: SVGProxy<ZRImage> = {
         attr(svgEl, 'x', x + '');
         attr(svgEl, 'y', y + '');
 
+        bindStyle(svgEl, style, el);
         setTransform(svgEl, el.transform);
     }
 };
