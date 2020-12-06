@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Image</title>
+    <script src="./lib/config.js"></script>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+    <div>fix
+        <a href="https://github.com/apache/incubator-echarts/issues/13762" target="_blank">apache/incubator-echarts#13762</a>
+    </div>
+    <div id="main" style="width:1000px;height:800px;"></div>
+    <script type="text/javascript">
+    // initializes zrender
+    var zr = zrender.init(document.getElementById('main'), {
+        renderer: window.__ZRENDER__DEFAULT__RENDERER__ || 'svg'
+    });
+
+    var imageSize = 50;
+    [1, .8, .5, .2, 0].forEach(function(opacity, i) {
+        zr.add(new zrender.Image({
+            position: [i * imageSize, i * imageSize],
+            scale: [1, 1],
+            style: {
+                x: 0,
+                y: 0,
+                image: 'https://echarts.apache.org/zh/images/favicon.png',
+                width: imageSize,
+                height: imageSize,
+                opacity: opacity
+            },
+            textContent: new zrender.Text({
+                style: {
+                    text: `opacity: ${opacity}`,
+                    fontWeight: 'bold',
+                    fontSize: 12
+                }
+            }),
+            textConfig: {
+                position: 'right'
+            },
+            draggable: true
+        }));
+    });
+    </script>
+
+</body>
+</html>
