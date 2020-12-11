@@ -461,7 +461,7 @@ interface FunctionBind {
     <F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2]>(func: F, ctx: Ctx, a: T1, b: T2, c: T3): Bind4<F, Ctx, T1, T2, T3>
     <F extends BindFunc<Ctx>, Ctx, T1 extends Parameters<F>[0], T2 extends Parameters<F>[1], T3 extends Parameters<F>[2], T4 extends Parameters<F>[3]>(func: F, ctx: Ctx, a: T1, b: T2, c: T3, d: T4): Bind5<F, Ctx, T1, T2, T3, T4>
 }
-function bindPolyfill<Ctx, Fn extends (...args: any) => any>(
+function bindPolyfill<Ctx, Fn extends(...args: any) => any>(
     func: Fn, context: Ctx, ...args: any[]
 ): (...args: Parameters<Fn>) => ReturnType<Fn> {
     return function (this: Ctx) {
