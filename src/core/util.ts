@@ -36,7 +36,7 @@ const nativeFilter = arrayProto.filter;
 const nativeSlice = arrayProto.slice;
 const nativeMap = arrayProto.map;
 // In case some env may redefine the global variable `Function`.
-const ctorFunction = (function () {}).constructor;
+const ctorFunction = function () {}.constructor;
 const protoFunction = ctorFunction ? ctorFunction.prototype : null;
 
 // Avoid assign to an exported constiable, for transforming to cjs.
@@ -77,27 +77,28 @@ export function clone<T extends any>(source: T): T {
         return source;
     }
 
-    let result = source;
+    let result = source as any;
     const typeStr = <string>objToString.call(source);
 
     if (typeStr === '[object Array]') {
         if (!isPrimitive(source)) {
             result = [] as any;
-            for (let i = 0, len = source.length; i < len; i++) {
-                result[i] = clone(source[i]);
+            for (let i = 0, len = (source as any[]).length; i < len; i++) {
+                result[i] = clone((source as any[])[i]);
             }
         }
     }
     else if (TYPED_ARRAY[typeStr]) {
         if (!isPrimitive(source)) {
-            const Ctor = source.constructor;
+            /* eslint-disable-next-line */
+            const Ctor = source.constructor as typeof Float32Array;
             if (Ctor.from) {
-                result = Ctor.from(source);
+                result = Ctor.from(source as Float32Array);
             }
             else {
-                result = new Ctor(source.length);
-                for (let i = 0, len = source.length; i < len; i++) {
-                    result[i] = clone(source[i]);
+                result = new Ctor((source as Float32Array).length);
+                for (let i = 0, len = (source as Float32Array).length; i < len; i++) {
+                    result[i] = clone((source as Float32Array)[i]);
                 }
             }
         }
