@@ -6,6 +6,7 @@ class Browser {
     firefox = false
     ie = false
     edge = false
+    newEdge = false
     weChat = false
     version: string | number
 }
@@ -55,7 +56,7 @@ function detect(ua: string, env: Env) {
     const ie = ua.match(/MSIE\s([\d.]+)/)
         // IE 11 Trident/7.0; rv:11.0
         || ua.match(/Trident\/.+?rv:(([\d.]+))/);
-    const edge = ua.match(/Edge\/([\d.]+)/); // IE 12 and 12+
+    const edge = ua.match(/Edge?\/([\d.]+)/); // IE 12 and 12+
 
     const weChat = (/micromessenger/i).test(ua);
 
@@ -71,6 +72,7 @@ function detect(ua: string, env: Env) {
     if (edge) {
         browser.edge = true;
         browser.version = edge[1];
+        browser.newEdge = +edge[1].split('.')[0] > 18; 
     }
 
     // It is difficult to detect WeChat in Win Phone precisely, because ua can
