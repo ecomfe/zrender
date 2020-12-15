@@ -465,11 +465,7 @@ class SVGPainter implements PainterBase {
             // outerHTML of `svg` tag is not supported in IE, use `parentNode.innerHTML` instead
             // PENDING: Or use `new XMLSerializer().serializeToString(svg)`?
             || (svgDom.parentNode && svgDom.parentNode as HTMLElement).innerHTML;
-        const html = encodeURIComponent(
-            outerHTML
-                .replace(/></g, '>\n\r<')
-                // PENDING: remove &quot; ?
-                .replace(/url\(&quot;([^)]*)&quot;\)/gm, 'url($1)'));
+        const html = encodeURIComponent(outerHTML.replace(/></g, '>\n\r<'));
         return 'data:image/svg+xml;charset=UTF-8,' + html;
     }
     refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];
