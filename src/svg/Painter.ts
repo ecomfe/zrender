@@ -460,10 +460,11 @@ class SVGPainter implements PainterBase {
 
     toDataURL() {
         this.refresh();
-        const outerHTML = this._svgDom.outerHTML
+        const svgDom = this._svgDom;
+        const outerHTML = svgDom.outerHTML
             // outerHTML of `svg` tag is not supported in IE, use `parentNode.innerHTML` instead
             // PENDING: Or use `new XMLSerializer().serializeToString(svg)`?
-            || (this._svgDom.parentNode && this._svgDom.parentNode as HTMLElement).innerHTML;
+            || (svgDom.parentNode && svgDom.parentNode as HTMLElement).innerHTML;
         const html = encodeURIComponent(
             outerHTML
                 .replace(/></g, '>\n\r<')
