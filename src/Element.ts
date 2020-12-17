@@ -233,6 +233,10 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
     ignore?: boolean
     isGroup?: boolean
     draggable?: boolean | 'horizontal' | 'vertical'
+    // drag step
+    draggableXStep?: number
+    // Drag offset
+    draggableXStepValve?:number
 
     silent?: boolean
 
@@ -296,7 +300,6 @@ interface Element<Props extends ElementProps = ElementProps> extends Transformab
 }
 
 class Element<Props extends ElementProps = ElementProps> {
-
     id: number = guid()
     /**
      * Element type
@@ -327,6 +330,15 @@ class Element<Props extends ElementProps = ElementProps> {
      * Whether it can be dragged.
      */
     draggable: boolean | 'horizontal' | 'vertical'
+
+    /**
+    * drag step
+    */
+    draggableXStep?: number
+    /**
+     * Drag offset
+     */
+    draggableXStepValve?:number
 
     /**
      * Whether is it dragging.

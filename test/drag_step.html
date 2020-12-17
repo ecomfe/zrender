@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>drag_step</title>
+    <script src="../dist/zrender.js"></script>
+
+</head>
+<body>
+    <div id="main" style="width:1000px;height:500px;"></div>
+    <script type="text/javascript">
+        const layer = zrender.init(document.querySelector('#main'))
+        var bar = new zrender.Rect({
+            draggable:'horizontal',
+            draggableXStep:30,
+            draggableXStepValve:15,
+            shape:{
+                x:0,
+                y:0,
+                width:60,
+                height:30
+            },
+            style:{
+                fill:'red'
+            }
+        })
+        layer.add(bar)
+    </script>
+</body>
+</html>

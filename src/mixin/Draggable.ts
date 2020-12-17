@@ -24,6 +24,12 @@ export default class Draggable {
     _x: number
     _y: number
 
+    // current target X
+    targetX:number
+
+    // current mousedown X
+    downX:number
+
     constructor(handler: Handler) {
         this.handler = handler;
 
@@ -50,6 +56,8 @@ export default class Draggable {
         }
         if (draggingTarget) {
             this._draggingTarget = draggingTarget;
+            this.targetX = draggingTarget.x
+            this.downX = e.offsetX
             draggingTarget.dragging = true;
             this._x = e.offsetX;
             this._y = e.offsetY;
@@ -71,8 +79,21 @@ export default class Draggable {
             const dy = y - this._y;
             this._x = x;
             this._y = y;
-
-            draggingTarget.drift(dx, dy, e);
+            const { draggableXStep,draggableXStepValve } = draggingTarget
+            if ( draggableXStep && draggableXStep!==0 ){
+                let diffX = x - this.downX
+                const step = draggableXStep
+                const value = draggableXStepValve
+                const rem = diffX % step
+                const finaldX =  diffX - rem + (rem < step - value ?0:step)
+                if ( finaldX !==0 ){
+                    draggingTarget.attr({
+                        x:this.targetX+finaldX
+                    })
+                }
+            }else{
+                draggingTarget.drift(dx, dy, e);
+            }
             this.handler.dispatchToElement(
                 new Param(draggingTarget, e), 'drag', e.event
             );
@@ -113,6 +134,8 @@ export default class Draggable {
 
         this._draggingTarget = null;
         this._dropTarget = null;
+        this.downX = null
+        this.targetX = null
     }
 
 }
