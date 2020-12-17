@@ -86,11 +86,9 @@ export default class Draggable {
                 const value = draggableXStepValve
                 const rem = diffX % step
                 const finaldX =  diffX - rem + (rem < step - value ?0:step)
-                if ( finaldX !==0 ){
-                    draggingTarget.attr({
-                        x:this.targetX+finaldX
-                    })
-                }
+                draggingTarget.attr({
+                    x:this.targetX+finaldX
+                })
             }else{
                 draggingTarget.drift(dx, dy, e);
             }
