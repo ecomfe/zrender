@@ -234,7 +234,7 @@ export default class Layer extends Eventful {
                         const pendingArea = pendingRect.width * pendingRect.height;
                         const deltaArea = pendingArea - aArea - bArea;
                         if (deltaArea < minDeltaArea) {
-                            minDeltaArea = minDeltaArea;
+                            minDeltaArea = deltaArea;
                             bestRectToMergeIdx = i;
                         }
                     }
