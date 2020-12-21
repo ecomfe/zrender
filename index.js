@@ -17,5 +17,3 @@ var _export = require("./lib/export");
 })();
 
 require("./lib/svg/svg");
-
-require("./lib/vml/vml");
