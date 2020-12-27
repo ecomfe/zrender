@@ -29,7 +29,10 @@
   "dependencies": {
     "tslib": "2.0.3"
   },
-  "sideEffects": false,
+  "sideEffects": [
+    "esm/canvas/canvas.js",
+    "esm/svg/svg.js"
+  ],
   "devDependencies": {
     "@microsoft/api-extractor": "^7.7.2",
     "@types/jest": "^25.1.2",
