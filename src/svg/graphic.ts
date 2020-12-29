@@ -324,8 +324,11 @@ const svgImage: SVGProxy<ZRImage> = {
         let image = style.image;
 
         if (image instanceof HTMLImageElement) {
-            const src = image.src;
-            image = src;
+            image = image.src;
+        }
+        // heatmap layer in geo may be a canvas
+        else if (image instanceof HTMLCanvasElement) {
+            image = image.toDataURL();
         }
         if (!image) {
             return;
