@@ -12,23 +12,25 @@
   },
   "scripts": {
     "prepublish": "npm run release",
-    "build": "npm run build:bundle && npm run build:cjs && npm run build:esm",
-    "release": "node build/build.js --minify && npm run build:cjs && npm run build:esm",
+    "build": "npm run build:bundle && npm run build:esm",
+    "release": "node build/build.js --minify && npm run build:esm",
     "build:bundle": "node build/build.js",
-    "build:cjs": "npx tsc -m CommonJS --outDir lib",
-    "build:esm": "npx tsc -m ES2015 --outDir esm",
+    "build:esm": "npx tsc -m ES2015 --outDir lib",
     "watch:bundle": "node build/build.js --watch",
-    "watch:esm": "npx tsc -w -m ES2015 --outDir esm",
-    "watch:cjs": "npx tsc -w -m CommonJS --outDir lib",
+    "watch:esm": "npx tsc -w -m ES2015 --outDir lib",
     "test": "npx jest --config test/ut/jest.config.js"
   },
   "license": "BSD-3-Clause",
   "types": "index.d.ts",
-  "module": "index.esm.js",
-  "main": "index.js",
+  "module": "index.js",
+  "main": "dist/zrender.js",
   "dependencies": {
-    "tslib": "1.10.0"
+    "tslib": "2.0.3"
   },
+  "sideEffects": [
+    "lib/canvas/canvas.js",
+    "lib/svg/svg.js"
+  ],
   "devDependencies": {
     "@microsoft/api-extractor": "^7.7.2",
     "@types/jest": "^25.1.2",
@@ -44,7 +46,7 @@
     "rollup-plugin-typescript2": "^0.25.3",
     "rollup-plugin-uglify": "^6.0.4",
     "ts-jest": "^25.2.0",
-    "typescript": "3.8.3",
+    "typescript": "^4.1.2",
     "uglify-js": "^3.10.0"
   }
 }

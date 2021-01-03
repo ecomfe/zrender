@@ -95,8 +95,10 @@ const numberReg = /-?([0-9]*\.)?[0-9]+([eE]-?[0-9]+)?/g;
 // const valueSplitReg = /[\s,]+/;
 
 function createPathProxyFromString(data: string) {
+    const path = new PathProxy();
+
     if (!data) {
-        return new PathProxy();
+        return path;
     }
 
     // const data = data.replace(/-/g, ' -')
@@ -121,7 +123,6 @@ function createPathProxyFromString(data: string) {
     let subpathY = cpy;
     let prevCmd;
 
-    const path = new PathProxy();
     const CMD = PathProxy.CMD;
 
     // commandReg.lastIndex = 0;
@@ -131,6 +132,11 @@ function createPathProxyFromString(data: string) {
     //     const cmdContent = cmdResult[2];
 
     const cmdList = data.match(commandReg);
+    if (!cmdList) {
+        // Invalid svg path.
+        return path;
+    }
+
     for (let l = 0; l < cmdList.length; l++) {
         const cmdText = cmdList[l];
         let cmdStr = cmdText.charAt(0);
