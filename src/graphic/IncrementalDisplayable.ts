@@ -10,12 +10,12 @@
 import Displayble from './Displayable';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
-import { Group } from '../export';
+import Group from './Group';
 
 const m: MatrixArray = [];
 // TODO Style override ?
 
-export default class IncrementalDisplayble extends Displayble {
+export default class IncrementalDisplayable extends Displayble {
 
     notClear: boolean = true
 
