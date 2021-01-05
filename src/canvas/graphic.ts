@@ -5,18 +5,17 @@ import { PatternObject } from '../graphic/Pattern';
 import { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
 import { ZRCanvasRenderingContext } from '../core/types';
-import BoundingRect from '../core/BoundingRect';
 import { createOrUpdateImage, isImageReady } from '../graphic/helper/image';
 import { getCanvasGradient, isClipPathChanged } from './helper';
 import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import TSpan, {TSpanStyleProps} from '../graphic/TSpan';
 import { DEFAULT_FONT } from '../contain/text';
-import { IncrementalDisplayable } from '../export';
 import { MatrixArray } from '../core/matrix';
 import { map } from '../core/util';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
 import Element from '../Element';
+import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 
 const pathProxyForDraw = new PathProxy(true);
 

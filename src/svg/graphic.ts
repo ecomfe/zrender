@@ -5,8 +5,7 @@
 import {createElement} from './core';
 import { PathRebuilder } from '../core/PathProxy';
 import * as matrix from '../core/matrix';
-import { Path } from '../export';
-import { PathStyleProps } from '../graphic/Path';
+import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import { DEFAULT_FONT, getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
