@@ -707,3 +707,7 @@ export function parseSVG(xml: string | Document | SVGElement, opt: SVGParserOpti
     const parser = new SVGParser();
     return parser.parse(xml, opt);
 }
+
+
+// Also export parseXML to avoid breaking change.
+export {parseXML};
