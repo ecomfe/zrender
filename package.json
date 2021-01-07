@@ -12,12 +12,12 @@
   },
   "scripts": {
     "prepublish": "npm run release",
-    "build": "npm run build:bundle && npm run build:esm",
-    "release": "node build/build.js --minify && npm run build:esm",
+    "build": "npm run build:bundle && npm run build:lib",
+    "release": "node build/build.js --minify && npm run build:lib",
     "build:bundle": "node build/build.js",
-    "build:esm": "npx tsc -m ES2015 --outDir lib",
+    "build:lib": "npx tsc -m ES2015 --outDir lib",
     "watch:bundle": "node build/build.js --watch",
-    "watch:esm": "npx tsc -w -m ES2015 --outDir lib",
+    "watch:lib": "npx tsc -w -m ES2015 --outDir lib",
     "test": "npx jest --config test/ut/jest.config.js"
   },
   "license": "BSD-3-Clause",
