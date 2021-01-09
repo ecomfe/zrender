@@ -219,19 +219,7 @@ const localDOMHandlers: DomHandlersMap = {
     },
 
     mouseout(event: ZRRawEvent) {
-        // For SVG rendering, there are SVG elements inside `this.dom`.
-        // (especially in decal case). Should not to handle those "mouseout".
-        if (event.target !== this.dom) {
-            return;
-        }
-
         event = normalizeEvent(this.dom, event);
-
-        // Similarly to the browser did on `document` and touch event,
-        // `globalout` will be delayed to final pointer cature release.
-        if (this.__pointerCapturing) {
-            event.zrEventControl = 'no_globalout';
-        }
 
         // There might be some doms created by upper layer application
         // at the same level of painter.getViewportRoot() (e.g., tooltip
@@ -239,9 +227,18 @@ const localDOMHandlers: DomHandlersMap = {
         // be triggered when mouse enters these doms. (But 'mouseout'
         // should be triggered at the original hovered element as usual).
         const element = (event as any).toElement || (event as ZRRawMouseEvent).relatedTarget;
-        event.zrIsToLocalDOM = isLocalEl(this, element);
 
-        this.trigger('mouseout', event);
+        // For SVG rendering, there are SVG elements inside `this.dom`.
+        // (especially in decal case). Should not to handle those "mouseout"..
+        if (!isLocalEl(this, element)) {
+            // Similarly to the browser did on `document` and touch event,
+            // `globalout` will be delayed to final pointer cature release.
+            if (this.__pointerCapturing) {
+                event.zrEventControl = 'no_globalout';
+            }
+
+            this.trigger('mouseout', event);
+        }
     },
 
     wheel(event: ZRRawEvent) {

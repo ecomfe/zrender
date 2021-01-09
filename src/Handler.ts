@@ -232,7 +232,6 @@ class Handler extends Eventful {
 
     mouseout(event: ZRRawEvent) {
         const eventControl = event.zrEventControl;
-        const zrIsToLocalDOM = event.zrIsToLocalDOM;
 
         if (eventControl !== 'only_globalout') {
             this.dispatchToElement(this._hovered, 'mouseout', event);
@@ -241,7 +240,7 @@ class Handler extends Eventful {
         if (eventControl !== 'no_globalout') {
             // FIXME: if the pointer moving from the extra doms to realy "outside",
             // the `globalout` should have been triggered. But currently not.
-            !zrIsToLocalDOM && this.trigger('globalout', {type: 'globalout', event: event});
+            this.trigger('globalout', {type: 'globalout', event: event});
         }
     }
 
