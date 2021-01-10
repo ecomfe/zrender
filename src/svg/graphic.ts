@@ -5,8 +5,7 @@
 import {createElement} from './core';
 import { PathRebuilder } from '../core/PathProxy';
 import * as matrix from '../core/matrix';
-import { Path } from '../export';
-import { PathStyleProps } from '../graphic/Path';
+import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import { DEFAULT_FONT, getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
@@ -85,6 +84,13 @@ function bindStyle(svgEl: SVGElement, style: TSpanStyleProps, el?: TSpan): void
 function bindStyle(svgEl: SVGElement, style: ImageStyleProps, el?: ZRImage): void
 function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan | ZRImage) {
     const opacity = style.opacity == null ? 1 : style.opacity;
+
+    // only set opacity. stroke and fill cannot be applied to svg image
+    if (el instanceof ZRImage) {
+        svgEl.style.opacity = opacity + '';
+        return;
+    }
+
     if (pathHasFill(style)) {
         let fill = style.fill;
         fill = fill === 'transparent' ? NONE : fill;
@@ -317,8 +323,11 @@ const svgImage: SVGProxy<ZRImage> = {
         let image = style.image;
 
         if (image instanceof HTMLImageElement) {
-            const src = image.src;
-            image = src;
+            image = image.src;
+        }
+        // heatmap layer in geo may be a canvas
+        else if (image instanceof HTMLCanvasElement) {
+            image = image.toDataURL();
         }
         if (!image) {
             return;
@@ -348,6 +357,7 @@ const svgImage: SVGProxy<ZRImage> = {
         attr(svgEl, 'x', x + '');
         attr(svgEl, 'y', y + '');
 
+        bindStyle(svgEl, style, el);
         setTransform(svgEl, el.transform);
     }
 };

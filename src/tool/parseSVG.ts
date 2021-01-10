@@ -9,17 +9,17 @@ import Polygon from '../graphic/shape/Polygon';
 import Polyline from '../graphic/shape/Polyline';
 import * as matrix from '../core/matrix';
 import { createFromString } from './path';
-import { isString, extend, defaults, trim, each, map } from '../core/util';
+import { extend, defaults, trim, each, map } from '../core/util';
 import Displayable from '../graphic/Displayable';
 import Element from '../Element';
 import { RectLike } from '../core/BoundingRect';
-import { VectorArray } from '../core/vector';
 import { Dictionary } from '../core/types';
 import { PatternObject } from '../graphic/Pattern';
 import LinearGradient, { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
 import { GradientObject } from '../graphic/Gradient';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
+import { parseXML } from './parseXML';
 
 // Most of the values can be separated by comma and/or white space.
 const DILIMITER_REG = /[\s,]+/;
@@ -65,27 +65,6 @@ type TextStyleOptionExtended = TSpanStyleProps & {
     fontWeight: string
     fontStyle: string
 }
-/**
- * For big svg string, this method might be time consuming.
- */
-export function parseXML(svg: Document | string | SVGElement): SVGElement {
-    if (isString(svg)) {
-        const parser = new DOMParser();
-        svg = parser.parseFromString(svg, 'text/xml');
-    }
-    let svgNode: Node = svg;
-    // Document node. If using $.get, doc node may be input.
-    if (svgNode.nodeType === 9) {
-        svgNode = svgNode.firstChild;
-    }
-    // nodeName of <!DOCTYPE svg> is also 'svg'.
-    while (svgNode.nodeName.toLowerCase() !== 'svg' || svgNode.nodeType !== 1) {
-        svgNode = svgNode.nextSibling;
-    }
-
-    return svgNode as SVGElement;
-}
-
 let nodeParsers: Dictionary<(this: SVGParser, xmlNode: SVGElement, parentGroup: Group) => Element>;
 class SVGParser {
 
@@ -728,3 +707,7 @@ export function parseSVG(xml: string | Document | SVGElement, opt: SVGParserOpti
     const parser = new SVGParser();
     return parser.parse(xml, opt);
 }
+
+
+// Also export parseXML to avoid breaking change.
+export {parseXML};

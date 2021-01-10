@@ -20,13 +20,14 @@ import { Dictionary, ElementEventName } from './core/types';
 import { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
-import { Path, Group } from './export';
 import { EventCallback } from './core/Eventful';
 import TSpan from './graphic/TSpan';
 import ZRImage from './graphic/Image';
 import Displayable from './graphic/Displayable';
 import { lum } from './tool/color';
 import { DARK_MODE_THRESHOLD } from './config';
+import Path from './graphic/Path';
+import Group from './graphic/Group';
 
 
 const useVML = !env.canvasSupported;
@@ -101,19 +102,18 @@ class ZRender {
 
         this.id = id;
 
-        const self = this;
         const storage = new Storage();
 
-        let rendererType = opts.renderer;
+        let rendererType = opts.renderer || 'canvas';
+
         // TODO WebGL
         if (useVML) {
-            if (!painterCtors.vml) {
-                throw new Error('You need to require \'zrender/vml/vml\' to support IE8');
-            }
-            rendererType = 'vml';
+            throw new Error('IE8 support has been dropped since 5.0');
         }
-        else if (!rendererType) {
-            rendererType = 'canvas';
+
+        if (!painterCtors[rendererType]) {
+            // Use the first registered renderer.
+            rendererType = zrUtil.keys(painterCtors)[0];
         }
         if (!painterCtors[rendererType]) {
             throw new Error(`Renderer '${rendererType}' is not imported. Please import it first.`);
@@ -146,7 +146,7 @@ class ZRender {
      */
     add(el: Element) {
         if (!el) {
-            return
+            return;
         }
         this.storage.addRoot(el);
         el.addSelfToZr(this);
@@ -158,7 +158,7 @@ class ZRender {
      */
     remove(el: Element) {
         if (!el) {
-            return
+            return;
         }
         this.storage.delRoot(el);
         el.removeSelfFromZr(this);
