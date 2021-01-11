@@ -812,6 +812,8 @@
             }
             if (draggingTarget) {
                 this._draggingTarget = draggingTarget;
+                this.targetX = draggingTarget.x;
+                this.downX = e.offsetX;
                 draggingTarget.dragging = true;
                 this._x = e.offsetX;
                 this._y = e.offsetY;
@@ -827,7 +829,20 @@
                 var dy = y - this._y;
                 this._x = x;
                 this._y = y;
-                draggingTarget.drift(dx, dy, e);
+                var draggableXStep = draggingTarget.draggableXStep, draggableXStepValve = draggingTarget.draggableXStepValve;
+                if (draggableXStep && draggableXStep !== 0) {
+                    var diffX = x - this.downX;
+                    var step = draggableXStep;
+                    var value = draggableXStepValve;
+                    var rem = diffX % step;
+                    var finaldX = diffX - rem + (rem < step - value ? 0 : step);
+                    draggingTarget.attr({
+                        x: this.targetX + finaldX
+                    });
+                }
+                else {
+                    draggingTarget.drift(dx, dy, e);
+                }
                 this.handler.dispatchToElement(new Param(draggingTarget, e), 'drag', e.event);
                 var dropTarget = this.handler.findHover(x, y, draggingTarget).target;
                 var lastDropTarget = this._dropTarget;
@@ -853,6 +868,8 @@
             }
             this._draggingTarget = null;
             this._dropTarget = null;
+            this.downX = null;
+            this.targetX = null;
         };
         return Draggable;
     }());
@@ -14648,6 +14665,10 @@
     }
     function bindStyle(svgEl, style, el) {
         var opacity = style.opacity == null ? 1 : style.opacity;
+        if (el instanceof ZRImage) {
+            svgEl.style.opacity = opacity + '';
+            return;
+        }
         if (pathHasFill(style)) {
             var fill = style.fill;
             fill = fill === 'transparent' ? NONE : fill;
@@ -14849,6 +14870,7 @@
             attr(svgEl, 'height', dh + '');
             attr(svgEl, 'x', x + '');
             attr(svgEl, 'y', y + '');
+            bindStyle(svgEl, style, el);
             setTransform(svgEl, el.transform);
         }
     };
