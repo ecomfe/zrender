@@ -43,7 +43,7 @@ class Transformable {
      * It can be overrided
      */
     getParentTransform() {
-        return this.parent.transform;
+        return this.parent && this.parent.transform;
     }
     /**
      * Get computed local transform
