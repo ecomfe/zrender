@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Split Animation</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <div id="main"></div>
+    <script type="text/javascript">
+        const zr = zrender.init(document.getElementById('main'));
+
+        const rect = new zrender.Rect({
+            style: {
+                fill: 'red',
+                opacity: 0.5
+            },
+            shape: {
+                x: 100,
+                y: 100,
+                width: 200,
+                height: 200
+            }
+        });
+
+        zr.add(rect);
+
+
+        const targetCircles = [];
+        for (let i = 0; i < 5; i++) {
+            for (let k = 0; k < 5; k++) {
+                targetCircles.push(new zrender.Circle({
+                    style: {
+                        fill: 'red',
+                        opacity: 0.5
+                    },
+                    shape: {
+                        r: 20,
+                        cx: i *  40 + 100,
+                        cy: k * 40 + 100
+                    }
+                }))
+            }
+        }
+
+        function splitRect(path, count) {
+            const pathList = [];
+            for (let i = 0; i < 5; i++) {
+                for (let k = 0; k < 5; k++) {
+                    const subPath = new zrender.Rect({
+                        shape: {
+                            x: 100 + i * 40,
+                            y: 100 + k * 40,
+                            width: 40,
+                            height: 40
+                        }
+                    });
+                    subPath.setStyle(rect.style);
+                    pathList.push(subPath);
+                }
+            }
+            return pathList;
+        }
+
+        function splitToCircles() {
+            zr.remove(rect);
+            targetCircles.forEach(circle => {
+                zr.add(circle);
+            });
+            zrender.morph.splitMorph(rect, targetCircles, {
+                splitPath: splitRect,
+                duration: 1000
+            });
+
+            setTimeout(mergeToRect, 1500);
+        }
+
+        function mergeToRect() {
+            zr.add(rect);
+            targetCircles.forEach(circle => {
+                zr.remove(circle);
+            });
+            zrender.morph.mergeMorph(targetCircles, rect, {
+                splitPath: splitRect,
+                duration: 1000
+            });
+
+            setTimeout(splitToCircles, 1500);
+        }
+
+        setTimeout(splitToCircles, 100);
+    </script>
+</body>
+</html>

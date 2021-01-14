@@ -420,9 +420,9 @@ interface MorphingPath extends Path {
     __mOriginalBuildPath: Path['buildPath']
 }
 
-interface CombiningPath extends Path {
-    childrenRef(): (CombiningPath | Path)[]
-    __isCombiningPath: boolean;
+interface MergingPath extends Path {
+    childrenRef(): (MergingPath | Path)[]
+    __isMergingPath: boolean;
 }
 
 export function centroid(array: number[]) {
@@ -618,22 +618,14 @@ function findBestMorphingRotation(
     return result;
 }
 
-export function isCombiningPath(path: Element): path is CombiningPath {
-    return (path as CombiningPath).__isCombiningPath;
+export function isMergingPath(path: Element): path is MergingPath {
+    return (path as MergingPath).__isMergingPath;
 }
 
-/**
- * Morphing from old path to new path.
- */
-export function morphPath(
+function prepareMorphPath(
     fromPath: Path,
-    toPath: Path,
-    animationOpts: ElementAnimateConfig
-): Path {
-    if (!fromPath || !toPath) {
-        return toPath;
-    }
-
+    toPath: Path
+) {
     const fromPathProxy = fromPath.getUpdatedPathProxy();
     const toPathProxy = toPath.getUpdatedPathProxy();
 
@@ -641,10 +633,6 @@ export function morphPath(
         alignBezierCurves(pathToBezierCurves(fromPathProxy), pathToBezierCurves(toPathProxy));
 
     const morphingData = findBestMorphingRotation(fromBezierCurves, toBezierCurves, 10, Math.PI);
-
-    const oldDone = animationOpts && animationOpts.done;
-    const oldAborted = animationOpts && animationOpts.aborted;
-    const oldDuring = animationOpts && animationOpts.during;
 
     if (!(toPath as MorphingPath).__mOriginalBuildPath) {
         (toPath as MorphingPath).__mOriginalBuildPath = toPath.buildPath;
@@ -691,6 +679,25 @@ export function morphPath(
             }
         }
     };
+}
+
+/**
+ * Morphing from old path to new path.
+ */
+export function morphPath(
+    fromPath: Path,
+    toPath: Path,
+    animationOpts: ElementAnimateConfig
+): Path {
+    if (!fromPath || !toPath) {
+        return toPath;
+    }
+
+    const oldDone = animationOpts.done;
+    const oldAborted = animationOpts.aborted;
+    const oldDuring = animationOpts.during;
+
+    prepareMorphPath(fromPath, toPath);
 
     (toPath as MorphingPath).__morphT = 0;
 
@@ -717,24 +724,24 @@ export function morphPath(
     return toPath;
 }
 
-export interface CombineConfig extends ElementAnimateConfig {
+export interface MergeConfig extends ElementAnimateConfig {
     splitPath?: (path: Path, count: number) => Path[]
 }
 /**
- * Make combining morphing from many paths to one.
+ * Make merge morphing from many paths to one.
  * Will return a group to replace the original path.
  */
-export function combine(
-    fromList: (CombiningPath | Path)[],
+export function mergeMorph(
+    fromList: (MergingPath | Path)[],
     toPath: Path,
-    animationOpts: CombineConfig
+    animationOpts: MergeConfig
 ): Path {
     const fromPathList: Path[] = [];
 
     function addFromPath(fromList: Element[]) {
         for (let i = 0; i < fromList.length; i++) {
             const from = fromList[i];
-            if (isCombiningPath(from)) {
+            if (isMergingPath(from)) {
                 addFromPath((from as GroupLike).childrenRef());
             }
             else if (from instanceof Path) {
@@ -761,31 +768,7 @@ export function combine(
     const oldAborted = animationOpts.aborted;
     const oldDuring = animationOpts.during;
 
-    let doneCount = 0;
-    let abortedCalled = false;
-
-    const children: (CombiningPath | Path)[] = [];
-
-    const morphAnimationOpts = defaults({
-        during(p) {
-            oldDuring && oldDuring(p);
-        },
-        done() {
-            doneCount++;
-            if (doneCount === toPathList.length) {
-                (toPath as CombiningPath).__isCombiningPath = false;
-                (toPath as CombiningPath).childrenRef = null;
-                oldDone && oldDone();
-            }
-        },
-        aborted() {
-            // PENDING: is it logically correct?
-            if (!abortedCalled) {
-                abortedCalled = true;
-                oldAborted && oldAborted();
-            }
-        }
-    } as ElementAnimateConfig, animationOpts);
+    const children: (MergingPath | Path)[] = [];
 
     function getParentTransform() {
         return toPath.transform;
@@ -796,17 +779,39 @@ export function combine(
         const to = toPathList[i];
         children.push(to);
         to.getParentTransform = getParentTransform;
-        morphPath(from, to, morphAnimationOpts);
+        prepareMorphPath(from, to);
     }
 
-    (toPath as CombiningPath).__isCombiningPath = true;
-    (toPath as CombiningPath).childrenRef = function () {
+    (toPath as MergingPath).__isMergingPath = true;
+    (toPath as MergingPath).childrenRef = function () {
         return children;
     };
 
+    (toPath as MorphingPath).__morphT = 0;
+    toPath.animateTo({
+        __morphT: 1
+    } as any, defaults({
+        during(p) {
+            for (let i = 0; i < children.length; i++) {
+                const child = children[i] as MorphingPath;
+                child.__morphT = (toPath as MorphingPath).__morphT;
+                child.dirtyShape();
+            }
+            oldDuring && oldDuring(p);
+        },
+        done() {
+            (toPath as MergingPath).__isMergingPath = false;
+            (toPath as MergingPath).childrenRef = null;
+            oldDone && oldDone();
+        },
+        aborted() {
+            oldAborted && oldAborted();
+        }
+    } as ElementAnimateConfig, animationOpts));
+
     return toPath;
 }
-export interface SeparateConfig extends ElementAnimateConfig {
+export interface SplitConfig extends ElementAnimateConfig {
     splitPath?: (path: Path, count: number) => Path[]
     // // If the from path of separate animation is doing combine animation.
     // // And the paths number is not same with toPathList. We need to do enter/leave animation
@@ -819,10 +824,10 @@ export interface SeparateConfig extends ElementAnimateConfig {
  * Make separate morphing from one path to many paths.
  * Make the MorphingKind of `toPath` become `'ONE_ONE'`.
  */
-export function separate(
+export function splitMorph(
     fromPath: Path,
     toPathList: Path[],
-    animationOpts: SeparateConfig
+    animationOpts: SplitConfig
 ): Path[] {
     const toLen = toPathList.length;
     let fromPathList: Path[] = [];
@@ -833,7 +838,7 @@ export function separate(
     function addFromPath(fromList: Element[]) {
         for (let i = 0; i < fromList.length; i++) {
             const from = fromList[i];
-            if (isCombiningPath(from)) {
+            if (isMergingPath(from)) {
                 addFromPath((from as GroupLike).childrenRef());
             }
             else if (from instanceof Path) {
@@ -843,7 +848,7 @@ export function separate(
     }
     // This case most happen when a combining path is called to reverse the animation
     // to its original separated state.
-    if (isCombiningPath(fromPath)) {
+    if (isMergingPath(fromPath)) {
         addFromPath(fromPath.childrenRef());
 
         const fromLen = fromPathList.length;
