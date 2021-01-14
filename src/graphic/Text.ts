@@ -11,12 +11,16 @@ import ZRImage from './Image';
 import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray, copy } from '../core/matrix';
-import Displayable, { DisplayableStatePropNames, DisplayableProps, DEFAULT_COMMON_ANIMATION_PROPS } from './Displayable';
-import Path from './Path';
+import Displayable, {
+    DisplayableStatePropNames,
+    DisplayableProps,
+    DEFAULT_COMMON_ANIMATION_PROPS
+} from './Displayable';
 import { ZRenderType } from '../zrender';
 import Animator from '../animation/Animator';
 import Transformable from '../core/Transformable';
 import { ElementCommonState } from '../Element';
+import { GroupLike } from './Group';
 
 type TextContentBlock = ReturnType<typeof parseRichText>
 type TextLine = TextContentBlock['lines'][0]
@@ -249,7 +253,7 @@ interface ZRText {
     stateProxy: (stateName: string) => TextState
 }
 
-class ZRText extends Displayable<TextProps> {
+class ZRText extends Displayable<TextProps> implements GroupLike {
 
     type = 'text'
 
@@ -299,23 +303,6 @@ class ZRText extends Displayable<TextProps> {
             child.cursor = this.cursor;
             child.invisible = this.invisible;
         }
-
-        const attachedTransform = this.attachedTransform;
-        if (attachedTransform) {
-            attachedTransform.updateTransform();
-            const m = attachedTransform.transform;
-            if (m) {
-                this.transform = this.transform || [];
-                // Copy to the transform will be actually used.
-                copy(this.transform, m);
-            }
-            else {
-                this.transform = null;
-            }
-        }
-        else {
-            super.update();
-        }
     }
 
     getComputedTransform() {
@@ -326,8 +313,7 @@ class ZRText extends Displayable<TextProps> {
             this.__hostTarget.updateInnerText(true);
         }
 
-        return this.attachedTransform ? this.attachedTransform.getComputedTransform()
-            : super.getComputedTransform();
+        return super.getComputedTransform();
     }
 
     private _updateSubTexts() {

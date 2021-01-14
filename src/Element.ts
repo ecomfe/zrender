@@ -28,6 +28,7 @@ import Point from './core/Point';
 import { LIGHT_LABEL_COLOR, DARK_LABEL_COLOR } from './config';
 import { parse, stringify } from './tool/color';
 import env from './core/env';
+import { MatrixArray } from './core/matrix';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -508,16 +509,14 @@ class Element<Props extends ElementProps = ElementProps> {
             let textStyleChanged = false;
 
             // TODO Restore the element after textConfig changed.
-
-            // NOTE: Can't be used both as normal element and as textContent.
-            if (isLocal) {
-                // Apply host's transform.
-                // TODO parent is always be group for developers. But can be displayble inside.
-                attachedTransform.parent = this as unknown as Group;
-            }
-            else {
-                attachedTransform.parent = null;
-            }
+            // TODO Performance?
+            // Apply host's transform.
+            attachedTransform.getParentTransform = () => {
+                return isLocal ? this.transform : null;
+            };
+            attachedTransform.getLocalTransform = (m: MatrixArray) => {
+                return attachedTransform.getLocalTransform(m);
+            };
 
             let innerOrigin = false;
 

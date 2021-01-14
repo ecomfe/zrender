@@ -98,7 +98,7 @@ export interface PathProps extends DisplayableProps {
     buildPath?: (
         ctx: PathProxy | CanvasRenderingContext2D,
         shapeCfg: Dictionary<any>,
-        inBundle?: boolean
+        inBatch?: boolean
     ) => void
 }
 
@@ -166,8 +166,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
         const style = this.style;
         if (style.decal) {
-            const decalEl: Path = this._decalEl
-                = this._decalEl || new Path();
+            const decalEl: Path = this._decalEl = this._decalEl || new Path();
             if (decalEl.buildPath === Path.prototype.buildPath) {
                 decalEl.buildPath = ctx => {
                     this.buildPath(ctx, this.shape);
@@ -302,11 +301,19 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     buildPath(
         ctx: PathProxy | CanvasRenderingContext2D,
         shapeCfg: Dictionary<any>,
-        inBundle?: boolean
+        inBatch?: boolean
     ) {}
 
     pathUpdated() {
         this.__dirty &= ~Path.SHAPE_CHANGED_BIT;
+    }
+
+    getUpdatedPathProxy(inBatch?: boolean) {
+        // Update path proxy data to latest.
+        !this.path && this.createPathProxy();
+        this.path.beginPath();
+        this.buildPath(this.path, this.shape, inBatch);
+        return this.path;
     }
 
     createPathProxy() {
@@ -614,7 +621,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         getBoundingRect?: Displayable['getBoundingRect']
 
         calculateTextPosition?: Element['calculateTextPosition']
-        buildPath(this: Path, ctx: CanvasRenderingContext2D | PathProxy, shape: Shape, inBundle?: boolean): void
+        buildPath(this: Path, ctx: CanvasRenderingContext2D | PathProxy, shape: Shape, inBatch?: boolean): void
         init?(this: Path, opts: PathProps): void // TODO Should be SubPathOption
     }): {
         new(opts?: PathProps & {shape: Shape}): Path

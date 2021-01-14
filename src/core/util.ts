@@ -726,26 +726,6 @@ export function concatArray<T, R>(a: ArrayLike<T>, b: ArrayLike<R>): ArrayLike<T
     return newArray;
 }
 
-/**
- * Change prototype of object.
- * It will replace the prototype if Object.setPrototypeOf is supported by browser.
- * Otherwise it will create a new object and return.
- */
-// export function changePrototype<T>(obj: T, proto: object): T {
-//     if (Object.setPrototypeOf) {
-//         Object.setPrototypeOf(obj, proto);
-//         return obj;
-//     }
-//     else {
-//         const StyleCtor = function () {};
-//         StyleCtor.prototype = proto;
-//         const newObj = new (StyleCtor as any)();
-//         extend(newObj, obj);
-//         return newObj;
-//     }
-// }
-
-
 export function createObject<T>(proto?: object, properties?: T): T {
     // Performance of Object.create
     // https://jsperf.com/style-strategy-proto-or-others

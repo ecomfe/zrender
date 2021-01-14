@@ -1,7 +1,5 @@
 import * as matrix from './matrix';
 import * as vector from './vector';
-import { Dictionary } from './types';
-import { logError } from './util';
 
 const mIdentity = matrix.identity;
 
@@ -41,6 +39,21 @@ class Transformable {
     invTransform: matrix.MatrixArray
 
     /**
+     * Get parent's transform.
+     * It can be overrided
+     */
+    getParentTransform() {
+        return this.parent.transform;
+    }
+    /**
+     * Get computed local transform
+     * It can be overrided.
+     */
+    getLocalTransform(m?: matrix.MatrixArray) {
+        return Transformable.getLocalTransform(this, m);
+    }
+
+    /**
      * Set position from array
      */
     setPosition(arr: number[]) {
@@ -78,12 +91,11 @@ class Transformable {
      * Update global transform
      */
     updateTransform() {
-        const parent = this.parent;
-        const parentHasTransform = parent && parent.transform;
+        const parentTransform = this.getParentTransform();
         const needLocalTransform = this.needLocalTransform();
 
         let m = this.transform;
-        if (!(needLocalTransform || parentHasTransform)) {
+        if (!(needLocalTransform || parentTransform)) {
             m && mIdentity(m);
             return;
         }
@@ -98,12 +110,12 @@ class Transformable {
         }
 
         // 应用父节点变换
-        if (parentHasTransform) {
+        if (parentTransform) {
             if (needLocalTransform) {
-                matrix.mul(m, parent.transform, m);
+                matrix.mul(m, parentTransform, m);
             }
             else {
-                matrix.copy(m, parent.transform);
+                matrix.copy(m, parentTransform);
             }
         }
         // 保存这个变换矩阵
@@ -129,12 +141,6 @@ class Transformable {
 
         this.invTransform = this.invTransform || matrix.create();
         matrix.invert(this.invTransform, m);
-    }
-    /**
-     * Get computed local transform
-     */
-    getLocalTransform(m?: matrix.MatrixArray) {
-        return Transformable.getLocalTransform(this, m);
     }
 
     /**
@@ -277,6 +283,17 @@ class Transformable {
         return m && abs(m[0] - 1) > 1e-10 && abs(m[3] - 1) > 1e-10
             ? Math.sqrt(abs(m[0] * m[3] - m[2] * m[1]))
             : 1;
+    }
+
+    copyTransform(source: Transformable) {
+        const target = this;
+        target.x = source.x;
+        target.y = source.y;
+        target.scaleX = source.scaleY;
+        target.scaleY = source.scaleY;
+        target.originX = source.originX;
+        target.originY = source.originY;
+        target.rotation = source.rotation;
     }
 
 

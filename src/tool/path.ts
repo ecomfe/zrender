@@ -3,7 +3,7 @@ import PathProxy from '../core/PathProxy';
 import transformPath from './transformPath';
 import { VectorArray } from '../core/vector';
 import { MatrixArray } from '../core/matrix';
-import { extend } from '../core/util';
+import { extend, noop } from '../core/util';
 
 // command chars
 // const cc = [
@@ -448,13 +448,7 @@ export function mergePath(pathEls: Path[], opts: PathProps) {
     const len = pathEls.length;
     for (let i = 0; i < len; i++) {
         const pathEl = pathEls[i];
-        if (!pathEl.path) {
-            pathEl.createPathProxy();
-        }
-        if (pathEl.shapeChanged()) {
-            pathEl.buildPath(pathEl.path, pathEl.shape, true);
-        }
-        pathList.push(pathEl.path);
+        pathList.push(pathEl.getUpdatedPathProxy(true));
     }
 
     const pathBundle = new Path(opts);
@@ -473,4 +467,26 @@ export function mergePath(pathEls: Path[], opts: PathProps) {
     };
 
     return pathBundle;
+}
+
+/**
+ * Clone a path.
+ * Notice: the shape of cloned path will be fixed.
+ * Only style and transform can be changed.
+ */
+export function clonePath(sourcePath: Path) {
+    const path = new Path();
+    path.setStyle(sourcePath.style);
+    path.copyTransform(sourcePath);
+
+    const pathProxy = new PathProxy();
+    const arrData = sourcePath.getUpdatedPathProxy().data;
+    pathProxy.data = arrData.slice ? arrData.slice()
+        : Array.prototype.slice.call(arrData);
+
+    path.path = pathProxy;
+    // Do nothing
+    path.buildPath = noop;
+
+    return path;
 }

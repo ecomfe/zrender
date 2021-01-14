@@ -1,6 +1,6 @@
 import * as util from './core/util';
 import env from './core/env';
-import Group from './graphic/Group';
+import Group, { GroupLike } from './graphic/Group';
 import Element from './Element';
 
 // Use timsort because in most case elements are partially sorted
@@ -132,8 +132,8 @@ export default class Storage {
         }
 
         // ZRText and Group and combining morphing Path may use children
-        if ((el as Group).childrenRef) {
-            const children = (el as Group).childrenRef();
+        if ((el as GroupLike).childrenRef) {
+            const children = (el as GroupLike).childrenRef();
 
             for (let i = 0; i < children.length; i++) {
                 const child = children[i];
