@@ -724,8 +724,15 @@ export function morphPath(
     return toPath;
 }
 
+interface SplitPath {
+    (params: {
+        path: Path,
+        count: number
+    }): Path[]
+}
+
 export interface MergeConfig extends ElementAnimateConfig {
-    splitPath?: (path: Path, count: number) => Path[]
+    splitPath?: SplitPath
 }
 /**
  * Make merge morphing from many paths to one.
@@ -761,7 +768,9 @@ export function mergeMorph(
     const splitPath = animationOpts.splitPath;
     assert(splitPath, 'splitPath must been given');
 
-    const toPathList = splitPath(toPath, separateCount);
+    const toPathList = splitPath({
+        path: toPath, count: separateCount
+    });
     assert(toPathList.length === separateCount);
 
     const oldDone = animationOpts.done;
@@ -812,7 +821,7 @@ export function mergeMorph(
     return toPath;
 }
 export interface SplitConfig extends ElementAnimateConfig {
-    splitPath?: (path: Path, count: number) => Path[]
+    splitPath?: SplitPath
     // // If the from path of separate animation is doing combine animation.
     // // And the paths number is not same with toPathList. We need to do enter/leave animation
     // // on the missing/spare paths.
@@ -866,7 +875,7 @@ export function splitMorph(
         fromPathList.length = toLen;
     }
     else {
-        fromPathList = splitPath(fromPath, toLen);
+        fromPathList = splitPath({ path: fromPath, count: toLen });
         assert(fromPathList.length === toLen);
     }
 
