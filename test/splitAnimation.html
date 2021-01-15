@@ -73,7 +73,7 @@
             targetCircles.forEach(circle => {
                 zr.add(circle);
             });
-            zrender.morph.splitMorph(rect, targetCircles, {
+            zrender.morph.separateMorph(rect, targetCircles, {
                 splitPath: splitRect,
                 duration: 1000
             });
@@ -86,7 +86,7 @@
             targetCircles.forEach(circle => {
                 zr.remove(circle);
             });
-            zrender.morph.mergeMorph(targetCircles, rect, {
+            zrender.morph.combineMorph(targetCircles, rect, {
                 splitPath: splitRect,
                 duration: 1000
             });
