@@ -417,7 +417,6 @@ export function alignBezierCurves(array1: number[][], array2: number[][]) {
 
 interface MorphingPath extends Path {
     __morphT: number;
-    __mOriginalBuildPath: Path['buildPath']
 }
 
 interface CombineMorphingPath extends Path {
@@ -622,6 +621,51 @@ export function isCombineMorphing(path: Element): path is CombineMorphingPath {
     return (path as CombineMorphingPath).__isCombineMorphing;
 }
 
+export function isMorphing(el: Path) {
+    return (el as MorphingPath).__morphT >= 0;
+}
+
+const SAVED_METHOD_PREFIX = '__mOriginal_';
+function saveAndModifyMethod<T extends object, M extends keyof T>(
+    obj: T,
+    methodName: M,
+    modifiers: { replace?: T[M], after?: T[M], before?: T[M] }
+) {
+    const savedMethodName = SAVED_METHOD_PREFIX + methodName;
+    const originalMethod = (obj as any)[savedMethodName] || obj[methodName];
+    if (!(obj as any)[savedMethodName]) {
+        (obj as any)[savedMethodName] = obj[methodName];
+    }
+    const replace = modifiers.replace;
+    const after = modifiers.after;
+    const before = modifiers.before;
+
+    (obj as any)[methodName] = function () {
+        const args = arguments;
+        let res;
+        before && (before as unknown as Function).apply(this, args);
+        // Still call the original method if not replacement.
+        if (replace) {
+            res = (replace as unknown as Function).apply(this, args);
+        }
+        else {
+            res = originalMethod.apply(this, args);
+        }
+        after && (after as unknown as Function).apply(this, args);
+        return res;
+    };
+}
+function restoreMethod<T extends object>(
+    obj: T,
+    methodName: keyof T
+) {
+    const savedMethodName = SAVED_METHOD_PREFIX + methodName;
+    if ((obj as any)[savedMethodName]) {
+        obj[methodName] = (obj as any)[savedMethodName];
+        (obj as any)[savedMethodName] = null;
+    }
+}
+
 function prepareMorphPath(
     fromPath: Path,
     toPath: Path
@@ -634,10 +678,7 @@ function prepareMorphPath(
 
     const morphingData = findBestMorphingRotation(fromBezierCurves, toBezierCurves, 10, Math.PI);
 
-    if (!(toPath as MorphingPath).__mOriginalBuildPath) {
-        (toPath as MorphingPath).__mOriginalBuildPath = toPath.buildPath;
-    }
-    toPath.buildPath = function (path: PathProxy) {
+    saveAndModifyMethod(toPath, 'buildPath', { replace: function (path: PathProxy) {
         const t = (toPath as MorphingPath).__morphT;
         const onet = 1 - t;
 
@@ -678,7 +719,7 @@ function prepareMorphPath(
                 );
             }
         }
-    };
+    } });
 }
 
 /**
@@ -694,12 +735,21 @@ export function morphPath(
     }
 
     const oldDone = animationOpts.done;
-    const oldAborted = animationOpts.aborted;
+    // const oldAborted = animationOpts.aborted;
     const oldDuring = animationOpts.during;
 
     prepareMorphPath(fromPath, toPath);
 
     (toPath as MorphingPath).__morphT = 0;
+
+    function restoreToPath() {
+        restoreMethod(toPath, 'buildPath');
+        // Mark as not in morphing
+        (toPath as MorphingPath).__morphT = -1;
+        // Cleanup.
+        toPath.createPathProxy();
+        toPath.dirtyShape();
+    }
 
     toPath.animateTo({
         __morphT: 1
@@ -709,16 +759,14 @@ export function morphPath(
             oldDuring && oldDuring(p);
         },
         done() {
-            toPath.buildPath = (toPath as MorphingPath).__mOriginalBuildPath;
-            (toPath as MorphingPath).__mOriginalBuildPath = null;
-            // Cleanup.
-            toPath.createPathProxy();
-            toPath.dirtyShape();
+            restoreToPath();
             oldDone && oldDone();
-        },
-        aborted() {
-            oldAborted && oldAborted();
         }
+        // NOTE: Don't do restore if aborted.
+        // Because all status was just set when animation started.
+        // aborted() {
+        //     oldAborted && oldAborted();
+        // }
     } as ElementAnimateConfig, animationOpts));
 
     return toPath;
@@ -732,7 +780,7 @@ interface SplitPath {
 }
 
 export interface CombineConfig extends ElementAnimateConfig {
-    splitPath?: SplitPath
+    splitPath: SplitPath
 }
 /**
  * Make combine morphing from many paths to one.
@@ -774,7 +822,7 @@ export function combineMorph(
     assert(toPathList.length === separateCount);
 
     const oldDone = animationOpts.done;
-    const oldAborted = animationOpts.aborted;
+    // const oldAborted = animationOpts.aborted;
     const oldDuring = animationOpts.during;
 
     const children: (CombineMorphingPath | Path)[] = [];
@@ -795,6 +843,30 @@ export function combineMorph(
     (toPath as CombineMorphingPath).childrenRef = function () {
         return children;
     };
+    saveAndModifyMethod(toPath, 'addSelfToZr', {
+        after(zr) {
+            for (let i = 0; i < children.length; i++) {
+                children[i].addSelfToZr(zr);
+            }
+        }
+    });
+    saveAndModifyMethod(toPath, 'removeSelfFromZr', {
+        after(zr) {
+            for (let i = 0; i < children.length; i++) {
+                children[i].removeSelfFromZr(zr);
+            }
+        }
+    });
+
+    function restoreToPath() {
+        (toPath as CombineMorphingPath).__isCombineMorphing = false;
+        // Mark as not in morphing
+        (toPath as MorphingPath).__morphT = -1;
+        (toPath as CombineMorphingPath).childrenRef = null;
+
+        restoreMethod(toPath, 'addSelfToZr');
+        restoreMethod(toPath, 'removeSelfFromZr');
+    }
 
     (toPath as MorphingPath).__morphT = 0;
     toPath.animateTo({
@@ -809,19 +881,20 @@ export function combineMorph(
             oldDuring && oldDuring(p);
         },
         done() {
-            (toPath as CombineMorphingPath).__isCombineMorphing = false;
-            (toPath as CombineMorphingPath).childrenRef = null;
+            restoreToPath();
             oldDone && oldDone();
-        },
-        aborted() {
-            oldAborted && oldAborted();
         }
+        // NOTE: Don't do restore if aborted.
+        // Because all status was just set when animation started.
+        // aborted() {
+        //     oldAborted && oldAborted();
+        // }
     } as ElementAnimateConfig, animationOpts));
 
     return toPath;
 }
 export interface SeparateConfig extends ElementAnimateConfig {
-    splitPath?: SplitPath
+    splitPath: SplitPath
     // // If the from path of separate animation is doing combine animation.
     // // And the paths number is not same with toPathList. We need to do enter/leave animation
     // // on the missing/spare paths.

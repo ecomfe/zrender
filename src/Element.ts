@@ -1385,6 +1385,10 @@ class Element<Props extends ElementProps = ElementProps> {
      * Not recursively because it will be invoked when element added to storage.
      */
     addSelfToZr(zr: ZRenderType) {
+        if (this.__zr === zr) {
+            return;
+        }
+
         this.__zr = zr;
         // 添加动画
         const animators = this.animators;
@@ -1410,6 +1414,10 @@ class Element<Props extends ElementProps = ElementProps> {
      * Not recursively because it will be invoked when element added to storage.
      */
     removeSelfFromZr(zr: ZRenderType) {
+        if (!this.__zr) {
+            return;
+        }
+
         this.__zr = null;
         // Remove animation
         const animators = this.animators;

@@ -32,10 +32,10 @@
         zr.add(rect);
 
 
-        const targetCircles = [];
+        const splittedCircles = [];
         for (let i = 0; i < 5; i++) {
             for (let k = 0; k < 5; k++) {
-                targetCircles.push(new zrender.Circle({
+                splittedCircles.push(new zrender.Circle({
                     style: {
                         fill: 'red',
                         opacity: 0.5
@@ -70,28 +70,28 @@
 
         function splitToCircles() {
             zr.remove(rect);
-            targetCircles.forEach(circle => {
+            splittedCircles.forEach(circle => {
                 zr.add(circle);
             });
-            zrender.morph.separateMorph(rect, targetCircles, {
+            zrender.morph.separateMorph(rect, splittedCircles, {
                 splitPath: splitRect,
                 duration: 1000
             });
 
-            setTimeout(mergeToRect, 1500);
+            setTimeout(mergeToRect, 800);
         }
 
         function mergeToRect() {
             zr.add(rect);
-            targetCircles.forEach(circle => {
+            splittedCircles.forEach(circle => {
                 zr.remove(circle);
             });
-            zrender.morph.combineMorph(targetCircles, rect, {
+            zrender.morph.combineMorph(splittedCircles, rect, {
                 splitPath: splitRect,
                 duration: 1000
             });
 
-            setTimeout(splitToCircles, 1500);
+            setTimeout(splitToCircles, 800);
         }
 
         setTimeout(splitToCircles, 100);
