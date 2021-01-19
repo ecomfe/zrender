@@ -487,6 +487,9 @@ export function clonePath(sourcePath: Path) {
     path.path = pathProxy;
     // Do nothing
     path.buildPath = noop;
+    path.z = sourcePath.z;
+    path.z2 = sourcePath.z2;
+    path.zlevel = sourcePath.zlevel;
 
     return path;
 }

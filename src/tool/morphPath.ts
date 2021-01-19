@@ -419,7 +419,7 @@ interface MorphingPath extends Path {
     __morphT: number;
 }
 
-interface CombineMorphingPath extends Path {
+export interface CombineMorphingPath extends Path {
     childrenRef(): (CombineMorphingPath | Path)[]
     __isCombineMorphing: boolean;
 }
@@ -621,7 +621,7 @@ export function isCombineMorphing(path: Element): path is CombineMorphingPath {
     return (path as CombineMorphingPath).__isCombineMorphing;
 }
 
-export function isMorphing(el: Path) {
+export function isMorphing(el: Element) {
     return (el as MorphingPath).__morphT >= 0;
 }
 
@@ -790,7 +790,7 @@ export function combineMorph(
     fromList: (CombineMorphingPath | Path)[],
     toPath: Path,
     animationOpts: CombineConfig
-): Path {
+) {
     const fromPathList: Path[] = [];
 
     function addFromPath(fromList: Element[]) {
@@ -825,8 +825,6 @@ export function combineMorph(
     // const oldAborted = animationOpts.aborted;
     const oldDuring = animationOpts.during;
 
-    const children: (CombineMorphingPath | Path)[] = [];
-
     function getParentTransform() {
         return toPath.transform;
     }
@@ -834,26 +832,25 @@ export function combineMorph(
     for (let i = 0; i < separateCount; i++) {
         const from = fromPathList[i];
         const to = toPathList[i];
-        children.push(to);
         to.getParentTransform = getParentTransform;
         prepareMorphPath(from, to);
     }
 
     (toPath as CombineMorphingPath).__isCombineMorphing = true;
     (toPath as CombineMorphingPath).childrenRef = function () {
-        return children;
+        return toPathList;
     };
     saveAndModifyMethod(toPath, 'addSelfToZr', {
         after(zr) {
-            for (let i = 0; i < children.length; i++) {
-                children[i].addSelfToZr(zr);
+            for (let i = 0; i < toPathList.length; i++) {
+                toPathList[i].addSelfToZr(zr);
             }
         }
     });
     saveAndModifyMethod(toPath, 'removeSelfFromZr', {
         after(zr) {
-            for (let i = 0; i < children.length; i++) {
-                children[i].removeSelfFromZr(zr);
+            for (let i = 0; i < toPathList.length; i++) {
+                toPathList[i].removeSelfFromZr(zr);
             }
         }
     });
@@ -873,8 +870,8 @@ export function combineMorph(
         __morphT: 1
     } as any, defaults({
         during(p) {
-            for (let i = 0; i < children.length; i++) {
-                const child = children[i] as MorphingPath;
+            for (let i = 0; i < toPathList.length; i++) {
+                const child = toPathList[i] as MorphingPath;
                 child.__morphT = (toPath as MorphingPath).__morphT;
                 child.dirtyShape();
             }
@@ -891,7 +888,11 @@ export function combineMorph(
         // }
     } as ElementAnimateConfig, animationOpts));
 
-    return toPath;
+    return {
+        fromIndividuals: fromPathList,
+        toIndividuals: toPathList,
+        count: toPathList.length
+    };
 }
 export interface SeparateConfig extends ElementAnimateConfig {
     splitPath: SplitPath
@@ -910,7 +911,7 @@ export function separateMorph(
     fromPath: Path,
     toPathList: Path[],
     animationOpts: SeparateConfig
-): Path[] {
+) {
     const toLen = toPathList.length;
     let fromPathList: Path[] = [];
 
@@ -956,5 +957,9 @@ export function separateMorph(
         morphPath(fromPathList[i], toPathList[i], animationOpts);
     }
 
-    return toPathList;
+    return {
+        fromIndividuals: fromPathList,
+        toIndividuals: toPathList,
+        count: toPathList.length
+    };
 }
