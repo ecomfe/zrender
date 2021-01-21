@@ -511,10 +511,13 @@ class Element<Props extends ElementProps = ElementProps> {
             // TODO Restore the element after textConfig changed.
             // TODO Performance?
             // Apply host's transform.
-            attachedTransform.getParentTransform = () => {
+            textEl.getParentTransform = () => {
                 return isLocal ? this.transform : null;
             };
-            attachedTransform.getLocalTransform = (m: MatrixArray) => {
+            textEl.needLocalTransform = () => {
+                return attachedTransform.needLocalTransform();
+            };
+            textEl.getLocalTransform = (m: MatrixArray) => {
                 return attachedTransform.getLocalTransform(m);
             };
 

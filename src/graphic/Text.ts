@@ -288,6 +288,9 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
     }
 
     update() {
+
+        super.update();
+
         // Update children
         if (this.styleChanged()) {
             this._updateSubTexts();
