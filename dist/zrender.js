@@ -9,6 +9,7 @@
             this.firefox = false;
             this.ie = false;
             this.edge = false;
+            this.newEdge = false;
             this.weChat = false;
         }
         return Browser;
@@ -50,7 +51,7 @@
         var firefox = ua.match(/Firefox\/([\d.]+)/);
         var ie = ua.match(/MSIE\s([\d.]+)/)
             || ua.match(/Trident\/.+?rv:(([\d.]+))/);
-        var edge = ua.match(/Edge\/([\d.]+)/);
+        var edge = ua.match(/Edge?\/([\d.]+)/);
         var weChat = (/micromessenger/i).test(ua);
         if (firefox) {
             browser.firefox = true;
@@ -63,6 +64,7 @@
         if (edge) {
             browser.edge = true;
             browser.version = edge[1];
+            browser.newEdge = +edge[1].split('.')[0] > 18;
         }
         if (weChat) {
             browser.weChat = true;
@@ -102,7 +104,7 @@
     var nativeFilter = arrayProto.filter;
     var nativeSlice = arrayProto.slice;
     var nativeMap = arrayProto.map;
-    var ctorFunction = (function () { }).constructor;
+    var ctorFunction = function () { }.constructor;
     var protoFunction = ctorFunction ? ctorFunction.prototype : null;
     var methods = {};
     function $override(name, fn) {
@@ -1440,12 +1442,11 @@
         };
         Handler.prototype.mouseout = function (event) {
             var eventControl = event.zrEventControl;
-            var zrIsToLocalDOM = event.zrIsToLocalDOM;
             if (eventControl !== 'only_globalout') {
                 this.dispatchToElement(this._hovered, 'mouseout', event);
             }
             if (eventControl !== 'no_globalout') {
-                !zrIsToLocalDOM && this.trigger('globalout', { type: 'globalout', event: event });
+                this.trigger('globalout', { type: 'globalout', event: event });
             }
         };
         Handler.prototype.resize = function () {
@@ -3960,7 +3961,7 @@
     var dpr = 1;
     if (typeof window !== 'undefined') {
         dpr = Math.max(window.devicePixelRatio
-            || (window.screen.deviceXDPI / window.screen.logicalXDPI)
+            || (window.screen && window.screen.deviceXDPI / window.screen.logicalXDPI)
             || 1, 1);
     }
     var devicePixelRatio = dpr;
@@ -5888,16 +5889,14 @@
             this.trigger('mouseup', event);
         },
         mouseout: function (event) {
-            if (event.target !== this.dom) {
-                return;
-            }
             event = normalizeEvent(this.dom, event);
-            if (this.__pointerCapturing) {
-                event.zrEventControl = 'no_globalout';
-            }
             var element = event.toElement || event.relatedTarget;
-            event.zrIsToLocalDOM = isLocalEl(this, element);
-            this.trigger('mouseout', event);
+            if (!isLocalEl(this, element)) {
+                if (this.__pointerCapturing) {
+                    event.zrEventControl = 'no_globalout';
+                }
+                this.trigger('mouseout', event);
+            }
         },
         wheel: function (event) {
             wheelEventSupported = true;
@@ -6085,6 +6084,429 @@
         };
         return HandlerDomProxy;
     }(Eventful));
+
+    var Group = (function (_super) {
+        __extends(Group, _super);
+        function Group(opts) {
+            var _this = _super.call(this) || this;
+            _this.isGroup = true;
+            _this._children = [];
+            _this.attr(opts);
+            return _this;
+        }
+        Group.prototype.childrenRef = function () {
+            return this._children;
+        };
+        Group.prototype.children = function () {
+            return this._children.slice();
+        };
+        Group.prototype.childAt = function (idx) {
+            return this._children[idx];
+        };
+        Group.prototype.childOfName = function (name) {
+            var children = this._children;
+            for (var i = 0; i < children.length; i++) {
+                if (children[i].name === name) {
+                    return children[i];
+                }
+            }
+        };
+        Group.prototype.childCount = function () {
+            return this._children.length;
+        };
+        Group.prototype.add = function (child) {
+            if (child) {
+                if (child !== this && child.parent !== this) {
+                    this._children.push(child);
+                    this._doAdd(child);
+                }
+                if (child.__hostTarget) {
+                    throw 'This elemenet has been used as an attachment';
+                }
+            }
+            return this;
+        };
+        Group.prototype.addBefore = function (child, nextSibling) {
+            if (child && child !== this && child.parent !== this
+                && nextSibling && nextSibling.parent === this) {
+                var children = this._children;
+                var idx = children.indexOf(nextSibling);
+                if (idx >= 0) {
+                    children.splice(idx, 0, child);
+                    this._doAdd(child);
+                }
+            }
+            return this;
+        };
+        Group.prototype.replaceAt = function (child, index) {
+            var children = this._children;
+            var old = children[index];
+            if (child && child !== this && child.parent !== this && child !== old) {
+                children[index] = child;
+                old.parent = null;
+                var zr = this.__zr;
+                if (zr) {
+                    old.removeSelfFromZr(zr);
+                }
+                this._doAdd(child);
+            }
+            return this;
+        };
+        Group.prototype._doAdd = function (child) {
+            if (child.parent) {
+                child.parent.remove(child);
+            }
+            child.parent = this;
+            var zr = this.__zr;
+            if (zr && zr !== child.__zr) {
+                child.addSelfToZr(zr);
+            }
+            zr && zr.refresh();
+        };
+        Group.prototype.remove = function (child) {
+            var zr = this.__zr;
+            var children = this._children;
+            var idx = indexOf(children, child);
+            if (idx < 0) {
+                return this;
+            }
+            children.splice(idx, 1);
+            child.parent = null;
+            if (zr) {
+                child.removeSelfFromZr(zr);
+            }
+            zr && zr.refresh();
+            return this;
+        };
+        Group.prototype.removeAll = function () {
+            var children = this._children;
+            var zr = this.__zr;
+            for (var i = 0; i < children.length; i++) {
+                var child = children[i];
+                if (zr) {
+                    child.removeSelfFromZr(zr);
+                }
+                child.parent = null;
+            }
+            children.length = 0;
+            return this;
+        };
+        Group.prototype.eachChild = function (cb, context) {
+            var children = this._children;
+            for (var i = 0; i < children.length; i++) {
+                var child = children[i];
+                cb.call(context, child, i);
+            }
+            return this;
+        };
+        Group.prototype.traverse = function (cb, context) {
+            for (var i = 0; i < this._children.length; i++) {
+                var child = this._children[i];
+                var stopped = cb.call(context, child);
+                if (child.isGroup && !stopped) {
+                    child.traverse(cb, context);
+                }
+            }
+            return this;
+        };
+        Group.prototype.addSelfToZr = function (zr) {
+            _super.prototype.addSelfToZr.call(this, zr);
+            for (var i = 0; i < this._children.length; i++) {
+                var child = this._children[i];
+                child.addSelfToZr(zr);
+            }
+        };
+        Group.prototype.removeSelfFromZr = function (zr) {
+            _super.prototype.removeSelfFromZr.call(this, zr);
+            for (var i = 0; i < this._children.length; i++) {
+                var child = this._children[i];
+                child.removeSelfFromZr(zr);
+            }
+        };
+        Group.prototype.getBoundingRect = function (includeChildren) {
+            var tmpRect = new BoundingRect(0, 0, 0, 0);
+            var children = includeChildren || this._children;
+            var tmpMat = [];
+            var rect = null;
+            for (var i = 0; i < children.length; i++) {
+                var child = children[i];
+                if (child.ignore || child.invisible) {
+                    continue;
+                }
+                var childRect = child.getBoundingRect();
+                var transform = child.getLocalTransform(tmpMat);
+                if (transform) {
+                    BoundingRect.applyTransform(tmpRect, childRect, transform);
+                    rect = rect || tmpRect.clone();
+                    rect.union(tmpRect);
+                }
+                else {
+                    rect = rect || childRect.clone();
+                    rect.union(childRect);
+                }
+            }
+            return rect || tmpRect;
+        };
+        return Group;
+    }(Element));
+    Group.prototype.type = 'group';
+
+    /*!
+    * ZRender, a high performance 2d drawing library.
+    *
+    * Copyright (c) 2013, Baidu Inc.
+    * All rights reserved.
+    *
+    * LICENSE
+    * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
+    */
+    var useVML = !env.canvasSupported;
+    var painterCtors = {};
+    var instances = {};
+    function delInstance(id) {
+        delete instances[id];
+    }
+    function isDarkMode(backgroundColor) {
+        if (!backgroundColor) {
+            return false;
+        }
+        if (typeof backgroundColor === 'string') {
+            return lum(backgroundColor, 1) < DARK_MODE_THRESHOLD;
+        }
+        else if (backgroundColor.colorStops) {
+            var colorStops = backgroundColor.colorStops;
+            var totalLum = 0;
+            var len = colorStops.length;
+            for (var i = 0; i < len; i++) {
+                totalLum += lum(colorStops[i].color, 1);
+            }
+            totalLum /= len;
+            return totalLum < DARK_MODE_THRESHOLD;
+        }
+        return false;
+    }
+    var ZRender = (function () {
+        function ZRender(id, dom, opts) {
+            var _this = this;
+            this._sleepAfterStill = 10;
+            this._stillFrameAccum = 0;
+            this._needsRefresh = true;
+            this._needsRefreshHover = true;
+            this._darkMode = false;
+            opts = opts || {};
+            this.dom = dom;
+            this.id = id;
+            var storage = new Storage();
+            var rendererType = opts.renderer || 'canvas';
+            if (useVML) {
+                throw new Error('IE8 support has been dropped since 5.0');
+            }
+            if (!painterCtors[rendererType]) {
+                rendererType = keys(painterCtors)[0];
+            }
+            if (!painterCtors[rendererType]) {
+                throw new Error("Renderer '" + rendererType + "' is not imported. Please import it first.");
+            }
+            opts.useDirtyRect = opts.useDirtyRect == null
+                ? false
+                : opts.useDirtyRect;
+            var painter = new painterCtors[rendererType](dom, storage, opts, id);
+            this.storage = storage;
+            this.painter = painter;
+            var handerProxy = (!env.node && !env.worker)
+                ? new HandlerDomProxy(painter.getViewportRoot(), painter.root)
+                : null;
+            this.handler = new Handler(storage, painter, handerProxy, painter.root);
+            this.animation = new Animation({
+                stage: {
+                    update: function () { return _this._flush(true); }
+                }
+            });
+            this.animation.start();
+        }
+        ZRender.prototype.add = function (el) {
+            if (!el) {
+                return;
+            }
+            this.storage.addRoot(el);
+            el.addSelfToZr(this);
+            this.refresh();
+        };
+        ZRender.prototype.remove = function (el) {
+            if (!el) {
+                return;
+            }
+            this.storage.delRoot(el);
+            el.removeSelfFromZr(this);
+            this.refresh();
+        };
+        ZRender.prototype.configLayer = function (zLevel, config) {
+            if (this.painter.configLayer) {
+                this.painter.configLayer(zLevel, config);
+            }
+            this.refresh();
+        };
+        ZRender.prototype.setBackgroundColor = function (backgroundColor) {
+            if (this.painter.setBackgroundColor) {
+                this.painter.setBackgroundColor(backgroundColor);
+            }
+            this.refresh();
+            this._backgroundColor = backgroundColor;
+            this._darkMode = isDarkMode(backgroundColor);
+        };
+        ZRender.prototype.getBackgroundColor = function () {
+            return this._backgroundColor;
+        };
+        ZRender.prototype.setDarkMode = function (darkMode) {
+            this._darkMode = darkMode;
+        };
+        ZRender.prototype.isDarkMode = function () {
+            return this._darkMode;
+        };
+        ZRender.prototype.refreshImmediately = function (fromInside) {
+            if (!fromInside) {
+                this.animation.update(true);
+            }
+            this._needsRefresh = false;
+            this.painter.refresh();
+            this._needsRefresh = false;
+        };
+        ZRender.prototype.refresh = function () {
+            this._needsRefresh = true;
+            this.animation.start();
+        };
+        ZRender.prototype.flush = function () {
+            this._flush(false);
+        };
+        ZRender.prototype._flush = function (fromInside) {
+            var triggerRendered;
+            var start = new Date().getTime();
+            if (this._needsRefresh) {
+                triggerRendered = true;
+                this.refreshImmediately(fromInside);
+            }
+            if (this._needsRefreshHover) {
+                triggerRendered = true;
+                this.refreshHoverImmediately();
+            }
+            var end = new Date().getTime();
+            if (triggerRendered) {
+                this._stillFrameAccum = 0;
+                this.trigger('rendered', {
+                    elapsedTime: end - start
+                });
+            }
+            else if (this._sleepAfterStill > 0) {
+                this._stillFrameAccum++;
+                if (this._stillFrameAccum > this._sleepAfterStill) {
+                    this.animation.stop();
+                }
+            }
+        };
+        ZRender.prototype.setSleepAfterStill = function (stillFramesCount) {
+            this._sleepAfterStill = stillFramesCount;
+        };
+        ZRender.prototype.wakeUp = function () {
+            this.animation.start();
+            this._stillFrameAccum = 0;
+        };
+        ZRender.prototype.addHover = function (el) {
+        };
+        ZRender.prototype.removeHover = function (el) {
+        };
+        ZRender.prototype.clearHover = function () {
+        };
+        ZRender.prototype.refreshHover = function () {
+            this._needsRefreshHover = true;
+        };
+        ZRender.prototype.refreshHoverImmediately = function () {
+            this._needsRefreshHover = false;
+            if (this.painter.refreshHover && this.painter.getType() === 'canvas') {
+                this.painter.refreshHover();
+            }
+        };
+        ZRender.prototype.resize = function (opts) {
+            opts = opts || {};
+            this.painter.resize(opts.width, opts.height);
+            this.handler.resize();
+        };
+        ZRender.prototype.clearAnimation = function () {
+            this.animation.clear();
+        };
+        ZRender.prototype.getWidth = function () {
+            return this.painter.getWidth();
+        };
+        ZRender.prototype.getHeight = function () {
+            return this.painter.getHeight();
+        };
+        ZRender.prototype.pathToImage = function (e, dpr) {
+            if (this.painter.pathToImage) {
+                return this.painter.pathToImage(e, dpr);
+            }
+        };
+        ZRender.prototype.setCursorStyle = function (cursorStyle) {
+            this.handler.setCursorStyle(cursorStyle);
+        };
+        ZRender.prototype.findHover = function (x, y) {
+            return this.handler.findHover(x, y);
+        };
+        ZRender.prototype.on = function (eventName, eventHandler, context) {
+            this.handler.on(eventName, eventHandler, context);
+            return this;
+        };
+        ZRender.prototype.off = function (eventName, eventHandler) {
+            this.handler.off(eventName, eventHandler);
+        };
+        ZRender.prototype.trigger = function (eventName, event) {
+            this.handler.trigger(eventName, event);
+        };
+        ZRender.prototype.clear = function () {
+            var roots = this.storage.getRoots();
+            for (var i = 0; i < roots.length; i++) {
+                if (roots[i] instanceof Group) {
+                    roots[i].removeSelfFromZr(this);
+                }
+            }
+            this.storage.delAllRoots();
+            this.painter.clear();
+        };
+        ZRender.prototype.dispose = function () {
+            this.animation.stop();
+            this.clear();
+            this.storage.dispose();
+            this.painter.dispose();
+            this.handler.dispose();
+            this.animation =
+                this.storage =
+                    this.painter =
+                        this.handler = null;
+            delInstance(this.id);
+        };
+        return ZRender;
+    }());
+    function init(dom, opts) {
+        var zr = new ZRender(guid(), dom, opts);
+        instances[zr.id] = zr;
+        return zr;
+    }
+    function dispose(zr) {
+        zr.dispose();
+    }
+    function disposeAll() {
+        for (var key in instances) {
+            if (instances.hasOwnProperty(key)) {
+                instances[key].dispose();
+            }
+        }
+        instances = {};
+    }
+    function getInstance(id) {
+        return instances[id];
+    }
+    function registerPainter(name, Ctor) {
+        painterCtors[name] = Ctor;
+    }
+    var version = '5.0.3';
 
     var STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
     var DEFAULT_COMMON_STYLE = {
@@ -8559,17 +8981,20 @@
     var commandReg = /([mlvhzcqtsa])([^mlvhzcqtsa]*)/ig;
     var numberReg = /-?([0-9]*\.)?[0-9]+([eE]-?[0-9]+)?/g;
     function createPathProxyFromString(data) {
+        var path = new PathProxy();
         if (!data) {
-            return new PathProxy();
+            return path;
         }
         var cpx = 0;
         var cpy = 0;
         var subpathX = cpx;
         var subpathY = cpy;
         var prevCmd;
-        var path = new PathProxy();
         var CMD = PathProxy.CMD;
         var cmdList = data.match(commandReg);
+        if (!cmdList) {
+            return path;
+        }
         for (var l = 0; l < cmdList.length; l++) {
             var cmdText = cmdList[l];
             var cmdStr = cmdText.charAt(0);
@@ -8851,172 +9276,6 @@
         extendFromString: extendFromString,
         mergePath: mergePath
     });
-
-    var Group = (function (_super) {
-        __extends(Group, _super);
-        function Group(opts) {
-            var _this = _super.call(this) || this;
-            _this.isGroup = true;
-            _this._children = [];
-            _this.attr(opts);
-            return _this;
-        }
-        Group.prototype.childrenRef = function () {
-            return this._children;
-        };
-        Group.prototype.children = function () {
-            return this._children.slice();
-        };
-        Group.prototype.childAt = function (idx) {
-            return this._children[idx];
-        };
-        Group.prototype.childOfName = function (name) {
-            var children = this._children;
-            for (var i = 0; i < children.length; i++) {
-                if (children[i].name === name) {
-                    return children[i];
-                }
-            }
-        };
-        Group.prototype.childCount = function () {
-            return this._children.length;
-        };
-        Group.prototype.add = function (child) {
-            if (child) {
-                if (child !== this && child.parent !== this) {
-                    this._children.push(child);
-                    this._doAdd(child);
-                }
-                if (child.__hostTarget) {
-                    throw 'This elemenet has been used as an attachment';
-                }
-            }
-            return this;
-        };
-        Group.prototype.addBefore = function (child, nextSibling) {
-            if (child && child !== this && child.parent !== this
-                && nextSibling && nextSibling.parent === this) {
-                var children = this._children;
-                var idx = children.indexOf(nextSibling);
-                if (idx >= 0) {
-                    children.splice(idx, 0, child);
-                    this._doAdd(child);
-                }
-            }
-            return this;
-        };
-        Group.prototype.replaceAt = function (child, index) {
-            var children = this._children;
-            var old = children[index];
-            if (child && child !== this && child.parent !== this && child !== old) {
-                children[index] = child;
-                old.parent = null;
-                var zr = this.__zr;
-                if (zr) {
-                    old.removeSelfFromZr(zr);
-                }
-                this._doAdd(child);
-            }
-            return this;
-        };
-        Group.prototype._doAdd = function (child) {
-            if (child.parent) {
-                child.parent.remove(child);
-            }
-            child.parent = this;
-            var zr = this.__zr;
-            if (zr && zr !== child.__zr) {
-                child.addSelfToZr(zr);
-            }
-            zr && zr.refresh();
-        };
-        Group.prototype.remove = function (child) {
-            var zr = this.__zr;
-            var children = this._children;
-            var idx = indexOf(children, child);
-            if (idx < 0) {
-                return this;
-            }
-            children.splice(idx, 1);
-            child.parent = null;
-            if (zr) {
-                child.removeSelfFromZr(zr);
-            }
-            zr && zr.refresh();
-            return this;
-        };
-        Group.prototype.removeAll = function () {
-            var children = this._children;
-            var zr = this.__zr;
-            for (var i = 0; i < children.length; i++) {
-                var child = children[i];
-                if (zr) {
-                    child.removeSelfFromZr(zr);
-                }
-                child.parent = null;
-            }
-            children.length = 0;
-            return this;
-        };
-        Group.prototype.eachChild = function (cb, context) {
-            var children = this._children;
-            for (var i = 0; i < children.length; i++) {
-                var child = children[i];
-                cb.call(context, child, i);
-            }
-            return this;
-        };
-        Group.prototype.traverse = function (cb, context) {
-            for (var i = 0; i < this._children.length; i++) {
-                var child = this._children[i];
-                var stopped = cb.call(context, child);
-                if (child.isGroup && !stopped) {
-                    child.traverse(cb, context);
-                }
-            }
-            return this;
-        };
-        Group.prototype.addSelfToZr = function (zr) {
-            _super.prototype.addSelfToZr.call(this, zr);
-            for (var i = 0; i < this._children.length; i++) {
-                var child = this._children[i];
-                child.addSelfToZr(zr);
-            }
-        };
-        Group.prototype.removeSelfFromZr = function (zr) {
-            _super.prototype.removeSelfFromZr.call(this, zr);
-            for (var i = 0; i < this._children.length; i++) {
-                var child = this._children[i];
-                child.removeSelfFromZr(zr);
-            }
-        };
-        Group.prototype.getBoundingRect = function (includeChildren) {
-            var tmpRect = new BoundingRect(0, 0, 0, 0);
-            var children = includeChildren || this._children;
-            var tmpMat = [];
-            var rect = null;
-            for (var i = 0; i < children.length; i++) {
-                var child = children[i];
-                if (child.ignore || child.invisible) {
-                    continue;
-                }
-                var childRect = child.getBoundingRect();
-                var transform = child.getLocalTransform(tmpMat);
-                if (transform) {
-                    BoundingRect.applyTransform(tmpRect, childRect, transform);
-                    rect = rect || tmpRect.clone();
-                    rect.union(tmpRect);
-                }
-                else {
-                    rect = rect || childRect.clone();
-                    rect.union(childRect);
-                }
-            }
-            return rect || tmpRect;
-        };
-        return Group;
-    }(Element));
-    Group.prototype.type = 'group';
 
     var DEFAULT_IMAGE_STYLE = defaults({
         x: 0,
@@ -9672,7 +9931,6 @@
     }(Displayable));
     TSpan.prototype.type = 'tspan';
 
-    var DILIMITER_REG = /[\s,]+/;
     function parseXML(svg) {
         if (isString(svg)) {
             var parser = new DOMParser();
@@ -9687,6 +9945,8 @@
         }
         return svgNode;
     }
+
+    var DILIMITER_REG = /[\s,]+/;
     var nodeParsers;
     var SVGParser = (function () {
         function SVGParser() {
@@ -10890,9 +11150,9 @@
     }(Path));
 
     var m = [];
-    var IncrementalDisplayble = (function (_super) {
-        __extends(IncrementalDisplayble, _super);
-        function IncrementalDisplayble() {
+    var IncrementalDisplayable = (function (_super) {
+        __extends(IncrementalDisplayable, _super);
+        function IncrementalDisplayable() {
             var _this = _super !== null && _super.apply(this, arguments) || this;
             _this.notClear = true;
             _this.incremental = true;
@@ -10901,29 +11161,29 @@
             _this._cursor = 0;
             return _this;
         }
-        IncrementalDisplayble.prototype.traverse = function (cb, context) {
+        IncrementalDisplayable.prototype.traverse = function (cb, context) {
             cb.call(context, this);
         };
-        IncrementalDisplayble.prototype.useStyle = function () {
+        IncrementalDisplayable.prototype.useStyle = function () {
             this.style = {};
         };
-        IncrementalDisplayble.prototype.getCursor = function () {
+        IncrementalDisplayable.prototype.getCursor = function () {
             return this._cursor;
         };
-        IncrementalDisplayble.prototype.innerAfterBrush = function () {
+        IncrementalDisplayable.prototype.innerAfterBrush = function () {
             this._cursor = this._displayables.length;
         };
-        IncrementalDisplayble.prototype.clearDisplaybles = function () {
+        IncrementalDisplayable.prototype.clearDisplaybles = function () {
             this._displayables = [];
             this._temporaryDisplayables = [];
             this._cursor = 0;
             this.markRedraw();
             this.notClear = false;
         };
-        IncrementalDisplayble.prototype.clearTemporalDisplayables = function () {
+        IncrementalDisplayable.prototype.clearTemporalDisplayables = function () {
             this._temporaryDisplayables = [];
         };
-        IncrementalDisplayble.prototype.addDisplayable = function (displayable, notPersistent) {
+        IncrementalDisplayable.prototype.addDisplayable = function (displayable, notPersistent) {
             if (notPersistent) {
                 this._temporaryDisplayables.push(displayable);
             }
@@ -10932,19 +11192,19 @@
             }
             this.markRedraw();
         };
-        IncrementalDisplayble.prototype.addDisplayables = function (displayables, notPersistent) {
+        IncrementalDisplayable.prototype.addDisplayables = function (displayables, notPersistent) {
             notPersistent = notPersistent || false;
             for (var i = 0; i < displayables.length; i++) {
                 this.addDisplayable(displayables[i], notPersistent);
             }
         };
-        IncrementalDisplayble.prototype.getDisplayables = function () {
+        IncrementalDisplayable.prototype.getDisplayables = function () {
             return this._displayables;
         };
-        IncrementalDisplayble.prototype.getTemporalDisplayables = function () {
+        IncrementalDisplayable.prototype.getTemporalDisplayables = function () {
             return this._temporaryDisplayables;
         };
-        IncrementalDisplayble.prototype.eachPendingDisplayable = function (cb) {
+        IncrementalDisplayable.prototype.eachPendingDisplayable = function (cb) {
             for (var i = this._cursor; i < this._displayables.length; i++) {
                 cb && cb(this._displayables[i]);
             }
@@ -10952,7 +11212,7 @@
                 cb && cb(this._temporaryDisplayables[i]);
             }
         };
-        IncrementalDisplayble.prototype.update = function () {
+        IncrementalDisplayable.prototype.update = function () {
             this.updateTransform();
             for (var i = this._cursor; i < this._displayables.length; i++) {
                 var displayable = this._displayables[i];
@@ -10967,7 +11227,7 @@
                 displayable.parent = null;
             }
         };
-        IncrementalDisplayble.prototype.getBoundingRect = function () {
+        IncrementalDisplayable.prototype.getBoundingRect = function () {
             if (!this._rect) {
                 var rect = new BoundingRect(Infinity, Infinity, -Infinity, -Infinity);
                 for (var i = 0; i < this._displayables.length; i++) {
@@ -10982,7 +11242,7 @@
             }
             return this._rect;
         };
-        IncrementalDisplayble.prototype.contain = function (x, y) {
+        IncrementalDisplayable.prototype.contain = function (x, y) {
             var localPos = this.transformCoordToLocal(x, y);
             var rect = this.getBoundingRect();
             if (rect.contain(localPos[0], localPos[1])) {
@@ -10995,7 +11255,7 @@
             }
             return false;
         };
-        return IncrementalDisplayble;
+        return IncrementalDisplayable;
     }(Displayable));
 
     var globalImageCache = new LRU(50);
@@ -12709,266 +12969,6 @@
         });
     }
 
-    /*!
-    * ZRender, a high performance 2d drawing library.
-    *
-    * Copyright (c) 2013, Baidu Inc.
-    * All rights reserved.
-    *
-    * LICENSE
-    * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
-    */
-    var useVML = !env.canvasSupported;
-    var painterCtors = {};
-    var instances = {};
-    function delInstance(id) {
-        delete instances[id];
-    }
-    function isDarkMode(backgroundColor) {
-        if (!backgroundColor) {
-            return false;
-        }
-        if (typeof backgroundColor === 'string') {
-            return lum(backgroundColor, 1) < DARK_MODE_THRESHOLD;
-        }
-        else if (backgroundColor.colorStops) {
-            var colorStops = backgroundColor.colorStops;
-            var totalLum = 0;
-            var len = colorStops.length;
-            for (var i = 0; i < len; i++) {
-                totalLum += lum(colorStops[i].color, 1);
-            }
-            totalLum /= len;
-            return totalLum < DARK_MODE_THRESHOLD;
-        }
-        return false;
-    }
-    var ZRender = (function () {
-        function ZRender(id, dom, opts) {
-            var _this = this;
-            this._sleepAfterStill = 10;
-            this._stillFrameAccum = 0;
-            this._needsRefresh = true;
-            this._needsRefreshHover = true;
-            this._darkMode = false;
-            opts = opts || {};
-            this.dom = dom;
-            this.id = id;
-            var storage = new Storage();
-            var rendererType = opts.renderer;
-            if (useVML) {
-                if (!painterCtors.vml) {
-                    throw new Error('You need to require \'zrender/vml/vml\' to support IE8');
-                }
-                rendererType = 'vml';
-            }
-            else if (!rendererType) {
-                rendererType = 'canvas';
-            }
-            if (!painterCtors[rendererType]) {
-                throw new Error("Renderer '" + rendererType + "' is not imported. Please import it first.");
-            }
-            opts.useDirtyRect = opts.useDirtyRect == null
-                ? false
-                : opts.useDirtyRect;
-            var painter = new painterCtors[rendererType](dom, storage, opts, id);
-            this.storage = storage;
-            this.painter = painter;
-            var handerProxy = (!env.node && !env.worker)
-                ? new HandlerDomProxy(painter.getViewportRoot(), painter.root)
-                : null;
-            this.handler = new Handler(storage, painter, handerProxy, painter.root);
-            this.animation = new Animation({
-                stage: {
-                    update: function () { return _this._flush(true); }
-                }
-            });
-            this.animation.start();
-        }
-        ZRender.prototype.add = function (el) {
-            if (!el) {
-                return;
-            }
-            this.storage.addRoot(el);
-            el.addSelfToZr(this);
-            this.refresh();
-        };
-        ZRender.prototype.remove = function (el) {
-            if (!el) {
-                return;
-            }
-            this.storage.delRoot(el);
-            el.removeSelfFromZr(this);
-            this.refresh();
-        };
-        ZRender.prototype.configLayer = function (zLevel, config) {
-            if (this.painter.configLayer) {
-                this.painter.configLayer(zLevel, config);
-            }
-            this.refresh();
-        };
-        ZRender.prototype.setBackgroundColor = function (backgroundColor) {
-            if (this.painter.setBackgroundColor) {
-                this.painter.setBackgroundColor(backgroundColor);
-            }
-            this.refresh();
-            this._backgroundColor = backgroundColor;
-            this._darkMode = isDarkMode(backgroundColor);
-        };
-        ZRender.prototype.getBackgroundColor = function () {
-            return this._backgroundColor;
-        };
-        ZRender.prototype.setDarkMode = function (darkMode) {
-            this._darkMode = darkMode;
-        };
-        ZRender.prototype.isDarkMode = function () {
-            return this._darkMode;
-        };
-        ZRender.prototype.refreshImmediately = function (fromInside) {
-            if (!fromInside) {
-                this.animation.update(true);
-            }
-            this._needsRefresh = false;
-            this.painter.refresh();
-            this._needsRefresh = false;
-        };
-        ZRender.prototype.refresh = function () {
-            this._needsRefresh = true;
-            this.animation.start();
-        };
-        ZRender.prototype.flush = function () {
-            this._flush(false);
-        };
-        ZRender.prototype._flush = function (fromInside) {
-            var triggerRendered;
-            var start = new Date().getTime();
-            if (this._needsRefresh) {
-                triggerRendered = true;
-                this.refreshImmediately(fromInside);
-            }
-            if (this._needsRefreshHover) {
-                triggerRendered = true;
-                this.refreshHoverImmediately();
-            }
-            var end = new Date().getTime();
-            if (triggerRendered) {
-                this._stillFrameAccum = 0;
-                this.trigger('rendered', {
-                    elapsedTime: end - start
-                });
-            }
-            else if (this._sleepAfterStill > 0) {
-                this._stillFrameAccum++;
-                if (this._stillFrameAccum > this._sleepAfterStill) {
-                    this.animation.stop();
-                }
-            }
-        };
-        ZRender.prototype.setSleepAfterStill = function (stillFramesCount) {
-            this._sleepAfterStill = stillFramesCount;
-        };
-        ZRender.prototype.wakeUp = function () {
-            this.animation.start();
-            this._stillFrameAccum = 0;
-        };
-        ZRender.prototype.addHover = function (el) {
-        };
-        ZRender.prototype.removeHover = function (el) {
-        };
-        ZRender.prototype.clearHover = function () {
-        };
-        ZRender.prototype.refreshHover = function () {
-            this._needsRefreshHover = true;
-        };
-        ZRender.prototype.refreshHoverImmediately = function () {
-            this._needsRefreshHover = false;
-            if (this.painter.refreshHover && this.painter.getType() === 'canvas') {
-                this.painter.refreshHover();
-            }
-        };
-        ZRender.prototype.resize = function (opts) {
-            opts = opts || {};
-            this.painter.resize(opts.width, opts.height);
-            this.handler.resize();
-        };
-        ZRender.prototype.clearAnimation = function () {
-            this.animation.clear();
-        };
-        ZRender.prototype.getWidth = function () {
-            return this.painter.getWidth();
-        };
-        ZRender.prototype.getHeight = function () {
-            return this.painter.getHeight();
-        };
-        ZRender.prototype.pathToImage = function (e, dpr) {
-            if (this.painter.pathToImage) {
-                return this.painter.pathToImage(e, dpr);
-            }
-        };
-        ZRender.prototype.setCursorStyle = function (cursorStyle) {
-            this.handler.setCursorStyle(cursorStyle);
-        };
-        ZRender.prototype.findHover = function (x, y) {
-            return this.handler.findHover(x, y);
-        };
-        ZRender.prototype.on = function (eventName, eventHandler, context) {
-            this.handler.on(eventName, eventHandler, context);
-            return this;
-        };
-        ZRender.prototype.off = function (eventName, eventHandler) {
-            this.handler.off(eventName, eventHandler);
-        };
-        ZRender.prototype.trigger = function (eventName, event) {
-            this.handler.trigger(eventName, event);
-        };
-        ZRender.prototype.clear = function () {
-            var roots = this.storage.getRoots();
-            for (var i = 0; i < roots.length; i++) {
-                if (roots[i] instanceof Group) {
-                    roots[i].removeSelfFromZr(this);
-                }
-            }
-            this.storage.delAllRoots();
-            this.painter.clear();
-        };
-        ZRender.prototype.dispose = function () {
-            this.animation.stop();
-            this.clear();
-            this.storage.dispose();
-            this.painter.dispose();
-            this.handler.dispose();
-            this.animation =
-                this.storage =
-                    this.painter =
-                        this.handler = null;
-            delInstance(this.id);
-        };
-        return ZRender;
-    }());
-    function init(dom, opts) {
-        var zr = new ZRender(guid(), dom, opts);
-        instances[zr.id] = zr;
-        return zr;
-    }
-    function dispose(zr) {
-        zr.dispose();
-    }
-    function disposeAll() {
-        for (var key in instances) {
-            if (instances.hasOwnProperty(key)) {
-                instances[key].dispose();
-            }
-        }
-        instances = {};
-    }
-    function getInstance(id) {
-        return instances[id];
-    }
-    function registerPainter(name, Ctor) {
-        painterCtors[name] = Ctor;
-    }
-    var version = '5.0.1';
-
     function createLinearGradient(ctx, obj, rect) {
         var x = obj.x == null ? 0 : obj.x;
         var x2 = obj.x2 == null ? 1 : obj.x2;
@@ -13547,7 +13547,7 @@
                 bindImageStyle(ctx, el, prevEl, forceSetStyle, scope);
                 brushImage(ctx, el, style);
             }
-            else if (el instanceof IncrementalDisplayble) {
+            else if (el instanceof IncrementalDisplayable) {
                 if (scope.lastDrawType !== DRAW_TYPE_INCREMENTAL) {
                     forceSetStyle = true;
                     scope.lastDrawType = DRAW_TYPE_INCREMENTAL;
@@ -13732,7 +13732,7 @@
                             var pendingArea = pendingRect.width * pendingRect.height;
                             var deltaArea = pendingArea - aArea - bArea;
                             if (deltaArea < minDeltaArea) {
-                                minDeltaArea = minDeltaArea;
+                                minDeltaArea = deltaArea;
                                 bestRectToMergeIdx = i;
                             }
                         }
@@ -14592,10 +14592,150 @@
         return CanvasPainter;
     }());
 
-    registerPainter('canvas', CanvasPainter);
-
     function createElement(name) {
         return document.createElementNS('http://www.w3.org/2000/svg', name);
+    }
+
+    function diff(oldArr, newArr, equals) {
+        if (!equals) {
+            equals = function (a, b) {
+                return a === b;
+            };
+        }
+        oldArr = oldArr.slice();
+        newArr = newArr.slice();
+        var newLen = newArr.length;
+        var oldLen = oldArr.length;
+        var editLength = 1;
+        var maxEditLength = newLen + oldLen;
+        var bestPath = [{ newPos: -1, components: [] }];
+        var oldPos = extractCommon(bestPath[0], newArr, oldArr, 0, equals);
+        if (bestPath[0].newPos + 1 >= newLen && oldPos + 1 >= oldLen) {
+            var indices = [];
+            for (var i = 0; i < newArr.length; i++) {
+                indices.push(i);
+            }
+            return [{
+                    indices: indices,
+                    count: newArr.length,
+                    added: false,
+                    removed: false
+                }];
+        }
+        function execEditLength() {
+            for (var diagonalPath = -1 * editLength; diagonalPath <= editLength; diagonalPath += 2) {
+                var basePath;
+                var addPath = bestPath[diagonalPath - 1];
+                var removePath = bestPath[diagonalPath + 1];
+                var oldPos = (removePath ? removePath.newPos : 0) - diagonalPath;
+                if (addPath) {
+                    bestPath[diagonalPath - 1] = undefined;
+                }
+                var canAdd = addPath && addPath.newPos + 1 < newLen;
+                var canRemove = removePath && 0 <= oldPos && oldPos < oldLen;
+                if (!canAdd && !canRemove) {
+                    bestPath[diagonalPath] = undefined;
+                    continue;
+                }
+                if (!canAdd || (canRemove && addPath.newPos < removePath.newPos)) {
+                    basePath = clonePath(removePath);
+                    pushComponent(basePath.components, false, true);
+                }
+                else {
+                    basePath = addPath;
+                    basePath.newPos++;
+                    pushComponent(basePath.components, true, false);
+                }
+                oldPos = extractCommon(basePath, newArr, oldArr, diagonalPath, equals);
+                if (basePath.newPos + 1 >= newLen && oldPos + 1 >= oldLen) {
+                    return buildValues(basePath.components);
+                }
+                else {
+                    bestPath[diagonalPath] = basePath;
+                }
+            }
+            editLength++;
+        }
+        while (editLength <= maxEditLength) {
+            var ret = execEditLength();
+            if (ret) {
+                return ret;
+            }
+        }
+    }
+    function extractCommon(basePath, newArr, oldArr, diagonalPath, equals) {
+        var newLen = newArr.length;
+        var oldLen = oldArr.length;
+        var newPos = basePath.newPos;
+        var oldPos = newPos - diagonalPath;
+        var commonCount = 0;
+        while (newPos + 1 < newLen && oldPos + 1 < oldLen && equals(newArr[newPos + 1], oldArr[oldPos + 1])) {
+            newPos++;
+            oldPos++;
+            commonCount++;
+        }
+        if (commonCount) {
+            basePath.components.push({
+                count: commonCount,
+                added: false,
+                removed: false,
+                indices: []
+            });
+        }
+        basePath.newPos = newPos;
+        return oldPos;
+    }
+    function pushComponent(components, added, removed) {
+        var last = components[components.length - 1];
+        if (last && last.added === added && last.removed === removed) {
+            components[components.length - 1] = {
+                count: last.count + 1,
+                added: added,
+                removed: removed,
+                indices: []
+            };
+        }
+        else {
+            components.push({
+                count: 1,
+                added: added,
+                removed: removed,
+                indices: []
+            });
+        }
+    }
+    function buildValues(components) {
+        var componentPos = 0;
+        var componentLen = components.length;
+        var newPos = 0;
+        var oldPos = 0;
+        for (; componentPos < componentLen; componentPos++) {
+            var component = components[componentPos];
+            if (!component.removed) {
+                var indices = [];
+                for (var i = newPos; i < newPos + component.count; i++) {
+                    indices.push(i);
+                }
+                component.indices = indices;
+                newPos += component.count;
+                if (!component.added) {
+                    oldPos += component.count;
+                }
+            }
+            else {
+                for (var i = oldPos; i < oldPos + component.count; i++) {
+                    component.indices.push(i);
+                }
+                oldPos += component.count;
+            }
+        }
+        return components;
+    }
+    function clonePath(path) {
+        return { newPos: path.newPos, components: path.components.slice(0) };
+    }
+    function arrayDiff(oldArr, newArr, equal) {
+        return diff(oldArr, newArr, equal);
     }
 
     var NONE = 'none';
@@ -14648,6 +14788,10 @@
     }
     function bindStyle(svgEl, style, el) {
         var opacity = style.opacity == null ? 1 : style.opacity;
+        if (el instanceof ZRImage) {
+            svgEl.style.opacity = opacity + '';
+            return;
+        }
         if (pathHasFill(style)) {
             var fill = style.fill;
             fill = fill === 'transparent' ? NONE : fill;
@@ -14826,8 +14970,10 @@
             var style = el.style;
             var image = style.image;
             if (image instanceof HTMLImageElement) {
-                var src = image.src;
-                image = src;
+                image = image.src;
+            }
+            else if (image instanceof HTMLCanvasElement) {
+                image = image.toDataURL();
             }
             if (!image) {
                 return;
@@ -14849,6 +14995,7 @@
             attr(svgEl, 'height', dh + '');
             attr(svgEl, 'x', x + '');
             attr(svgEl, 'y', y + '');
+            bindStyle(svgEl, style, el);
             setTransform(svgEl, el.transform);
         }
     };
@@ -14897,148 +15044,6 @@
             attr(textSvgEl, 'y', y + '');
         }
     };
-
-    function diff(oldArr, newArr, equals) {
-        if (!equals) {
-            equals = function (a, b) {
-                return a === b;
-            };
-        }
-        oldArr = oldArr.slice();
-        newArr = newArr.slice();
-        var newLen = newArr.length;
-        var oldLen = oldArr.length;
-        var editLength = 1;
-        var maxEditLength = newLen + oldLen;
-        var bestPath = [{ newPos: -1, components: [] }];
-        var oldPos = extractCommon(bestPath[0], newArr, oldArr, 0, equals);
-        if (bestPath[0].newPos + 1 >= newLen && oldPos + 1 >= oldLen) {
-            var indices = [];
-            for (var i = 0; i < newArr.length; i++) {
-                indices.push(i);
-            }
-            return [{
-                    indices: indices,
-                    count: newArr.length,
-                    added: false,
-                    removed: false
-                }];
-        }
-        function execEditLength() {
-            for (var diagonalPath = -1 * editLength; diagonalPath <= editLength; diagonalPath += 2) {
-                var basePath;
-                var addPath = bestPath[diagonalPath - 1];
-                var removePath = bestPath[diagonalPath + 1];
-                var oldPos = (removePath ? removePath.newPos : 0) - diagonalPath;
-                if (addPath) {
-                    bestPath[diagonalPath - 1] = undefined;
-                }
-                var canAdd = addPath && addPath.newPos + 1 < newLen;
-                var canRemove = removePath && 0 <= oldPos && oldPos < oldLen;
-                if (!canAdd && !canRemove) {
-                    bestPath[diagonalPath] = undefined;
-                    continue;
-                }
-                if (!canAdd || (canRemove && addPath.newPos < removePath.newPos)) {
-                    basePath = clonePath(removePath);
-                    pushComponent(basePath.components, false, true);
-                }
-                else {
-                    basePath = addPath;
-                    basePath.newPos++;
-                    pushComponent(basePath.components, true, false);
-                }
-                oldPos = extractCommon(basePath, newArr, oldArr, diagonalPath, equals);
-                if (basePath.newPos + 1 >= newLen && oldPos + 1 >= oldLen) {
-                    return buildValues(basePath.components);
-                }
-                else {
-                    bestPath[diagonalPath] = basePath;
-                }
-            }
-            editLength++;
-        }
-        while (editLength <= maxEditLength) {
-            var ret = execEditLength();
-            if (ret) {
-                return ret;
-            }
-        }
-    }
-    function extractCommon(basePath, newArr, oldArr, diagonalPath, equals) {
-        var newLen = newArr.length;
-        var oldLen = oldArr.length;
-        var newPos = basePath.newPos;
-        var oldPos = newPos - diagonalPath;
-        var commonCount = 0;
-        while (newPos + 1 < newLen && oldPos + 1 < oldLen && equals(newArr[newPos + 1], oldArr[oldPos + 1])) {
-            newPos++;
-            oldPos++;
-            commonCount++;
-        }
-        if (commonCount) {
-            basePath.components.push({
-                count: commonCount,
-                added: false,
-                removed: false,
-                indices: []
-            });
-        }
-        basePath.newPos = newPos;
-        return oldPos;
-    }
-    function pushComponent(components, added, removed) {
-        var last = components[components.length - 1];
-        if (last && last.added === added && last.removed === removed) {
-            components[components.length - 1] = {
-                count: last.count + 1,
-                added: added,
-                removed: removed,
-                indices: []
-            };
-        }
-        else {
-            components.push({
-                count: 1,
-                added: added,
-                removed: removed,
-                indices: []
-            });
-        }
-    }
-    function buildValues(components) {
-        var componentPos = 0;
-        var componentLen = components.length;
-        var newPos = 0;
-        var oldPos = 0;
-        for (; componentPos < componentLen; componentPos++) {
-            var component = components[componentPos];
-            if (!component.removed) {
-                var indices = [];
-                for (var i = newPos; i < newPos + component.count; i++) {
-                    indices.push(i);
-                }
-                component.indices = indices;
-                newPos += component.count;
-                if (!component.added) {
-                    oldPos += component.count;
-                }
-            }
-            else {
-                for (var i = oldPos; i < oldPos + component.count; i++) {
-                    component.indices.push(i);
-                }
-                oldPos += component.count;
-            }
-        }
-        return components;
-    }
-    function clonePath(path) {
-        return { newPos: path.newPos, components: path.components.slice(0) };
-    }
-    function arrayDiff(oldArr, newArr, equal) {
-        return diff(oldArr, newArr, equal);
-    }
 
     var MARK_UNUSED = '0';
     var MARK_USED = '1';
@@ -15765,7 +15770,8 @@
             this.storage = storage;
             this._opts = opts = extend({}, opts || {});
             var svgDom = createElement('svg');
-            svgDom.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            svgDom.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns', 'http://www.w3.org/2000/svg');
+            svgDom.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xlink', 'http://www.w3.org/1999/xlink');
             svgDom.setAttribute('version', '1.1');
             svgDom.setAttribute('baseProfile', 'full');
             svgDom.style.cssText = 'user-select:none;position:absolute;left:0;top:0;';
@@ -16020,7 +16026,10 @@
         };
         SVGPainter.prototype.toDataURL = function () {
             this.refresh();
-            var html = encodeURIComponent(this._svgDom.outerHTML.replace(/></g, '>\n\r<'));
+            var svgDom = this._svgDom;
+            var outerHTML = svgDom.outerHTML
+                || (svgDom.parentNode && svgDom.parentNode).innerHTML;
+            var html = encodeURIComponent(outerHTML.replace(/></g, '>\n\r<'));
             return 'data:image/svg+xml;charset=UTF-8,' + html;
         };
         return SVGPainter;
@@ -16031,6 +16040,7 @@
         };
     }
 
+    registerPainter('canvas', CanvasPainter);
     registerPainter('svg', SVGPainter);
 
     exports.Arc = Arc;
@@ -16044,7 +16054,7 @@
     exports.Group = Group;
     exports.Heart = Heart;
     exports.Image = ZRImage;
-    exports.IncrementalDisplayable = IncrementalDisplayble;
+    exports.IncrementalDisplayable = IncrementalDisplayable;
     exports.Isogon = Isogon;
     exports.Line = Line;
     exports.LinearGradient = LinearGradient;
