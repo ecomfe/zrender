@@ -52,7 +52,7 @@ class Line extends Path<LineProps> {
 
         if (this.subPixelOptimize) {
             const optimizedShape = subPixelOptimizeLine(
-                subPixelOptimizeOutputShape, shape, this.style
+                subPixelOptimizeOutputShape, shape, this.style, this.transform[0], this.transform[3]
             );
             x1 = optimizedShape.x1;
             y1 = optimizedShape.y1;
