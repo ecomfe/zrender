@@ -63,6 +63,7 @@
         if (edge) {
             browser.edge = true;
             browser.version = edge[1];
+            browser.newEdge = +edge[1].split('.')[0] > 18;
         }
         if (weChat) {
             browser.weChat = true;

@@ -1556,7 +1556,7 @@ class Element<Props extends ElementProps = ElementProps> {
 
     // Overload definitions
     animateFrom(
-        target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>, animationProps?: MapToType<Props, boolean>
+        target: Props, cfg: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>
     ) {
         animateTo(this, target, cfg, animationProps, true);
     }
