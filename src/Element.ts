@@ -511,9 +511,7 @@ class Element<Props extends ElementProps = ElementProps> {
             // TODO Restore the element after textConfig changed.
             // TODO Performance?
             // Apply host's transform.
-            textEl.getParentTransform = () => {
-                return isLocal ? this.transform : null;
-            };
+            textEl.parent = this as unknown as Group;
             textEl.needLocalTransform = () => {
                 return attachedTransform.needLocalTransform();
             };

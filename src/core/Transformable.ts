@@ -39,13 +39,6 @@ class Transformable {
     invTransform: matrix.MatrixArray
 
     /**
-     * Get parent's transform.
-     * It can be overrided
-     */
-    getParentTransform() {
-        return this.parent && this.parent.transform;
-    }
-    /**
      * Get computed local transform
      * It can be overrided.
      */
@@ -91,7 +84,7 @@ class Transformable {
      * Update global transform
      */
     updateTransform() {
-        const parentTransform = this.getParentTransform();
+        const parentTransform = this.parent && this.parent.transform;
         const needLocalTransform = this.needLocalTransform();
 
         let m = this.transform;

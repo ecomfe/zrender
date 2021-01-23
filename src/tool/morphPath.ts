@@ -4,8 +4,10 @@ import Path from '../graphic/Path';
 import Element, { ElementAnimateConfig } from '../Element';
 import { defaults, assert } from '../core/util';
 import { lerp } from '../core/vector';
-import { GroupLike } from '../graphic/Group';
+import Group, { GroupLike } from '../graphic/Group';
 import { clonePath } from './path';
+import { MatrixArray } from '../core/matrix';
+import Transformable from '../core/Transformable';
 
 const CMD = PathProxy.CMD;
 
@@ -666,6 +668,19 @@ function restoreMethod<T extends object>(
     }
 }
 
+function applyTransformOnBeziers(bezierCurves: number[][], mm: MatrixArray) {
+    for (let i = 0; i < bezierCurves.length; i++) {
+        const subBeziers = bezierCurves[i];
+        for (let k = 0; k < subBeziers.length;) {
+            const x = subBeziers[k];
+            const y = subBeziers[k + 1];
+
+            subBeziers[k++] = mm[0] * x + mm[2] * y + mm[4];
+            subBeziers[k++] = mm[1] * x + mm[3] * y + mm[5];
+        }
+    }
+}
+
 function prepareMorphPath(
     fromPath: Path,
     toPath: Path
@@ -676,9 +691,24 @@ function prepareMorphPath(
     const [fromBezierCurves, toBezierCurves] =
         alignBezierCurves(pathToBezierCurves(fromPathProxy), pathToBezierCurves(toPathProxy));
 
+    const fromPathTransform = fromPath.getComputedTransform();
+    const toPathTransform = toPath.getComputedTransform();
+    function updateIdentityTransform(this: Transformable) {
+        this.transform = null;
+    }
+    if (fromPathTransform) {
+        applyTransformOnBeziers(fromBezierCurves, fromPathTransform);
+        // Just ignore transform
+        saveAndModifyMethod(fromPath, 'updateTransform', { replace: updateIdentityTransform });
+    }
+    if (toPathTransform) {
+        applyTransformOnBeziers(toBezierCurves, toPathTransform);
+        saveAndModifyMethod(toPath, 'updateTransform', { replace: updateIdentityTransform });
+    }
+
     const morphingData = findBestMorphingRotation(fromBezierCurves, toBezierCurves, 10, Math.PI);
 
-    saveAndModifyMethod(toPath, 'buildPath', { replace: function (path: PathProxy) {
+    saveAndModifyMethod(toPath, 'buildPath', { replace(path: PathProxy) {
         const t = (toPath as MorphingPath).__morphT;
         const onet = 1 - t;
 
@@ -744,6 +774,8 @@ export function morphPath(
 
     function restoreToPath() {
         restoreMethod(toPath, 'buildPath');
+        restoreMethod(toPath, 'updateTransform');
+        restoreMethod(fromPath, 'updateTransform');
         // Mark as not in morphing
         (toPath as MorphingPath).__morphT = -1;
         // Cleanup.
@@ -825,14 +857,10 @@ export function combineMorph(
     // const oldAborted = animationOpts.aborted;
     const oldDuring = animationOpts.during;
 
-    function getParentTransform() {
-        return toPath.transform;
-    }
-
     for (let i = 0; i < separateCount; i++) {
         const from = fromPathList[i];
         const to = toPathList[i];
-        to.getParentTransform = getParentTransform;
+        to.parent = toPath as unknown as Group;
         prepareMorphPath(from, to);
     }
 
@@ -863,6 +891,10 @@ export function combineMorph(
 
         restoreMethod(toPath, 'addSelfToZr');
         restoreMethod(toPath, 'removeSelfFromZr');
+
+        for (let i = 0; i < fromList.length; i++) {
+            restoreMethod(fromList[i], 'updateTransform');
+        }
     }
 
     (toPath as MorphingPath).__morphT = 0;
