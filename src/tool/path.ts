@@ -477,14 +477,15 @@ export function mergePath(pathEls: Path[], opts: PathProps) {
 export function clonePath(sourcePath: Path) {
     const path = new Path();
     path.setStyle(sourcePath.style);
+
+    // TODO Copy getLocalTransform, updateTransform since they can be changed.
     path.copyTransform(sourcePath);
 
-    const pathProxy = new PathProxy();
-    const arrData = sourcePath.getUpdatedPathProxy().data;
-    pathProxy.data = arrData.slice ? arrData.slice()
-        : Array.prototype.slice.call(arrData);
-
-    path.path = pathProxy;
+    path.path = sourcePath.getUpdatedPathProxy().clone();
+    path.getUpdatedPathProxy = function () {
+        // Not update anymore.
+        return path.path;
+    };
     // Do nothing
     path.buildPath = noop;
     path.z = sourcePath.z;

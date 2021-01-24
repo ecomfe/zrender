@@ -804,11 +804,12 @@ export function morphPath(
     return toPath;
 }
 
+export interface SplitPathParams {
+    path: Path,
+    count: number
+};
 interface SplitPath {
-    (params: {
-        path: Path,
-        count: number
-    }): Path[]
+    (params: SplitPathParams): Path[]
 }
 
 export interface CombineConfig extends ElementAnimateConfig {
