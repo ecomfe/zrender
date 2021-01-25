@@ -21,9 +21,7 @@ import {
 } from './graphic';
 import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
-import { GradientObject } from '../graphic/Gradient';
 import { PainterBase } from '../PainterBase';
-import {PatternObject} from '../graphic/Pattern';
 
 function parseInt10(val: string) {
     return parseInt(val, 10);
