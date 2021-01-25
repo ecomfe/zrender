@@ -278,7 +278,7 @@ class SVGPainter implements PainterBase {
         let currentClipGroup;
         for (let i = 0; i < diff.length; i++) {
             const item = diff[i];
-            const isAdd = item.added;
+            // const isAdd = item.added;
             if (item.removed) {
                 continue;
             }
