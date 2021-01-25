@@ -219,7 +219,7 @@ export default class PatternManager extends Definable {
 }
 
 
-const patternSizeCache = new LRU<CachedImageObj>(50);
+// const patternSizeCache = new LRU<CachedImageObj>(50);
 
 type CachedImageObj = {
     width: number,
