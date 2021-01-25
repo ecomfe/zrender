@@ -223,7 +223,7 @@ class SVGPathRebuilder implements PathRebuilder {
         const x = round4(cx + rx * mathCos(startAngle + dTheta));
         const y = round4(cy + ry * mathSin(startAngle + dTheta));
 
-        if (isNaN(x0) || isNaN(y0) || isNaN(rx) || isNaN(ry) || isNaN(psi) || isNaN(degree) || isNaN(x)  || isNaN(y)) {
+        if (isNaN(x0) || isNaN(y0) || isNaN(rx) || isNaN(ry) || isNaN(psi) || isNaN(degree) || isNaN(x) || isNaN(y)) {
             return '';
         }
 

@@ -7,7 +7,6 @@ import Definable from './Definable';
 import * as zrUtil from '../../core/util';
 import Displayable from '../../graphic/Displayable';
 import {PatternObject} from '../../graphic/Pattern';
-import LRU from '../../core/LRU';
 import {createOrUpdateImage} from '../../graphic/helper/image';
 import WeakMap from '../../core/WeakMap';
 
@@ -217,9 +216,6 @@ export default class PatternManager extends Definable {
     }
 
 }
-
-
-const patternSizeCache = new LRU<CachedImageObj>(50);
 
 type CachedImageObj = {
     width: number,
