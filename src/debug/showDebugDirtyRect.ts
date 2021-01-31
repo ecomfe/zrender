@@ -1,7 +1,7 @@
 import type { ZRenderType } from '../zrender';
 import type CanvasPainter from '../canvas/Painter';
 import type BoundingRect from '../core/BoundingRect';
-import { Dictionary } from '../core/types';
+import { extend } from '../core/util';
 
 class DebugRect {
 
@@ -13,8 +13,8 @@ class DebugRect {
         const dom = this.dom = document.createElement('div');
         dom.className = 'ec-debug-dirty-rect';
 
-        style = Object.assign({}, style);
-        Object.assign(style, {
+        style = extend({}, style);
+        extend(style, {
             backgroundColor: 'rgba(0, 0, 255, 0.2)',
             border: '1px solid #00f'
         })

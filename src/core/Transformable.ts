@@ -1,7 +1,5 @@
 import * as matrix from './matrix';
 import * as vector from './vector';
-import { Dictionary } from './types';
-import { logError } from './util';
 
 const mIdentity = matrix.identity;
 
