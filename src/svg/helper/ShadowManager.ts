@@ -7,8 +7,6 @@ import Definable from './Definable';
 import Displayable from '../../graphic/Displayable';
 import { PathStyleProps } from '../../graphic/Path';
 import { Dictionary } from '../../core/types';
-import { each } from '../../core/util';
-
 
 type DisplayableExtended = Displayable & {
     _shadowDom: SVGElement
@@ -135,11 +133,11 @@ export default class ShadowManager extends Definable {
         }
         let shadowDomsPool = this._shadowDomPool;
 
-        let currentUsedShadow = 0;
+        // let currentUsedShadow = 0;
         for (let key in this._shadowDomMap) {
             const dom = this._shadowDomMap[key];
             shadowDomsPool.push(dom);
-            currentUsedShadow++;
+            // currentUsedShadow++;
         }
 
         // Reset the map.

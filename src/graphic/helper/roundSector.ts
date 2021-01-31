@@ -126,10 +126,17 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     const startAngle = shape.startAngle;
     const endAngle = shape.endAngle;
 
-    // FIXME: whether normalizing angles is required?
-    const tmpAngles = [startAngle, endAngle];
-    normalizeArcAngles(tmpAngles, !clockwise);
-    const arc = mathAbs(tmpAngles[0] - tmpAngles[1]);
+    // PENDING: whether normalizing angles is required?
+    let arc: number;
+    // FIXME: there may be a precision issue in `normalizeArcAngles`
+    if (startAngle === endAngle) {
+        arc = 0;
+    }
+    else {
+        const tmpAngles = [startAngle, endAngle];
+        normalizeArcAngles(tmpAngles, !clockwise);
+        arc = mathAbs(tmpAngles[0] - tmpAngles[1]);
+    }
 
     const x = shape.cx;
     const y = shape.cy;

@@ -21,9 +21,7 @@ import {
 } from './graphic';
 import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
-import { GradientObject } from '../graphic/Gradient';
 import { PainterBase } from '../PainterBase';
-import {PatternObject} from '../graphic/Pattern';
 
 function parseInt10(val: string) {
     return parseInt(val, 10);
@@ -278,7 +276,7 @@ class SVGPainter implements PainterBase {
         let currentClipGroup;
         for (let i = 0; i < diff.length; i++) {
             const item = diff[i];
-            const isAdd = item.added;
+            // const isAdd = item.added;
             if (item.removed) {
                 continue;
             }

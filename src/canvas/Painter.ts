@@ -926,24 +926,24 @@ export default class CanvasPainter implements PainterBase {
         }
 
         const imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
-        const ctx = imageLayer.ctx;
         imageLayer.initContext();
         imageLayer.clear(false, opts.backgroundColor || this._backgroundColor);
+
+        const ctx = imageLayer.ctx;
 
         if (opts.pixelRatio <= this.dpr) {
             this.refresh();
 
             const width = imageLayer.dom.width;
             const height = imageLayer.dom.height;
-            const ctx = imageLayer.ctx;
             this.eachLayer(function (layer) {
                 if (layer.__builtin__) {
                     ctx.drawImage(layer.dom, 0, 0, width, height);
                 }
                 else if (layer.renderToCanvas) {
-                    imageLayer.ctx.save();
-                    layer.renderToCanvas(imageLayer.ctx);
-                    imageLayer.ctx.restore();
+                    ctx.save();
+                    layer.renderToCanvas(ctx);
+                    ctx.restore();
                 }
             });
         }
