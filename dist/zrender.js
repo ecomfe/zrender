@@ -6506,7 +6506,7 @@
     function registerPainter(name, Ctor) {
         painterCtors[name] = Ctor;
     }
-    var version = '5.0.3';
+    var version = '5.0.4';
 
     var STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
     var DEFAULT_COMMON_STYLE = {
@@ -10526,9 +10526,15 @@
         var clockwise = !!shape.clockwise;
         var startAngle = shape.startAngle;
         var endAngle = shape.endAngle;
-        var tmpAngles = [startAngle, endAngle];
-        normalizeArcAngles(tmpAngles, !clockwise);
-        var arc = mathAbs$1(tmpAngles[0] - tmpAngles[1]);
+        var arc;
+        if (startAngle === endAngle) {
+            arc = 0;
+        }
+        else {
+            var tmpAngles = [startAngle, endAngle];
+            normalizeArcAngles(tmpAngles, !clockwise);
+            arc = mathAbs$1(tmpAngles[0] - tmpAngles[1]);
+        }
         var x = shape.cx;
         var y = shape.cy;
         var cornerRadius = shape.cornerRadius || 0;
@@ -12890,8 +12896,8 @@
         function DebugRect(style) {
             var dom = this.dom = document.createElement('div');
             dom.className = 'ec-debug-dirty-rect';
-            style = Object.assign({}, style);
-            Object.assign(style, {
+            style = extend({}, style);
+            extend(style, {
                 backgroundColor: 'rgba(0, 0, 255, 0.2)',
                 border: '1px solid #00f'
             });
@@ -14482,22 +14488,21 @@
                 return this._layers[CANVAS_ZLEVEL].dom;
             }
             var imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
-            var ctx = imageLayer.ctx;
             imageLayer.initContext();
             imageLayer.clear(false, opts.backgroundColor || this._backgroundColor);
+            var ctx = imageLayer.ctx;
             if (opts.pixelRatio <= this.dpr) {
                 this.refresh();
                 var width_1 = imageLayer.dom.width;
                 var height_1 = imageLayer.dom.height;
-                var ctx_1 = imageLayer.ctx;
                 this.eachLayer(function (layer) {
                     if (layer.__builtin__) {
-                        ctx_1.drawImage(layer.dom, 0, 0, width_1, height_1);
+                        ctx.drawImage(layer.dom, 0, 0, width_1, height_1);
                     }
                     else if (layer.renderToCanvas) {
-                        imageLayer.ctx.save();
-                        layer.renderToCanvas(imageLayer.ctx);
-                        imageLayer.ctx.restore();
+                        ctx.save();
+                        layer.renderToCanvas(ctx);
+                        ctx.restore();
                     }
                 });
             }
@@ -15894,7 +15899,6 @@
             var currentClipGroup;
             for (var i = 0; i < diff.length; i++) {
                 var item = diff[i];
-                var isAdd = item.added;
                 if (item.removed) {
                     continue;
                 }
