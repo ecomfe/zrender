@@ -8,6 +8,7 @@ import Group, { GroupLike } from '../graphic/Group';
 import { clonePath } from './path';
 import { MatrixArray } from '../core/matrix';
 import Transformable from '../core/Transformable';
+import { ZRenderType } from '../zrender';
 
 const CMD = PathProxy.CMD;
 
@@ -849,10 +850,10 @@ export function combineMorph(
     const splitPath = animationOpts.splitPath;
     assert(splitPath, 'splitPath must been given');
 
-    const toPathList = splitPath({
+    const toSubPathList = splitPath({
         path: toPath, count: separateCount
     });
-    assert(toPathList.length === separateCount);
+    assert(toSubPathList.length === separateCount);
 
     const oldDone = animationOpts.done;
     // const oldAborted = animationOpts.aborted;
@@ -860,26 +861,30 @@ export function combineMorph(
 
     for (let i = 0; i < separateCount; i++) {
         const from = fromPathList[i];
-        const to = toPathList[i];
+        const to = toSubPathList[i];
         to.parent = toPath as unknown as Group;
         prepareMorphPath(from, to);
     }
 
     (toPath as CombineMorphingPath).__isCombineMorphing = true;
     (toPath as CombineMorphingPath).childrenRef = function () {
-        return toPathList;
+        return toSubPathList;
     };
+
+    function addToSubPathListToZr(zr: ZRenderType) {
+        for (let i = 0; i < toSubPathList.length; i++) {
+            toSubPathList[i].addSelfToZr(zr);
+        }
+    }
     saveAndModifyMethod(toPath, 'addSelfToZr', {
         after(zr) {
-            for (let i = 0; i < toPathList.length; i++) {
-                toPathList[i].addSelfToZr(zr);
-            }
+            addToSubPathListToZr(zr);
         }
     });
     saveAndModifyMethod(toPath, 'removeSelfFromZr', {
         after(zr) {
-            for (let i = 0; i < toPathList.length; i++) {
-                toPathList[i].removeSelfFromZr(zr);
+            for (let i = 0; i < toSubPathList.length; i++) {
+                toSubPathList[i].removeSelfFromZr(zr);
             }
         }
     });
@@ -903,8 +908,8 @@ export function combineMorph(
         __morphT: 1
     } as any, defaults({
         during(p) {
-            for (let i = 0; i < toPathList.length; i++) {
-                const child = toPathList[i] as MorphingPath;
+            for (let i = 0; i < toSubPathList.length; i++) {
+                const child = toSubPathList[i] as MorphingPath;
                 child.__morphT = (toPath as MorphingPath).__morphT;
                 child.dirtyShape();
             }
@@ -921,10 +926,14 @@ export function combineMorph(
         // }
     } as ElementAnimateConfig, animationOpts));
 
+    if (toPath.__zr) {
+        addToSubPathListToZr(toPath.__zr);
+    }
+
     return {
         fromIndividuals: fromPathList,
-        toIndividuals: toPathList,
-        count: toPathList.length
+        toIndividuals: toSubPathList,
+        count: toSubPathList.length
     };
 }
 export interface SeparateConfig extends ElementAnimateConfig {
