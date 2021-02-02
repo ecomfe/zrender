@@ -739,15 +739,28 @@ function prepareMorphPath(
                 tmpArr[m + 1] = (x * sa + y * ca) + newCp[1];
             }
 
-            for (let m = 0; m < from.length;) {
-                if (m === 0) {
-                    path.moveTo(tmpArr[m++], tmpArr[m++]);
+            let x0 = tmpArr[0];
+            let y0 = tmpArr[1];
+
+            path.moveTo(x0, y0);
+
+            for (let m = 2; m < from.length;) {
+                const x1 = tmpArr[m++];
+                const y1 = tmpArr[m++];
+                const x2 = tmpArr[m++];
+                const y2 = tmpArr[m++];
+                const x3 = tmpArr[m++];
+                const y3 = tmpArr[m++];
+
+                // Is a line.
+                if (x0 === x1 && y0 === y1 && x2 === x3 && y2 === y3) {
+                    path.lineTo(x3, y3);
                 }
-                path.bezierCurveTo(
-                    tmpArr[m++], tmpArr[m++],
-                    tmpArr[m++], tmpArr[m++],
-                    tmpArr[m++], tmpArr[m++]
-                );
+                else {
+                    path.bezierCurveTo(x1, y1, x2, y2, x3, y3);
+                }
+                x0 = x3;
+                y0 = y3;
             }
         }
     } });
