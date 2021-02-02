@@ -12,8 +12,6 @@ import { ZRenderType } from '../zrender';
 
 const CMD = PathProxy.CMD;
 
-const tmpArr: number[] = [];
-
 function aroundEqual(a: number, b: number) {
     return Math.abs(a - b) < 1e-5;
 }
@@ -701,13 +699,17 @@ function prepareMorphPath(
         applyTransformOnBeziers(fromBezierCurves, fromPathTransform);
         // Just ignore transform
         saveAndModifyMethod(fromPath, 'updateTransform', { replace: updateIdentityTransform });
+        fromPath.transform = null;
     }
     if (toPathTransform) {
         applyTransformOnBeziers(toBezierCurves, toPathTransform);
         saveAndModifyMethod(toPath, 'updateTransform', { replace: updateIdentityTransform });
+        toPath.transform = null;
     }
 
     const morphingData = findBestMorphingRotation(fromBezierCurves, toBezierCurves, 10, Math.PI);
+
+    const tmpArr: number[] = [];
 
     saveAndModifyMethod(toPath, 'buildPath', { replace(path: PathProxy) {
         const t = (toPath as MorphingPath).__morphT;
@@ -822,12 +824,15 @@ export interface SplitPathParams {
     path: Path,
     count: number
 };
-interface SplitPath {
+interface DividePath {
     (params: SplitPathParams): Path[]
 }
 
 export interface CombineConfig extends ElementAnimateConfig {
-    splitPath: SplitPath
+    /**
+     * Transform of returned will be ignored.
+     */
+    splitPath: DividePath
 }
 /**
  * Make combine morphing from many paths to one.
@@ -872,10 +877,15 @@ export function combineMorph(
     // const oldAborted = animationOpts.aborted;
     const oldDuring = animationOpts.during;
 
+    const identityTransform = new Transformable();
     for (let i = 0; i < separateCount; i++) {
         const from = fromPathList[i];
         const to = toSubPathList[i];
         to.parent = toPath as unknown as Group;
+
+        // Ignore set transform in each subpath.
+        to.copyTransform(identityTransform);
+
         prepareMorphPath(from, to);
     }
 
@@ -950,7 +960,7 @@ export function combineMorph(
     };
 }
 export interface SeparateConfig extends ElementAnimateConfig {
-    splitPath: SplitPath
+    dividePath: DividePath
     // // If the from path of separate animation is doing combine animation.
     // // And the paths number is not same with toPathList. We need to do enter/leave animation
     // // on the missing/spare paths.
@@ -970,7 +980,7 @@ export function separateMorph(
     const toLen = toPathList.length;
     let fromPathList: Path[] = [];
 
-    const splitPath = animationOpts.splitPath;
+    const splitPath = animationOpts.dividePath;
     assert(splitPath, 'splitPath must been given');
 
     function addFromPath(fromList: Element[]) {
@@ -1005,6 +1015,10 @@ export function separateMorph(
     }
     else {
         fromPathList = splitPath({ path: fromPath, count: toLen });
+        for (let i = 0; i < fromPathList.length; i++) {
+            // Use transform of source path.
+            fromPathList[i].copyTransform(fromPath);
+        }
         assert(fromPathList.length === toLen);
     }
 
