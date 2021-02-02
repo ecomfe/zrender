@@ -832,7 +832,7 @@ export interface CombineConfig extends ElementAnimateConfig {
     /**
      * Transform of returned will be ignored.
      */
-    splitPath: DividePath
+    dividePath: DividePath
 }
 /**
  * Make combine morphing from many paths to one.
@@ -865,10 +865,10 @@ export function combineMorph(
         return;
     }
 
-    const splitPath = animationOpts.splitPath;
-    assert(splitPath, 'splitPath must been given');
+    const dividePath = animationOpts.dividePath;
+    assert(dividePath, 'dividePath must been given');
 
-    const toSubPathList = splitPath({
+    const toSubPathList = dividePath({
         path: toPath, count: separateCount
     });
     assert(toSubPathList.length === separateCount);
@@ -980,8 +980,8 @@ export function separateMorph(
     const toLen = toPathList.length;
     let fromPathList: Path[] = [];
 
-    const splitPath = animationOpts.dividePath;
-    assert(splitPath, 'splitPath must been given');
+    const dividePath = animationOpts.dividePath;
+    assert(dividePath, 'dividePath must been given');
 
     function addFromPath(fromList: Element[]) {
         for (let i = 0; i < fromList.length; i++) {
@@ -1014,7 +1014,7 @@ export function separateMorph(
         fromPathList.length = toLen;
     }
     else {
-        fromPathList = splitPath({ path: fromPath, count: toLen });
+        fromPathList = dividePath({ path: fromPath, count: toLen });
         for (let i = 0; i < fromPathList.length; i++) {
             // Use transform of source path.
             fromPathList[i].copyTransform(fromPath);
