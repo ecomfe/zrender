@@ -9,7 +9,7 @@ import Polygon from '../graphic/shape/Polygon';
 import Polyline from '../graphic/shape/Polyline';
 import * as matrix from '../core/matrix';
 import { createFromString } from './path';
-import { extend, defaults, trim, each, map } from '../core/util';
+import { defaults, trim, each, map, keys } from '../core/util';
 import Displayable from '../graphic/Displayable';
 import Element from '../Element';
 import { RectLike } from '../core/BoundingRect';
@@ -66,6 +66,8 @@ type TextStyleOptionExtended = TSpanStyleProps & {
     fontStyle: string
 }
 let nodeParsers: Dictionary<(this: SVGParser, xmlNode: SVGElement, parentGroup: Group) => Element>;
+
+
 class SVGParser {
 
     private _defs: DefsMap = {};
@@ -179,14 +181,24 @@ class SVGParser {
 
         let el;
         if (this._isDefine) {
-            const parser = defineParsers[nodeName];
-            if (parser) {
-                const def = parser.call(this, xmlNode);
-                const id = xmlNode.getAttribute('id');
-                if (id) {
-                    this._defs[id] = def;
+            let child = xmlNode.firstChild as SVGElement;
+            while (child) {
+                if (child.nodeType === 1) {
+                    const parser = defineParsers[child.nodeName.toLowerCase()];
+                    if (parser) {
+                        const def = parser.call(this, child);
+                        const id = child.getAttribute('id');
+                        if (id) {
+                            this._defs[id] = def;
+                        }
+                    }
                 }
+                child = child.nextSibling as SVGElement;
             }
+            // TODO:
+            // other graphic elements can also be in <defs> and referenced by
+            // <use x="5" y="5" xlink:href="#myCircle" />
+            // multiple times
         }
         else {
             const parser = nodeParsers[nodeName];
@@ -236,7 +248,7 @@ class SVGParser {
         });
 
         inheritStyle(parentGroup, text);
-        parseAttributes(xmlNode, text, this._defs);
+        parseAttributes(xmlNode, text, this._defs, false);
 
         const textStyle = text.style as TextStyleOptionExtended;
         const fontSize = textStyle.fontSize;
@@ -271,14 +283,14 @@ class SVGParser {
             'g': function (xmlNode: SVGElement, parentGroup: Group) {
                 const g = new Group();
                 inheritStyle(parentGroup, g);
-                parseAttributes(xmlNode, g, this._defs);
+                parseAttributes(xmlNode, g, this._defs, false);
 
                 return g;
             },
             'rect': function (xmlNode: SVGElement, parentGroup: Group) {
                 const rect = new Rect();
                 inheritStyle(parentGroup, rect);
-                parseAttributes(xmlNode, rect, this._defs);
+                parseAttributes(xmlNode, rect, this._defs, false);
 
                 rect.setShape({
                     x: parseFloat(xmlNode.getAttribute('x') || '0'),
@@ -292,7 +304,7 @@ class SVGParser {
             'circle': function (xmlNode: SVGElement, parentGroup: Group) {
                 const circle = new Circle();
                 inheritStyle(parentGroup, circle);
-                parseAttributes(xmlNode, circle, this._defs);
+                parseAttributes(xmlNode, circle, this._defs, false);
 
                 circle.setShape({
                     cx: parseFloat(xmlNode.getAttribute('cx') || '0'),
@@ -305,7 +317,7 @@ class SVGParser {
             'line': function (xmlNode: SVGElement, parentGroup: Group) {
                 const line = new Line();
                 inheritStyle(parentGroup, line);
-                parseAttributes(xmlNode, line, this._defs);
+                parseAttributes(xmlNode, line, this._defs, false);
 
                 line.setShape({
                     x1: parseFloat(xmlNode.getAttribute('x1') || '0'),
@@ -319,7 +331,7 @@ class SVGParser {
             'ellipse': function (xmlNode: SVGElement, parentGroup: Group) {
                 const ellipse = new Ellipse();
                 inheritStyle(parentGroup, ellipse);
-                parseAttributes(xmlNode, ellipse, this._defs);
+                parseAttributes(xmlNode, ellipse, this._defs, false);
 
                 ellipse.setShape({
                     cx: parseFloat(xmlNode.getAttribute('cx') || '0'),
@@ -342,14 +354,14 @@ class SVGParser {
                 });
 
                 inheritStyle(parentGroup, polygon);
-                parseAttributes(xmlNode, polygon, this._defs);
+                parseAttributes(xmlNode, polygon, this._defs, false);
 
                 return polygon;
             },
             'polyline': function (xmlNode: SVGElement, parentGroup: Group) {
                 const path = new Path();
                 inheritStyle(parentGroup, path);
-                parseAttributes(xmlNode, path, this._defs);
+                parseAttributes(xmlNode, path, this._defs, false);
 
                 const pointsStr = xmlNode.getAttribute('points');
                 let pointsArr;
@@ -367,7 +379,7 @@ class SVGParser {
             'image': function (xmlNode: SVGElement, parentGroup: Group) {
                 const img = new ZRImage();
                 inheritStyle(parentGroup, img);
-                parseAttributes(xmlNode, img, this._defs);
+                parseAttributes(xmlNode, img, this._defs, false);
 
                 img.setStyle({
                     image: xmlNode.getAttribute('xlink:href'),
@@ -390,7 +402,7 @@ class SVGParser {
 
                 const g = new Group();
                 inheritStyle(parentGroup, g);
-                parseAttributes(xmlNode, g, this._defs);
+                parseAttributes(xmlNode, g, this._defs, false);
 
                 return g;
             },
@@ -411,7 +423,7 @@ class SVGParser {
                 const g = new Group();
 
                 inheritStyle(parentGroup, g);
-                parseAttributes(xmlNode, g, this._defs);
+                parseAttributes(xmlNode, g, this._defs, false);
 
                 this._textX += dx as number;
                 this._textY += dy as number;
@@ -429,7 +441,7 @@ class SVGParser {
                 const path = createFromString(d);
 
                 inheritStyle(parentGroup, path);
-                parseAttributes(xmlNode, path, this._defs);
+                parseAttributes(xmlNode, path, this._defs, false);
 
                 return path;
             }
@@ -448,18 +460,20 @@ const defineParsers: Dictionary<(xmlNode: SVGElement) => any> = {
         const y2 = parseInt(xmlNode.getAttribute('y2') || '0', 10);
 
         const gradient = new LinearGradient(x1, y1, x2, y2);
+        gradient.global = true;
 
-        _parseGradientColorStops(xmlNode, gradient);
+        parseGradientColorStops(xmlNode, gradient);
 
         return gradient as LinearGradientObject;
     }
 
+    // TODO
     // 'radialgradient': function (xmlNode) {
 
     // }
 };
 
-function _parseGradientColorStops(xmlNode: SVGElement, gradient: GradientObject) {
+function parseGradientColorStops(xmlNode: SVGElement, gradient: GradientObject) {
 
     let stop = xmlNode.firstChild as SVGStopElement;
 
@@ -467,17 +481,23 @@ function _parseGradientColorStops(xmlNode: SVGElement, gradient: GradientObject)
         if (stop.nodeType === 1) {
             const offsetStr = stop.getAttribute('offset');
             let offset: number;
-            if (offsetStr.indexOf('%') > 0) {  // percentage
+            if (offsetStr && offsetStr.indexOf('%') > 0) {  // percentage
                 offset = parseInt(offsetStr, 10) / 100;
             }
-            else if (offsetStr) {    // number from 0 to 1
+            else if (offsetStr) { // number from 0 to 1
                 offset = parseFloat(offsetStr);
             }
             else {
                 offset = 0;
             }
 
-            const stopColor = stop.getAttribute('stop-color') || '#000000';
+            // <stop style="stop-color:red"/> has higher priority than
+            // <stop stop-color="red"/>
+            const styleVals = {} as Dictionary<string>;
+            parseStyleAttribute(stop, styleVals);
+            const stopColor = styleVals.stopColor
+                || stop.getAttribute('stop-color')
+                || '#000000';
 
             gradient.colorStops.push({
                 offset: offset,
@@ -509,7 +529,7 @@ function parsePoints(pointsString: string) {
     return points;
 }
 
-const attributesMap = {
+const STYLE_ATTRIBUTES_MAP = {
     'fill': 'fill',
     'stroke': 'stroke',
     'stroke-width': 'lineWidth',
@@ -527,14 +547,18 @@ const attributesMap = {
     'font-weight': 'fontWeight',
 
     'text-align': 'textAlign',
-    'alignment-baseline': 'textBaseline'
-};
+    'alignment-baseline': 'textBaseline',
+    'visibility': 'visibility',
+    'stop-color': 'stopColor'
+} as const;
+const STYLE_ATTRIBUTES_MAP_KEYS = keys(STYLE_ATTRIBUTES_MAP);
+
 
 function parseAttributes(
     xmlNode: SVGElement,
     el: Element,
     defs: DefsMap,
-    onlyInlineStyle?: boolean
+    onlyInlineStyle: boolean
 ) {
     const disp = el as DisplayableExtended;
     const zrStyle = disp.__inheritedStyle || {};
@@ -543,15 +567,14 @@ function parseAttributes(
     if (xmlNode.nodeType === 1) {
         parseTransformAttribute(xmlNode, el);
 
-        extend(zrStyle, parseStyleAttribute(xmlNode));
+        parseStyleAttribute(xmlNode, zrStyle);
 
         if (!onlyInlineStyle) {
-            for (let svgAttrName in attributesMap) {
-                if (attributesMap.hasOwnProperty(svgAttrName)) {
-                    const attrValue = xmlNode.getAttribute(svgAttrName);
-                    if (attrValue != null) {
-                        zrStyle[attributesMap[svgAttrName as keyof typeof attributesMap]] = attrValue;
-                    }
+            for (let i = 0; i < STYLE_ATTRIBUTES_MAP_KEYS.length; i++) {
+                const svgAttrName = STYLE_ATTRIBUTES_MAP_KEYS[i];
+                const attrValue = xmlNode.getAttribute(svgAttrName);
+                if (attrValue != null) {
+                    zrStyle[STYLE_ATTRIBUTES_MAP[svgAttrName]] = attrValue;
                 }
             }
         }
@@ -559,8 +582,12 @@ function parseAttributes(
 
     disp.style = disp.style || {};
 
-    zrStyle.fill != null && (disp.style.fill = getPaint(zrStyle.fill, defs));
-    zrStyle.stroke != null && (disp.style.stroke = getPaint(zrStyle.stroke, defs));
+    if (zrStyle.fill != null) {
+        disp.style.fill = getPaint(zrStyle.fill, defs);
+    }
+    if (zrStyle.stroke != null) {
+        disp.style.stroke = getPaint(zrStyle.stroke, defs);
+    }
 
     each([
         'lineWidth', 'opacity', 'fillOpacity', 'strokeOpacity', 'miterLimit', 'fontSize'
@@ -593,11 +620,15 @@ function parseAttributes(
         });
     }
 
+    if (zrStyle.visibility === 'hidden' || zrStyle.visibility === 'collapse') {
+        disp.invisible = true;
+    }
+
     disp.__inheritedStyle = zrStyle;
 }
 
-
-const urlRegex = /url\(\s*#(.*?)\)/;
+// Support `fill:url(#someId)`.
+const urlRegex = /^url\(\s*#(.*?)\)/;
 function getPaint(str: string, defs: DefsMap) {
     // if (str === 'none') {
     //     return;
@@ -662,28 +693,25 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element) {
 
 // Value may contain space.
 const styleRegex = /([^\s:;]+)\s*:\s*([^:;]+)/g;
-function parseStyleAttribute(xmlNode: SVGElement) {
+function parseStyleAttribute(xmlNode: SVGElement, result: Dictionary<string>) {
     const style = xmlNode.getAttribute('style');
-    const result: Dictionary<string> = {};
 
     if (!style) {
-        return result;
+        return;
     }
 
-    const styleList: Dictionary<string> = {};
     styleRegex.lastIndex = 0;
     let styleRegResult;
     while ((styleRegResult = styleRegex.exec(style)) != null) {
-        styleList[styleRegResult[1]] = styleRegResult[2];
-    }
+        const svgStlAttr = styleRegResult[1];
+        const zrStlAttr = STYLE_ATTRIBUTES_MAP.hasOwnProperty(svgStlAttr)
+            ? STYLE_ATTRIBUTES_MAP[svgStlAttr as keyof typeof STYLE_ATTRIBUTES_MAP]
+            : null;
 
-    for (const svgAttrName in attributesMap) {
-        if (attributesMap.hasOwnProperty(svgAttrName) && styleList[svgAttrName] != null) {
-            result[attributesMap[svgAttrName as keyof typeof attributesMap]] = styleList[svgAttrName];
+        if (zrStlAttr) {
+            result[zrStlAttr] = styleRegResult[2];
         }
     }
-
-    return result;
 }
 
 export function makeViewBoxTransform(viewBoxRect: RectLike, width: number, height: number): {
