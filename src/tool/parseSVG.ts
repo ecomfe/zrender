@@ -26,44 +26,44 @@ const DILIMITER_REG = /[\s,]+/;
 
 interface SVGParserOption {
     // Default width if svg width not specified or is a percent value.
-    width?: number
+    width?: number;
     // Default height if svg height not specified or is a percent value.
-    height?: number
-    ignoreViewBox?: boolean
-    ignoreRootClip?: boolean
+    height?: number;
+    ignoreViewBox?: boolean;
+    ignoreRootClip?: boolean;
 }
 
 interface SVGParserResult {
     // Group, The root of the the result tree of zrender shapes
-    root: Group
+    root: Group;
     // number, the viewport width of the SVG
-    width: number
+    width: number;
     // number, the viewport height of the SVG
-    height: number
+    height: number;
     //  {x, y, width, height}, the declared viewBox rect of the SVG, if exists
-    viewBoxRect: RectLike
+    viewBoxRect: RectLike;
     // the {scale, position} calculated by viewBox and viewport, is exists
     viewBoxTransform: {
-        x: number
-        y: number
-        scale: number
+        x: number;
+        y: number;
+        scale: number;
     }
 }
 
-type DefsMap = Dictionary<LinearGradientObject | RadialGradientObject | PatternObject>
+type DefsMap = Dictionary<LinearGradientObject | RadialGradientObject | PatternObject>;
 
 type ElementExtended = Element & {
-    __inheritedStyle: Dictionary<string>
+    __inheritedStyle: Dictionary<string>;
 }
 type DisplayableExtended = Displayable & {
-    __inheritedStyle: Dictionary<string>
+    __inheritedStyle: Dictionary<string>;
 }
 
 type TextStyleOptionExtended = TSpanStyleProps & {
-    fontSize: number
-    fontFamily: string
-    fontWeight: string
-    fontStyle: string
+    fontSize: number;
+    fontFamily: string;
+    fontWeight: string;
+    fontStyle: string;
 }
 let nodeParsers: Dictionary<(this: SVGParser, xmlNode: SVGElement, parentGroup: Group) => Element>;
 
@@ -76,8 +76,8 @@ class SVGParser {
     private _isDefine = false;
     private _isText = false;
 
-    private _textX: number
-    private _textY: number
+    private _textX: number;
+    private _textY: number;
 
     parse(xml: string | Document | SVGElement, opt: SVGParserOption): SVGParserResult {
         opt = opt || {};
@@ -163,7 +163,7 @@ class SVGParser {
         };
     }
 
-    _parseNode(xmlNode: SVGElement, parentGroup: Group) {
+    private _parseNode(xmlNode: SVGElement, parentGroup: Group): void {
 
         const nodeName = xmlNode.nodeName.toLowerCase();
 
@@ -231,7 +231,7 @@ class SVGParser {
         }
     }
 
-    _parseText(xmlNode: SVGElement, parentGroup: Group) {
+    private _parseText(xmlNode: SVGElement, parentGroup: Group): TSpan {
         if (xmlNode.nodeType === 1) {
             const dx = xmlNode.getAttribute('dx') || 0;
             const dy = xmlNode.getAttribute('dy') || 0;
@@ -473,7 +473,7 @@ const defineParsers: Dictionary<(xmlNode: SVGElement) => any> = {
     // }
 };
 
-function parseGradientColorStops(xmlNode: SVGElement, gradient: GradientObject) {
+function parseGradientColorStops(xmlNode: SVGElement, gradient: GradientObject): void {
 
     let stop = xmlNode.firstChild as SVGStopElement;
 
@@ -508,7 +508,7 @@ function parseGradientColorStops(xmlNode: SVGElement, gradient: GradientObject) 
     }
 }
 
-function inheritStyle(parent: Element, child: Element) {
+function inheritStyle(parent: Element, child: Element): void {
     if (parent && (parent as ElementExtended).__inheritedStyle) {
         if (!(child as ElementExtended).__inheritedStyle) {
             (child as ElementExtended).__inheritedStyle = {};
@@ -517,7 +517,7 @@ function inheritStyle(parent: Element, child: Element) {
     }
 }
 
-function parsePoints(pointsString: string) {
+function parsePoints(pointsString: string): number[][] {
     const list = trim(pointsString).split(DILIMITER_REG);
     const points = [];
 
@@ -559,7 +559,7 @@ function parseAttributes(
     el: Element,
     defs: DefsMap,
     onlyInlineStyle: boolean
-) {
+): void {
     const disp = el as DisplayableExtended;
     const zrStyle = disp.__inheritedStyle || {};
 
@@ -629,7 +629,7 @@ function parseAttributes(
 
 // Support `fill:url(#someId)`.
 const urlRegex = /^url\(\s*#(.*?)\)/;
-function getPaint(str: string, defs: DefsMap) {
+function getPaint(str: string, defs: DefsMap): string | DefsMap[keyof DefsMap] {
     // if (str === 'none') {
     //     return;
     // }
@@ -644,7 +644,7 @@ function getPaint(str: string, defs: DefsMap) {
 
 const transformRegex = /(translate|scale|rotate|skewX|skewY|matrix)\(([\-\s0-9\.e,]*)\)/g;
 
-function parseTransformAttribute(xmlNode: SVGElement, node: Element) {
+function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
     let transform = xmlNode.getAttribute('transform');
     if (transform) {
         transform = transform.replace(/,/g, ' ');
@@ -693,7 +693,7 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element) {
 
 // Value may contain space.
 const styleRegex = /([^\s:;]+)\s*:\s*([^:;]+)/g;
-function parseStyleAttribute(xmlNode: SVGElement, result: Dictionary<string>) {
+function parseStyleAttribute(xmlNode: SVGElement, result: Dictionary<string>): void {
     const style = xmlNode.getAttribute('style');
 
     if (!style) {
@@ -715,9 +715,9 @@ function parseStyleAttribute(xmlNode: SVGElement, result: Dictionary<string>) {
 }
 
 export function makeViewBoxTransform(viewBoxRect: RectLike, width: number, height: number): {
-    scale: number
-    x: number
-    y: number
+    scale: number;
+    x: number;
+    y: number;
 } {
     const scaleX = width / viewBoxRect.width;
     const scaleY = height / viewBoxRect.height;
