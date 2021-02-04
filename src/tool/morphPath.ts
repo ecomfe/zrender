@@ -9,6 +9,7 @@ import { clonePath } from './path';
 import { MatrixArray } from '../core/matrix';
 import Transformable from '../core/Transformable';
 import { ZRenderType } from '../zrender';
+import { split } from './dividePath';
 
 const CMD = PathProxy.CMD;
 
@@ -828,11 +829,14 @@ interface DividePath {
     (params: DividePathParams): Path[]
 }
 
+function defaultDividePath(param: DividePathParams) {
+    return split(param.path, param.count);
+}
 export interface CombineConfig extends ElementAnimateConfig {
     /**
      * Transform of returned will be ignored.
      */
-    dividePath: DividePath
+    dividePath?: DividePath
 }
 /**
  * Make combine morphing from many paths to one.
@@ -865,8 +869,7 @@ export function combineMorph(
         return;
     }
 
-    const dividePath = animationOpts.dividePath;
-    assert(dividePath, 'dividePath must been given');
+    const dividePath = animationOpts.dividePath || defaultDividePath;
 
     const toSubPathList = dividePath({
         path: toPath, count: separateCount
@@ -960,7 +963,7 @@ export function combineMorph(
     };
 }
 export interface SeparateConfig extends ElementAnimateConfig {
-    dividePath: DividePath
+    dividePath?: DividePath
     // // If the from path of separate animation is doing combine animation.
     // // And the paths number is not same with toPathList. We need to do enter/leave animation
     // // on the missing/spare paths.
@@ -980,8 +983,7 @@ export function separateMorph(
     const toLen = toPathList.length;
     let fromPathList: Path[] = [];
 
-    const dividePath = animationOpts.dividePath;
-    assert(dividePath, 'dividePath must been given');
+    const dividePath = animationOpts.dividePath || defaultDividePath;
 
     function addFromPath(fromList: Element[]) {
         for (let i = 0; i < fromList.length; i++) {
