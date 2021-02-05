@@ -352,7 +352,7 @@ export function parseRichText(text: string, style: TextStyleProps) {
     const truncate = overflow === 'truncate';
     const truncateLine = style.lineOverflow === 'truncate';
 
-    let prevToken: RichTextToken;
+    // let prevToken: RichTextToken;
 
     function finishLine(line: RichTextLine, lineWidth: number, lineHeight: number) {
         line.width = lineWidth;
@@ -463,7 +463,7 @@ export function parseRichText(text: string, style: TextStyleProps) {
             lineWidth += token.width;
             tokenStyle && (lineHeight = Math.max(lineHeight, token.lineHeight));
 
-            prevToken = token;
+            // prevToken = token;
         }
 
         finishLine(line, lineWidth, lineHeight);
