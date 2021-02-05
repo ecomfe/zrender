@@ -51,6 +51,7 @@ export {vector};
 export {colorTool as color};
 export {pathTool as path};
 export {zrUtil as util};
+
 export {morphPathTool as morph};
 
 export {parseSVG};
