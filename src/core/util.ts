@@ -769,6 +769,9 @@ export function createObject<T>(proto?: object, properties?: T): T {
 }
 
 export function hasOwn(own: object, prop: PropertyKey): boolean {
+    if (own.hasOwnProperty) {
+        return own.hasOwnProperty(prop)
+    }
     return objHasOwnProperty.call(own, prop)
 }
 
