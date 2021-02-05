@@ -7,7 +7,7 @@ import {
 } from '../../core/util';
 import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../../core/types';
 import { TextStyleProps } from '../Text';
-import { getLineHeight, getWidth } from '../../contain/text';
+import { getLineHeight, getWidth, parsePercent } from '../../contain/text';
 
 const STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
 
@@ -739,14 +739,4 @@ function wrapText(
         lines: lines,
         linesWidths
     };
-}
-
-function parsePercent(value: string | number, maxValue: number) {
-    if (typeof value === 'string') {
-        if (value.lastIndexOf('%') >= 0) {
-            return parseFloat(value) / 100 * maxValue;
-        }
-        return parseFloat(value);
-    }
-    return value;
 }
