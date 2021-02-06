@@ -746,3 +746,5 @@ export function separateMorph(
         count: toPathList.length
     };
 }
+
+export { split as defaultDividePath }

@@ -3,13 +3,11 @@
 <head>
     <meta charset="utf-8" />
     <title>Path to Polygon</title>
-    <script src="lib/rollup.browser.js"></script>
-    <script src="lib/requireES.js"></script>
-    <script src="lib/config.js"></script>
+    <script src="../dist/zrender.js"></script>
 </head>
 <body>
     <style>
-        html, bod {
+        html, body {
             width: 100%;
             height: 100%;
             margin: 0;
@@ -17,31 +15,25 @@
     </style>
     <div id="main" style="width: 800px; height: 500px;"></div>
     <script>
-        requireES([
-            "zrender/index",
-            "zrender/lib/tool/dividePath"
-        ], function(zrender, {split}) {
-
-            const zr = zrender.init(document.getElementById('main'));
-            const isogon = new zrender.Isogon({
-                shape: {
-                    x: 300,
-                    y: 300,
-                    r: 200,
-                    n: 8
-                },
-                style: {
-                    fill: 'none',
-                    stroke: '#000'
-                }
-            });
-
-            const polygons = split(isogon, 20);
-            for (let i = 0; i < polygons.length; i++) {
-                zr.add(polygons[i]);
+        const zr = zrender.init(document.getElementById('main'));
+        const isogon = new zrender.Isogon({
+            shape: {
+                x: 300,
+                y: 300,
+                r: 200,
+                n: 20
+            },
+            style: {
+                lineWidth: 1,
+                fill: 'none',
+                stroke: '#000'
             }
-
         });
+
+        const polygons = zrender.morph.defaultDividePath(isogon, 40);
+        for (let i = 0; i < polygons.length; i++) {
+            zr.add(polygons[i]);
+        }
     </script>
 </body>
 </html>

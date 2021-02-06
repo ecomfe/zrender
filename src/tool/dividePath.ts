@@ -1,5 +1,5 @@
 import { fromPoints } from '../core/bbox';
-import BoundingRect, { RectLike } from '../core/BoundingRect';
+import BoundingRect from '../core/BoundingRect';
 import { Point } from '../export';
 import Path from '../graphic/Path';
 import Polygon from '../graphic/shape/Polygon';
@@ -131,32 +131,39 @@ function lineLineIntersect(
     const b1a1x = a1x - b1x;
     const b1a1y = a1y - b1y;
 
-    const q = crossProduct2d(b1a1x, b1a1y, mx, my) / nmCrossProduct;
-    if (q < 0 || q > 1) {
+    const p = crossProduct2d(b1a1x, b1a1y, nx, ny) / nmCrossProduct;
+    if (p < 0 || p > 1) {
         return null;
     }
     // p2 is an infinite line
     return new Point(
-        q * mx + a1x,
-        q * my + a1y
+        p * mx + a1x,
+        p * my + a1y
     );
 }
 
-function projPtOnLine(pt: Point, lineA: Point, lineB: Point): Point {
+function projPtOnLine(pt: Point, lineA: Point, lineB: Point): number {
     const dir = new Point();
     Point.sub(dir, lineB, lineA);
     dir.normalize();
     const dir2 = new Point();
     Point.sub(dir2, pt, lineA);
     const len = dir2.dot(dir);
-    Point.scaleAndAdd(dir, lineA, dir, len);
-    return dir;
+    return len;
+}
+
+function addToPoly(poly: number[][], pt: number[]) {
+    const last = poly[poly.length - 1];
+    if (last && last[0] === pt[0] && last[1] === pt[1]) {
+        return;
+    }
+    poly.push(pt);
 }
 
 function splitPolygonByLine(points: number[][], lineA: Point, lineB: Point) {
     const len = points.length;
     const intersections: {
-        projPt: Point,
+        projPt: number,
         pt: Point
         idx: number
     }[] = [];
@@ -177,10 +184,14 @@ function splitPolygonByLine(points: number[][], lineA: Point, lineB: Point) {
     }
 
     // TODO No intersection?
+    if (intersections.length < 2) {
+        // Do clone
+        return [ { points}, {points} ];
+    }
 
     // Find two farthest points.
     intersections.sort((a, b) => {
-        return a.projPt.x - b.projPt.x;
+        return a.projPt - b.projPt;
     });
     let splitPt0 = intersections[0];
     let splitPt1 = intersections[intersections.length - 1];
@@ -190,22 +201,25 @@ function splitPolygonByLine(points: number[][], lineA: Point, lineB: Point) {
         splitPt1 = tmp;
     }
 
-    const newPolyA: number[][] = [
-        [splitPt0.pt.x, splitPt0.pt.y]
-    ];
-    const newPolyB: number[][] = [
-        [splitPt1.pt.x, splitPt1.pt.y]
-    ];
+    const splitPt0Arr = [splitPt0.pt.x, splitPt0.pt.y];
+    const splitPt1Arr = [splitPt1.pt.x, splitPt1.pt.y];
 
-    for (let i = splitPt0.idx + 1; i < splitPt1.idx; i++) {
-        newPolyA.push(points[i].slice());
-    }
-    newPolyA.push([splitPt1.pt.x, splitPt1.pt.y]);
+    const newPolyA: number[][] = [splitPt0Arr];
+    const newPolyB: number[][] = [splitPt1Arr];
 
-    for (let i = splitPt1.idx + 1; i < splitPt1.idx + len; i++) {
-        newPolyB.push(points[i % len].slice());
+    for (let i = splitPt0.idx + 1; i <= splitPt1.idx; i++) {
+        addToPoly(newPolyA, points[i].slice());
     }
-    newPolyB.push([splitPt1.pt.x, splitPt1.pt.y]);
+    addToPoly(newPolyA, splitPt1Arr);
+    // Close the path
+    addToPoly(newPolyA, splitPt0Arr);
+
+    for (let i = splitPt1.idx + 1; i <= splitPt0.idx + len; i++) {
+        addToPoly(newPolyB, points[i % len].slice());
+    }
+    addToPoly(newPolyB, splitPt0Arr);
+    // Close the path
+    addToPoly(newPolyB, splitPt1Arr);
 
     return [{
         points: newPolyA

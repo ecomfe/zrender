@@ -266,12 +266,13 @@ export function pathToPolygons(path: PathProxy) {
 
     for (let i = 0; i < bezierArrayGroups.length; i++) {
         const beziers = bezierArrayGroups[i];
-        const polygon = [];
+        const polygon: number[] = [];
         let x0 = beziers[0];
         let y0 = beziers[1];
 
+        polygon.push(x0, y0);
+
         for (let k = 2; k < beziers.length;) {
-            polygon.push(x0, y0);
 
             const x1 = beziers[k++];
             const y1 = beziers[k++];
