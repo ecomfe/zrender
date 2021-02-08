@@ -81,7 +81,7 @@ function detect(ua: string, env: Env) {
         browser.weChat = true;
     }
 
-    env.canvasSupported = !!document.createElement('canvas').getContext;
+    env.canvasSupported = !!(document && document.createElement('canvas').getContext);
     env.svgSupported = typeof SVGRect !== 'undefined';
     env.touchEventsSupported = 'ontouchstart' in window && !browser.ie && !browser.edge;
     env.pointerEventsSupported = 'onpointerdown' in window
