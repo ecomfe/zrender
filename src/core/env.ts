@@ -22,6 +22,8 @@ class Env {
     touchEventsSupported = false
     pointerEventsSupported = false
     domSupported = false
+    ieTransform3dSupported = false
+    transform3dSupported = false
 }
 
 const env = new Env();
@@ -87,6 +89,21 @@ function detect(ua: string, env: Env) {
     env.pointerEventsSupported = 'onpointerdown' in window
         && (browser.edge || (browser.ie && +browser.version >= 11));
     env.domSupported = typeof document !== 'undefined';
+
+    const style = document.documentElement.style;
+    env.ieTransform3dSupported = browser.ie && 'transition' in style;
+    env.transform3dSupported = (
+        // ie
+           env.ieTransform3dSupported
+        // edge
+        || browser.edge 
+        // webkit
+        || (('WebKitCSSMatrix' in window) && ('m11' in new window.WebKitCSSMatrix()))
+        // gecko-based browsers
+        || 'MozPerspective' in style) 
+        // Opera supports CSS transforms after version 12
+        && !('OTransition' in style);
+
 }
 
 
