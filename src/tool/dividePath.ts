@@ -1,6 +1,6 @@
 import { fromPoints } from '../core/bbox';
 import BoundingRect from '../core/BoundingRect';
-import { Point } from '../export';
+import Point from '../core/Point';
 import Path from '../graphic/Path';
 import Polygon from '../graphic/shape/Polygon';
 import Rect from '../graphic/shape/Rect';
@@ -14,100 +14,103 @@ interface BinaryDivide {
     (shape: Path['shape']): Path['shape'][]
 }
 
-const SECTOR_COMMON_PROPS: (keyof Sector['shape'])[] = ['clockwise', 'cornerRadius', 'innerCornerRadius', 'cx', 'cy'];
+/**
+ * Calculating a grid to divide the shape.
+ */
+function getDividingGrids(dimSize: number[], rowDim: number, count: number) {
+    const rowSize = dimSize[rowDim];
+    const columnSize = dimSize[1 - rowDim];
 
-function copyShapeProps(out: Path['shape'][], source: Path['shape'], keys: string[]) {
-    // Copy common props
-    for (let i = 0; i < SECTOR_COMMON_PROPS.length; i++) {
-        const propName = SECTOR_COMMON_PROPS[i];
-        if (source[propName] != null) {
-            out[0][propName] = out[1][propName] = source[propName];
+    const ratio = Math.abs(rowSize / columnSize);
+    const rowCount = Math.ceil(Math.sqrt(ratio * count));
+    const columnCount = Math.floor(count / rowCount);
+
+    const grids: number[] = [];
+    for (let i = 0; i < rowCount; i++) {
+        grids.push(columnCount);
+    }
+    const currentCount = rowCount * columnCount;
+    // Distrute the remaind grid evenly on each row.
+    const remained = count - currentCount;
+    if (remained > 0) {
+        // const stride = Math.max(Math.floor(rowCount / remained), 1);
+        for (let i = 0; i < remained; i++) {
+            grids[i % rowCount] += 1;
         }
     }
+    return grids;
 }
 
-function binaryDivideSector(sectorShape: Sector['shape']) {
-    // Divide into two
+
+function divideSector(sectorShape: Sector['shape'], count: number, outShapes: Sector['shape'][]) {
     const r0 = sectorShape.r0;
     const r = sectorShape.r;
     const startAngle = sectorShape.startAngle;
     const endAngle = sectorShape.endAngle;
     const angle = Math.abs(endAngle - startAngle);
     const arcLen = angle * r;
-    const out: Sector['shape'][] = [];
-    if (arcLen < Math.abs(r - r0)) {
-        const midR = (r0 + r) / 2;
-        // Divide on radius
-        out[0] = {
-            startAngle,
-            endAngle,
-            r0,
-            r: midR
-        } as Sector['shape'];
-        out[1] = {
-            startAngle,
-            endAngle,
-            r0: midR,
-            r
-        } as Sector['shape'];
-    }
-    else {
-        const midAngle = (startAngle + endAngle) / 2;
-        // Divide on angle
-        out[0] = {
-            startAngle,
-            endAngle: midAngle,
-            r0,
-            r
-        } as Sector['shape'];
-        out[1] = {
-            startAngle: midAngle,
-            endAngle,
-            r0,
-            r
-        } as Sector['shape'];
-    }
+    const deltaR = r - r0;
 
-    copyShapeProps(out, sectorShape, SECTOR_COMMON_PROPS);
+    const isAngleRow = arcLen > Math.abs(deltaR);
+    const grids = getDividingGrids([arcLen, deltaR], isAngleRow ? 0 : 1, count);
 
-    return out;
+    const rowSize = (isAngleRow ? angle : deltaR) / grids.length;
+
+    for (let row = 0; row < grids.length; row++) {
+        const columnSize = (isAngleRow ? deltaR : angle) / grids[row];
+        for (let column = 0; column < grids[row]; column++) {
+            const newShape = {} as Sector['shape'];
+
+            if (isAngleRow) {
+                newShape.startAngle = startAngle + rowSize * row;
+                newShape.endAngle = startAngle + rowSize * (row + 1);
+                newShape.r0 = r0 + columnSize * column;
+                newShape.r = r0 + columnSize * (column + 1);
+            }
+            else {
+                newShape.startAngle = r0 + columnSize * column;
+                newShape.endAngle = startAngle + columnSize * (column + 1);
+                newShape.r0 = r0 + rowSize * row;
+                newShape.r = r0 + rowSize * (row + 1);
+            }
+
+            newShape.clockwise = sectorShape.clockwise;
+            newShape.cx = sectorShape.cx;
+            newShape.cy = sectorShape.cy;
+
+
+            outShapes.push(newShape);
+        }
+    }
 }
 
-
-function binaryDivideRect(rectShape: Rect['shape']) {
+function divideRect(rectShape: Rect['shape'], count: number, outShapes: Rect['shape'][]) {
     const width = rectShape.width;
     const height = rectShape.height;
-    const x = rectShape.x;
-    const y = rectShape.y;
 
-    const out: Rect['shape'][] = [];
-    if (width < height) {
-        const halfHeight = height / 2;
-        out[0] = {
-            x, width,
-            y, height: halfHeight
-        };
-        out[1] = {
-            x, width,
-            y: y + halfHeight, height: halfHeight
-        };
-    }
-    else {
-        const halfWidth = width / 2;
-        out[0] = {
-            y, height,
-            x, width: halfWidth
-        };
-        out[1] = {
-            y, height,
-            x: x + halfWidth, width: halfWidth
-        };
-    }
+    const isHorizontalRow = width > height;
+    const grids = getDividingGrids([width, height], isHorizontalRow ? 0 : 1, count);
+    const rowSizeDim = isHorizontalRow ? 'width' : 'height';
+    const columnSizeDim = isHorizontalRow ? 'height' : 'width';
+    const rowDim = isHorizontalRow ? 'x' : 'y';
+    const columnDim = isHorizontalRow ? 'y' : 'x';
+    const rowSize = rectShape[rowSizeDim] / grids.length;
 
-    if (rectShape.r != null) {
-        out[0].r = out[1].r = rectShape.r;
+    for (let row = 0; row < grids.length; row++) {
+        const columnSize = rectShape[columnSizeDim] / grids[row];
+        for (let column = 0; column < grids[row]; column++) {
+            const newShape = {} as Rect['shape'];
+            newShape[rowDim] = row * rowSize;
+            newShape[columnDim] = column * columnSize;
+            newShape[rowSizeDim] = rowSize;
+            newShape[columnSizeDim] = columnSize;
+
+            newShape.x += rectShape.x;
+            newShape.y += rectShape.y;
+
+            outShapes.push(newShape);
+        }
     }
-    return out;
 }
 
 function crossProduct2d(x1: number, y1: number, x2: number, y2: number) {
@@ -308,18 +311,18 @@ export function split(
     // TODO Use clone when shape size is small
     switch (path.type) {
         case 'rect':
-            binaryDivideRecursive(binaryDivideRect, shape, count, outShapes);
+            divideRect(shape as Rect['shape'], count, outShapes as Rect['shape'][]);
             OutShapeCtor = Rect;
             break;
         case 'sector':
-            binaryDivideRecursive(binaryDivideSector, shape, count, outShapes);
+            divideSector(shape as Sector['shape'], count, outShapes as Sector['shape'][]);
             OutShapeCtor = Sector;
             break;
         case 'circle':
-            binaryDivideRecursive(binaryDivideSector, {
+            divideSector({
                 r0: 0, r: shape.r, startAngle: 0, endAngle: Math.PI * 2,
                 cx: shape.cx, cy: shape.cy
-            } as Sector['shape'], count, outShapes);
+            } as Sector['shape'], count, outShapes as Sector['shape'][]);
             OutShapeCtor = Sector;
             break;
         default:
