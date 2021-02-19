@@ -330,41 +330,42 @@ class SVGPainter implements PainterBase {
         this._visibleList = newVisibleList;
     }
 
-    _getDefs(isForceCreating?: boolean) {
-        let svgRoot = this._svgDom;
-        let defs = svgRoot.getElementsByTagName('defs');
-        if (defs.length === 0) {
-            // Not exist
-            if (isForceCreating) {
-                let defs = svgRoot.insertBefore(
-                    createElement('defs'), // Create new tag
-                    svgRoot.firstChild // Insert in the front of svg
-                );
-                if (!defs.contains) {
-                    // IE doesn't support contains method
-                    defs.contains = function (el) {
-                        const children = defs.children;
-                        if (!children) {
-                            return false;
-                        }
-                        for (let i = children.length - 1; i >= 0; --i) {
-                            if (children[i] === el) {
-                                return true;
-                            }
-                        }
-                        return false;
-                    };
-                }
-                return defs;
-            }
-            else {
-                return null;
-            }
-        }
-        else {
-            return defs[0];
-        }
-    }
+    // Not used any more
+    // _getDefs(isForceCreating?: boolean) {
+    //     let svgRoot = this._svgDom;
+    //     let defs = svgRoot.getElementsByTagName('defs');
+    //     if (defs.length === 0) {
+    //         // Not exist
+    //         if (isForceCreating) {
+    //             let defs = svgRoot.insertBefore(
+    //                 createElement('defs'), // Create new tag
+    //                 svgRoot.firstChild // Insert in the front of svg
+    //             );
+    //             if (!defs.contains) {
+    //                 // IE doesn't support contains method
+    //                 defs.contains = function (el) {
+    //                     const children = defs.children;
+    //                     if (!children) {
+    //                         return false;
+    //                     }
+    //                     for (let i = children.length - 1; i >= 0; --i) {
+    //                         if (children[i] === el) {
+    //                             return true;
+    //                         }
+    //                     }
+    //                     return false;
+    //                 };
+    //             }
+    //             return defs;
+    //         }
+    //         else {
+    //             return null;
+    //         }
+    //     }
+    //     else {
+    //         return defs[0];
+    //     }
+    // }
 
     resize(width: number | string, height: number | string) {
         const viewport = this._viewport;

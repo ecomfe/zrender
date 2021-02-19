@@ -232,13 +232,6 @@ class SVGParser {
     }
 
     private _parseText(xmlNode: SVGElement, parentGroup: Group): TSpan {
-        if (xmlNode.nodeType === 1) {
-            const dx = xmlNode.getAttribute('dx') || 0;
-            const dy = xmlNode.getAttribute('dy') || 0;
-            this._textX += parseFloat(dx as string);
-            this._textY += parseFloat(dy as string);
-        }
-
         const text = new TSpan({
             style: {
                 text: xmlNode.textContent
@@ -468,8 +461,11 @@ const defineParsers: Dictionary<(xmlNode: SVGElement) => any> = {
     }
 
     // TODO
-    // 'radialgradient': function (xmlNode) {
+    // 'pattern': function (xmlNode: SVGElement) {
+    // }
 
+    // TODO
+    // 'radialgradient': function (xmlNode) {
     // }
 };
 

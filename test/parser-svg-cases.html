@@ -9,7 +9,7 @@
 
     <script type="text/javascript">
 
-        var tags = ['bug', 'pending', 'performance'];
+        var tags = ['bug', 'unsupported', 'performance'];
         var caseList = [];
 
         // caseList.push(
@@ -71,9 +71,10 @@
             {name: 'seats/Ethiopian_Airlines_Flight_961_seating_plan.svg', tag: ''},
             {name: 'seats/oracle-seating-map-2017-2.svg', tag: 'bug'},
             {name: 'seats/seatmap-1.svg', tag: ''},
-            {name: 'seats/seatmap-2.svg', tag: 'bug'},
-            {name: 'seats/seatmap-3.svg', tag: 'bug'},
+            {name: 'seats/seatmap-2.svg', tag: 'unsupported', hint: 'pattern not supported'},
+            {name: 'seats/seatmap-3.svg', tag: ''},
             {name: 'seats/seatmap-4.svg', tag: ''},
+            {name: 'seats/seatmap-example.svg', tag: ''},
             {name: 'subway/Beijing-Subway-Plan_en.svg', tag: ''},
             {name: 'subway/New_York_Subway_Map_Alargule.svg', tag: 'performance'},
             {name: 'subway/Tokyo_Subway.svg', tag: 'bug'},
@@ -225,7 +226,7 @@
             padding: 2px 3px;
             font-size: 12px;
         }
-        .tag-pending {
+        .tag-unsupported {
             background: #ccc;
         }
         .tag-bug {
@@ -233,6 +234,17 @@
         }
         .tag-performance {
             background: rgb(168, 197, 241);
+        }
+        #hint {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            padding: 0 10px;
+            background: #555;
+            color: #fff;
+            font-size: 14px;
         }
     </style>
 
@@ -253,6 +265,7 @@
         </div>
         <iframe id="original" class="right" src="about:blank;"></iframe>
         <div id="right-mask" style="display:none" class="right" src="about:blank;"></div>
+        <div id="hint"></div>
     </div>
 
     <script type="text/javascript">
@@ -298,6 +311,9 @@
             var caseIndex = +((location.hash || '').replace(/^#/, '') || 0) - 1;
             var caseItem = caseList[caseIndex];
             if (caseItem) {
+                var nameHTML = '[name]: ' + caseIndex + '. ' + encodeHTML(caseItem.name);
+                var hintHTML = '[hint]: ' + encodeHTML(caseItem.hint ? caseItem.hint : '');
+                document.getElementById('hint').innerHTML = nameHTML + '<br>' + hintHTML;
                 var url = encodeHTML((caseItem.baseURL ? caseItem.baseURL + '/' : '') + caseItem.name);
                 renderSVG(url);
             }
