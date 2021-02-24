@@ -676,7 +676,7 @@ class Element<Props extends ElementProps = ElementProps> {
         return '#fff';
     }
 
-    protected getInsideTextStroke(textFill: string): string {
+    protected getInsideTextStroke(textFill: string): string | undefined {
         return '#000';
     }
 
