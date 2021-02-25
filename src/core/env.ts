@@ -98,11 +98,11 @@ function detect(ua: string, env: Env) {
         // edge
         || browser.edge 
         // webkit
-        || (('WebKitCSSMatrix' in window) && ('m11' in new window.WebKitCSSMatrix()))
+        || (('WebKitCSSMatrix' in window) && ('m11' in new WebKitCSSMatrix()))
         // gecko-based browsers
-        || 'MozPerspective' in style) 
-        // Opera supports CSS transforms after version 12
-        && !('OTransition' in style);
+        || 'MozPerspective' in style
+    ) // Opera supports CSS transforms after version 12
+      && !('OTransition' in style);
 
 }
 
