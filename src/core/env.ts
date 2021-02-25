@@ -1,5 +1,3 @@
-import { TRANSFORM_VENDOR } from './dom'
-
 declare const wx: {
     getSystemInfoSync: Function
 };
