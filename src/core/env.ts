@@ -96,7 +96,7 @@ function detect(ua: string, env: Env) {
         // IE9 only supports transform 2D
         // transform 3D supported since IE10
         // we detect it by whether 'transition' is in style
-        browser.ie && 'transition' in style
+        (browser.ie && 'transition' in style)
         // edge
         || browser.edge
         // webkit
