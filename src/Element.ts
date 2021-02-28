@@ -1849,6 +1849,9 @@ function animateToShallow<T>(
                 );
             }
             else {
+                if (isNaN(source[innerKey])) {
+                    source[innerKey] = target[innerKey];
+                }
                 animatableKeys.push(innerKey);
                 changedKeys.push(innerKey);
             }
