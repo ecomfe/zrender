@@ -522,7 +522,7 @@ class ZRText extends Displayable<TextProps> {
             'stroke' in style
                 ? style.stroke
                 : (!bgColorDrawn
-                    && (!defaultStyle.autoStroke || useDefaultFill)
+                    && (defaultStyle.autoStroke || useDefaultFill)
                 )
                 ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, defaultStyle.stroke)
                 : null
@@ -736,7 +736,7 @@ class ZRText extends Displayable<TextProps> {
                 : (
                     !bgColorDrawn
                     && !parentBgColorDrawn
-                    && (!defaultStyle.autoStroke || useDefaultFill)
+                    && (defaultStyle.autoStroke || useDefaultFill)
                 ) ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, defaultStyle.stroke)
                 : null
         );
