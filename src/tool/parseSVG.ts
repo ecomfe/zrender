@@ -9,7 +9,7 @@ import Polygon from '../graphic/shape/Polygon';
 import Polyline from '../graphic/shape/Polyline';
 import * as matrix from '../core/matrix';
 import { createFromString } from './path';
-import { defaults, trim, each, map, keys } from '../core/util';
+import { defaults, trim, each, map, keys, hasOwn } from '../core/util';
 import Displayable from '../graphic/Displayable';
 import Element from '../Element';
 import { RectLike } from '../core/BoundingRect';
@@ -47,7 +47,8 @@ interface SVGParserResult {
         x: number;
         y: number;
         scale: number;
-    }
+    };
+    namedElements: Displayable[];
 }
 
 type DefsMap = Dictionary<LinearGradientObject | RadialGradientObject | PatternObject>;
@@ -65,7 +66,20 @@ type TextStyleOptionExtended = TSpanStyleProps & {
     fontWeight: string;
     fontStyle: string;
 }
-let nodeParsers: Dictionary<(this: SVGParser, xmlNode: SVGElement, parentGroup: Group) => Element>;
+let nodeParsers: Dictionary<(
+    this: SVGParser, xmlNode: SVGElement, parentGroup: Group
+) => Element>;
+
+// In lower case.
+const NAME_ENABLED_SVG_TAGS = {
+    'rect': true,
+    'circle': true,
+    'line': true,
+    'ellipse': true,
+    'polygon': true,
+    'polyline': true,
+    'path': true
+} as const;
 
 
 class SVGParser {
@@ -90,6 +104,7 @@ class SVGParser {
 
         let root = new Group();
         this._root = root;
+        const namedElements: Displayable[] = [];
         // parse view port
         const viewBox = svg.getAttribute('viewBox') || '';
 
@@ -106,7 +121,7 @@ class SVGParser {
 
         let child = svg.firstChild as SVGElement;
         while (child) {
-            this._parseNode(child, root);
+            this._parseNode(child, root, namedElements);
             child = child.nextSibling as SVGElement;
         }
 
@@ -159,11 +174,12 @@ class SVGParser {
             width: width,
             height: height,
             viewBoxRect: viewBoxRect,
-            viewBoxTransform: viewBoxTransform
+            viewBoxTransform: viewBoxTransform,
+            namedElements: namedElements
         };
     }
 
-    private _parseNode(xmlNode: SVGElement, parentGroup: Group): void {
+    private _parseNode(xmlNode: SVGElement, parentGroup: Group, namedElements: Displayable[]): void {
 
         const nodeName = xmlNode.nodeName.toLowerCase();
 
@@ -204,8 +220,9 @@ class SVGParser {
             const parser = nodeParsers[nodeName];
             if (parser) {
                 el = parser.call(this, xmlNode, parentGroup);
-                parentGroup.add(el);
+                setName(nodeName, xmlNode, el, namedElements);
             }
+            parentGroup.add(el);
         }
 
         if (el) {   // No parsers available
@@ -213,7 +230,7 @@ class SVGParser {
             while (child) {
                 if (child.nodeType === 1) {
                     // el should be a group if it has child.
-                    this._parseNode(child, el as Group);
+                    this._parseNode(child, el as Group, namedElements);
                 }
                 // Is text
                 if (child.nodeType === 3 && this._isText) {
@@ -236,6 +253,7 @@ class SVGParser {
             style: {
                 text: xmlNode.textContent
             },
+            silent: true,
             x: this._textX || 0,
             y: this._textY || 0
         });
@@ -273,14 +291,14 @@ class SVGParser {
     static internalField = (function () {
 
         nodeParsers = {
-            'g': function (xmlNode: SVGElement, parentGroup: Group) {
+            'g': function (xmlNode, parentGroup) {
                 const g = new Group();
                 inheritStyle(parentGroup, g);
                 parseAttributes(xmlNode, g, this._defs, false);
 
                 return g;
             },
-            'rect': function (xmlNode: SVGElement, parentGroup: Group) {
+            'rect': function (xmlNode, parentGroup) {
                 const rect = new Rect();
                 inheritStyle(parentGroup, rect);
                 parseAttributes(xmlNode, rect, this._defs, false);
@@ -292,9 +310,11 @@ class SVGParser {
                     height: parseFloat(xmlNode.getAttribute('height') || '0')
                 });
 
+                rect.silent = true;
+
                 return rect;
             },
-            'circle': function (xmlNode: SVGElement, parentGroup: Group) {
+            'circle': function (xmlNode, parentGroup) {
                 const circle = new Circle();
                 inheritStyle(parentGroup, circle);
                 parseAttributes(xmlNode, circle, this._defs, false);
@@ -305,9 +325,11 @@ class SVGParser {
                     r: parseFloat(xmlNode.getAttribute('r') || '0')
                 });
 
+                circle.silent = true;
+
                 return circle;
             },
-            'line': function (xmlNode: SVGElement, parentGroup: Group) {
+            'line': function (xmlNode, parentGroup) {
                 const line = new Line();
                 inheritStyle(parentGroup, line);
                 parseAttributes(xmlNode, line, this._defs, false);
@@ -319,9 +341,11 @@ class SVGParser {
                     y2: parseFloat(xmlNode.getAttribute('y2') || '0')
                 });
 
+                line.silent = true;
+
                 return line;
             },
-            'ellipse': function (xmlNode: SVGElement, parentGroup: Group) {
+            'ellipse': function (xmlNode, parentGroup) {
                 const ellipse = new Ellipse();
                 inheritStyle(parentGroup, ellipse);
                 parseAttributes(xmlNode, ellipse, this._defs, false);
@@ -332,9 +356,12 @@ class SVGParser {
                     rx: parseFloat(xmlNode.getAttribute('rx') || '0'),
                     ry: parseFloat(xmlNode.getAttribute('ry') || '0')
                 });
+
+                ellipse.silent = true;
+
                 return ellipse;
             },
-            'polygon': function (xmlNode: SVGElement, parentGroup: Group) {
+            'polygon': function (xmlNode, parentGroup) {
                 const pointsStr = xmlNode.getAttribute('points');
                 let pointsArr;
                 if (pointsStr) {
@@ -343,7 +370,8 @@ class SVGParser {
                 const polygon = new Polygon({
                     shape: {
                         points: pointsArr || []
-                    }
+                    },
+                    silent: true
                 });
 
                 inheritStyle(parentGroup, polygon);
@@ -351,11 +379,7 @@ class SVGParser {
 
                 return polygon;
             },
-            'polyline': function (xmlNode: SVGElement, parentGroup: Group) {
-                const path = new Path();
-                inheritStyle(parentGroup, path);
-                parseAttributes(xmlNode, path, this._defs, false);
-
+            'polyline': function (xmlNode, parentGroup) {
                 const pointsStr = xmlNode.getAttribute('points');
                 let pointsArr;
                 if (pointsStr) {
@@ -364,12 +388,16 @@ class SVGParser {
                 const polyline = new Polyline({
                     shape: {
                         points: pointsArr || []
-                    }
+                    },
+                    silent: true
                 });
+
+                inheritStyle(parentGroup, polyline);
+                parseAttributes(xmlNode, polyline, this._defs, false);
 
                 return polyline;
             },
-            'image': function (xmlNode: SVGElement, parentGroup: Group) {
+            'image': function (xmlNode, parentGroup) {
                 const img = new ZRImage();
                 inheritStyle(parentGroup, img);
                 parseAttributes(xmlNode, img, this._defs, false);
@@ -381,10 +409,11 @@ class SVGParser {
                     width: +xmlNode.getAttribute('width'),
                     height: +xmlNode.getAttribute('height')
                 });
+                img.silent = true;
 
                 return img;
             },
-            'text': function (xmlNode: SVGElement, parentGroup: Group) {
+            'text': function (xmlNode, parentGroup) {
                 const x = xmlNode.getAttribute('x') || '0';
                 const y = xmlNode.getAttribute('y') || '0';
                 const dx = xmlNode.getAttribute('dx') || '0';
@@ -399,7 +428,7 @@ class SVGParser {
 
                 return g;
             },
-            'tspan': function (xmlNode: SVGElement, parentGroup: Group) {
+            'tspan': function (xmlNode, parentGroup) {
                 const x = xmlNode.getAttribute('x');
                 const y = xmlNode.getAttribute('y');
                 if (x != null) {
@@ -423,7 +452,7 @@ class SVGParser {
 
                 return g;
             },
-            'path': function (xmlNode: SVGElement, parentGroup: Group) {
+            'path': function (xmlNode, parentGroup) {
                 // TODO svg fill rule
                 // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fill-rule
                 // path.style.globalCompositeOperation = 'xor';
@@ -436,12 +465,33 @@ class SVGParser {
                 inheritStyle(parentGroup, path);
                 parseAttributes(xmlNode, path, this._defs, false);
 
+                path.silent = true;
+
                 return path;
             }
         };
 
 
     })();
+}
+
+function setName(
+    xmlNodeNameLower: string,
+    xmlNode: SVGElement,
+    el: Element,
+    namedElements: Element[]
+): void {
+    if (el && hasOwn(NAME_ENABLED_SVG_TAGS, xmlNodeNameLower)) {
+        const name = xmlNode.getAttribute('name');
+        // Do not support empty string;
+        if (name) {
+            el.name = name;
+            // Only named element has silent: false, other elements should
+            // act as background and has no user interaction.
+            el.silent = false;
+            namedElements.push(el);
+        }
+    }
 }
 
 const defineParsers: Dictionary<(xmlNode: SVGElement) => any> = {
