@@ -4,12 +4,11 @@ import Circle from '../graphic/shape/Circle';
 import Rect from '../graphic/shape/Rect';
 import Ellipse from '../graphic/shape/Ellipse';
 import Line from '../graphic/shape/Line';
-import Path from '../graphic/Path';
 import Polygon from '../graphic/shape/Polygon';
 import Polyline from '../graphic/shape/Polyline';
 import * as matrix from '../core/matrix';
 import { createFromString } from './path';
-import { defaults, trim, each, map, keys, hasOwn } from '../core/util';
+import { defaults, trim, each, map, keys } from '../core/util';
 import Displayable from '../graphic/Displayable';
 import Element from '../Element';
 import { RectLike } from '../core/BoundingRect';
@@ -33,7 +32,7 @@ interface SVGParserOption {
     ignoreRootClip?: boolean;
 }
 
-interface SVGParserResult {
+export interface SVGParserResult {
     // Group, The root of the the result tree of zrender shapes
     root: Group;
     // number, the viewport width of the SVG
@@ -48,8 +47,17 @@ interface SVGParserResult {
         y: number;
         scale: number;
     };
-    namedElements: Displayable[];
+    named: {
+        name: string;
+        svgNodeTagLower: SVGNodeTagLower;
+        el: Element;
+    }[];
 }
+
+export type SVGNodeTagLower =
+    'g' | 'rect' | 'circle' | 'line' | 'ellipse' | 'polygon'
+    | 'polyline' | 'image' | 'text' | 'tspan' | 'path' | 'defs';
+
 
 type DefsMap = Dictionary<LinearGradientObject | RadialGradientObject | PatternObject>;
 
@@ -66,20 +74,9 @@ type TextStyleOptionExtended = TSpanStyleProps & {
     fontWeight: string;
     fontStyle: string;
 }
-let nodeParsers: Dictionary<(
+let nodeParsers: {[name in SVGNodeTagLower]?: (
     this: SVGParser, xmlNode: SVGElement, parentGroup: Group
-) => Element>;
-
-// In lower case.
-const NAME_ENABLED_SVG_TAGS = {
-    'rect': true,
-    'circle': true,
-    'line': true,
-    'ellipse': true,
-    'polygon': true,
-    'polyline': true,
-    'path': true
-} as const;
+) => Element};
 
 
 class SVGParser {
@@ -104,7 +101,7 @@ class SVGParser {
 
         let root = new Group();
         this._root = root;
-        const namedElements: Displayable[] = [];
+        const named: SVGParserResult['named'] = [];
         // parse view port
         const viewBox = svg.getAttribute('viewBox') || '';
 
@@ -121,7 +118,7 @@ class SVGParser {
 
         let child = svg.firstChild as SVGElement;
         while (child) {
-            this._parseNode(child, root, namedElements);
+            this._parseNode(child, root, named);
             child = child.nextSibling as SVGElement;
         }
 
@@ -175,13 +172,13 @@ class SVGParser {
             height: height,
             viewBoxRect: viewBoxRect,
             viewBoxTransform: viewBoxTransform,
-            namedElements: namedElements
+            named: named
         };
     }
 
-    private _parseNode(xmlNode: SVGElement, parentGroup: Group, namedElements: Displayable[]): void {
+    private _parseNode(xmlNode: SVGElement, parentGroup: Group, named: SVGParserResult['named']): void {
 
-        const nodeName = xmlNode.nodeName.toLowerCase();
+        const nodeName = xmlNode.nodeName.toLowerCase() as SVGNodeTagLower;
 
         // TODO
         // support <style>...</style> in svg, where nodeName is 'style',
@@ -220,7 +217,7 @@ class SVGParser {
             const parser = nodeParsers[nodeName];
             if (parser) {
                 el = parser.call(this, xmlNode, parentGroup);
-                setName(nodeName, xmlNode, el, namedElements);
+                setName(nodeName, xmlNode, el, named);
             }
             parentGroup.add(el);
         }
@@ -230,7 +227,7 @@ class SVGParser {
             while (child) {
                 if (child.nodeType === 1) {
                     // el should be a group if it has child.
-                    this._parseNode(child, el as Group, namedElements);
+                    this._parseNode(child, el as Group, named);
                 }
                 // Is text
                 if (child.nodeType === 3 && this._isText) {
@@ -439,16 +436,16 @@ class SVGParser {
                     // new offset y
                     this._textY = parseFloat(y);
                 }
-                const dx = xmlNode.getAttribute('dx') || 0;
-                const dy = xmlNode.getAttribute('dy') || 0;
+                const dx = xmlNode.getAttribute('dx') || '0';
+                const dy = xmlNode.getAttribute('dy') || '0';
 
                 const g = new Group();
 
                 inheritStyle(parentGroup, g);
                 parseAttributes(xmlNode, g, this._defs, false);
 
-                this._textX += dx as number;
-                this._textY += dy as number;
+                this._textX += parseFloat(dx);
+                this._textY += parseFloat(dy);
 
                 return g;
             },
@@ -476,20 +473,16 @@ class SVGParser {
 }
 
 function setName(
-    xmlNodeNameLower: string,
+    svgNodeTagLower: SVGNodeTagLower,
     xmlNode: SVGElement,
     el: Element,
-    namedElements: Element[]
+    named: SVGParserResult['named']
 ): void {
-    if (el && hasOwn(NAME_ENABLED_SVG_TAGS, xmlNodeNameLower)) {
+    if (el) {
         const name = xmlNode.getAttribute('name');
         // Do not support empty string;
         if (name) {
-            el.name = name;
-            // Only named element has silent: false, other elements should
-            // act as background and has no user interaction.
-            el.silent = false;
-            namedElements.push(el);
+            named.push({ name, svgNodeTagLower, el });
         }
     }
 }
@@ -595,6 +588,7 @@ const STYLE_ATTRIBUTES_MAP = {
     'text-align': 'textAlign',
     'alignment-baseline': 'textBaseline',
     'visibility': 'visibility',
+    'display': 'display',
     'stop-color': 'stopColor'
 } as const;
 const STYLE_ATTRIBUTES_MAP_KEYS = keys(STYLE_ATTRIBUTES_MAP);
@@ -668,6 +662,10 @@ function parseAttributes(
 
     if (zrStyle.visibility === 'hidden' || zrStyle.visibility === 'collapse') {
         disp.invisible = true;
+    }
+
+    if (zrStyle.display === 'none') {
+        disp.ignore = true;
     }
 
     disp.__inheritedStyle = zrStyle;
