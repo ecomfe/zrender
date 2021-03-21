@@ -9,7 +9,7 @@ const PI = Math.PI;
 const cos = Math.cos;
 const sin = Math.sin;
 
-class StarShape {
+export class StarShape {
     cx = 0
     cy = 0
     n = 3
@@ -17,7 +17,7 @@ class StarShape {
     r = 0
 }
 
-interface StarProps extends PathProps {
+export interface StarProps extends PathProps {
     shape?: Partial<StarShape>
 }
 class Star extends Path<StarProps> {

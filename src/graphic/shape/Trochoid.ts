@@ -8,7 +8,7 @@ import Path, { PathProps } from '../Path';
 const cos = Math.cos;
 const sin = Math.sin;
 
-class TrochoidShape {
+export class TrochoidShape {
     cx = 0
     cy = 0
     r = 0
@@ -17,7 +17,7 @@ class TrochoidShape {
     location = 'out'
 }
 
-interface TrochoidProps extends PathProps {
+export interface TrochoidProps extends PathProps {
     shape?: Partial<TrochoidShape>
 }
 class Trochoid extends Path<TrochoidProps> {
