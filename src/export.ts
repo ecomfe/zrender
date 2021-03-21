@@ -12,7 +12,8 @@ import {morphPath} from './tool/morphPath';
 
 export {default as Point, PointLike} from './core/Point';
 
-export {default as Element,
+export {
+    default as Element,
     ElementAnimateConfig,
     ElementTextConfig,
     ElementTextGuideLineConfig,
