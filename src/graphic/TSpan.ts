@@ -31,7 +31,7 @@ export const DEFAULT_TSPAN_STYLE: TSpanStyleProps = defaults({
 } as TSpanStyleProps, DEFAULT_PATH_STYLE);
 
 
-interface TSpanProps extends DisplayableProps {
+export interface TSpanProps extends DisplayableProps {
     style?: TSpanStyleProps
 }
 

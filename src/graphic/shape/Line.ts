@@ -5,13 +5,12 @@
 
 import Path, { PathProps } from '../Path';
 import {subPixelOptimizeLine} from '../helper/subPixelOptimize';
-import PathProxy from '../../core/PathProxy';
 import { VectorArray } from '../../core/vector';
 
 // Avoid create repeatly.
 const subPixelOptimizeOutputShape = {};
 
-class LineShape {
+export class LineShape {
     // Start point
     x1 = 0
     y1 = 0
@@ -22,7 +21,7 @@ class LineShape {
     percent = 1
 }
 
-interface LineProps extends PathProps {
+export interface LineProps extends PathProps {
     shape?: Partial<LineShape>
 }
 class Line extends Path<LineProps> {

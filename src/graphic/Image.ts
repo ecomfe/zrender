@@ -39,7 +39,7 @@ export const DEFAULT_IMAGE_ANIMATION_PROPS: MapToType<ImageProps, boolean> = {
     }, DEFAULT_COMMON_ANIMATION_PROPS.style)
  };
 
-interface ImageProps extends DisplayableProps {
+export interface ImageProps extends DisplayableProps {
     style?: ImageStyleProps
 
     onload?: (image: ImageLike) => void

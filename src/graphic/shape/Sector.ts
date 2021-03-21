@@ -1,7 +1,7 @@
 import Path, { PathProps } from '../Path';
 import * as roundSectorHelper from '../helper/roundSector';
 
-class SectorShape {
+export class SectorShape {
     cx = 0
     cy = 0
     r0 = 0
@@ -13,7 +13,7 @@ class SectorShape {
     innerCornerRadius = 0
 }
 
-interface SectorProps extends PathProps {
+export interface SectorProps extends PathProps {
     shape?: Partial<SectorShape>
 }
 

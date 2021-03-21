@@ -8,14 +8,14 @@ const PI = Math.PI;
 const sin = Math.sin;
 const cos = Math.cos;
 
-class IsogonShape {
+export class IsogonShape {
     x = 0
     y = 0
     r = 0
     n = 0
 }
 
-interface IsogonProps extends PathProps {
+export interface IsogonProps extends PathProps {
     shape?: Partial<IsogonShape>
 }
 class Isogon extends Path<IsogonProps> {
