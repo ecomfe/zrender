@@ -8,15 +8,15 @@ import Polygon from '../graphic/shape/Polygon';
 import Polyline from '../graphic/shape/Polyline';
 import * as matrix from '../core/matrix';
 import { createFromString } from './path';
-import { defaults, trim, each, map, keys } from '../core/util';
+import { defaults, trim, each, map, keys, hasOwn } from '../core/util';
 import Displayable from '../graphic/Displayable';
 import Element from '../Element';
 import { RectLike } from '../core/BoundingRect';
 import { Dictionary } from '../core/types';
 import { PatternObject } from '../graphic/Pattern';
 import LinearGradient, { LinearGradientObject } from '../graphic/LinearGradient';
-import { RadialGradientObject } from '../graphic/RadialGradient';
-import { GradientObject } from '../graphic/Gradient';
+import RadialGradient, { RadialGradientObject } from '../graphic/RadialGradient';
+import Gradient, { GradientObject } from '../graphic/Gradient';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import { parseXML } from './parseXML';
 
@@ -56,10 +56,12 @@ export interface SVGParserResult {
 
 export type SVGNodeTagLower =
     'g' | 'rect' | 'circle' | 'line' | 'ellipse' | 'polygon'
-    | 'polyline' | 'image' | 'text' | 'tspan' | 'path' | 'defs';
+    | 'polyline' | 'image' | 'text' | 'tspan' | 'path' | 'defs' | 'switch';
 
 
-type DefsMap = Dictionary<LinearGradientObject | RadialGradientObject | PatternObject>;
+type DefsId = string;
+type DefsMap = { [id in DefsId]: LinearGradientObject | RadialGradientObject | PatternObject };
+type DefsUsePending = [Displayable, 'fill' | 'stroke', DefsId][];
 
 type ElementExtended = Element & {
     __inheritedStyle: Dictionary<string>;
@@ -82,10 +84,10 @@ let nodeParsers: {[name in SVGNodeTagLower]?: (
 class SVGParser {
 
     private _defs: DefsMap = {};
+    // The use of <defs> can be in front of <defs> declared.
+    // So save them temporarily in `_defsUsePending`.
+    private _defsUsePending: DefsUsePending;
     private _root: Group = null;
-
-    private _isDefine = false;
-    private _isText = false;
 
     private _textX: number;
     private _textY: number;
@@ -99,6 +101,7 @@ class SVGParser {
             throw new Error('Illegal svg');
         }
 
+        this._defsUsePending = [];
         let root = new Group();
         this._root = root;
         const named: SVGParserResult['named'] = [];
@@ -118,9 +121,12 @@ class SVGParser {
 
         let child = svg.firstChild as SVGElement;
         while (child) {
-            this._parseNode(child, root, named);
+            this._parseNode(child, root, named, false, false);
             child = child.nextSibling as SVGElement;
         }
+
+        applyDefs(this._defs, this._defsUsePending);
+        this._defsUsePending = [];
 
         let viewBoxRect;
         let viewBoxTransform;
@@ -176,73 +182,78 @@ class SVGParser {
         };
     }
 
-    private _parseNode(xmlNode: SVGElement, parentGroup: Group, named: SVGParserResult['named']): void {
+    private _parseNode(
+        xmlNode: SVGElement,
+        parentGroup: Group,
+        named: SVGParserResult['named'],
+        isInDefs: boolean,
+        isInText: boolean
+    ): void {
 
         const nodeName = xmlNode.nodeName.toLowerCase() as SVGNodeTagLower;
 
-        // TODO
+        // TODO:
         // support <style>...</style> in svg, where nodeName is 'style',
         // CSS classes is defined globally wherever the style tags are declared.
 
+        let el;
+
         if (nodeName === 'defs') {
-            // define flag
-            this._isDefine = true;
+            isInDefs = true;
         }
-        else if (nodeName === 'text') {
-            this._isText = true;
+        if (nodeName === 'text') {
+            isInText = true;
         }
 
-        let el;
-        if (this._isDefine) {
-            let child = xmlNode.firstChild as SVGElement;
-            while (child) {
-                if (child.nodeType === 1) {
-                    const parser = defineParsers[child.nodeName.toLowerCase()];
-                    if (parser) {
-                        const def = parser.call(this, child);
-                        const id = child.getAttribute('id');
-                        if (id) {
-                            this._defs[id] = def;
-                        }
-                    }
-                }
-                child = child.nextSibling as SVGElement;
-            }
+        if (nodeName === 'defs' || nodeName === 'switch') {
+            // Just make <switch> displayable. Do not support
+            // the full feature of it.
+            el = parentGroup;
+        }
+        else {
+            // In <defs>, elments will not be rendered.
             // TODO:
+            // do not support elements in <defs> yet, until requirement come.
             // other graphic elements can also be in <defs> and referenced by
             // <use x="5" y="5" xlink:href="#myCircle" />
             // multiple times
-        }
-        else {
-            const parser = nodeParsers[nodeName];
-            if (parser) {
-                el = parser.call(this, xmlNode, parentGroup);
-                setName(nodeName, xmlNode, el, named);
+            if (!isInDefs) {
+                const parser = nodeParsers[nodeName];
+                if (parser && hasOwn(nodeParsers, nodeName)) {
+                    el = parser.call(this, xmlNode, parentGroup);
+                    setName(nodeName, xmlNode, el, named);
+                    parentGroup.add(el);
+                }
             }
-            parentGroup.add(el);
+
+            // Whether gradients/patterns are declared in <defs> or not,
+            // they all work.
+            const parser = paintServerParsers[nodeName];
+            if (parser && hasOwn(paintServerParsers, nodeName)) {
+                const def = parser.call(this, xmlNode);
+                const id = xmlNode.getAttribute('id');
+                if (id) {
+                    this._defs[id] = def;
+                }
+            }
         }
 
-        if (el) {   // No parsers available
+        // If xmlNode is <g>, <text>, <tspan>, <defs>, <switch>,
+        // el will be a group, and traverse the children.
+        if (el && el.isGroup) {
             let child = xmlNode.firstChild as SVGElement;
             while (child) {
                 if (child.nodeType === 1) {
-                    // el should be a group if it has child.
-                    this._parseNode(child, el as Group, named);
+                    this._parseNode(child, el as Group, named, isInDefs, isInText);
                 }
-                // Is text
-                if (child.nodeType === 3 && this._isText) {
+                // Is plain text rather than a tagged node.
+                else if (child.nodeType === 3 && isInText) {
                     this._parseText(child, el as Group);
                 }
                 child = child.nextSibling as SVGElement;
             }
         }
-        // Quit define
-        if (nodeName === 'defs') {
-            this._isDefine = false;
-        }
-        else if (nodeName === 'text') {
-            this._isText = false;
-        }
+
     }
 
     private _parseText(xmlNode: SVGElement, parentGroup: Group): TSpan {
@@ -256,7 +267,7 @@ class SVGParser {
         });
 
         inheritStyle(parentGroup, text);
-        parseAttributes(xmlNode, text, this._defs, false);
+        parseAttributes(xmlNode, text, this._defsUsePending, false);
 
         const textStyle = text.style as TextStyleOptionExtended;
         const fontSize = textStyle.fontSize;
@@ -291,14 +302,14 @@ class SVGParser {
             'g': function (xmlNode, parentGroup) {
                 const g = new Group();
                 inheritStyle(parentGroup, g);
-                parseAttributes(xmlNode, g, this._defs, false);
+                parseAttributes(xmlNode, g, this._defsUsePending, false);
 
                 return g;
             },
             'rect': function (xmlNode, parentGroup) {
                 const rect = new Rect();
                 inheritStyle(parentGroup, rect);
-                parseAttributes(xmlNode, rect, this._defs, false);
+                parseAttributes(xmlNode, rect, this._defsUsePending, false);
 
                 rect.setShape({
                     x: parseFloat(xmlNode.getAttribute('x') || '0'),
@@ -314,7 +325,7 @@ class SVGParser {
             'circle': function (xmlNode, parentGroup) {
                 const circle = new Circle();
                 inheritStyle(parentGroup, circle);
-                parseAttributes(xmlNode, circle, this._defs, false);
+                parseAttributes(xmlNode, circle, this._defsUsePending, false);
 
                 circle.setShape({
                     cx: parseFloat(xmlNode.getAttribute('cx') || '0'),
@@ -329,7 +340,7 @@ class SVGParser {
             'line': function (xmlNode, parentGroup) {
                 const line = new Line();
                 inheritStyle(parentGroup, line);
-                parseAttributes(xmlNode, line, this._defs, false);
+                parseAttributes(xmlNode, line, this._defsUsePending, false);
 
                 line.setShape({
                     x1: parseFloat(xmlNode.getAttribute('x1') || '0'),
@@ -345,7 +356,7 @@ class SVGParser {
             'ellipse': function (xmlNode, parentGroup) {
                 const ellipse = new Ellipse();
                 inheritStyle(parentGroup, ellipse);
-                parseAttributes(xmlNode, ellipse, this._defs, false);
+                parseAttributes(xmlNode, ellipse, this._defsUsePending, false);
 
                 ellipse.setShape({
                     cx: parseFloat(xmlNode.getAttribute('cx') || '0'),
@@ -372,7 +383,7 @@ class SVGParser {
                 });
 
                 inheritStyle(parentGroup, polygon);
-                parseAttributes(xmlNode, polygon, this._defs, false);
+                parseAttributes(xmlNode, polygon, this._defsUsePending, false);
 
                 return polygon;
             },
@@ -390,14 +401,14 @@ class SVGParser {
                 });
 
                 inheritStyle(parentGroup, polyline);
-                parseAttributes(xmlNode, polyline, this._defs, false);
+                parseAttributes(xmlNode, polyline, this._defsUsePending, false);
 
                 return polyline;
             },
             'image': function (xmlNode, parentGroup) {
                 const img = new ZRImage();
                 inheritStyle(parentGroup, img);
-                parseAttributes(xmlNode, img, this._defs, false);
+                parseAttributes(xmlNode, img, this._defsUsePending, false);
 
                 img.setStyle({
                     image: xmlNode.getAttribute('xlink:href'),
@@ -421,7 +432,7 @@ class SVGParser {
 
                 const g = new Group();
                 inheritStyle(parentGroup, g);
-                parseAttributes(xmlNode, g, this._defs, false);
+                parseAttributes(xmlNode, g, this._defsUsePending, false);
 
                 return g;
             },
@@ -442,7 +453,7 @@ class SVGParser {
                 const g = new Group();
 
                 inheritStyle(parentGroup, g);
-                parseAttributes(xmlNode, g, this._defs, false);
+                parseAttributes(xmlNode, g, this._defsUsePending, false);
 
                 this._textX += parseFloat(dx);
                 this._textY += parseFloat(dy);
@@ -460,7 +471,7 @@ class SVGParser {
                 const path = createFromString(d);
 
                 inheritStyle(parentGroup, path);
-                parseAttributes(xmlNode, path, this._defs, false);
+                parseAttributes(xmlNode, path, this._defsUsePending, false);
 
                 path.silent = true;
 
@@ -487,37 +498,64 @@ function setName(
     }
 }
 
-const defineParsers: Dictionary<(xmlNode: SVGElement) => any> = {
+const paintServerParsers: Dictionary<(xmlNode: SVGElement) => any> = {
 
     'lineargradient': function (xmlNode: SVGElement) {
+        // TODO:
+        // Support that x1,y1,x2,y2 are not declared lineargradient but in node.
         const x1 = parseInt(xmlNode.getAttribute('x1') || '0', 10);
         const y1 = parseInt(xmlNode.getAttribute('y1') || '0', 10);
         const x2 = parseInt(xmlNode.getAttribute('x2') || '10', 10);
         const y2 = parseInt(xmlNode.getAttribute('y2') || '0', 10);
 
         const gradient = new LinearGradient(x1, y1, x2, y2);
-        gradient.global = true;
+
+        parsePaintServerUnit(xmlNode, gradient);
 
         parseGradientColorStops(xmlNode, gradient);
 
-        return gradient as LinearGradientObject;
+        return gradient;
+    },
+
+    'radialgradient': function (xmlNode) {
+        // TODO:
+        // Support that x1,y1,x2,y2 are not declared radialgradient but in node.
+        // TODO:
+        // Support fx, fy, fr.
+        const cx = parseInt(xmlNode.getAttribute('cx') || '0', 10);
+        const cy = parseInt(xmlNode.getAttribute('cy') || '0', 10);
+        const r = parseInt(xmlNode.getAttribute('r') || '0', 10);
+
+        const gradient = new RadialGradient(cx, cy, r);
+
+        parsePaintServerUnit(xmlNode, gradient);
+
+        parseGradientColorStops(xmlNode, gradient);
+
+        return gradient;
     }
 
     // TODO
     // 'pattern': function (xmlNode: SVGElement) {
     // }
-
-    // TODO
-    // 'radialgradient': function (xmlNode) {
-    // }
 };
+
+function parsePaintServerUnit(xmlNode: SVGElement, gradient: Gradient) {
+    const gradientUnits = xmlNode.getAttribute('gradientUnits');
+    if (gradientUnits === 'userSpaceOnUse') {
+        gradient.global = true;
+    }
+}
 
 function parseGradientColorStops(xmlNode: SVGElement, gradient: GradientObject): void {
 
     let stop = xmlNode.firstChild as SVGStopElement;
 
     while (stop) {
-        if (stop.nodeType === 1) {
+        if (stop.nodeType === 1
+            // there might be some other irrelevant tags used by editor.
+            && stop.nodeName.toLocaleLowerCase() === 'stop'
+        ) {
             const offsetStr = stop.getAttribute('offset');
             let offset: number;
             if (offsetStr && offsetStr.indexOf('%') > 0) {  // percentage
@@ -597,7 +635,7 @@ const STYLE_ATTRIBUTES_MAP_KEYS = keys(STYLE_ATTRIBUTES_MAP);
 function parseAttributes(
     xmlNode: SVGElement,
     el: Element,
-    defs: DefsMap,
+    defsUsePending: DefsUsePending,
     onlyInlineStyle: boolean
 ): void {
     const disp = el as DisplayableExtended;
@@ -623,10 +661,10 @@ function parseAttributes(
     disp.style = disp.style || {};
 
     if (zrStyle.fill != null) {
-        disp.style.fill = getPaint(zrStyle.fill, defs);
+        disp.style.fill = getFillStrokeStyle(disp, 'fill', zrStyle.fill, defsUsePending);
     }
     if (zrStyle.stroke != null) {
-        disp.style.stroke = getPaint(zrStyle.stroke, defs);
+        disp.style.stroke = getFillStrokeStyle(disp, 'stroke', zrStyle.stroke, defsUsePending);
     }
 
     each([
@@ -673,17 +711,33 @@ function parseAttributes(
 
 // Support `fill:url(#someId)`.
 const urlRegex = /^url\(\s*#(.*?)\)/;
-function getPaint(str: string, defs: DefsMap): string | DefsMap[keyof DefsMap] {
-    // if (str === 'none') {
-    //     return;
-    // }
-    const urlMatch = defs && str && str.match(urlRegex);
+function getFillStrokeStyle(
+    el: Displayable,
+    method: 'fill' | 'stroke',
+    str: string,
+    defsUsePending: DefsUsePending
+): string {
+    const urlMatch = str && str.match(urlRegex);
     if (urlMatch) {
         const url = trim(urlMatch[1]);
-        const def = defs[url];
-        return def;
+        defsUsePending.push([el, method, url]);
+        return;
+    }
+    // SVG fill and stroke can be 'none'.
+    if (str === 'none') {
+        str = null;
     }
     return str;
+}
+
+function applyDefs(
+    defs: DefsMap,
+    defsUsePending: DefsUsePending
+): void {
+    for (let i = 0; i < defsUsePending.length; i++) {
+        const item = defsUsePending[i];
+        item[0].style[item[1]] = defs[item[2]];
+    }
 }
 
 const transformRegex = /(translate|scale|rotate|skewX|skewY|matrix)\(([\-\s0-9\.e,]*)\)/g;

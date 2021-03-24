@@ -25,6 +25,8 @@ export default class Gradient {
 
     __canvasGradient: CanvasGradient
 
+    global: boolean
+
     constructor(colorStops: GradientColorStop[]) {
         this.colorStops = colorStops || [];
     }

@@ -23,8 +23,6 @@ export default class LinearGradient extends Gradient {
     x2: number
     y2: number
 
-    global: boolean
-
     constructor(
         x: number, y: number, x2: number, y2: number,
         colorStops?: GradientColorStop[], globalCoord?: boolean

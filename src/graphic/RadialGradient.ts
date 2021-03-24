@@ -18,7 +18,6 @@ class RadialGradient extends Gradient {
     x: number
     y: number
     r: number
-    global: boolean
 
     constructor(
         x: number, y: number, r: number,
