@@ -3,7 +3,7 @@
 import Path from './Path';
 import PathProxy from '../core/PathProxy';
 
-interface CompoundPathShape {
+export interface CompoundPathShape {
     paths: Path[]
 }
 

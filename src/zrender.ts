@@ -16,7 +16,7 @@ import {PainterBase} from './PainterBase';
 import Animation from './animation/Animation';
 import HandlerProxy from './dom/HandlerProxy';
 import Element, {ElementEventCallback, ElementEvent} from './Element';
-import { Dictionary, ElementEventName } from './core/types';
+import { Dictionary, ElementEventName, RenderedEvent } from './core/types';
 import { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
@@ -263,7 +263,7 @@ class ZRender {
             this._stillFrameAccum = 0;
             this.trigger('rendered', {
                 elapsedTime: end - start
-            });
+            } as RenderedEvent);
         }
         else if (this._sleepAfterStill > 0) {
             this._stillFrameAccum++;
@@ -520,7 +520,7 @@ export function registerPainter(name: string, Ctor: PainterBaseCtor) {
 /**
  * @type {string}
  */
-export const version = '5.0.3';
+export const version = '5.0.4';
 
 
 export interface ZRenderType extends ZRender {};

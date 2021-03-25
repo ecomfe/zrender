@@ -7,7 +7,7 @@ import Path, { PathProps } from '../Path';
 import * as roundRectHelper from '../helper/roundRect';
 import {subPixelOptimizeRect} from '../helper/subPixelOptimize';
 
-class RectShape {
+export class RectShape {
     // 左上、右上、右下、左下角的半径依次为r1、r2、r3、r4
     // r缩写为1         相当于 [1, 1, 1, 1]
     // r缩写为[1]       相当于 [1, 1, 1, 1]
@@ -21,7 +21,7 @@ class RectShape {
     height = 0
 }
 
-interface RectProps extends PathProps {
+export interface RectProps extends PathProps {
     shape?: Partial<RectShape>
 }
 // Avoid create repeatly.

@@ -7,8 +7,6 @@ export interface LinearGradientObject extends GradientObject {
     y: number
     x2: number
     y2: number
-
-    global: boolean
 }
 /**
  * x, y, x2, y2 are all percent from 0 to 1 when globalCoord is false

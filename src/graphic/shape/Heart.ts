@@ -4,14 +4,14 @@
 
 import Path, { PathProps } from '../Path';
 
-class HeartShape {
+export class HeartShape {
     cx = 0
     cy = 0
     width = 0
     height = 0
 }
 
-interface HeartProps extends PathProps {
+export interface HeartProps extends PathProps {
     shape?: Partial<HeartShape>
 }
 class Heart extends Path<HeartProps> {

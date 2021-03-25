@@ -177,7 +177,9 @@ export function extend<
     T extends Dictionary<any>,
     S extends Dictionary<any>
 >(target: T, source: S): T & S {
+    // @ts-ignore
     if (Object.assign) {
+        // @ts-ignore
         Object.assign(target, source);
     }
     else {

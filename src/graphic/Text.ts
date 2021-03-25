@@ -161,7 +161,7 @@ export interface TextStyleProps extends TextStylePropsPart {
      * truncate: truncate the text and show ellipsis
      * Do nothing if not set
      */
-    overflow?: 'break' | 'breakAll' | 'truncate'
+    overflow?: 'break' | 'breakAll' | 'truncate' | 'none'
 
     /**
      * Strategy when text lines exceeds textHeight.

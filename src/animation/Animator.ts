@@ -378,7 +378,7 @@ class Track {
                         this.interpolable = false;
                     }
                 }
-                else if (typeof value !== 'number') {
+                else if (typeof value !== 'number' || isNaN(value)) {
                     this.interpolable = false;
                     return;
                 }

@@ -9,7 +9,7 @@ const sin = Math.sin;
 const cos = Math.cos;
 const radian = Math.PI / 180;
 
-class RoseShape {
+export class RoseShape {
     cx = 0
     cy = 0
     r: number[] = []
@@ -17,7 +17,7 @@ class RoseShape {
     n = 1
 }
 
-interface RoseProps extends PathProps {
+export interface RoseProps extends PathProps {
     shape?: Partial<RoseShape>
 }
 class Rose extends Path<RoseProps> {

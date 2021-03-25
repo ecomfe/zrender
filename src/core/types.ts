@@ -70,7 +70,9 @@ export type ElementEventNameWithOn = 'onclick' | 'ondblclick' | 'onmousewheel' |
     'onmouseup' | 'onmousedown' | 'onmousemove' | 'oncontextmenu' |
     'ondrag' | 'ondragstart' | 'ondragend' | 'ondragenter' | 'ondragleave' | 'ondragover' | 'ondrop';
 
-
+export type RenderedEvent = {
+    elapsedTime: number
+};
 
 // Useful type methods
 export type PropType<TObj, TProp extends keyof TObj> = TObj[TProp];
