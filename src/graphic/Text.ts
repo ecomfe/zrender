@@ -503,11 +503,16 @@ class ZRText extends Displayable<TextProps> {
 
         if (textPadding) {
             textX = getTextXForPadding(baseX, textAlign, textPadding);
-            if (verticalAlign === 'top') {
-                textY += textPadding[0];
-            }
-            else if (verticalAlign === 'bottom') {
-                textY -= textPadding[2];
+            switch (verticalAlign) {
+                case 'top':
+                    textY += textPadding[0];
+                    break;
+                case 'bottom':
+                    textY -= textPadding[2];
+                    break;
+                case 'middle':
+                    textY += textPadding[0] - textPadding[2];
+                    break;
             }
         }
 
