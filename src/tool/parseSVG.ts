@@ -47,12 +47,17 @@ export interface SVGParserResult {
         y: number;
         scale: number;
     };
-    named: {
-        name: string;
-        svgNodeTagLower: SVGNodeTagLower;
-        el: Element;
-    }[];
+    named: SVGParserResultNamedItem[];
 }
+export interface SVGParserResultNamedItem {
+    name: string;
+    // If a tag has no name attribute but its ancester <g> is named,
+    // `namedFrom` is set to the named item of the ancester <g>.
+    // Otherwise null/undefined
+    namedFrom: SVGParserResultNamedItem;
+    svgNodeTagLower: SVGNodeTagLower;
+    el: Element;
+};
 
 export type SVGNodeTagLower =
     'g' | 'rect' | 'circle' | 'line' | 'ellipse' | 'polygon'
@@ -121,7 +126,7 @@ class SVGParser {
 
         let child = svg.firstChild as SVGElement;
         while (child) {
-            this._parseNode(child, root, named, false, false);
+            this._parseNode(child, root, named, null, false, false);
             child = child.nextSibling as SVGElement;
         }
 
@@ -185,7 +190,8 @@ class SVGParser {
     private _parseNode(
         xmlNode: SVGElement,
         parentGroup: Group,
-        named: SVGParserResult['named'],
+        named: SVGParserResultNamedItem[],
+        namedFrom: SVGParserResultNamedItem['namedFrom'],
         isInDefs: boolean,
         isInText: boolean
     ): void {
@@ -197,6 +203,7 @@ class SVGParser {
         // CSS classes is defined globally wherever the style tags are declared.
 
         let el;
+        let namedFromForSub = namedFrom;
 
         if (nodeName === 'defs') {
             isInDefs = true;
@@ -220,8 +227,32 @@ class SVGParser {
             if (!isInDefs) {
                 const parser = nodeParsers[nodeName];
                 if (parser && hasOwn(nodeParsers, nodeName)) {
+
                     el = parser.call(this, xmlNode, parentGroup);
-                    setName(nodeName, xmlNode, el, named);
+
+                    // Do not support empty string;
+                    const nameAttr = xmlNode.getAttribute('name');
+                    if (nameAttr) {
+                        const newNamed: SVGParserResultNamedItem = {
+                            name: nameAttr,
+                            namedFrom: null,
+                            svgNodeTagLower: nodeName,
+                            el: el
+                        };
+                        named.push(newNamed);
+                        if (nodeName === 'g') {
+                            namedFromForSub = newNamed;
+                        }
+                    }
+                    else if (namedFrom) {
+                        named.push({
+                            name: namedFrom.name,
+                            namedFrom: namedFrom,
+                            svgNodeTagLower: nodeName,
+                            el: el
+                        });
+                    }
+
                     parentGroup.add(el);
                 }
             }
@@ -244,7 +275,7 @@ class SVGParser {
             let child = xmlNode.firstChild as SVGElement;
             while (child) {
                 if (child.nodeType === 1) {
-                    this._parseNode(child, el as Group, named, isInDefs, isInText);
+                    this._parseNode(child, el as Group, named, namedFromForSub, isInDefs, isInText);
                 }
                 // Is plain text rather than a tagged node.
                 else if (child.nodeType === 3 && isInText) {
@@ -481,21 +512,6 @@ class SVGParser {
 
 
     })();
-}
-
-function setName(
-    svgNodeTagLower: SVGNodeTagLower,
-    xmlNode: SVGElement,
-    el: Element,
-    named: SVGParserResult['named']
-): void {
-    if (el) {
-        const name = xmlNode.getAttribute('name');
-        // Do not support empty string;
-        if (name) {
-            named.push({ name, svgNodeTagLower, el });
-        }
-    }
 }
 
 const paintServerParsers: Dictionary<(xmlNode: SVGElement) => any> = {
