@@ -69,10 +69,12 @@ type DefsMap = { [id in DefsId]: LinearGradientObject | RadialGradientObject | P
 type DefsUsePending = [Displayable, 'fill' | 'stroke', DefsId][];
 
 type ElementExtended = Element & {
-    __inheritedStyle: Dictionary<string>;
+    __inheritedStyle?: InheritedStyleByZRKey;
+    __selfStyle?: SelfStyleByZRKey;
 }
 type DisplayableExtended = Displayable & {
-    __inheritedStyle: Dictionary<string>;
+    __inheritedStyle?: InheritedStyleByZRKey;
+    __selfStyle?: SelfStyleByZRKey;
 }
 
 type TextStyleOptionExtended = TSpanStyleProps & {
@@ -84,6 +86,40 @@ type TextStyleOptionExtended = TSpanStyleProps & {
 let nodeParsers: {[name in SVGNodeTagLower]?: (
     this: SVGParser, xmlNode: SVGElement, parentGroup: Group
 ) => Element};
+
+type InheritedStyleByZRKey = {[name in InheritableStyleZRKey]?: string};
+type InheritableStyleZRKey =
+    typeof INHERITABLE_STYLE_ATTRIBUTES_MAP[keyof typeof INHERITABLE_STYLE_ATTRIBUTES_MAP];
+const INHERITABLE_STYLE_ATTRIBUTES_MAP = {
+    'fill': 'fill',
+    'stroke': 'stroke',
+    'stroke-width': 'lineWidth',
+    'opacity': 'opacity',
+    'fill-opacity': 'fillOpacity',
+    'stroke-opacity': 'strokeOpacity',
+    'stroke-dasharray': 'lineDash',
+    'stroke-dashoffset': 'lineDashOffset',
+    'stroke-linecap': 'lineCap',
+    'stroke-linejoin': 'lineJoin',
+    'stroke-miterlimit': 'miterLimit',
+    'font-family': 'fontFamily',
+    'font-size': 'fontSize',
+    'font-style': 'fontStyle',
+    'font-weight': 'fontWeight',
+    'text-anchor': 'textAlign',
+    'visibility': 'visibility',
+    'display': 'display'
+} as const;
+const INHERITABLE_STYLE_ATTRIBUTES_MAP_KEYS = keys(INHERITABLE_STYLE_ATTRIBUTES_MAP);
+
+type SelfStyleByZRKey = {[name in SelfStyleZRKey]?: string};
+type SelfStyleZRKey =
+    typeof SELF_STYLE_ATTRIBUTES_MAP[keyof typeof SELF_STYLE_ATTRIBUTES_MAP];
+const SELF_STYLE_ATTRIBUTES_MAP = {
+    'alignment-baseline': 'textBaseline',
+    'stop-color': 'stopColor'
+};
+const SELF_STYLE_ATTRIBUTES_MAP_KEYS = keys(SELF_STYLE_ATTRIBUTES_MAP);
 
 
 class SVGParser {
@@ -122,7 +158,7 @@ class SVGParser {
         isNaN(height) && (height = null);
 
         // Apply inline style on svg element.
-        parseAttributes(svg, root, null, true);
+        parseAttributes(svg, root, null, true, false);
 
         let child = svg.firstChild as SVGElement;
         while (child) {
@@ -298,7 +334,10 @@ class SVGParser {
         });
 
         inheritStyle(parentGroup, text);
-        parseAttributes(xmlNode, text, this._defsUsePending, false);
+
+        parseAttributes(xmlNode, text, this._defsUsePending, false, false);
+
+        applyTextAlignment(text, parentGroup);
 
         const textStyle = text.style as TextStyleOptionExtended;
         const fontSize = textStyle.fontSize;
@@ -333,14 +372,14 @@ class SVGParser {
             'g': function (xmlNode, parentGroup) {
                 const g = new Group();
                 inheritStyle(parentGroup, g);
-                parseAttributes(xmlNode, g, this._defsUsePending, false);
+                parseAttributes(xmlNode, g, this._defsUsePending, false, false);
 
                 return g;
             },
             'rect': function (xmlNode, parentGroup) {
                 const rect = new Rect();
                 inheritStyle(parentGroup, rect);
-                parseAttributes(xmlNode, rect, this._defsUsePending, false);
+                parseAttributes(xmlNode, rect, this._defsUsePending, false, false);
 
                 rect.setShape({
                     x: parseFloat(xmlNode.getAttribute('x') || '0'),
@@ -356,7 +395,7 @@ class SVGParser {
             'circle': function (xmlNode, parentGroup) {
                 const circle = new Circle();
                 inheritStyle(parentGroup, circle);
-                parseAttributes(xmlNode, circle, this._defsUsePending, false);
+                parseAttributes(xmlNode, circle, this._defsUsePending, false, false);
 
                 circle.setShape({
                     cx: parseFloat(xmlNode.getAttribute('cx') || '0'),
@@ -371,7 +410,7 @@ class SVGParser {
             'line': function (xmlNode, parentGroup) {
                 const line = new Line();
                 inheritStyle(parentGroup, line);
-                parseAttributes(xmlNode, line, this._defsUsePending, false);
+                parseAttributes(xmlNode, line, this._defsUsePending, false, false);
 
                 line.setShape({
                     x1: parseFloat(xmlNode.getAttribute('x1') || '0'),
@@ -387,7 +426,7 @@ class SVGParser {
             'ellipse': function (xmlNode, parentGroup) {
                 const ellipse = new Ellipse();
                 inheritStyle(parentGroup, ellipse);
-                parseAttributes(xmlNode, ellipse, this._defsUsePending, false);
+                parseAttributes(xmlNode, ellipse, this._defsUsePending, false, false);
 
                 ellipse.setShape({
                     cx: parseFloat(xmlNode.getAttribute('cx') || '0'),
@@ -414,7 +453,7 @@ class SVGParser {
                 });
 
                 inheritStyle(parentGroup, polygon);
-                parseAttributes(xmlNode, polygon, this._defsUsePending, false);
+                parseAttributes(xmlNode, polygon, this._defsUsePending, false, false);
 
                 return polygon;
             },
@@ -432,14 +471,14 @@ class SVGParser {
                 });
 
                 inheritStyle(parentGroup, polyline);
-                parseAttributes(xmlNode, polyline, this._defsUsePending, false);
+                parseAttributes(xmlNode, polyline, this._defsUsePending, false, false);
 
                 return polyline;
             },
             'image': function (xmlNode, parentGroup) {
                 const img = new ZRImage();
                 inheritStyle(parentGroup, img);
-                parseAttributes(xmlNode, img, this._defsUsePending, false);
+                parseAttributes(xmlNode, img, this._defsUsePending, false, false);
 
                 img.setStyle({
                     image: xmlNode.getAttribute('xlink:href'),
@@ -463,7 +502,7 @@ class SVGParser {
 
                 const g = new Group();
                 inheritStyle(parentGroup, g);
-                parseAttributes(xmlNode, g, this._defsUsePending, false);
+                parseAttributes(xmlNode, g, this._defsUsePending, false, true);
 
                 return g;
             },
@@ -484,7 +523,7 @@ class SVGParser {
                 const g = new Group();
 
                 inheritStyle(parentGroup, g);
-                parseAttributes(xmlNode, g, this._defsUsePending, false);
+                parseAttributes(xmlNode, g, this._defsUsePending, false, true);
 
                 this._textX += parseFloat(dx);
                 this._textY += parseFloat(dy);
@@ -502,7 +541,7 @@ class SVGParser {
                 const path = createFromString(d);
 
                 inheritStyle(parentGroup, path);
-                parseAttributes(xmlNode, path, this._defsUsePending, false);
+                parseAttributes(xmlNode, path, this._defsUsePending, false, false);
 
                 path.silent = true;
 
@@ -587,7 +626,7 @@ function parseGradientColorStops(xmlNode: SVGElement, gradient: GradientObject):
             // <stop style="stop-color:red"/> has higher priority than
             // <stop stop-color="red"/>
             const styleVals = {} as Dictionary<string>;
-            parseStyleAttribute(stop, styleVals);
+            parseInlineStyle(stop, styleVals, styleVals);
             const stopColor = styleVals.stopColor
                 || stop.getAttribute('stop-color')
                 || '#000000';
@@ -622,107 +661,116 @@ function parsePoints(pointsString: string): number[][] {
     return points;
 }
 
-const STYLE_ATTRIBUTES_MAP = {
-    'fill': 'fill',
-    'stroke': 'stroke',
-    'stroke-width': 'lineWidth',
-    'opacity': 'opacity',
-    'fill-opacity': 'fillOpacity',
-    'stroke-opacity': 'strokeOpacity',
-    'stroke-dasharray': 'lineDash',
-    'stroke-dashoffset': 'lineDashOffset',
-    'stroke-linecap': 'lineCap',
-    'stroke-linejoin': 'lineJoin',
-    'stroke-miterlimit': 'miterLimit',
-    'font-family': 'fontFamily',
-    'font-size': 'fontSize',
-    'font-style': 'fontStyle',
-    'font-weight': 'fontWeight',
-
-    'text-align': 'textAlign',
-    'alignment-baseline': 'textBaseline',
-    'visibility': 'visibility',
-    'display': 'display',
-    'stop-color': 'stopColor'
-} as const;
-const STYLE_ATTRIBUTES_MAP_KEYS = keys(STYLE_ATTRIBUTES_MAP);
-
-
 function parseAttributes(
     xmlNode: SVGElement,
     el: Element,
     defsUsePending: DefsUsePending,
-    onlyInlineStyle: boolean
+    onlyInlineStyle: boolean,
+    isTextGroup: boolean
 ): void {
     const disp = el as DisplayableExtended;
-    const zrStyle = disp.__inheritedStyle || {};
+    const inheritedStyle = disp.__inheritedStyle = disp.__inheritedStyle || {};
+    const selfStyle: SelfStyleByZRKey = {};
 
     // TODO Shadow
     if (xmlNode.nodeType === 1) {
         parseTransformAttribute(xmlNode, el);
 
-        parseStyleAttribute(xmlNode, zrStyle);
+        parseInlineStyle(xmlNode, inheritedStyle, selfStyle);
 
         if (!onlyInlineStyle) {
-            for (let i = 0; i < STYLE_ATTRIBUTES_MAP_KEYS.length; i++) {
-                const svgAttrName = STYLE_ATTRIBUTES_MAP_KEYS[i];
-                const attrValue = xmlNode.getAttribute(svgAttrName);
-                if (attrValue != null) {
-                    zrStyle[STYLE_ATTRIBUTES_MAP[svgAttrName]] = attrValue;
-                }
-            }
+            parseAttributeStyle(xmlNode, inheritedStyle, selfStyle);
         }
     }
 
     disp.style = disp.style || {};
 
-    if (zrStyle.fill != null) {
-        disp.style.fill = getFillStrokeStyle(disp, 'fill', zrStyle.fill, defsUsePending);
+    if (inheritedStyle.fill != null) {
+        disp.style.fill = getFillStrokeStyle(disp, 'fill', inheritedStyle.fill, defsUsePending);
     }
-    if (zrStyle.stroke != null) {
-        disp.style.stroke = getFillStrokeStyle(disp, 'stroke', zrStyle.stroke, defsUsePending);
+    if (inheritedStyle.stroke != null) {
+        disp.style.stroke = getFillStrokeStyle(disp, 'stroke', inheritedStyle.stroke, defsUsePending);
     }
 
     each([
         'lineWidth', 'opacity', 'fillOpacity', 'strokeOpacity', 'miterLimit', 'fontSize'
-    ], function (propName) {
-        zrStyle[propName] != null && (disp.style[propName] = parseFloat(zrStyle[propName]));
+    ] as const, function (propName) {
+        if (inheritedStyle[propName] != null) {
+            disp.style[propName] = parseFloat(inheritedStyle[propName]);
+        }
     });
 
-    if (!zrStyle.textBaseline || zrStyle.textBaseline === 'auto') {
-        zrStyle.textBaseline = 'alphabetic';
-    }
-    if (zrStyle.textBaseline === 'alphabetic') {
-        zrStyle.textBaseline = 'bottom';
-    }
-    if (zrStyle.textAlign === 'start') {
-        zrStyle.textAlign = 'left';
-    }
-    if (zrStyle.textAlign === 'end') {
-        zrStyle.textAlign = 'right';
-    }
-
-    each(['lineDashOffset', 'lineCap', 'lineJoin',
-        'fontWeight', 'fontFamily', 'fontStyle', 'textAlign', 'textBaseline'
-    ], function (propName) {
-        zrStyle[propName] != null && (disp.style[propName] = zrStyle[propName]);
+    each([
+        'lineDashOffset', 'lineCap', 'lineJoin', 'fontWeight', 'fontFamily', 'fontStyle', 'textAlign'
+    ] as const, function (propName) {
+        if (inheritedStyle[propName] != null) {
+            disp.style[propName] = inheritedStyle[propName];
+        }
     });
 
-    if (zrStyle.lineDash) {
-        disp.style.lineDash = map(trim(zrStyle.lineDash).split(DILIMITER_REG), function (str) {
+    // Because selfStyle only support textBaseline, so only text group need it.
+    // in other cases selfStyle can be released.
+    if (isTextGroup) {
+        disp.__selfStyle = selfStyle;
+    }
+
+    if (inheritedStyle.lineDash) {
+        disp.style.lineDash = map(trim(inheritedStyle.lineDash).split(DILIMITER_REG), function (str) {
             return parseFloat(str);
         });
     }
 
-    if (zrStyle.visibility === 'hidden' || zrStyle.visibility === 'collapse') {
+    if (inheritedStyle.visibility === 'hidden' || inheritedStyle.visibility === 'collapse') {
         disp.invisible = true;
     }
 
-    if (zrStyle.display === 'none') {
+    if (inheritedStyle.display === 'none') {
         disp.ignore = true;
     }
+}
 
-    disp.__inheritedStyle = zrStyle;
+function applyTextAlignment(
+    text: TSpan,
+    parentGroup: Group
+): void {
+    const parentSelfStyle = (parentGroup as ElementExtended).__selfStyle;
+    if (parentSelfStyle) {
+        const textBaseline = parentSelfStyle.textBaseline;
+        let zrTextBaseline = textBaseline as CanvasTextBaseline;
+        if (!textBaseline || textBaseline === 'auto') {
+            // FIXME: 'auto' means the value is the dominant-baseline of the script to
+            // which the character belongs - i.e., use the dominant-baseline of the parent.
+            zrTextBaseline = 'alphabetic';
+        }
+        else if (textBaseline === 'baseline') {
+            zrTextBaseline = 'alphabetic';
+        }
+        else if (textBaseline === 'before-edge' || textBaseline === 'text-before-edge') {
+            zrTextBaseline = 'top';
+        }
+        else if (textBaseline === 'after-edge' || textBaseline === 'text-after-edge') {
+            zrTextBaseline = 'bottom';
+        }
+        else if (textBaseline === 'central' || textBaseline === 'mathematical') {
+            zrTextBaseline = 'middle';
+        }
+        text.style.textBaseline = zrTextBaseline;
+    }
+
+    const parentInheritedStyle = (parentGroup as ElementExtended).__inheritedStyle;
+    if (parentInheritedStyle) {
+        // PENDING:
+        // canvas `direction` is an experimental attribute.
+        // so we do not support SVG direction "rtl" for text-anchor yet.
+        const textAlign = parentInheritedStyle.textAlign;
+        let zrTextAlign = textAlign as CanvasTextAlign;
+        if (textAlign) {
+            if (textAlign === 'middle') {
+                zrTextAlign = 'center';
+            }
+            text.style.textAlign = zrTextAlign;
+        }
+    }
 }
 
 // Support `fill:url(#someId)`.
@@ -807,7 +855,11 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
 
 // Value may contain space.
 const styleRegex = /([^\s:;]+)\s*:\s*([^:;]+)/g;
-function parseStyleAttribute(xmlNode: SVGElement, result: Dictionary<string>): void {
+function parseInlineStyle(
+    xmlNode: SVGElement,
+    inheritableStyleResult: Dictionary<string>,
+    selfStyleResult: Dictionary<string>
+): void {
     const style = xmlNode.getAttribute('style');
 
     if (!style) {
@@ -818,12 +870,40 @@ function parseStyleAttribute(xmlNode: SVGElement, result: Dictionary<string>): v
     let styleRegResult;
     while ((styleRegResult = styleRegex.exec(style)) != null) {
         const svgStlAttr = styleRegResult[1];
-        const zrStlAttr = STYLE_ATTRIBUTES_MAP.hasOwnProperty(svgStlAttr)
-            ? STYLE_ATTRIBUTES_MAP[svgStlAttr as keyof typeof STYLE_ATTRIBUTES_MAP]
-            : null;
 
-        if (zrStlAttr) {
-            result[zrStlAttr] = styleRegResult[2];
+        const zrInheritableStlAttr = hasOwn(INHERITABLE_STYLE_ATTRIBUTES_MAP, svgStlAttr)
+            ? INHERITABLE_STYLE_ATTRIBUTES_MAP[svgStlAttr as keyof typeof INHERITABLE_STYLE_ATTRIBUTES_MAP]
+            : null;
+        if (zrInheritableStlAttr) {
+            inheritableStyleResult[zrInheritableStlAttr] = styleRegResult[2];
+        }
+
+        const zrSelfStlAttr = hasOwn(SELF_STYLE_ATTRIBUTES_MAP, svgStlAttr)
+            ? SELF_STYLE_ATTRIBUTES_MAP[svgStlAttr as keyof typeof SELF_STYLE_ATTRIBUTES_MAP]
+            : null;
+        if (zrSelfStlAttr) {
+            selfStyleResult[zrSelfStlAttr] = styleRegResult[2];
+        }
+    }
+}
+
+function parseAttributeStyle(
+    xmlNode: SVGElement,
+    inheritableStyleResult: Dictionary<string>,
+    selfStyleResult: Dictionary<string>
+): void {
+    for (let i = 0; i < INHERITABLE_STYLE_ATTRIBUTES_MAP_KEYS.length; i++) {
+        const svgAttrName = INHERITABLE_STYLE_ATTRIBUTES_MAP_KEYS[i];
+        const attrValue = xmlNode.getAttribute(svgAttrName);
+        if (attrValue != null) {
+            inheritableStyleResult[INHERITABLE_STYLE_ATTRIBUTES_MAP[svgAttrName]] = attrValue;
+        }
+    }
+    for (let i = 0; i < SELF_STYLE_ATTRIBUTES_MAP_KEYS.length; i++) {
+        const svgAttrName = SELF_STYLE_ATTRIBUTES_MAP_KEYS[i];
+        const attrValue = xmlNode.getAttribute(svgAttrName);
+        if (attrValue != null) {
+            selfStyleResult[SELF_STYLE_ATTRIBUTES_MAP[svgAttrName]] = attrValue;
         }
     }
 }
