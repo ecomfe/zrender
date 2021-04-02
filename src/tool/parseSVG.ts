@@ -811,7 +811,7 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
     if (transform) {
         transform = transform.replace(/,/g, ' ');
         const transformOps: string[] = [];
-        let m = null;
+        let mt = null;
         transform.replace(transformRegex, function (str: string, type: string, value: string) {
             transformOps.push(type, value);
             return '';
@@ -820,19 +820,19 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
             let value = transformOps[i];
             let type = transformOps[i - 1];
             let valueArr: string[];
-            m = m || matrix.create();
+            mt = mt || matrix.create();
             switch (type) {
                 case 'translate':
                     valueArr = trim(value).split(DILIMITER_REG);
-                    matrix.translate(m, m, [parseFloat(valueArr[0]), parseFloat(valueArr[1] || '0')]);
+                    matrix.translate(mt, mt, [parseFloat(valueArr[0]), parseFloat(valueArr[1] || '0')]);
                     break;
                 case 'scale':
                     valueArr = trim(value).split(DILIMITER_REG);
-                    matrix.scale(m, m, [parseFloat(valueArr[0]), parseFloat(valueArr[1] || valueArr[0])]);
+                    matrix.scale(mt, mt, [parseFloat(valueArr[0]), parseFloat(valueArr[1] || valueArr[0])]);
                     break;
                 case 'rotate':
                     valueArr = trim(value).split(DILIMITER_REG);
-                    matrix.rotate(m, m, parseFloat(valueArr[0]));
+                    matrix.rotate(mt, mt, -parseFloat(valueArr[0]) / 180 * Math.PI);
                     break;
                 case 'skew':
                     valueArr = trim(value).split(DILIMITER_REG);
@@ -840,16 +840,16 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
                     break;
                 case 'matrix':
                     valueArr = trim(value).split(DILIMITER_REG);
-                    m[0] = parseFloat(valueArr[0]);
-                    m[1] = parseFloat(valueArr[1]);
-                    m[2] = parseFloat(valueArr[2]);
-                    m[3] = parseFloat(valueArr[3]);
-                    m[4] = parseFloat(valueArr[4]);
-                    m[5] = parseFloat(valueArr[5]);
+                    mt[0] = parseFloat(valueArr[0]);
+                    mt[1] = parseFloat(valueArr[1]);
+                    mt[2] = parseFloat(valueArr[2]);
+                    mt[3] = parseFloat(valueArr[3]);
+                    mt[4] = parseFloat(valueArr[4]);
+                    mt[5] = parseFloat(valueArr[5]);
                     break;
             }
         }
-        node.setLocalTransform(m);
+        node.setLocalTransform(mt);
     }
 }
 
