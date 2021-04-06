@@ -20,8 +20,6 @@ import Gradient, { GradientObject } from '../graphic/Gradient';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import { parseXML } from './parseXML';
 
-// Most of the values can be separated by comma and/or white space.
-const DILIMITER_REG = /[\s,]+/;
 
 interface SVGParserOption {
     // Default width if svg width not specified or is a percent value.
@@ -173,7 +171,7 @@ class SVGParser {
         let viewBoxTransform;
 
         if (viewBox) {
-            const viewBoxArr = trim(viewBox).split(DILIMITER_REG);
+            const viewBoxArr = splitNumberSequence(viewBox);
             // Some invalid case like viewBox: 'none'.
             if (viewBoxArr.length >= 4) {
                 viewBoxRect = {
@@ -650,7 +648,7 @@ function inheritStyle(parent: Element, child: Element): void {
 }
 
 function parsePoints(pointsString: string): number[][] {
-    const list = trim(pointsString).split(DILIMITER_REG);
+    const list = splitNumberSequence(pointsString);
     const points = [];
 
     for (let i = 0; i < list.length; i += 2) {
@@ -715,7 +713,7 @@ function parseAttributes(
     }
 
     if (inheritedStyle.lineDash) {
-        disp.style.lineDash = map(trim(inheritedStyle.lineDash).split(DILIMITER_REG), function (str) {
+        disp.style.lineDash = map(splitNumberSequence(inheritedStyle.lineDash), function (str) {
             return parseFloat(str);
         });
     }
@@ -807,7 +805,20 @@ function applyDefs(
     }
 }
 
-const transformRegex = /(translate|scale|rotate|skewX|skewY|matrix)\(([\-\s0-9\.e,]*)\)/g;
+// value can be like:
+// '2e-4', 'l.5.9' (ignore 0), 'M-10-10', 'l-2.43e-1,34.9983',
+// 'l-.5E1,54', '121-23-44-11' (no delimiter)
+// PENDING: here continuous commas are treat as one comma, but the
+// browser SVG parser treats this by printing error.
+const numberReg = /-?([0-9]*\.)?[0-9]+([eE]-?[0-9]+)?/g;
+function splitNumberSequence(rawStr: string): string[] {
+    return rawStr.match(numberReg) || [];
+}
+// Most of the values can be separated by comma and/or white space.
+// const DILIMITER_REG = /[\s,]+/;
+
+
+const transformRegex = /(translate|scale|rotate|skewX|skewY|matrix)\(([\-\s0-9\.eE,]*)\)/g;
 
 function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
     let transform = xmlNode.getAttribute('transform');
@@ -826,23 +837,23 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
             mt = mt || matrix.create();
             switch (type) {
                 case 'translate':
-                    valueArr = trim(value).split(DILIMITER_REG);
+                    valueArr = splitNumberSequence(value);
                     matrix.translate(mt, mt, [parseFloat(valueArr[0]), parseFloat(valueArr[1] || '0')]);
                     break;
                 case 'scale':
-                    valueArr = trim(value).split(DILIMITER_REG);
+                    valueArr = splitNumberSequence(value);
                     matrix.scale(mt, mt, [parseFloat(valueArr[0]), parseFloat(valueArr[1] || valueArr[0])]);
                     break;
                 case 'rotate':
-                    valueArr = trim(value).split(DILIMITER_REG);
+                    valueArr = splitNumberSequence(value);
                     matrix.rotate(mt, mt, -parseFloat(valueArr[0]) / 180 * Math.PI);
                     break;
                 case 'skew':
-                    valueArr = trim(value).split(DILIMITER_REG);
+                    valueArr = splitNumberSequence(value);
                     console.warn('Skew transform is not supported yet');
                     break;
                 case 'matrix':
-                    valueArr = trim(value).split(DILIMITER_REG);
+                    valueArr = splitNumberSequence(value);
                     mt[0] = parseFloat(valueArr[0]);
                     mt[1] = parseFloat(valueArr[1]);
                     mt[2] = parseFloat(valueArr[2]);
