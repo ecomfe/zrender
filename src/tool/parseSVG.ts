@@ -186,7 +186,7 @@ class SVGParser {
         }
 
         if (viewBoxRect && width != null && height != null) {
-            viewBoxTransform = makeViewBoxTransform(viewBoxRect, width, height);
+            viewBoxTransform = makeViewBoxTransform(viewBoxRect, { x: 0, y: 0, width: width, height: height });
 
             if (!opt.ignoreViewBox) {
                 // If set transform on the output group, it probably bring trouble when
@@ -727,6 +727,9 @@ function parseAttributes(
     if (inheritedStyle.display === 'none') {
         disp.ignore = true;
     }
+
+    disp.z = -10000;
+    disp.z2 = -1000;
 }
 
 function applyTextAlignment(
@@ -908,20 +911,20 @@ function parseAttributeStyle(
     }
 }
 
-export function makeViewBoxTransform(viewBoxRect: RectLike, width: number, height: number): {
+export function makeViewBoxTransform(viewBoxRect: RectLike, boundingRect: RectLike): {
     scale: number;
     x: number;
     y: number;
 } {
-    const scaleX = width / viewBoxRect.width;
-    const scaleY = height / viewBoxRect.height;
+    const scaleX = boundingRect.width / viewBoxRect.width;
+    const scaleY = boundingRect.height / viewBoxRect.height;
     const scale = Math.min(scaleX, scaleY);
     // preserveAspectRatio 'xMidYMid'
 
     return {
         scale,
-        x: -(viewBoxRect.x + viewBoxRect.width / 2) * scale + width / 2,
-        y: -(viewBoxRect.y + viewBoxRect.height / 2) * scale + height / 2
+        x: -(viewBoxRect.x + viewBoxRect.width / 2) * scale + (boundingRect.x + boundingRect.width / 2),
+        y: -(viewBoxRect.y + viewBoxRect.height / 2) * scale + (boundingRect.y + boundingRect.height / 2)
     };
 }
 
