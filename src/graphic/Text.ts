@@ -522,6 +522,15 @@ class ZRText extends Displayable<TextProps> {
             'stroke' in style
                 ? style.stroke
                 : (!bgColorDrawn
+                    // If we use "auto lineWidth" widely, it probably bring about some bad case.
+                    // So the current strategy is:
+                    // If `style.fill` is specified (i.e., `useDefaultFill` is `false`)
+                    // (A) And if `textConfig.insideStroke/outsideStroke` is not specified as a color
+                    //   (i.e., `defaultStyle.autoStroke` is `true`), we do not actually display
+                    //   the auto stroke because we can not make sure wether the stoke is approperiate to
+                    //   the given `fill`.
+                    // (B) But if `textConfig.insideStroke/outsideStroke` is specified as a color,
+                    // we give the auto lineWidth to display the given stoke color.
                     && (!defaultStyle.autoStroke || useDefaultFill)
                 )
                 ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, defaultStyle.stroke)
@@ -736,6 +745,7 @@ class ZRText extends Displayable<TextProps> {
                 : (
                     !bgColorDrawn
                     && !parentBgColorDrawn
+                    // See the strategy explained above.
                     && (!defaultStyle.autoStroke || useDefaultFill)
                 ) ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, defaultStyle.stroke)
                 : null

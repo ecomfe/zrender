@@ -6,6 +6,8 @@ export interface GradientObject {
     type: string
 
     colorStops: GradientColorStop[]
+
+    global: boolean
 }
 
 export interface InnerGradientObject extends GradientObject {
@@ -24,6 +26,8 @@ export default class Gradient {
     type: string
 
     colorStops: GradientColorStop[]
+
+    global: boolean
 
     constructor(colorStops: GradientColorStop[]) {
         this.colorStops = colorStops || [];

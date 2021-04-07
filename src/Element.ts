@@ -1302,6 +1302,14 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     /**
+     * Remove text config
+     */
+    removeTextConfig() {
+        this.textConfig = null;
+        this.markRedraw();
+    }
+
+    /**
      * Remove attached text element.
      */
     removeTextContent() {
