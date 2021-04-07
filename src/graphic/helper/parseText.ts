@@ -7,7 +7,7 @@ import {
 } from '../../core/util';
 import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../../core/types';
 import { TextStyleProps } from '../Text';
-import { getLineHeight, getWidth } from '../../contain/text';
+import { getLineHeight, getWidth, parsePercent } from '../../contain/text';
 
 const STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
 
@@ -352,7 +352,7 @@ export function parseRichText(text: string, style: TextStyleProps) {
     const truncate = overflow === 'truncate';
     const truncateLine = style.lineOverflow === 'truncate';
 
-    let prevToken: RichTextToken;
+    // let prevToken: RichTextToken;
 
     function finishLine(line: RichTextLine, lineWidth: number, lineHeight: number) {
         line.width = lineWidth;
@@ -463,7 +463,7 @@ export function parseRichText(text: string, style: TextStyleProps) {
             lineWidth += token.width;
             tokenStyle && (lineHeight = Math.max(lineHeight, token.lineHeight));
 
-            prevToken = token;
+            // prevToken = token;
         }
 
         finishLine(line, lineWidth, lineHeight);
@@ -739,14 +739,4 @@ function wrapText(
         lines: lines,
         linesWidths
     };
-}
-
-function parsePercent(value: string | number, maxValue: number) {
-    if (typeof value === 'string') {
-        if (value.lastIndexOf('%') >= 0) {
-            return parseFloat(value) / 100 * maxValue;
-        }
-        return parseFloat(value);
-    }
-    return value;
 }

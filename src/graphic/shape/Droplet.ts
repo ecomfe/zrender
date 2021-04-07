@@ -4,14 +4,14 @@
 
 import Path, { PathProps } from '../Path';
 
-class DropletShape {
+export class DropletShape {
     cx = 0
     cy = 0
     width = 0
     height = 0
 }
 
-interface DropletProps extends PathProps {
+export interface DropletProps extends PathProps {
     shape?: Partial<DropletShape>
 }
 class Droplet extends Path<DropletProps> {

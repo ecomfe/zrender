@@ -6,7 +6,6 @@ export interface RadialGradientObject extends GradientObject {
     x: number
     y: number
     r: number
-    global: boolean
 }
 /**
  * x, y, r are all percent from 0 to 1 when globalCoord is false
@@ -18,7 +17,6 @@ class RadialGradient extends Gradient {
     x: number
     y: number
     r: number
-    global: boolean
 
     constructor(
         x: number, y: number, r: number,

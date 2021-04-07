@@ -64,7 +64,10 @@ export function createCanvasPattern(
     const image = createOrUpdateImage(pattern.image, pattern.__image, el);
     if (isImageReady(image)) {
         const canvasPattern = ctx.createPattern(image, pattern.repeat || 'repeat');
-        if (typeof DOMMatrix === 'function') {
+        if (
+            typeof DOMMatrix === 'function'
+            && canvasPattern.setTransform   // setTransform may not be supported in some old devices.
+        ) {
             const matrix = new DOMMatrix();
             matrix.rotateSelf(0, 0, (pattern.rotation || 0) / Math.PI * 180);
             matrix.scaleSelf((pattern.scaleX || 1), (pattern.scaleY || 1));
@@ -399,7 +402,9 @@ function bindCommonProps(
             flushPathDrawn(ctx, scope);
             styleChanged = true;
         }
-        ctx.globalAlpha = style.opacity == null ? DEFAULT_COMMON_STYLE.opacity : style.opacity;
+        // Ensure opacity is between 0 ~ 1. Invalid opacity will lead to a failure set and use the leaked opacity from the previous.
+        const opacity = Math.max(Math.min(style.opacity, 1), 0);
+        ctx.globalAlpha = isNaN(opacity) ? DEFAULT_COMMON_STYLE.opacity : opacity;
     }
 
     if (forceSetAll || style.blend !== prevStyle.blend) {

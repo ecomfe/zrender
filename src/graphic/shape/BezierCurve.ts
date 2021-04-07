@@ -15,7 +15,7 @@ import {
 
 const out: number[] = [];
 
-class BezierCurveShape {
+export class BezierCurveShape {
     x1 = 0
     y1 = 0
     x2 = 0
@@ -45,7 +45,7 @@ function someVectorAt(shape: BezierCurveShape, t: number, isTangent: boolean) {
     }
 }
 
-interface BezierCurveProps extends PathProps {
+export interface BezierCurveProps extends PathProps {
     shape?: Partial<BezierCurveShape>
 }
 class BezierCurve extends Path<BezierCurveProps> {

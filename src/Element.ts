@@ -672,15 +672,15 @@ class Element<Props extends ElementProps = ElementProps> {
         return true;
     }
 
-    protected getInsideTextFill(): string {
+    protected getInsideTextFill(): string | undefined {
         return '#fff';
     }
 
-    protected getInsideTextStroke(textFill: string): string {
+    protected getInsideTextStroke(textFill: string): string | undefined {
         return '#000';
     }
 
-    protected getOutsideFill() {
+    protected getOutsideFill(): string | undefined {
         return this.__zr && this.__zr.isDarkMode() ? LIGHT_LABEL_COLOR : DARK_LABEL_COLOR;
     }
 
@@ -1298,6 +1298,14 @@ class Element<Props extends ElementProps = ElementProps> {
             this.textConfig = {};
         }
         extend(this.textConfig, cfg);
+        this.markRedraw();
+    }
+
+    /**
+     * Remove text config
+     */
+    removeTextConfig() {
+        this.textConfig = null;
         this.markRedraw();
     }
 

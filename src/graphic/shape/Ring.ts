@@ -4,14 +4,14 @@
 
 import Path, { PathProps } from '../Path';
 
-class RingShape {
+export class RingShape {
     cx = 0
     cy = 0
     r = 0
     r0 = 0
 }
 
-interface RingProps extends PathProps {
+export interface RingProps extends PathProps {
     shape?: Partial<RingShape>
 }
 class Ring extends Path<RingProps> {

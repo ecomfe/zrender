@@ -4,13 +4,13 @@
 
 import Path, { PathProps } from '../Path';
 
-class CircleShape {
+export class CircleShape {
     cx = 0
     cy = 0
     r = 0
 }
 
-interface CircleProps extends PathProps {
+export interface CircleProps extends PathProps {
     shape?: Partial<CircleShape>
 }
 class Circle extends Path<CircleProps> {

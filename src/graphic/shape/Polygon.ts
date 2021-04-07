@@ -7,13 +7,13 @@ import Path, { PathProps } from '../Path';
 import * as polyHelper from '../helper/poly';
 import { VectorArray } from '../../core/vector';
 
-class PolygonShape {
+export class PolygonShape {
     points: VectorArray[] = null
     smooth?: number | 'spline' = 0
     smoothConstraint?: VectorArray[] = null
 }
 
-interface PolygonProps extends PathProps {
+export interface PolygonProps extends PathProps {
     shape?: Partial<PolygonShape>
 }
 class Polygon extends Path<PolygonProps> {

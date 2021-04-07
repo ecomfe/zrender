@@ -7,6 +7,10 @@ export interface GradientObject {
 
     colorStops: GradientColorStop[]
 
+    global: boolean
+}
+
+export interface InnerGradientObject extends GradientObject {
     __canvasGradient: CanvasGradient
 }
 
@@ -23,7 +27,7 @@ export default class Gradient {
 
     colorStops: GradientColorStop[]
 
-    __canvasGradient: CanvasGradient
+    global: boolean
 
     constructor(colorStops: GradientColorStop[]) {
         this.colorStops = colorStops || [];
