@@ -402,7 +402,9 @@ function bindCommonProps(
             flushPathDrawn(ctx, scope);
             styleChanged = true;
         }
-        ctx.globalAlpha = style.opacity == null ? DEFAULT_COMMON_STYLE.opacity : style.opacity;
+        // Ensure opacity is between 0 ~ 1. Invalid opacity will lead to a failure set and use the leaked opacity from the previous.
+        const opacity = Math.max(Math.min(style.opacity, 1), 0);
+        ctx.globalAlpha = isNaN(opacity) ? DEFAULT_COMMON_STYLE.opacity : opacity;
     }
 
     if (forceSetAll || style.blend !== prevStyle.blend) {
