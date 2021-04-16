@@ -22,6 +22,7 @@ jobs:
           registry-url: https://registry.npmjs.org/
       - name: Setup and publish nightly
         run: |
+          npm ci
           npm run release
           npm run prepare:nightly
           npm publish --tag dev
