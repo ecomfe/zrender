@@ -25,6 +25,8 @@
             this.touchEventsSupported = false;
             this.pointerEventsSupported = false;
             this.domSupported = false;
+            this.transformSupported = false;
+            this.transform3dSupported = false;
         }
         return Env;
     }());
@@ -75,6 +77,14 @@
         env.pointerEventsSupported = 'onpointerdown' in window
             && (browser.edge || (browser.ie && +browser.version >= 11));
         env.domSupported = typeof document !== 'undefined';
+        var style = document.documentElement.style;
+        env.transform3dSupported = ((browser.ie && 'transition' in style)
+            || browser.edge
+            || (('WebKitCSSMatrix' in window) && ('m11' in new WebKitCSSMatrix()))
+            || 'MozPerspective' in style)
+            && !('OTransition' in style);
+        env.transformSupported = env.transform3dSupported
+            || (browser.ie && +browser.version >= 9);
     }
 
     var BUILTIN_OBJECT = {
@@ -2929,7 +2939,7 @@
                             this.interpolable = false;
                         }
                     }
-                    else if (typeof value !== 'number') {
+                    else if (typeof value !== 'number' || isNaN(value)) {
                         this.interpolable = false;
                         return;
                     }
@@ -4546,6 +4556,10 @@
                 this.textConfig = {};
             }
             extend(this.textConfig, cfg);
+            this.markRedraw();
+        };
+        Element.prototype.removeTextConfig = function () {
+            this.textConfig = null;
             this.markRedraw();
         };
         Element.prototype.removeTextContent = function () {
@@ -6506,7 +6520,7 @@
     function registerPainter(name, Ctor) {
         painterCtors[name] = Ctor;
     }
-    var version = '5.0.4';
+    var version = '5.1.0';
 
     var STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
     var DEFAULT_COMMON_STYLE = {
@@ -9874,6 +9888,20 @@
         return LinearGradient;
     }(Gradient));
 
+    var RadialGradient = (function (_super) {
+        __extends(RadialGradient, _super);
+        function RadialGradient(x, y, r, colorStops, globalCoord) {
+            var _this = _super.call(this, colorStops) || this;
+            _this.x = x == null ? 0.5 : x;
+            _this.y = y == null ? 0.5 : y;
+            _this.r = r == null ? 0.5 : r;
+            _this.type = 'radial';
+            _this.global = globalCoord || false;
+            return _this;
+        }
+        return RadialGradient;
+    }(Gradient));
+
     var DEFAULT_TSPAN_STYLE = defaults({
         strokeFirst: true,
         font: DEFAULT_FONT,
@@ -9946,14 +9974,37 @@
         return svgNode;
     }
 
-    var DILIMITER_REG = /[\s,]+/;
     var nodeParsers;
+    var INHERITABLE_STYLE_ATTRIBUTES_MAP = {
+        'fill': 'fill',
+        'stroke': 'stroke',
+        'stroke-width': 'lineWidth',
+        'opacity': 'opacity',
+        'fill-opacity': 'fillOpacity',
+        'stroke-opacity': 'strokeOpacity',
+        'stroke-dasharray': 'lineDash',
+        'stroke-dashoffset': 'lineDashOffset',
+        'stroke-linecap': 'lineCap',
+        'stroke-linejoin': 'lineJoin',
+        'stroke-miterlimit': 'miterLimit',
+        'font-family': 'fontFamily',
+        'font-size': 'fontSize',
+        'font-style': 'fontStyle',
+        'font-weight': 'fontWeight',
+        'text-anchor': 'textAlign',
+        'visibility': 'visibility',
+        'display': 'display'
+    };
+    var INHERITABLE_STYLE_ATTRIBUTES_MAP_KEYS = keys(INHERITABLE_STYLE_ATTRIBUTES_MAP);
+    var SELF_STYLE_ATTRIBUTES_MAP = {
+        'alignment-baseline': 'textBaseline',
+        'stop-color': 'stopColor'
+    };
+    var SELF_STYLE_ATTRIBUTES_MAP_KEYS = keys(SELF_STYLE_ATTRIBUTES_MAP);
     var SVGParser = (function () {
         function SVGParser() {
             this._defs = {};
             this._root = null;
-            this._isDefine = false;
-            this._isText = false;
         }
         SVGParser.prototype.parse = function (xml, opt) {
             opt = opt || {};
@@ -9961,23 +10012,27 @@
             if (!svg) {
                 throw new Error('Illegal svg');
             }
+            this._defsUsePending = [];
             var root = new Group();
             this._root = root;
+            var named = [];
             var viewBox = svg.getAttribute('viewBox') || '';
             var width = parseFloat((svg.getAttribute('width') || opt.width));
             var height = parseFloat((svg.getAttribute('height') || opt.height));
             isNaN(width) && (width = null);
             isNaN(height) && (height = null);
-            parseAttributes(svg, root, null, true);
+            parseAttributes(svg, root, null, true, false);
             var child = svg.firstChild;
             while (child) {
-                this._parseNode(child, root);
+                this._parseNode(child, root, named, null, false, false);
                 child = child.nextSibling;
             }
+            applyDefs(this._defs, this._defsUsePending);
+            this._defsUsePending = [];
             var viewBoxRect;
             var viewBoxTransform;
             if (viewBox) {
-                var viewBoxArr = trim(viewBox).split(DILIMITER_REG);
+                var viewBoxArr = splitNumberSequence(viewBox);
                 if (viewBoxArr.length >= 4) {
                     viewBoxRect = {
                         x: parseFloat((viewBoxArr[0] || 0)),
@@ -9988,7 +10043,7 @@
                 }
             }
             if (viewBoxRect && width != null && height != null) {
-                viewBoxTransform = makeViewBoxTransform(viewBoxRect, width, height);
+                viewBoxTransform = makeViewBoxTransform(viewBoxRect, { x: 0, y: 0, width: width, height: height });
                 if (!opt.ignoreViewBox) {
                     var elRoot = root;
                     root = new Group();
@@ -10008,21 +10063,54 @@
                 width: width,
                 height: height,
                 viewBoxRect: viewBoxRect,
-                viewBoxTransform: viewBoxTransform
+                viewBoxTransform: viewBoxTransform,
+                named: named
             };
         };
-        SVGParser.prototype._parseNode = function (xmlNode, parentGroup) {
+        SVGParser.prototype._parseNode = function (xmlNode, parentGroup, named, namedFrom, isInDefs, isInText) {
             var nodeName = xmlNode.nodeName.toLowerCase();
-            if (nodeName === 'defs') {
-                this._isDefine = true;
-            }
-            else if (nodeName === 'text') {
-                this._isText = true;
-            }
             var el;
-            if (this._isDefine) {
-                var parser = defineParsers[nodeName];
-                if (parser) {
+            var namedFromForSub = namedFrom;
+            if (nodeName === 'defs') {
+                isInDefs = true;
+            }
+            if (nodeName === 'text') {
+                isInText = true;
+            }
+            if (nodeName === 'defs' || nodeName === 'switch') {
+                el = parentGroup;
+            }
+            else {
+                if (!isInDefs) {
+                    var parser_1 = nodeParsers[nodeName];
+                    if (parser_1 && hasOwn(nodeParsers, nodeName)) {
+                        el = parser_1.call(this, xmlNode, parentGroup);
+                        var nameAttr = xmlNode.getAttribute('name');
+                        if (nameAttr) {
+                            var newNamed = {
+                                name: nameAttr,
+                                namedFrom: null,
+                                svgNodeTagLower: nodeName,
+                                el: el
+                            };
+                            named.push(newNamed);
+                            if (nodeName === 'g') {
+                                namedFromForSub = newNamed;
+                            }
+                        }
+                        else if (namedFrom) {
+                            named.push({
+                                name: namedFrom.name,
+                                namedFrom: namedFrom,
+                                svgNodeTagLower: nodeName,
+                                el: el
+                            });
+                        }
+                        parentGroup.add(el);
+                    }
+                }
+                var parser = paintServerParsers[nodeName];
+                if (parser && hasOwn(paintServerParsers, nodeName)) {
                     var def = parser.call(this, xmlNode);
                     var id = xmlNode.getAttribute('id');
                     if (id) {
@@ -10030,48 +10118,31 @@
                     }
                 }
             }
-            else {
-                var parser = nodeParsers[nodeName];
-                if (parser) {
-                    el = parser.call(this, xmlNode, parentGroup);
-                    parentGroup.add(el);
-                }
-            }
-            if (el) {
+            if (el && el.isGroup) {
                 var child = xmlNode.firstChild;
                 while (child) {
                     if (child.nodeType === 1) {
-                        this._parseNode(child, el);
+                        this._parseNode(child, el, named, namedFromForSub, isInDefs, isInText);
                     }
-                    if (child.nodeType === 3 && this._isText) {
+                    else if (child.nodeType === 3 && isInText) {
                         this._parseText(child, el);
                     }
                     child = child.nextSibling;
                 }
             }
-            if (nodeName === 'defs') {
-                this._isDefine = false;
-            }
-            else if (nodeName === 'text') {
-                this._isText = false;
-            }
         };
         SVGParser.prototype._parseText = function (xmlNode, parentGroup) {
-            if (xmlNode.nodeType === 1) {
-                var dx = xmlNode.getAttribute('dx') || 0;
-                var dy = xmlNode.getAttribute('dy') || 0;
-                this._textX += parseFloat(dx);
-                this._textY += parseFloat(dy);
-            }
             var text = new TSpan({
                 style: {
                     text: xmlNode.textContent
                 },
+                silent: true,
                 x: this._textX || 0,
                 y: this._textY || 0
             });
             inheritStyle(parentGroup, text);
-            parseAttributes(xmlNode, text, this._defs);
+            parseAttributes(xmlNode, text, this._defsUsePending, false, false);
+            applyTextAlignment(text, parentGroup);
             var textStyle = text.style;
             var fontSize = textStyle.fontSize;
             if (fontSize && fontSize < 9) {
@@ -10096,54 +10167,58 @@
                 'g': function (xmlNode, parentGroup) {
                     var g = new Group();
                     inheritStyle(parentGroup, g);
-                    parseAttributes(xmlNode, g, this._defs);
+                    parseAttributes(xmlNode, g, this._defsUsePending, false, false);
                     return g;
                 },
                 'rect': function (xmlNode, parentGroup) {
                     var rect = new Rect();
                     inheritStyle(parentGroup, rect);
-                    parseAttributes(xmlNode, rect, this._defs);
+                    parseAttributes(xmlNode, rect, this._defsUsePending, false, false);
                     rect.setShape({
                         x: parseFloat(xmlNode.getAttribute('x') || '0'),
                         y: parseFloat(xmlNode.getAttribute('y') || '0'),
                         width: parseFloat(xmlNode.getAttribute('width') || '0'),
                         height: parseFloat(xmlNode.getAttribute('height') || '0')
                     });
+                    rect.silent = true;
                     return rect;
                 },
                 'circle': function (xmlNode, parentGroup) {
                     var circle = new Circle();
                     inheritStyle(parentGroup, circle);
-                    parseAttributes(xmlNode, circle, this._defs);
+                    parseAttributes(xmlNode, circle, this._defsUsePending, false, false);
                     circle.setShape({
                         cx: parseFloat(xmlNode.getAttribute('cx') || '0'),
                         cy: parseFloat(xmlNode.getAttribute('cy') || '0'),
                         r: parseFloat(xmlNode.getAttribute('r') || '0')
                     });
+                    circle.silent = true;
                     return circle;
                 },
                 'line': function (xmlNode, parentGroup) {
                     var line = new Line();
                     inheritStyle(parentGroup, line);
-                    parseAttributes(xmlNode, line, this._defs);
+                    parseAttributes(xmlNode, line, this._defsUsePending, false, false);
                     line.setShape({
                         x1: parseFloat(xmlNode.getAttribute('x1') || '0'),
                         y1: parseFloat(xmlNode.getAttribute('y1') || '0'),
                         x2: parseFloat(xmlNode.getAttribute('x2') || '0'),
                         y2: parseFloat(xmlNode.getAttribute('y2') || '0')
                     });
+                    line.silent = true;
                     return line;
                 },
                 'ellipse': function (xmlNode, parentGroup) {
                     var ellipse = new Ellipse();
                     inheritStyle(parentGroup, ellipse);
-                    parseAttributes(xmlNode, ellipse, this._defs);
+                    parseAttributes(xmlNode, ellipse, this._defsUsePending, false, false);
                     ellipse.setShape({
                         cx: parseFloat(xmlNode.getAttribute('cx') || '0'),
                         cy: parseFloat(xmlNode.getAttribute('cy') || '0'),
                         rx: parseFloat(xmlNode.getAttribute('rx') || '0'),
                         ry: parseFloat(xmlNode.getAttribute('ry') || '0')
                     });
+                    ellipse.silent = true;
                     return ellipse;
                 },
                 'polygon': function (xmlNode, parentGroup) {
@@ -10155,16 +10230,14 @@
                     var polygon = new Polygon({
                         shape: {
                             points: pointsArr || []
-                        }
+                        },
+                        silent: true
                     });
                     inheritStyle(parentGroup, polygon);
-                    parseAttributes(xmlNode, polygon, this._defs);
+                    parseAttributes(xmlNode, polygon, this._defsUsePending, false, false);
                     return polygon;
                 },
                 'polyline': function (xmlNode, parentGroup) {
-                    var path = new Path();
-                    inheritStyle(parentGroup, path);
-                    parseAttributes(xmlNode, path, this._defs);
                     var pointsStr = xmlNode.getAttribute('points');
                     var pointsArr;
                     if (pointsStr) {
@@ -10173,14 +10246,17 @@
                     var polyline = new Polyline({
                         shape: {
                             points: pointsArr || []
-                        }
+                        },
+                        silent: true
                     });
+                    inheritStyle(parentGroup, polyline);
+                    parseAttributes(xmlNode, polyline, this._defsUsePending, false, false);
                     return polyline;
                 },
                 'image': function (xmlNode, parentGroup) {
                     var img = new ZRImage();
                     inheritStyle(parentGroup, img);
-                    parseAttributes(xmlNode, img, this._defs);
+                    parseAttributes(xmlNode, img, this._defsUsePending, false, false);
                     img.setStyle({
                         image: xmlNode.getAttribute('xlink:href'),
                         x: +xmlNode.getAttribute('x'),
@@ -10188,6 +10264,7 @@
                         width: +xmlNode.getAttribute('width'),
                         height: +xmlNode.getAttribute('height')
                     });
+                    img.silent = true;
                     return img;
                 },
                 'text': function (xmlNode, parentGroup) {
@@ -10199,7 +10276,7 @@
                     this._textY = parseFloat(y) + parseFloat(dy);
                     var g = new Group();
                     inheritStyle(parentGroup, g);
-                    parseAttributes(xmlNode, g, this._defs);
+                    parseAttributes(xmlNode, g, this._defsUsePending, false, true);
                     return g;
                 },
                 'tspan': function (xmlNode, parentGroup) {
@@ -10211,44 +10288,62 @@
                     if (y != null) {
                         this._textY = parseFloat(y);
                     }
-                    var dx = xmlNode.getAttribute('dx') || 0;
-                    var dy = xmlNode.getAttribute('dy') || 0;
+                    var dx = xmlNode.getAttribute('dx') || '0';
+                    var dy = xmlNode.getAttribute('dy') || '0';
                     var g = new Group();
                     inheritStyle(parentGroup, g);
-                    parseAttributes(xmlNode, g, this._defs);
-                    this._textX += dx;
-                    this._textY += dy;
+                    parseAttributes(xmlNode, g, this._defsUsePending, false, true);
+                    this._textX += parseFloat(dx);
+                    this._textY += parseFloat(dy);
                     return g;
                 },
                 'path': function (xmlNode, parentGroup) {
                     var d = xmlNode.getAttribute('d') || '';
                     var path = createFromString(d);
                     inheritStyle(parentGroup, path);
-                    parseAttributes(xmlNode, path, this._defs);
+                    parseAttributes(xmlNode, path, this._defsUsePending, false, false);
+                    path.silent = true;
                     return path;
                 }
             };
         })();
         return SVGParser;
     }());
-    var defineParsers = {
+    var paintServerParsers = {
         'lineargradient': function (xmlNode) {
             var x1 = parseInt(xmlNode.getAttribute('x1') || '0', 10);
             var y1 = parseInt(xmlNode.getAttribute('y1') || '0', 10);
             var x2 = parseInt(xmlNode.getAttribute('x2') || '10', 10);
             var y2 = parseInt(xmlNode.getAttribute('y2') || '0', 10);
             var gradient = new LinearGradient(x1, y1, x2, y2);
-            _parseGradientColorStops(xmlNode, gradient);
+            parsePaintServerUnit(xmlNode, gradient);
+            parseGradientColorStops(xmlNode, gradient);
+            return gradient;
+        },
+        'radialgradient': function (xmlNode) {
+            var cx = parseInt(xmlNode.getAttribute('cx') || '0', 10);
+            var cy = parseInt(xmlNode.getAttribute('cy') || '0', 10);
+            var r = parseInt(xmlNode.getAttribute('r') || '0', 10);
+            var gradient = new RadialGradient(cx, cy, r);
+            parsePaintServerUnit(xmlNode, gradient);
+            parseGradientColorStops(xmlNode, gradient);
             return gradient;
         }
     };
-    function _parseGradientColorStops(xmlNode, gradient) {
+    function parsePaintServerUnit(xmlNode, gradient) {
+        var gradientUnits = xmlNode.getAttribute('gradientUnits');
+        if (gradientUnits === 'userSpaceOnUse') {
+            gradient.global = true;
+        }
+    }
+    function parseGradientColorStops(xmlNode, gradient) {
         var stop = xmlNode.firstChild;
         while (stop) {
-            if (stop.nodeType === 1) {
+            if (stop.nodeType === 1
+                && stop.nodeName.toLocaleLowerCase() === 'stop') {
                 var offsetStr = stop.getAttribute('offset');
                 var offset = void 0;
-                if (offsetStr.indexOf('%') > 0) {
+                if (offsetStr && offsetStr.indexOf('%') > 0) {
                     offset = parseInt(offsetStr, 10) / 100;
                 }
                 else if (offsetStr) {
@@ -10257,7 +10352,11 @@
                 else {
                     offset = 0;
                 }
-                var stopColor = stop.getAttribute('stop-color') || '#000000';
+                var styleVals = {};
+                parseInlineStyle(stop, styleVals, styleVals);
+                var stopColor = styleVals.stopColor
+                    || stop.getAttribute('stop-color')
+                    || '#000000';
                 gradient.colorStops.push({
                     offset: offset,
                     color: stopColor
@@ -10275,7 +10374,7 @@
         }
     }
     function parsePoints(pointsString) {
-        var list = trim(pointsString).split(DILIMITER_REG);
+        var list = splitNumberSequence(pointsString);
         var points = [];
         for (var i = 0; i < list.length; i += 2) {
             var x = parseFloat(list[i]);
@@ -10284,91 +10383,119 @@
         }
         return points;
     }
-    var attributesMap = {
-        'fill': 'fill',
-        'stroke': 'stroke',
-        'stroke-width': 'lineWidth',
-        'opacity': 'opacity',
-        'fill-opacity': 'fillOpacity',
-        'stroke-opacity': 'strokeOpacity',
-        'stroke-dasharray': 'lineDash',
-        'stroke-dashoffset': 'lineDashOffset',
-        'stroke-linecap': 'lineCap',
-        'stroke-linejoin': 'lineJoin',
-        'stroke-miterlimit': 'miterLimit',
-        'font-family': 'fontFamily',
-        'font-size': 'fontSize',
-        'font-style': 'fontStyle',
-        'font-weight': 'fontWeight',
-        'text-align': 'textAlign',
-        'alignment-baseline': 'textBaseline'
-    };
-    function parseAttributes(xmlNode, el, defs, onlyInlineStyle) {
+    function parseAttributes(xmlNode, el, defsUsePending, onlyInlineStyle, isTextGroup) {
         var disp = el;
-        var zrStyle = disp.__inheritedStyle || {};
+        var inheritedStyle = disp.__inheritedStyle = disp.__inheritedStyle || {};
+        var selfStyle = {};
         if (xmlNode.nodeType === 1) {
             parseTransformAttribute(xmlNode, el);
-            extend(zrStyle, parseStyleAttribute(xmlNode));
+            parseInlineStyle(xmlNode, inheritedStyle, selfStyle);
             if (!onlyInlineStyle) {
-                for (var svgAttrName in attributesMap) {
-                    if (attributesMap.hasOwnProperty(svgAttrName)) {
-                        var attrValue = xmlNode.getAttribute(svgAttrName);
-                        if (attrValue != null) {
-                            zrStyle[attributesMap[svgAttrName]] = attrValue;
-                        }
-                    }
-                }
+                parseAttributeStyle(xmlNode, inheritedStyle, selfStyle);
             }
         }
         disp.style = disp.style || {};
-        zrStyle.fill != null && (disp.style.fill = getPaint(zrStyle.fill, defs));
-        zrStyle.stroke != null && (disp.style.stroke = getPaint(zrStyle.stroke, defs));
+        if (inheritedStyle.fill != null) {
+            disp.style.fill = getFillStrokeStyle(disp, 'fill', inheritedStyle.fill, defsUsePending);
+        }
+        if (inheritedStyle.stroke != null) {
+            disp.style.stroke = getFillStrokeStyle(disp, 'stroke', inheritedStyle.stroke, defsUsePending);
+        }
         each([
             'lineWidth', 'opacity', 'fillOpacity', 'strokeOpacity', 'miterLimit', 'fontSize'
         ], function (propName) {
-            zrStyle[propName] != null && (disp.style[propName] = parseFloat(zrStyle[propName]));
+            if (inheritedStyle[propName] != null) {
+                disp.style[propName] = parseFloat(inheritedStyle[propName]);
+            }
         });
-        if (!zrStyle.textBaseline || zrStyle.textBaseline === 'auto') {
-            zrStyle.textBaseline = 'alphabetic';
-        }
-        if (zrStyle.textBaseline === 'alphabetic') {
-            zrStyle.textBaseline = 'bottom';
-        }
-        if (zrStyle.textAlign === 'start') {
-            zrStyle.textAlign = 'left';
-        }
-        if (zrStyle.textAlign === 'end') {
-            zrStyle.textAlign = 'right';
-        }
-        each(['lineDashOffset', 'lineCap', 'lineJoin',
-            'fontWeight', 'fontFamily', 'fontStyle', 'textAlign', 'textBaseline'
+        each([
+            'lineDashOffset', 'lineCap', 'lineJoin', 'fontWeight', 'fontFamily', 'fontStyle', 'textAlign'
         ], function (propName) {
-            zrStyle[propName] != null && (disp.style[propName] = zrStyle[propName]);
+            if (inheritedStyle[propName] != null) {
+                disp.style[propName] = inheritedStyle[propName];
+            }
         });
-        if (zrStyle.lineDash) {
-            disp.style.lineDash = map(trim(zrStyle.lineDash).split(DILIMITER_REG), function (str) {
+        if (isTextGroup) {
+            disp.__selfStyle = selfStyle;
+        }
+        if (inheritedStyle.lineDash) {
+            disp.style.lineDash = map(splitNumberSequence(inheritedStyle.lineDash), function (str) {
                 return parseFloat(str);
             });
         }
-        disp.__inheritedStyle = zrStyle;
+        if (inheritedStyle.visibility === 'hidden' || inheritedStyle.visibility === 'collapse') {
+            disp.invisible = true;
+        }
+        if (inheritedStyle.display === 'none') {
+            disp.ignore = true;
+        }
+        disp.z = -10000;
+        disp.z2 = -1000;
     }
-    var urlRegex = /url\(\s*#(.*?)\)/;
-    function getPaint(str, defs) {
-        var urlMatch = defs && str && str.match(urlRegex);
+    function applyTextAlignment(text, parentGroup) {
+        var parentSelfStyle = parentGroup.__selfStyle;
+        if (parentSelfStyle) {
+            var textBaseline = parentSelfStyle.textBaseline;
+            var zrTextBaseline = textBaseline;
+            if (!textBaseline || textBaseline === 'auto') {
+                zrTextBaseline = 'alphabetic';
+            }
+            else if (textBaseline === 'baseline') {
+                zrTextBaseline = 'alphabetic';
+            }
+            else if (textBaseline === 'before-edge' || textBaseline === 'text-before-edge') {
+                zrTextBaseline = 'top';
+            }
+            else if (textBaseline === 'after-edge' || textBaseline === 'text-after-edge') {
+                zrTextBaseline = 'bottom';
+            }
+            else if (textBaseline === 'central' || textBaseline === 'mathematical') {
+                zrTextBaseline = 'middle';
+            }
+            text.style.textBaseline = zrTextBaseline;
+        }
+        var parentInheritedStyle = parentGroup.__inheritedStyle;
+        if (parentInheritedStyle) {
+            var textAlign = parentInheritedStyle.textAlign;
+            var zrTextAlign = textAlign;
+            if (textAlign) {
+                if (textAlign === 'middle') {
+                    zrTextAlign = 'center';
+                }
+                text.style.textAlign = zrTextAlign;
+            }
+        }
+    }
+    var urlRegex = /^url\(\s*#(.*?)\)/;
+    function getFillStrokeStyle(el, method, str, defsUsePending) {
+        var urlMatch = str && str.match(urlRegex);
         if (urlMatch) {
             var url = trim(urlMatch[1]);
-            var def = defs[url];
-            return def;
+            defsUsePending.push([el, method, url]);
+            return;
+        }
+        if (str === 'none') {
+            str = null;
         }
         return str;
     }
-    var transformRegex = /(translate|scale|rotate|skewX|skewY|matrix)\(([\-\s0-9\.e,]*)\)/g;
+    function applyDefs(defs, defsUsePending) {
+        for (var i = 0; i < defsUsePending.length; i++) {
+            var item = defsUsePending[i];
+            item[0].style[item[1]] = defs[item[2]];
+        }
+    }
+    var numberReg$1 = /-?([0-9]*\.)?[0-9]+([eE]-?[0-9]+)?/g;
+    function splitNumberSequence(rawStr) {
+        return rawStr.match(numberReg$1) || [];
+    }
+    var transformRegex = /(translate|scale|rotate|skewX|skewY|matrix)\(([\-\s0-9\.eE,]*)\)/g;
     function parseTransformAttribute(xmlNode, node) {
         var transform = xmlNode.getAttribute('transform');
         if (transform) {
             transform = transform.replace(/,/g, ' ');
             var transformOps_1 = [];
-            var m = null;
+            var mt = null;
             transform.replace(transformRegex, function (str, type, value) {
                 transformOps_1.push(type, value);
                 return '';
@@ -10377,66 +10504,86 @@
                 var value = transformOps_1[i];
                 var type = transformOps_1[i - 1];
                 var valueArr = void 0;
-                m = m || create$1();
+                mt = mt || create$1();
                 switch (type) {
                     case 'translate':
-                        valueArr = trim(value).split(DILIMITER_REG);
-                        translate(m, m, [parseFloat(valueArr[0]), parseFloat(valueArr[1] || '0')]);
+                        valueArr = splitNumberSequence(value);
+                        translate(mt, mt, [parseFloat(valueArr[0]), parseFloat(valueArr[1] || '0')]);
                         break;
                     case 'scale':
-                        valueArr = trim(value).split(DILIMITER_REG);
-                        scale$1(m, m, [parseFloat(valueArr[0]), parseFloat(valueArr[1] || valueArr[0])]);
+                        valueArr = splitNumberSequence(value);
+                        scale$1(mt, mt, [parseFloat(valueArr[0]), parseFloat(valueArr[1] || valueArr[0])]);
                         break;
                     case 'rotate':
-                        valueArr = trim(value).split(DILIMITER_REG);
-                        rotate(m, m, parseFloat(valueArr[0]));
+                        valueArr = splitNumberSequence(value);
+                        rotate(mt, mt, -parseFloat(valueArr[0]) / 180 * Math.PI);
                         break;
                     case 'skew':
-                        valueArr = trim(value).split(DILIMITER_REG);
+                        valueArr = splitNumberSequence(value);
                         console.warn('Skew transform is not supported yet');
                         break;
                     case 'matrix':
-                        valueArr = trim(value).split(DILIMITER_REG);
-                        m[0] = parseFloat(valueArr[0]);
-                        m[1] = parseFloat(valueArr[1]);
-                        m[2] = parseFloat(valueArr[2]);
-                        m[3] = parseFloat(valueArr[3]);
-                        m[4] = parseFloat(valueArr[4]);
-                        m[5] = parseFloat(valueArr[5]);
+                        valueArr = splitNumberSequence(value);
+                        mt[0] = parseFloat(valueArr[0]);
+                        mt[1] = parseFloat(valueArr[1]);
+                        mt[2] = parseFloat(valueArr[2]);
+                        mt[3] = parseFloat(valueArr[3]);
+                        mt[4] = parseFloat(valueArr[4]);
+                        mt[5] = parseFloat(valueArr[5]);
                         break;
                 }
             }
-            node.setLocalTransform(m);
+            node.setLocalTransform(mt);
         }
     }
     var styleRegex = /([^\s:;]+)\s*:\s*([^:;]+)/g;
-    function parseStyleAttribute(xmlNode) {
+    function parseInlineStyle(xmlNode, inheritableStyleResult, selfStyleResult) {
         var style = xmlNode.getAttribute('style');
-        var result = {};
         if (!style) {
-            return result;
+            return;
         }
-        var styleList = {};
         styleRegex.lastIndex = 0;
         var styleRegResult;
         while ((styleRegResult = styleRegex.exec(style)) != null) {
-            styleList[styleRegResult[1]] = styleRegResult[2];
-        }
-        for (var svgAttrName in attributesMap) {
-            if (attributesMap.hasOwnProperty(svgAttrName) && styleList[svgAttrName] != null) {
-                result[attributesMap[svgAttrName]] = styleList[svgAttrName];
+            var svgStlAttr = styleRegResult[1];
+            var zrInheritableStlAttr = hasOwn(INHERITABLE_STYLE_ATTRIBUTES_MAP, svgStlAttr)
+                ? INHERITABLE_STYLE_ATTRIBUTES_MAP[svgStlAttr]
+                : null;
+            if (zrInheritableStlAttr) {
+                inheritableStyleResult[zrInheritableStlAttr] = styleRegResult[2];
+            }
+            var zrSelfStlAttr = hasOwn(SELF_STYLE_ATTRIBUTES_MAP, svgStlAttr)
+                ? SELF_STYLE_ATTRIBUTES_MAP[svgStlAttr]
+                : null;
+            if (zrSelfStlAttr) {
+                selfStyleResult[zrSelfStlAttr] = styleRegResult[2];
             }
         }
-        return result;
     }
-    function makeViewBoxTransform(viewBoxRect, width, height) {
-        var scaleX = width / viewBoxRect.width;
-        var scaleY = height / viewBoxRect.height;
+    function parseAttributeStyle(xmlNode, inheritableStyleResult, selfStyleResult) {
+        for (var i = 0; i < INHERITABLE_STYLE_ATTRIBUTES_MAP_KEYS.length; i++) {
+            var svgAttrName = INHERITABLE_STYLE_ATTRIBUTES_MAP_KEYS[i];
+            var attrValue = xmlNode.getAttribute(svgAttrName);
+            if (attrValue != null) {
+                inheritableStyleResult[INHERITABLE_STYLE_ATTRIBUTES_MAP[svgAttrName]] = attrValue;
+            }
+        }
+        for (var i = 0; i < SELF_STYLE_ATTRIBUTES_MAP_KEYS.length; i++) {
+            var svgAttrName = SELF_STYLE_ATTRIBUTES_MAP_KEYS[i];
+            var attrValue = xmlNode.getAttribute(svgAttrName);
+            if (attrValue != null) {
+                selfStyleResult[SELF_STYLE_ATTRIBUTES_MAP[svgAttrName]] = attrValue;
+            }
+        }
+    }
+    function makeViewBoxTransform(viewBoxRect, boundingRect) {
+        var scaleX = boundingRect.width / viewBoxRect.width;
+        var scaleY = boundingRect.height / viewBoxRect.height;
         var scale = Math.min(scaleX, scaleY);
         return {
             scale: scale,
-            x: -(viewBoxRect.x + viewBoxRect.width / 2) * scale + width / 2,
-            y: -(viewBoxRect.y + viewBoxRect.height / 2) * scale + height / 2
+            x: -(viewBoxRect.x + viewBoxRect.width / 2) * scale + (boundingRect.x + boundingRect.width / 2),
+            y: -(viewBoxRect.y + viewBoxRect.height / 2) * scale + (boundingRect.y + boundingRect.height / 2)
         };
     }
     function parseSVG(xml, opt) {
@@ -11610,7 +11757,7 @@
             var tokenPadding = tokenStyle.padding;
             var tokenPaddingH = tokenPadding ? tokenPadding[1] + tokenPadding[3] : 0;
             if (tokenStyle.width != null && tokenStyle.width !== 'auto') {
-                var outerWidth_1 = parsePercent$1(tokenStyle.width, wrapInfo.width) + tokenPaddingH;
+                var outerWidth_1 = parsePercent(tokenStyle.width, wrapInfo.width) + tokenPaddingH;
                 if (lines.length > 0) {
                     if (outerWidth_1 + wrapInfo.accumWidth > wrapInfo.width) {
                         strLines = str.split('\n');
@@ -11775,15 +11922,6 @@
             lines: lines,
             linesWidths: linesWidths
         };
-    }
-    function parsePercent$1(value, maxValue) {
-        if (typeof value === 'string') {
-            if (value.lastIndexOf('%') >= 0) {
-                return parseFloat(value) / 100 * maxValue;
-            }
-            return parseFloat(value);
-        }
-        return value;
     }
 
     var DEFAULT_RICH_TEXT_COLOR = {
@@ -12746,20 +12884,6 @@
     }(Path));
     Trochoid.prototype.type = 'trochoid';
 
-    var RadialGradient = (function (_super) {
-        __extends(RadialGradient, _super);
-        function RadialGradient(x, y, r, colorStops, globalCoord) {
-            var _this = _super.call(this, colorStops) || this;
-            _this.x = x == null ? 0.5 : x;
-            _this.y = y == null ? 0.5 : y;
-            _this.r = r == null ? 0.5 : r;
-            _this.type = 'radial';
-            _this.global = globalCoord || false;
-            return _this;
-        }
-        return RadialGradient;
-    }(Gradient));
-
     var Pattern = (function () {
         function Pattern(image, repeat) {
             this.image = image;
@@ -13081,7 +13205,8 @@
         var image = createOrUpdateImage(pattern.image, pattern.__image, el);
         if (isImageReady(image)) {
             var canvasPattern = ctx.createPattern(image, pattern.repeat || 'repeat');
-            if (typeof DOMMatrix === 'function') {
+            if (typeof DOMMatrix === 'function'
+                && canvasPattern.setTransform) {
                 var matrix = new DOMMatrix();
                 matrix.rotateSelf(0, 0, (pattern.rotation || 0) / Math.PI * 180);
                 matrix.scaleSelf((pattern.scaleX || 1), (pattern.scaleY || 1));
@@ -13324,7 +13449,8 @@
                 flushPathDrawn(ctx, scope);
                 styleChanged = true;
             }
-            ctx.globalAlpha = style.opacity == null ? DEFAULT_COMMON_STYLE.opacity : style.opacity;
+            var opacity = Math.max(Math.min(style.opacity, 1), 0);
+            ctx.globalAlpha = isNaN(opacity) ? DEFAULT_COMMON_STYLE.opacity : opacity;
         }
         if (forceSetAll || style.blend !== prevStyle.blend) {
             if (!styleChanged) {
@@ -15937,36 +16063,6 @@
             shadowManager.removeUnused();
             this._visibleList = newVisibleList;
         };
-        SVGPainter.prototype._getDefs = function (isForceCreating) {
-            var svgRoot = this._svgDom;
-            var defs = svgRoot.getElementsByTagName('defs');
-            if (defs.length === 0) {
-                if (isForceCreating) {
-                    var defs_1 = svgRoot.insertBefore(createElement('defs'), svgRoot.firstChild);
-                    if (!defs_1.contains) {
-                        defs_1.contains = function (el) {
-                            var children = defs_1.children;
-                            if (!children) {
-                                return false;
-                            }
-                            for (var i = children.length - 1; i >= 0; --i) {
-                                if (children[i] === el) {
-                                    return true;
-                                }
-                            }
-                            return false;
-                        };
-                    }
-                    return defs_1;
-                }
-                else {
-                    return null;
-                }
-            }
-            else {
-                return defs[0];
-            }
-        };
         SVGPainter.prototype.resize = function (width, height) {
             var viewport = this._viewport;
             viewport.style.display = 'none';
@@ -16048,35 +16144,51 @@
     registerPainter('svg', SVGPainter);
 
     exports.Arc = Arc;
+    exports.ArcShape = ArcShape;
     exports.BezierCurve = BezierCurve;
+    exports.BezierCurveShape = BezierCurveShape;
     exports.BoundingRect = BoundingRect;
     exports.Circle = Circle;
+    exports.CircleShape = CircleShape;
     exports.CompoundPath = CompoundPath;
     exports.Droplet = Droplet;
+    exports.DropletShape = DropletShape;
     exports.Element = Element;
     exports.Ellipse = Ellipse;
+    exports.EllipseShape = EllipseShape;
     exports.Group = Group;
     exports.Heart = Heart;
+    exports.HeartShape = HeartShape;
     exports.Image = ZRImage;
     exports.IncrementalDisplayable = IncrementalDisplayable;
     exports.Isogon = Isogon;
+    exports.IsogonShape = IsogonShape;
     exports.Line = Line;
+    exports.LineShape = LineShape;
     exports.LinearGradient = LinearGradient;
     exports.OrientedBoundingRect = OrientedBoundingRect;
     exports.Path = Path;
     exports.Pattern = Pattern;
     exports.Point = Point;
     exports.Polygon = Polygon;
+    exports.PolygonShape = PolygonShape;
     exports.Polyline = Polyline;
+    exports.PolylineShape = PolylineShape;
     exports.RadialGradient = RadialGradient;
     exports.Rect = Rect;
+    exports.RectShape = RectShape;
     exports.Ring = Ring;
+    exports.RingShape = RingShape;
     exports.Rose = Rose;
+    exports.RoseShape = RoseShape;
     exports.Sector = Sector;
+    exports.SectorShape = SectorShape;
     exports.Star = Star;
+    exports.StarShape = StarShape;
     exports.TSpan = TSpan;
     exports.Text = ZRText;
     exports.Trochoid = Trochoid;
+    exports.TrochoidShape = TrochoidShape;
     exports.color = color;
     exports.dispose = dispose;
     exports.disposeAll = disposeAll;
