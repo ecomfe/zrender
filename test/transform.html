@@ -23,12 +23,12 @@
         .block {
             width: 800px;
             height: 120px;
-            left: 10px;
-            top: 10px;
+            margin-left: 10px;
         }
         h4 {
             line-height: 1.5;
-            margin: 10px;
+            margin: 0;
+            padding-left: 10px;
         }
 
         #controller {
@@ -51,6 +51,16 @@
             vertical-align: middle;
             text-align: right;
         }
+        .order-item {
+            display: inline-block;
+            vertical-align: middle;
+            border: 1px solid #000;
+            background-color: #ddd;
+            padding: 3px;
+            margin: 3px;
+            cursor: pointer;
+            user-select: none;
+        }
     </style>
 
 
@@ -58,6 +68,7 @@
 
     <div id="controller">
         <div id="transform_matrix"></div>
+        <hr/>
         <div class="controller-line">
             scale x
             <input id="scale_x_range" class="range" type="range" min="-2" max="2" step="0.1" value="1">
@@ -93,6 +104,26 @@
             <input id="rotate_range" class="range" type="range" min="-180" max="180" step="1" value="0">
             <span id="rotate_value" class="range-value"></span>
         </div>
+        <br/>
+        <div>
+            Drag to change order:<br>
+            1 <span id="drop_zone_1"><span id="order_translate" draggable="true" class="order-item">translate</span></span>
+            2 <span id="drop_zone_2"><span id="order_rotate" draggable="true" class="order-item">rotate</span></span>
+            3 <span id="drop_zone_3"><span id="order_skew" draggable="true" class="order-item">skew</span></span>
+            4 <span id="drop_zone_4"><span id="order_scale" draggable="true" class="order-item">scale</span></span>
+        </div>
+        <br/>
+        <hr/>
+        <div>
+            Test Cases:<br>
+            <ol>
+                <li>scale x and scale y has different sign</li>
+                <li>skew</li>
+                <li>0 1 1 0 100 100</li>
+            </ol>
+        </div>
+
+        </div>
     </div>
 
     <div id="convert_to_transform"></div>
@@ -109,13 +140,31 @@
         class="block"
         style="background: #eee;"
         >
-    <text id="svgText"
+    <text id="svgText_matrix"
         fill="orange"
         x="0"
         y="0"
         text-anchor="middle"
         alignment-baseline="middle",
-        font-family="'Arial'" font-size="70">4</text>
+        font-family="Arial" font-size="70">4</text>
+    </svg>
+
+    <h4>SVG transform: method(...) method(...)</h4>
+    <svg id="svg_method" xmlns="http://www.w3.org/2000/svg"
+        xmlns:ooo="http://xml.openoffice.org/svg/export"
+        xmlns:xlink="http://www.w3.org/1999/xlink"
+        version="1.2"
+        fill-rule="evenodd" xml:space="preserve"
+        class="block"
+        style="background: #eee;"
+        >
+    <text id="svgText_method"
+        fill="orange"
+        x="0"
+        y="0"
+        text-anchor="middle"
+        alignment-baseline="middle",
+        font-family="Arial" font-size="70">4</text>
     </svg>
 
     <h4>Raw HTML Cavas setTransform</h4>
@@ -129,6 +178,10 @@
 
     <h4>ZRender parseSVG with transform: matrix(...)</h4>
     <div id="zr_parseSVG_matrix" class="block" style="
+    "></div>
+
+    <h4>ZRender parseSVG with transform: method(...) method(...)</h4>
+    <div id="zr_parseSVG_method" class="block" style="
     "></div>
 
 
@@ -155,13 +208,83 @@
 
             const matrixDom = document.getElementById('transform_matrix');
 
-            scaleXRangeDom.addEventListener('input', update);
-            scaleYRangeDom.addEventListener('input', update);
-            translateXRangeDom.addEventListener('input', update);
-            translateYRangeDom.addEventListener('input', update);
-            skewXRangeDom.addEventListener('input', update);
-            skewYRangeDom.addEventListener('input', update);
-            rotateRangeDom.addEventListener('input', update);
+            function initInputListener() {
+                scaleXRangeDom.addEventListener('input', update);
+                scaleYRangeDom.addEventListener('input', update);
+                translateXRangeDom.addEventListener('input', update);
+                translateYRangeDom.addEventListener('input', update);
+                skewXRangeDom.addEventListener('input', update);
+                skewYRangeDom.addEventListener('input', update);
+                rotateRangeDom.addEventListener('input', update);
+            }
+
+            const dropZoneIdList = [
+                'drop_zone_1',
+                'drop_zone_2',
+                'drop_zone_3',
+                'drop_zone_4'
+            ];
+
+            function initOrderDrag() {
+                [
+                    'order_translate',
+                    'order_rotate',
+                    'order_skew',
+                    'order_scale'
+                ].forEach(function (id) {
+                    const el = document.getElementById(id);
+                    el.addEventListener('dragstart', handleDragStart);
+                });
+                dropZoneIdList.forEach(function (id) {
+                    const el = document.getElementById(id);
+                    el.addEventListener('dragover', handleDragOver);
+                    el.addEventListener('drop', handleDrop);
+                });
+
+                function handleDragStart(event) {
+                    const draggingDom = event.currentTarget;
+                    event.dataTransfer.setData('id', draggingDom.id);
+                    event.dataTransfer.setData('start_drop_zone', getDropZoneByDraggableEl(draggingDom).id);
+                }
+                function handleDragOver(event) {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'move';
+                }
+                function handleDrop(event) {
+                    event.preventDefault();
+                    const draggingId = event.dataTransfer.getData('id');
+                    const startDropZoneEl = document.getElementById(event.dataTransfer.getData('start_drop_zone'));
+                    const draggingEl = document.getElementById(draggingId);
+                    const endDrapZoneEl = event.currentTarget;
+                    const endOriginalDraggableEl = getDraggableElByDropZone(endDrapZoneEl);
+
+                    endDrapZoneEl.appendChild(draggingEl);
+                    startDropZoneEl.appendChild(endOriginalDraggableEl);
+
+                    update();
+                }
+            }
+
+            function getDropZoneByDraggableEl(el) {
+                return el.parentNode;
+            }
+            function getDraggableElByDropZone(zoneEl) {
+                return zoneEl.getElementsByTagName('span')[0];
+            }
+            function getTransformMethodByDraggableEl(draggableEl) {
+                return draggableEl.innerHTML;
+            }
+
+            function getOrder() {
+                const order = [];
+                dropZoneIdList.forEach(function (id) {
+                    const dropZoneEl = document.getElementById(id);
+                    const draggableEl = getDraggableElByDropZone(dropZoneEl);
+                    const transformMethod = getTransformMethodByDraggableEl(draggableEl);
+                    order.push(transformMethod);
+                });
+                return order;
+            }
 
             function update() {
                 const scaleX = +scaleXRangeDom.value;
@@ -180,17 +303,29 @@
                 skewYValueDom.innerHTML = skewY;
                 rotateValueDom.innerHTML = rotate;
 
-                const attrs = [
-                    {name: 'scale', value: [scaleX, scaleY]},
-                    {name: 'translate', value: [translateX, translateY]},
-                    {name: 'skew', value: [skewX, skewY]},
-                    {name: 'rotate', value: [rotate]},
-                ];
+                const transformMap = {
+                    translate: [translateX, translateY],
+                    rotate: [rotate],
+                    skew: [skewX, skewY],
+                    scale: [scaleX, scaleY]
+                }
+                const order = getOrder();
+                const attrs = [];
+                order.forEach(function (transformMethod) {
+                    attrs.push({
+                        name: transformMethod,
+                        value: transformMap[transformMethod]
+                    });
+                });
+
                 const matrix = convertToTransformMatrix(attrs);
                 matrixDom.innerHTML = `matrix: ${matrix.join(' ')}`;
 
-                onInput({ matrix });
+                onInput({ matrix, transformMethodList: attrs });
             }
+
+            initInputListener();
+            initOrderDrag();
 
             update();
         }
@@ -221,14 +356,30 @@
             return values;
         }
 
-        function paintInRawSVG(mt) {
-            const mtStr = mt.join(' ');
-            const textEl = document.getElementById('svgText');
+        function paintInRawSVG_matrix(params) {
+            const mtStr = params.matrix.join(' ');
+            const textEl = document.getElementById('svgText_matrix');
             textEl.setAttribute('transform', 'matrix(' + mtStr + ')');
         }
 
-        function paintInRawCanvas(mt) {
-            mt = mt.slice();
+        function paintInRawSVG_method(params) {
+            const transStrArr = [];
+            params.transformMethodList.forEach(function (methodItem) {
+                if (methodItem.name === 'skew') {
+                    transStrArr.push(`skewX(${methodItem.value[0]})`);
+                    transStrArr.push(`skewY(${methodItem.value[1]})`);
+                }
+                else {
+                    transStrArr.push(`${methodItem.name}(${methodItem.value.join(',')})`);
+                }
+            });
+            const textEl = document.getElementById('svgText_method');
+            console.log(transStrArr.join(' '));
+            textEl.setAttribute('transform', transStrArr.join(' '));
+        }
+
+        function paintInRawCanvas(params) {
+            const mt = params.matrix.slice();
             const dom = document.getElementById('canvas');
             const ctx = dom.getContext('2d');
             dom.width = 800;
@@ -243,8 +394,8 @@
             ctx.restore();
         }
 
-        function paintInZRenderSetLocalTransform(mt) {
-            mt = mt.slice();
+        function paintInZRenderSetLocalTransform(params) {
+            const mt = params.matrix.slice();
             const zr = zrender.init(document.getElementById('zr_setLocalTransform'));
             zr.setBackgroundColor('#eee');
             const text = new zrender.Text({
@@ -263,8 +414,9 @@
             zr.add(text);
         }
 
-        function paintInZRenderParseSVG_matrix(mt) {
-            mt = mt.slice();
+        // Must be called after paintInRawSVG_matrix called;
+        function paintInZRenderParseSVG_matrix(params) {
+            const mt = params.matrix.slice();
             const zr = zrender.init(document.getElementById('zr_parseSVG_matrix'));
             zr.setBackgroundColor('#eee');
             const svgMatrixDom = document.getElementById('svg_matrix');
@@ -272,93 +424,26 @@
             zr.add(result.root);
         }
 
-        function setLocalTransform(mt) {
-            mt = mt.slice();
-            const text = new zrender.Text({
-                style: { text: '4' }
-            });
-            text.setLocalTransform(mt);
-            text.updateTransform();
-            return text.transform.slice();
+        // Must be called after paintInRawSVG_method called;
+        function paintInZRenderParseSVG_method(params) {
+            const mt = params.matrix.slice();
+            const zr = zrender.init(document.getElementById('zr_parseSVG_method'));
+            zr.setBackgroundColor('#eee');
+            const svgMatrixDom = document.getElementById('svg_method');
+            const result = zrender.parseSVG(svgMatrixDom);
+            zr.add(result.root);
         }
-
-        function generateMatrix() {
-            const mt = [
-                random(-2, 2),
-                // 0,
-                // 0,
-                random(-2, 2),
-                random(-2, 2),
-                random(-2, 2),
-                random(-100, 100),
-                random(-200, 200)
-            ];
-            if (compareMatrix(mt, [1, 0, 0, 1, 0, 0])) {
-                return generateMatrix();
-            }
-            else {
-                return mt;
-            }
-        }
-        function random(start, end) {
-            const value = Math.random();
-            return +(start + value * (end - start)).toFixed(2);
-        }
-        function equal(val1, val2) {
-            return Math.abs(val1 - val2) < 1e-6;
-        }
-        function compareMatrix(mt1, mt2) {
-            if (mt1.length !== mt2.length) {
-                return false;
-            }
-            for (let i = 0; i < mt1.length; i++) {
-                if (!equal(mt1[i], mt2[i])) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        function randomTest() {
-            // Prepare test input.
-            const testCount = 50;
-            let testInputList = [];
-            for (let i = 0; i < testCount; i++) {
-                testInputList.push(generateMatrix());
-            }
-
-            // testInputList = [
-            //     mt
-            // ];
-
-            // Run setLocalTransform
-            const testResultList = [];
-            for (const input of testInputList) {
-                const calcResult = setLocalTransform(input);
-                if (!compareMatrix(input, calcResult)) {
-                    testResultList.push({
-                        expect: input,
-                        actual: calcResult
-                    });
-                }
-            }
-
-            // Print test result.
-            for (const resultItem of testResultList) {
-                console.log('expect', resultItem.expect);
-                console.log('actual', resultItem.actual);
-            }
-        }
-
 
 
         initController({
-            onInput: function ({ matrix }) {
-                console.log('matrix', matrix);
-                paintInRawSVG(matrix);
-                paintInRawCanvas(matrix);
-                paintInZRenderSetLocalTransform(matrix);
-                paintInZRenderParseSVG_matrix(matrix);
+            onInput: function (params) {
+                console.log('matrix', params.matrix);
+                paintInRawSVG_matrix(params);
+                paintInRawSVG_method(params);
+                paintInRawCanvas(params);
+                paintInZRenderSetLocalTransform(params);
+                paintInZRenderParseSVG_matrix(params);
+                paintInZRenderParseSVG_method(params);
             }
         });
 
