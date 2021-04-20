@@ -9,9 +9,14 @@ if (!parts) {
     throw new Error(`Invalid version number ${version}`);
 }
 // Add date to version.
-const major = parts[1];
-const minor = parts[2];
-const patch = parts[3];
+const major = +parts[1];
+const minor = +parts[2];
+let patch = +parts[3];
+const isStable = !parts[4];
+if (isStable) {
+    // It's previous stable version. Dev version should be higher.
+    patch++;
+}
 
 const date = new Date().toISOString().replace(/:|T|\.|-/g, '').slice(0, 8);
 const nightlyVersion = `${major}.${minor}.${patch}-dev.${date}`;
