@@ -12,7 +12,6 @@ import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray, copy } from '../core/matrix';
 import Displayable, { DisplayableStatePropNames, DisplayableProps, DEFAULT_COMMON_ANIMATION_PROPS } from './Displayable';
-import Path from './Path';
 import { ZRenderType } from '../zrender';
 import Animator from '../animation/Animator';
 import Transformable from '../core/Transformable';
