@@ -16,6 +16,7 @@ import { map } from '../core/util';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
 import Element from '../Element';
 import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
+import { REDARAW_BIT, SHAPE_CHANGED_BIT } from '../graphic/constants';
 
 const pathProxyForDraw = new PathProxy(true);
 
@@ -196,7 +197,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
     // 1. Path is dirty
     // 2. Path needs javascript implemented lineDash stroking.
     //    In this case, lineDash information will not be saved in PathProxy
-    if (firstDraw || (el.__dirty & Path.SHAPE_CHANGED_BIT)
+    if (firstDraw || (el.__dirty & SHAPE_CHANGED_BIT)
         || (lineDash && !ctxLineDash && hasStroke)
     ) {
         path.setDPR((ctx as any).dpr);
@@ -640,7 +641,7 @@ export function brush(
         // Or this element will always been rendered in progressive rendering.
         // But other dirty bit should not be cleared, otherwise it cause the shape
         // can not be updated in this case.
-        el.__dirty &= ~Element.REDARAW_BIT;
+        el.__dirty &= ~REDARAW_BIT;
         el.__isRendered = false;
         return;
     }

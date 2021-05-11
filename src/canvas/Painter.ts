@@ -15,6 +15,7 @@ import BoundingRect from '../core/BoundingRect';
 import Element from '../Element';
 import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 import Path from '../graphic/Path';
+import { REDARAW_BIT } from '../graphic/constants';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 const CANVAS_ZLEVEL = 314159;
@@ -402,6 +403,7 @@ export default class CanvasPainter implements PainterBase {
 
             const clearColor = layer.zlevel === this._zlevelList[0]
                 ? this._backgroundColor : null;
+
             // All elements in this layer are cleared.
             if (layer.__startIndex === layer.__endIndex) {
                 layer.clear(false, clearColor, repaintRects);
@@ -700,6 +702,7 @@ export default class CanvasPainter implements PainterBase {
         let incrementalLayerCount = 0;
         let prevZlevel;
         let i;
+
         for (i = 0; i < list.length; i++) {
             const el = list[i];
             const zlevel = el.zlevel;
@@ -751,7 +754,7 @@ export default class CanvasPainter implements PainterBase {
                 updatePrevLayer(i);
                 prevLayer = layer;
             }
-            if ((el.__dirty & Element.REDARAW_BIT) && !el.__inHover) {  // Ignore dirty elements in hover layer.
+            if ((el.__dirty & REDARAW_BIT) && !el.__inHover) {  // Ignore dirty elements in hover layer.
                 layer.__dirty = true;
                 if (layer.incremental && layer.__drawIndex < 0) {
                     // Start draw from the first dirty element.

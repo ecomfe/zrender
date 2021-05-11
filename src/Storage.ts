@@ -8,6 +8,7 @@ import Element from './Element';
 import timsort from './core/timsort';
 import Displayable from './graphic/Displayable';
 import Path from './graphic/Path';
+import { REDARAW_BIT } from './graphic/constants';
 
 let invalidZErrorLogged = false;
 function logInvalidZError() {
@@ -140,7 +141,7 @@ export default class Storage {
 
                 // Force to mark as dirty if group is dirty
                 if (el.__dirty) {
-                    child.__dirty |= Element.REDARAW_BIT;
+                    child.__dirty |= REDARAW_BIT;
                 }
 
                 this._updateAndAddDisplayable(child, clipPaths, includeIgnore);
