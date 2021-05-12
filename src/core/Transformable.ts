@@ -286,7 +286,7 @@ class Transformable {
 
 
     static getLocalTransform(target: Transformable, m?: matrix.MatrixArray): matrix.MatrixArray {
-        m = m || [1, 0, 0, 1, 0, 0];
+        m = m || [];
 
         const ox = target.originX || 0;
         const oy = target.originY || 0;
@@ -301,8 +301,8 @@ class Transformable {
         // Also did identity in these operations.
 
         // Apply origin
-        m[4] = -ox;
-        m[5] = -oy;
+        m[4] = -ox * sx;
+        m[5] = -oy * sy;
         // Apply scale
         m[0] = sx;
         m[3] = sy;
@@ -314,13 +314,9 @@ class Transformable {
             matrix.rotate(m, m, rotation);
         }
 
-        // Translate back from origin
-        m[4] += ox;
-        m[5] += oy;
-
-        // Apply transform
-        m[4] += x;
-        m[5] += y;
+        // Translate back from origin and apply translation
+        m[4] += ox + x;
+        m[5] += oy + y;
 
         return m;
     }
