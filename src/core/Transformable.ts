@@ -187,7 +187,7 @@ class Transformable {
 
         this.skewX = 0;
 
-        // TODO: rotation/skew is inversed in zrender.
+        // TODO: zrender use different hand in coordinate system.
         this.skewY = -shearY;
         this.rotation = -rotation;
 
