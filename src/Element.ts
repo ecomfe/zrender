@@ -661,11 +661,11 @@ class Element<Props extends ElementProps = ElementProps> {
 
             // Mark textEl to update transform.
             // DON'T use markRedraw. It will cause Element itself to dirty again.
-            textEl.__dirty &= REDARAW_BIT;
+            textEl.__dirty |= REDARAW_BIT;
 
             if (textStyleChanged) {
                 // Only mark style dirty if necessary. Update ZRText is costly.
-                textEl.__dirty &= STYLE_CHANGED_BIT;
+                textEl.dirtyStyle(true);
             }
         }
     }

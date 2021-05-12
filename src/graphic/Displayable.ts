@@ -362,8 +362,10 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     //     return this.style.prototype[key];
     // }
 
-    dirtyStyle() {
-        this.markRedraw();
+    dirtyStyle(notRedraw?: boolean) {
+        if (!notRedraw) {
+            this.markRedraw();
+        }
         this.__dirty |= STYLE_CHANGED_BIT;
         // Clear bounding rect.
         if (this._rect) {
