@@ -866,7 +866,6 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
                     break;
             }
         }
-        console.log(mt);
         node.setLocalTransform(mt);
     }
 }
