@@ -831,6 +831,7 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
             transformOps.push(type, value);
             return '';
         });
+
         for (let i = transformOps.length - 1; i > 0; i -= 2) {
             const value = transformOps[i];
             const type = transformOps[i - 1];
@@ -848,11 +849,12 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
                     matrix.rotate(mt, mt, -parseFloat(valueArr[0]) * DEGREE_TO_ANGLE);
                     break;
                 case 'skewX':
-                    // TODO: zrender use different hand in coordinate system.
-                    mt[2] += Math.tan(parseFloat(valueArr[0]) * DEGREE_TO_ANGLE);
+                    const sx = Math.tan(parseFloat(valueArr[0]) * DEGREE_TO_ANGLE);
+                    matrix.mul(mt, [1, 0, sx, 1, 0, 0], mt);
                     break;
                 case 'skewY':
-                    mt[1] += Math.tan(parseFloat(valueArr[0]) * DEGREE_TO_ANGLE);
+                    const sy = Math.tan(parseFloat(valueArr[0]) * DEGREE_TO_ANGLE);
+                    matrix.mul(mt, [1, sy, 0, 1, 0, 0], mt);
                     break;
                 case 'matrix':
                     mt[0] = parseFloat(valueArr[0]);
@@ -864,6 +866,7 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
                     break;
             }
         }
+        console.log(mt);
         node.setLocalTransform(mt);
     }
 }

@@ -178,17 +178,14 @@ class Transformable {
 
         const rotation = Math.atan2(m[1], m[0]);
 
-        if (isNotAroundZero(sx - 1)) {
-            sx = Math.sqrt(sx);
-        }
 
-        const shearY = Math.atan2(m[3], m[2]) - Math.PI / 2 - rotation;
-        sy = Math.sqrt(sy) * Math.cos(shearY);
 
-        this.skewX = 0;
+        const shearX = Math.PI / 2 + rotation - Math.atan2(m[3], m[2]);
+        sy = Math.sqrt(sy) * Math.cos(shearX);
+        sx = Math.sqrt(sx);
 
-        // TODO: zrender use different hand in coordinate system.
-        this.skewY = -shearY;
+        this.skewX = shearX;
+        this.skewY = 0;
         this.rotation = -rotation;
 
         this.x = +m[4];
@@ -307,8 +304,9 @@ class Transformable {
         m[0] = sx;
         m[3] = sy;
         // Apply skew
-        m[1] = skewX ? Math.tan(skewX) : 0;
-        m[2] = skewY ? Math.tan(skewY) : 0;
+        // TODO: zrender use different hand in coordinate system and y axis is inversed.
+        m[1] = skewY ? Math.tan(-skewY) * sx : 0;
+        m[2] = skewX ? Math.tan(skewX) * sy : 0;
         // Apply rotation
         if (rotation) {
             matrix.rotate(m, m, rotation);
