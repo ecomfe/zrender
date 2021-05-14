@@ -292,25 +292,29 @@ class Transformable {
         const rotation = target.rotation || 0;
         const x = target.x;
         const y = target.y;
-        const skewX = target.skewX || 0;
-        const skewY = target.skewY || 0;
+        const skewX = target.skewX ? Math.tan(target.skewX) : 0;
+        // TODO: zrender use different hand in coordinate system and y axis is inversed.
+        const skewY = target.skewY ? Math.tan(-target.skewY) : 0;
 
-        // Also did identity in these operations.
-
-        // Apply origin
-        m[4] = -ox * sx;
-        m[5] = -oy * sy;
-        // Apply scale
+        // The order of transform (-origin * scale * skew * rotate * origin * translate).
+        // We merge (-origin * scale * skew) into one. Also did identity in these operations.
+        // origin
+        if (ox || oy) {
+            m[4] = -ox * sx - skewX * oy * sy;
+            m[5] = -oy * sy - skewY * ox * sx;
+        }
+        else {
+            m[4] = m[5] = 0;
+        }
+        // scale
         m[0] = sx;
         m[3] = sy;
-        // Apply skew
-        // TODO: zrender use different hand in coordinate system and y axis is inversed.
-        m[1] = skewY ? Math.tan(-skewY) * sx : 0;
-        m[2] = skewX ? Math.tan(skewX) * sy : 0;
+        // skew
+        m[1] = skewY * sx;
+        m[2] = skewX * sy;
+
         // Apply rotation
-        if (rotation) {
-            matrix.rotate(m, m, rotation);
-        }
+        rotation && matrix.rotate(m, m, rotation);
 
         // Translate back from origin and apply translation
         m[4] += ox + x;
