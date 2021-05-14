@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Transform Origin Test</title>
+    <script src="./lib/config.js"></script>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+    <style>
+        #css-baseline-container, #main-canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1800px;
+            height: 1200px;
+        }
+        #css-baseline-container>div {
+            position: absolute;
+            border: 2px solid red;
+            box-sizing: border-box;
+        }
+        #description {
+            position: absolute;
+            left: 10px;
+            top: 10px;
+        }
+    </style>
+    <div id="css-baseline-container"></div>
+    <div id="main-canvas"></div>
+    <i id="description">Dashed box: without transform. Gray box with transform. Red box: CSS transform as baseline. </i>
+    <script type="text/javascript">
+        var zr = zrender.init(document.getElementById('main-canvas'));
+        var viewWidth = zr.getWidth();
+        var viewHeight = zr.getHeight();
+
+        var elSize = 70;
+        var cellSize = elSize * 2 + 5;
+        var origins = [
+            [0, 0],
+            [0.5, 0.5],
+            [1, 1]
+        ];
+        var rotations = [
+            0, 90, 180
+        ];
+        var scales = [
+            [1, 1],
+            [0.8, 0.8]
+        ];
+        var skews = [
+            [0, 0],
+            [10, 0],
+            [-10, 0],
+            [0, 10],
+            [0, -10],
+        ];
+
+        var DEG_TO_RAD = Math.PI / 180;
+
+        var columnCount = Math.floor(viewWidth / cellSize);
+
+        var idx = 0;
+        var offsetX = 50;
+        var offsetY = 50;
+        var group = new zrender.Group({
+            x: offsetX,
+            y: offsetY
+        });
+        var baselineContainer = document.querySelector('#css-baseline-container');
+        for (var i = 0; i < origins.length; i++) {
+            var origin = origins[i];
+            for (var j = 0; j < rotations.length; j++) {
+                var rot = rotations[j];
+                for (var m = 0; m < scales.length; m++) {
+                    var scale = scales[m];
+                    for (var n = 0; n < skews.length; n++) {
+                        var skew = skews[n];
+                        var column = idx % columnCount;
+                        var row = Math.floor(idx / columnCount);
+
+                        var el = new zrender.Rect({
+                            x: column * cellSize,
+                            y: row * cellSize,
+                            rotation: rot * DEG_TO_RAD,
+                            scaleX: scale[0],
+                            scaleY: scale[1],
+                            // Percent.
+                            originX: origin[0] * elSize,
+                            originY: origin[1] * elSize,
+                            skewX: skew[0] * DEG_TO_RAD,
+                            skewY: skew[1] * DEG_TO_RAD,
+                            shape: {
+                                width: elSize,
+                                height: elSize
+                            },
+                            style: {
+                                // image: 'asset/test.png',
+                                fill: 'rgba(0, 0, 0, 0.2)'
+                            }
+                        });
+                        var border = new zrender.Rect({
+                            shape: {
+                                x: column * cellSize,
+                                y: row * cellSize,
+                                width: elSize,
+                                height: elSize
+                            },
+                            style: {
+                                fill: 'none',
+                                stroke: '#000',
+                                lineDash: 'dashed'
+                            }
+                        });
+                        var text = new zrender.Text({
+                            style: {
+                                x: 3,
+                                y: 3,
+                                align: 'left',
+                                verticalAlign: 'top',
+                                text: [
+                                    `origin: [${origin.join(', ')}]`,
+                                    `rot: ${rot}deg`,
+                                    `scale: [${scale.join(', ')}]`,
+                                    `skew: [${skew.map(sk => sk + 'deg').join(', ')}]`,
+                                ].join('\n'),
+                                fill: '#000',
+                                stroke: '#fff',
+                                lineHeight: 16,
+                                lineWidth: 1
+                            },
+                            x: column * cellSize,
+                            y: row * cellSize,
+                            z: 1
+                        });
+
+                        var baselineBox = document.createElement('div');
+                        baselineContainer.appendChild(baselineBox);
+                        // rotation and skewY in zrender has different direction with CSS transform.
+                        baselineBox.style.cssText = `
+width: ${elSize}px;
+height: ${elSize}px;
+transform: translate(${offsetX + cellSize * column}px, ${offsetY + row * cellSize}px) rotate(${-rot}deg) skew(${skew[0]}deg, ${-skew[1]}deg) scale(${scale[0]}, ${scale[1]});
+transform-origin: ${origin[0] * 100}% ${origin[1] * 100}%;
+`
+
+                        group.add(el);
+                        group.add(border);
+                        group.add(text);
+                        idx++;
+                    }
+                }
+            }
+            zr.add(group);
+        }
+    </script>
+
+</body>
+</html>
