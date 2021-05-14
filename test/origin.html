@@ -19,6 +19,7 @@
         #css-baseline-container>div {
             position: absolute;
             border: 2px solid red;
+            box-sizing: border-box;
         }
         #description {
             position: absolute;
@@ -138,11 +139,9 @@
                         baselineContainer.appendChild(baselineBox);
                         // rotation and skewY in zrender has different direction with CSS transform.
                         baselineBox.style.cssText = `
-left: ${offsetX + cellSize * column}px;
-top: ${offsetY + row * cellSize}px;
 width: ${elSize}px;
 height: ${elSize}px;
-transform: rotate(${-rot}deg) skew(${skew[0]}deg, ${-skew[1]}deg) scale(${scale[0]}, ${scale[1]});
+transform: translate(${offsetX + cellSize * column}px, ${offsetY + row * cellSize}px) rotate(${-rot}deg) skew(${skew[0]}deg, ${-skew[1]}deg) scale(${scale[0]}, ${scale[1]});
 transform-origin: ${origin[0] * 100}% ${origin[1] * 100}%;
 `
 
