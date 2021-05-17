@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.js"></script>
+    <script src="../dist/zrender.js"></script>
+    <script src="lib/config.js"></script>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+    <div id="main"></div>
+    <script type="text/javascript">
+        const zr = zrender.init(document.getElementById('main'), {
+            renderer: window.__ZRENDER__DEFAULT__RENDERER__
+        });
+
+        let r = 100;
+        let cx = r;
+        let cy = r + 10;
+        let compoundPath = new zrender.CompoundPath({
+            segmentIgnoreThreshold: 20,
+            shape: {
+                paths: []
+            },
+            style: {
+                fill: null,
+                stroke: '#000',
+                lineWidth: 2
+            }
+        })
+        zr.add(compoundPath);
+        for (let i = 0; i < 30; i++) {
+            const points = [];
+            for (let i = 0; i < 100; i++) {
+                let rad = Math.PI * 2 * i / 100;
+                let x = Math.cos(rad) * r + cx;
+                let y = Math.sin(rad) * r + cy;
+                points.push([x, y]);
+            }
+            const poly = new zrender.Polygon({
+                shape: {
+                    points
+                }
+            });
+            compoundPath.shape.paths.push(poly);
+            const text = new zrender.Text({
+                style: {
+                    text: `R: ${+r.toPrecision(2)}`,
+                    align: 'left'
+                },
+                x: cx,
+                y: cy + 100,
+                rotation: -Math.PI / 2
+            });
+            zr.add(text);
+
+            cx += Math.max(r * 2, 15);
+            r /= 1.3;
+
+        }
+
+        function update() {
+            compoundPath.attr('segmentIgnoreThreshold', config.segmentIgnoreThreshold);
+        }
+
+        const config = {
+            segmentIgnoreThreshold: 20
+        };
+
+        const gui = new dat.GUI();
+        gui.add(config, 'segmentIgnoreThreshold', 0, 100).onChange(update);
+    </script>
+</body>
+</html>
