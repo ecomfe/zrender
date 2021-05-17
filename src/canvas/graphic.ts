@@ -1,7 +1,7 @@
 import Displayable, { DEFAULT_COMMON_STYLE } from '../graphic/Displayable';
 import PathProxy from '../core/PathProxy';
 import { GradientObject } from '../graphic/Gradient';
-import { ImagePatternObject, InnerImagePatternObject, PatternObject } from '../graphic/Pattern';
+import { ImagePatternObject, InnerImagePatternObject } from '../graphic/Pattern';
 import { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
 import { ZRCanvasRenderingContext } from '../core/types';
@@ -103,8 +103,8 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
 
         const hasFillGradient = hasFill && !!(fill as GradientObject).colorStops;
         const hasStrokeGradient = hasStroke && !!(stroke as GradientObject).colorStops;
-        const hasFillPattern = hasFill && !!(fill as PatternObject).image;
-        const hasStrokePattern = hasStroke && !!(stroke as PatternObject).image;
+        const hasFillPattern = hasFill && !!(fill as ImagePatternObject).image;
+        const hasStrokePattern = hasStroke && !!(stroke as ImagePatternObject).image;
 
         let fillGradient;
         let strokeGradient;

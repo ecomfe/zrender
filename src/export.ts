@@ -53,7 +53,7 @@ export {
     default as Pattern,
     PatternObjectBase,
     PatternObject,
-    CanvasPatternObject,
+    ImagePatternObject,
     SVGPatternObject
 } from './graphic/Pattern';
 export {default as BoundingRect, RectLike} from './core/BoundingRect';

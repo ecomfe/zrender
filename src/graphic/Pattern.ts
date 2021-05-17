@@ -3,10 +3,9 @@ import { ImageLike } from '../core/types';
 type ImagePatternRepeat = 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat'
 
 export interface PatternObjectBase {
+    id?: number
     // type is now unused, so make it optional
     type?: 'pattern'
-
-    image: ImageLike | string
 
     x?: number
     y?: number
@@ -16,6 +15,7 @@ export interface PatternObjectBase {
 }
 
 export interface ImagePatternObject extends PatternObjectBase {
+    image: ImageLike | string
     repeat?: ImagePatternRepeat
 }
 
@@ -25,8 +25,6 @@ export interface InnerImagePatternObject extends ImagePatternObject {
 }
 
 export interface SVGPatternObject extends PatternObjectBase {
-    // id is now only used by SVG renderer
-    id?: number
     /**
      * svg element can only be used in svg renderer currently.
      * svgWidth, svgHeight defines width and height used for pattern.
@@ -48,7 +46,7 @@ class Pattern {
      */
     svgElement: SVGElement
 
-    repeat: CanvasPatternRepeat
+    repeat: ImagePatternRepeat
 
     x: number
     y: number
@@ -56,7 +54,7 @@ class Pattern {
     scaleX: number
     scaleY: number
 
-    constructor(image: ImageLike | string, repeat: CanvasPatternRepeat) {
+    constructor(image: ImageLike | string, repeat: ImagePatternRepeat) {
         // Should do nothing more in this constructor. Because gradient can be
         // declard by `color: {image: ...}`, where this constructor will not be called.
         this.image = image;
