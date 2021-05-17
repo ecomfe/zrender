@@ -1,6 +1,6 @@
 import { ImageLike } from '../core/types';
 
-type CanvasPatternRepeat = 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat'
+type ImagePatternRepeat = 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat'
 
 export interface PatternObjectBase {
     // type is now unused, so make it optional
@@ -15,11 +15,11 @@ export interface PatternObjectBase {
     scaleY?: number
 }
 
-export interface CanvasPatternObject extends PatternObjectBase {
-    repeat?: CanvasPatternRepeat
+export interface ImagePatternObject extends PatternObjectBase {
+    repeat?: ImagePatternRepeat
 }
 
-export interface InnerCanvasPatternObject extends CanvasPatternObject {
+export interface InnerImagePatternObject extends ImagePatternObject {
     // Cached image. Which is created in the canvas painter.
     __image?: ImageLike
 }
@@ -36,7 +36,7 @@ export interface SVGPatternObject extends PatternObjectBase {
     svgHeight?: number
 }
 
-export type PatternObject = CanvasPatternObject | SVGPatternObject
+export type PatternObject = ImagePatternObject | SVGPatternObject
 
 class Pattern {
 

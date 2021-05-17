@@ -1,7 +1,7 @@
 import Displayable, { DEFAULT_COMMON_STYLE } from '../graphic/Displayable';
 import PathProxy from '../core/PathProxy';
 import { GradientObject } from '../graphic/Gradient';
-import { CanvasPatternObject, InnerCanvasPatternObject, PatternObject } from '../graphic/Pattern';
+import { ImagePatternObject, InnerImagePatternObject, PatternObject } from '../graphic/Pattern';
 import { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
 import { ZRCanvasRenderingContext } from '../core/types';
@@ -58,10 +58,10 @@ function doStrokePath(ctx: CanvasRenderingContext2D, style: PathStyleProps) {
 export function createCanvasPattern(
     this: void,
     ctx: CanvasRenderingContext2D,
-    pattern: CanvasPatternObject,
+    pattern: ImagePatternObject,
     el: {dirty: () => void}
 ): CanvasPattern {
-    const image = createOrUpdateImage(pattern.image, (pattern as InnerCanvasPatternObject).__image, el);
+    const image = createOrUpdateImage(pattern.image, (pattern as InnerImagePatternObject).__image, el);
     if (isImageReady(image)) {
         const canvasPattern = ctx.createPattern(image, pattern.repeat || 'repeat');
         if (
@@ -132,14 +132,14 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         if (hasFillPattern) {
             // Pattern might be null if image not ready (even created from dataURI)
             fillPattern = (el.__dirty || !el.__canvasFillPattern)
-                ? createCanvasPattern(ctx, fill as CanvasPatternObject, el)
+                ? createCanvasPattern(ctx, fill as ImagePatternObject, el)
                 : el.__canvasFillPattern;
             el.__canvasFillPattern = fillPattern;
         }
         if (hasStrokePattern) {
             // Pattern might be null if image not ready (even created from dataURI)
             strokePattern = (el.__dirty || !el.__canvasStrokePattern)
-                ? createCanvasPattern(ctx, stroke as CanvasPatternObject, el)
+                ? createCanvasPattern(ctx, stroke as ImagePatternObject, el)
                 : el.__canvasStrokePattern;
             el.__canvasStrokePattern = fillPattern;
         }

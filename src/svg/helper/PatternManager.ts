@@ -216,8 +216,3 @@ export default class PatternManager extends Definable {
     }
 
 }
-
-type CachedImageObj = {
-    width: number,
-    height: number
-};
