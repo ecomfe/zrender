@@ -7,7 +7,7 @@ import Displayable, { DisplayableProps,
 import Element, { ElementAnimateConfig } from '../Element';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
-import Pattern, { PatternObject } from './Pattern';
+import { PatternObject } from './Pattern';
 import { Dictionary, PropType, MapToType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
