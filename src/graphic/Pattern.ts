@@ -2,12 +2,31 @@ import { ImageLike } from '../core/types';
 
 type CanvasPatternRepeat = 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat'
 
-export interface PatternObject {
-    id?: number
-
+export interface PatternObjectBase {
+    // type is now unused, so make it optional
     type?: 'pattern'
 
     image: ImageLike | string
+
+    x?: number
+    y?: number
+    rotation?: number
+    scaleX?: number
+    scaleY?: number
+}
+
+export interface CanvasPatternObject extends PatternObjectBase {
+    repeat?: CanvasPatternRepeat
+}
+
+export interface InnerCanvasPatternObject extends CanvasPatternObject {
+    // Cached image. Which is created in the canvas painter.
+    __image?: ImageLike
+}
+
+export interface SVGPatternObject extends PatternObjectBase {
+    // id is now only used by SVG renderer
+    id?: number
     /**
      * svg element can only be used in svg renderer currently.
      * svgWidth, svgHeight defines width and height used for pattern.
@@ -15,18 +34,9 @@ export interface PatternObject {
     svgElement?: SVGElement
     svgWidth?: number
     svgHeight?: number
-
-    repeat: CanvasPatternRepeat
-
-    x?: number
-    y?: number
-    rotation?: number
-    scaleX?: number
-    scaleY?: number
-
-    // Cached image. Which is created in the canvas painter.
-    __image?: ImageLike
 }
+
+export type PatternObject = CanvasPatternObject | SVGPatternObject
 
 class Pattern {
 

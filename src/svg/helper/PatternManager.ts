@@ -6,15 +6,15 @@
 import Definable from './Definable';
 import * as zrUtil from '../../core/util';
 import Displayable from '../../graphic/Displayable';
-import {PatternObject} from '../../graphic/Pattern';
+import {PatternObject, SVGPatternObject} from '../../graphic/Pattern';
 import {createOrUpdateImage} from '../../graphic/helper/image';
 import WeakMap from '../../core/WeakMap';
 
 function isPattern(value: PatternObject | string): value is PatternObject {
-    return value && (!!(value as PatternObject).image || !!(value as PatternObject).svgElement);
+    return value && (!!(value as PatternObject).image || !!(value as SVGPatternObject).svgElement);
 }
 
-const patternDomMap = new WeakMap<PatternObject, SVGElement>();
+const patternDomMap = new WeakMap<SVGPatternObject, SVGElement>();
 
 /**
  * Manages SVG pattern elements.
@@ -76,7 +76,7 @@ export default class PatternManager extends Definable {
      *
      * @param   pattern zr pattern instance
      */
-    add(pattern: PatternObject): SVGElement {
+    add(pattern: SVGPatternObject): SVGElement {
         if (!isPattern(pattern)) {
             return;
         }
@@ -103,7 +103,7 @@ export default class PatternManager extends Definable {
      *
      * @param pattern zr pattern instance or color string
      */
-    update(pattern: PatternObject | string) {
+    update(pattern: SVGPatternObject | string) {
         if (!isPattern(pattern)) {
             return;
         }
@@ -122,7 +122,7 @@ export default class PatternManager extends Definable {
      * @param pattern zr pattern instance
      * @param patternDom DOM to update
      */
-    updateDom(pattern: PatternObject, patternDom: SVGElement) {
+    updateDom(pattern: SVGPatternObject, patternDom: SVGElement) {
         const svgElement = pattern.svgElement;
 
         if (svgElement instanceof SVGElement) {
