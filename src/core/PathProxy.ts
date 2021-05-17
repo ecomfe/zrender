@@ -233,7 +233,7 @@ export default class PathProxy {
 
     moveTo(x: number, y: number) {
         // Add pending point for previous path.
-        this._addPendingPt();
+        this._drawPendingPt();
 
         this.addData(CMD.M, x, y);
         this._ctx && this._ctx.moveTo(x, y);
@@ -340,7 +340,7 @@ export default class PathProxy {
 
     closePath() {
         // Add pending point for previous path.
-        this._addPendingPt();
+        this._drawPendingPt();
 
         this.addData(CMD.Z);
 
@@ -474,12 +474,9 @@ export default class PathProxy {
         }
     }
 
-    private _addPendingPt() {
+    private _drawPendingPt() {
         if (this._pendingPtDist > 0) {
-            const x = this._pendingPtX;
-            const y = this._pendingPtY;
-            this._ctx && this._ctx.lineTo(x, y);
-            this.addData(CMD.L, x, y);
+            this._ctx && this._ctx.lineTo(this._pendingPtX, this._pendingPtY);
             this._pendingPtDist = 0;
         }
     }
@@ -637,7 +634,7 @@ export default class PathProxy {
             return;
         }
 
-        this._addPendingPt();
+        this._drawPendingPt();
 
         const data = this.data;
         if (data instanceof Array) {
