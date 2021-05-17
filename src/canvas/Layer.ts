@@ -5,7 +5,7 @@ import CanvasPainter from './Painter';
 import { GradientObject, InnerGradientObject } from '../graphic/Gradient';
 import { ZRCanvasRenderingContext } from '../core/types';
 import Eventful from '../core/Eventful';
-import Element, { ElementEventCallback } from '../Element';
+import { ElementEventCallback } from '../Element';
 import { getCanvasGradient } from './helper';
 import { createCanvasPattern } from './graphic';
 import Displayable from '../graphic/Displayable';
@@ -353,7 +353,7 @@ export default class Layer extends Eventful {
                 }
                 i++;
             }
-        } while (hasIntersections)
+        } while (hasIntersections);
 
         this._paintRects = mergedRepaintRects;
 

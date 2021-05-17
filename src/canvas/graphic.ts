@@ -14,7 +14,6 @@ import { DEFAULT_FONT } from '../contain/text';
 import { MatrixArray } from '../core/matrix';
 import { map } from '../core/util';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
-import Element from '../Element';
 import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 import { REDARAW_BIT, SHAPE_CHANGED_BIT } from '../graphic/constants';
 

@@ -5,16 +5,16 @@ type CanvasPatternRepeat = 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat'
 export interface PatternObject {
     id?: number
 
-    type: 'pattern'
+    type?: 'pattern'
 
     image: ImageLike | string
     /**
      * svg element can only be used in svg renderer currently.
      * svgWidth, svgHeight defines width and height used for pattern.
      */
-    svgElement: SVGElement
-    svgWidth: number
-    svgHeight: number
+    svgElement?: SVGElement
+    svgWidth?: number
+    svgHeight?: number
 
     repeat: CanvasPatternRepeat
 

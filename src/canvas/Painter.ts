@@ -12,7 +12,6 @@ import Storage from '../Storage';
 import { brush, BrushScope, brushSingle } from './graphic';
 import { PainterBase } from '../PainterBase';
 import BoundingRect from '../core/BoundingRect';
-import Element from '../Element';
 import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 import Path from '../graphic/Path';
 import { REDARAW_BIT } from '../graphic/constants';
