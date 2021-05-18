@@ -3,6 +3,7 @@ name: Publish Nightly
 on:
   schedule:
     - cron: '0 8 * * *'
+  workflow_dispatch: {}
   repository_dispatch:
     types: publish-nightly
 
