@@ -445,7 +445,7 @@ export default class Layer extends Eventful {
                     (clearColor as InnerGradientObject).__canvasGradient = clearColorGradientOrPattern;
                 }
                 // Pattern
-                else if (util.isPatternObject(clearColor)) {
+                else if (util.isImagePatternObject(clearColor)) {
                     clearColorGradientOrPattern = createCanvasPattern(
                         ctx, clearColor, {
                             dirty() {
