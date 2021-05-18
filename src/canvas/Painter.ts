@@ -7,12 +7,11 @@ import env from '../core/env';
 import Displayable from '../graphic/Displayable';
 import { WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/types';
 import { GradientObject } from '../graphic/Gradient';
-import { PatternObject } from '../graphic/Pattern';
+import { ImagePatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
 import { brush, BrushScope, brushSingle } from './graphic';
 import { PainterBase } from '../PainterBase';
 import BoundingRect from '../core/BoundingRect';
-import Element from '../Element';
 import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 import Path from '../graphic/Path';
 import { REDARAW_BIT } from '../graphic/constants';
@@ -111,7 +110,7 @@ export default class CanvasPainter implements PainterBase {
 
     private _redrawId: number
 
-    private _backgroundColor: string | GradientObject | PatternObject
+    private _backgroundColor: string | GradientObject | ImagePatternObject
 
 
     constructor(root: HTMLElement, storage: Storage, opts: CanvasPainterOption, id: number) {
@@ -790,7 +789,7 @@ export default class CanvasPainter implements PainterBase {
         layer.clear();
     }
 
-    setBackgroundColor(backgroundColor: string | GradientObject | PatternObject) {
+    setBackgroundColor(backgroundColor: string | GradientObject | ImagePatternObject) {
         this._backgroundColor = backgroundColor;
 
         util.each(this._layers, layer => {
@@ -920,7 +919,7 @@ export default class CanvasPainter implements PainterBase {
      * Get canvas which has all thing rendered
      */
     getRenderedCanvas(opts?: {
-        backgroundColor?: string | GradientObject | PatternObject
+        backgroundColor?: string | GradientObject | ImagePatternObject
         pixelRatio?: number
     }) {
         opts = opts || {};
