@@ -725,9 +725,6 @@ function parseAttributes(
     if (inheritedStyle.display === 'none') {
         disp.ignore = true;
     }
-
-    disp.z = -10000;
-    disp.z2 = -1000;
 }
 
 function applyTextAlignment(
