@@ -44,8 +44,11 @@ export default class ClippathManager extends Definable {
 
     markAllUnused() {
         super.markAllUnused();
-        for (let key in this._refGroups) {
-            this.markDomUnused(this._refGroups[key]);
+        const refGroups = this._refGroups;
+        for (let key in refGroups) {
+            if (refGroups.hasOwnProperty(key)) {
+                this.markDomUnused(refGroups[key]);
+            }
         }
         this._keyDuplicateCount = {};
     }
@@ -163,13 +166,16 @@ export default class ClippathManager extends Definable {
         super.removeUnused();
 
         const newRefGroupsMap: Dictionary<SVGElement> = {};
-        for (let key in this._refGroups) {
-            const group = this._refGroups[key];
-            if (!this.isDomUnused(group)) {
-                newRefGroupsMap[key] = group;
-            }
-            else if (group.parentNode) {
-                group.parentNode.removeChild(group);
+        const refGroups = this._refGroups;
+        for (let key in refGroups) {
+            if (refGroups.hasOwnProperty(key)) {
+                const group = refGroups[key];
+                if (!this.isDomUnused(group)) {
+                    newRefGroupsMap[key] = group;
+                }
+                else if (group.parentNode) {
+                    group.parentNode.removeChild(group);
+                }
             }
         }
         this._refGroups = newRefGroupsMap;
