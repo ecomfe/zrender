@@ -5,14 +5,13 @@
 import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, MapToType } from '../core/types';
 import { parseRichText, parsePlainText } from './helper/parseText';
 import TSpan, { TSpanStyleProps } from './TSpan';
-import { retrieve2, isString, each, normalizeCssArray, trim, retrieve3, extend, keys, defaults } from '../core/util';
+import { retrieve2, each, normalizeCssArray, trim, retrieve3, extend, keys, defaults } from '../core/util';
 import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
 import ZRImage from './Image';
 import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
 import { MatrixArray, copy } from '../core/matrix';
 import Displayable, { DisplayableStatePropNames, DisplayableProps, DEFAULT_COMMON_ANIMATION_PROPS } from './Displayable';
-import Path from './Path';
 import { ZRenderType } from '../zrender';
 import Animator from '../animation/Animator';
 import Transformable from '../core/Transformable';
@@ -804,13 +803,14 @@ class ZRText extends Displayable<TextProps> {
         const textBackgroundColor = style.backgroundColor;
         const textBorderWidth = style.borderWidth;
         const textBorderColor = style.borderColor;
-        const isPlainBg = isString(textBackgroundColor);
+        const isImageBg = textBackgroundColor && (textBackgroundColor as {image: ImageLike}).image;
+        const isPlainOrGradientBg = textBackgroundColor && !isImageBg;
         const textBorderRadius = style.borderRadius;
         const self = this;
 
         let rectEl: Rect;
         let imgEl: ZRImage;
-        if (isPlainBg || (textBorderWidth && textBorderColor)) {
+        if (isPlainOrGradientBg || (textBorderWidth && textBorderColor)) {
             // Background is color
             rectEl = this._getOrCreateChild(Rect);
             rectEl.useStyle(rectEl.createStyle());    // Create an empty style.
@@ -824,12 +824,12 @@ class ZRText extends Displayable<TextProps> {
             rectEl.dirtyShape();
         }
 
-        if (isPlainBg) {
+        if (isPlainOrGradientBg) {
             const rectStyle = rectEl.style;
             rectStyle.fill = textBackgroundColor as string || null;
             rectStyle.fillOpacity = retrieve2(style.fillOpacity, 1);
         }
-        else if (textBackgroundColor && (textBackgroundColor as {image: ImageLike}).image) {
+        else if (isImageBg) {
             imgEl = this._getOrCreateChild(ZRImage);
             imgEl.onload = function () {
                 // Refresh and relayout after image loaded.

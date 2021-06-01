@@ -49,7 +49,13 @@ export {default as Trochoid, TrochoidProps, TrochoidShape} from './graphic/shape
 
 export {default as LinearGradient, LinearGradientObject} from './graphic/LinearGradient';
 export {default as RadialGradient, RadialGradientObject} from './graphic/RadialGradient';
-export {default as Pattern, PatternObject} from './graphic/Pattern';
+export {
+    default as Pattern,
+    PatternObjectBase,
+    PatternObject,
+    ImagePatternObject,
+    SVGPatternObject
+} from './graphic/Pattern';
 export {default as BoundingRect, RectLike} from './core/BoundingRect';
 export {default as OrientedBoundingRect} from './core/OrientedBoundingRect';
 

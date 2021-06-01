@@ -1,6 +1,5 @@
 /**
  * Base class of all displayable graphic objects
- * @module zrender/graphic/Displayable
  */
 
 import Element, {ElementProps, ElementStatePropNames, ElementAnimateConfig, ElementCommonState} from '../Element';
@@ -9,6 +8,7 @@ import { PropType, Dictionary, MapToType } from '../core/types';
 import Path from './Path';
 import { keys, extend, createObject } from '../core/util';
 import Animator from '../animation/Animator';
+import { REDARAW_BIT, STYLE_CHANGED_BIT } from './constants';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
@@ -77,6 +77,7 @@ export type DisplayableStatePropNames = ElementStatePropNames | 'style' | 'z' | 
 export type DisplayableState = Pick<DisplayableProps, DisplayableStatePropNames> & ElementCommonState;
 
 const PRIMARY_STATES_KEYS = ['z', 'z2', 'invisible'] as const;
+const PRIMARY_STATES_KEYS_IN_HOVER_LAYER = ['invisible'] as const;
 
 interface Displayable<Props extends DisplayableProps = DisplayableProps> {
     animate(key?: '', loop?: boolean): Animator<this>
@@ -361,9 +362,11 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     //     return this.style.prototype[key];
     // }
 
-    dirtyStyle() {
-        this.markRedraw();
-        this.__dirty |= Displayable.STYLE_CHANGED_BIT;
+    dirtyStyle(notRedraw?: boolean) {
+        if (!notRedraw) {
+            this.markRedraw();
+        }
+        this.__dirty |= STYLE_CHANGED_BIT;
         // Clear bounding rect.
         if (this._rect) {
             this._rect = null;
@@ -378,14 +381,14 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      * Is style changed. Used with dirtyStyle.
      */
     styleChanged() {
-        return !!(this.__dirty & Displayable.STYLE_CHANGED_BIT);
+        return !!(this.__dirty & STYLE_CHANGED_BIT);
     }
 
     /**
      * Mark style updated. Only useful when style is used for caching. Like in the text.
      */
     styleUpdated() {
-        this.__dirty &= ~Displayable.STYLE_CHANGED_BIT;
+        this.__dirty &= ~STYLE_CHANGED_BIT;
     }
 
     /**
@@ -513,8 +516,11 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             }
         }
 
-        for (let i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
-            let key = PRIMARY_STATES_KEYS[i];
+        // Don't change z, z2 for element moved into hover layer.
+        // It's not necessary and will cause paint list order changed.
+        const statesKeys = this.__inHover ? PRIMARY_STATES_KEYS_IN_HOVER_LAYER : PRIMARY_STATES_KEYS;
+        for (let i = 0; i < statesKeys.length; i++) {
+            let key = statesKeys[i];
             if (state && state[key] != null) {
                 // Replace if it exist in target state
                 (this as any)[key] = state[key];
@@ -577,8 +583,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      */
     // calculateTextPosition: (out: CalculateTextPositionResult, style: Dictionary<any>, rect: RectLike) => CalculateTextPositionResult
 
-    static STYLE_CHANGED_BIT = 2
-
     protected static initDefaultProps = (function () {
         const dispProto = Displayable.prototype;
         dispProto.type = 'displayable';
@@ -593,7 +597,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         dispProto._rect = null;
         dispProto.dirtyRectTolerance = 0;
 
-        dispProto.__dirty = Element.REDARAW_BIT | Displayable.STYLE_CHANGED_BIT;
+        dispProto.__dirty = REDARAW_BIT | STYLE_CHANGED_BIT;
     })()
 }
 

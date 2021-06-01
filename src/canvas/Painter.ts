@@ -7,14 +7,14 @@ import env from '../core/env';
 import Displayable from '../graphic/Displayable';
 import { WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/types';
 import { GradientObject } from '../graphic/Gradient';
-import { PatternObject } from '../graphic/Pattern';
+import { ImagePatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
 import { brush, BrushScope, brushSingle } from './graphic';
 import { PainterBase } from '../PainterBase';
 import BoundingRect from '../core/BoundingRect';
-import Element from '../Element';
 import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 import Path from '../graphic/Path';
+import { REDARAW_BIT } from '../graphic/constants';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 const CANVAS_ZLEVEL = 314159;
@@ -110,7 +110,7 @@ export default class CanvasPainter implements PainterBase {
 
     private _redrawId: number
 
-    private _backgroundColor: string | GradientObject | PatternObject
+    private _backgroundColor: string | GradientObject | ImagePatternObject
 
 
     constructor(root: HTMLElement, storage: Storage, opts: CanvasPainterOption, id: number) {
@@ -393,8 +393,6 @@ export default class CanvasPainter implements PainterBase {
             const repaintRects = useDirtyRect
                 && layer.createRepaintRects(list, prevList, this._width, this._height);
 
-            ctx.save();
-
             let start = paintAll ? layer.__startIndex : layer.__drawIndex;
 
             const useTimer = !paintAll && layer.incremental && Date.now;
@@ -402,6 +400,7 @@ export default class CanvasPainter implements PainterBase {
 
             const clearColor = layer.zlevel === this._zlevelList[0]
                 ? this._backgroundColor : null;
+
             // All elements in this layer are cleared.
             if (layer.__startIndex === layer.__endIndex) {
                 layer.clear(false, clearColor, repaintRects);
@@ -700,6 +699,7 @@ export default class CanvasPainter implements PainterBase {
         let incrementalLayerCount = 0;
         let prevZlevel;
         let i;
+
         for (i = 0; i < list.length; i++) {
             const el = list[i];
             const zlevel = el.zlevel;
@@ -751,7 +751,7 @@ export default class CanvasPainter implements PainterBase {
                 updatePrevLayer(i);
                 prevLayer = layer;
             }
-            if ((el.__dirty & Element.REDARAW_BIT) && !el.__inHover) {  // Ignore dirty elements in hover layer.
+            if ((el.__dirty & REDARAW_BIT) && !el.__inHover) {  // Ignore dirty elements in hover layer.
                 layer.__dirty = true;
                 if (layer.incremental && layer.__drawIndex < 0) {
                     // Start draw from the first dirty element.
@@ -787,7 +787,7 @@ export default class CanvasPainter implements PainterBase {
         layer.clear();
     }
 
-    setBackgroundColor(backgroundColor: string | GradientObject | PatternObject) {
+    setBackgroundColor(backgroundColor: string | GradientObject | ImagePatternObject) {
         this._backgroundColor = backgroundColor;
 
         util.each(this._layers, layer => {
@@ -917,7 +917,7 @@ export default class CanvasPainter implements PainterBase {
      * Get canvas which has all thing rendered
      */
     getRenderedCanvas(opts?: {
-        backgroundColor?: string | GradientObject | PatternObject
+        backgroundColor?: string | GradientObject | ImagePatternObject
         pixelRatio?: number
     }) {
         opts = opts || {};

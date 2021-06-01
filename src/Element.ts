@@ -28,6 +28,7 @@ import Point from './core/Point';
 import { LIGHT_LABEL_COLOR, DARK_LABEL_COLOR } from './config';
 import { parse, stringify } from './tool/color';
 import env from './core/env';
+import { REDARAW_BIT, STYLE_CHANGED_BIT } from './graphic/constants';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -658,13 +659,14 @@ class Element<Props extends ElementProps = ElementProps> {
                 textEl.setDefaultTextStyle(innerTextDefaultStyle);
             }
 
+            // Mark textEl to update transform.
+            // DON'T use markRedraw. It will cause Element itself to dirty again.
+            textEl.__dirty |= REDARAW_BIT;
+
             if (textStyleChanged) {
                 // Only mark style dirty if necessary. Update ZRText is costly.
-                textEl.dirtyStyle();
+                textEl.dirtyStyle(true);
             }
-
-            // Mark textEl to update transform.
-            textEl.markRedraw();
         }
     }
 
@@ -850,7 +852,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * @param keepCurrentState If keep current states.
      *      If not, it will inherit from the normal state.
      */
-    useState(stateName: string, keepCurrentStates?: boolean, noAnimation?: boolean) {
+    useState(stateName: string, keepCurrentStates?: boolean, noAnimation?: boolean, forceUseHoverLayer?: boolean) {
         // Use preserved word __normal__
         // TODO: Only restore changed properties when restore to normal???
         const toNormalState = stateName === PRESERVED_NORMAL_STATE;
@@ -889,7 +891,7 @@ class Element<Props extends ElementProps = ElementProps> {
             this.saveCurrentToNormalState(state);
         }
 
-        const useHoverLayer = !!(state && state.hoverLayer);
+        const useHoverLayer = !!((state && state.hoverLayer) || forceUseHoverLayer);
 
         if (useHoverLayer) {
             // Enter hover layer before states update.
@@ -906,11 +908,14 @@ class Element<Props extends ElementProps = ElementProps> {
         );
 
         // Also set text content.
-        if (this._textContent) {
-            this._textContent.useState(stateName, keepCurrentStates);
+        const textContent = this._textContent;
+        const textGuide = this._textGuide;
+        if (textContent) {
+            // Force textContent use hover layer if self is using it.
+            textContent.useState(stateName, keepCurrentStates, noAnimation, useHoverLayer);
         }
-        if (this._textGuide) {
-            this._textGuide.useState(stateName, keepCurrentStates);
+        if (textGuide) {
+            textGuide.useState(stateName, keepCurrentStates, noAnimation, useHoverLayer);
         }
 
         if (toNormalState) {
@@ -938,7 +943,7 @@ class Element<Props extends ElementProps = ElementProps> {
             this._toggleHoverLayerFlag(false);
             // NOTE: avoid unexpected refresh when moving out from hover layer!!
             // Only clear from hover layer.
-            this.__dirty &= ~Element.REDARAW_BIT;
+            this.__dirty &= ~REDARAW_BIT;
         }
 
         // Return used state.
@@ -949,7 +954,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * Apply multiple states.
      * @param states States list.
      */
-    useStates(states: string[], noAnimation?: boolean) {
+    useStates(states: string[], noAnimation?: boolean, forceUseHoverLayer?: boolean) {
         if (!states.length) {
             this.clearStates();
         }
@@ -984,7 +989,8 @@ class Element<Props extends ElementProps = ElementProps> {
                 }
             }
 
-            const useHoverLayer = !!(stateObjects[len - 1] && stateObjects[len - 1].hoverLayer);
+            const lastStateObj = stateObjects[len - 1];
+            const useHoverLayer = !!((lastStateObj && lastStateObj.hoverLayer) || forceUseHoverLayer);
             if (useHoverLayer) {
                 // Enter hover layer before states update.
                 this._toggleHoverLayerFlag(true);
@@ -1004,11 +1010,13 @@ class Element<Props extends ElementProps = ElementProps> {
                 animationCfg
             );
 
-            if (this._textContent) {
-                this._textContent.useStates(states);
+            const textContent = this._textContent;
+            const textGuide = this._textGuide;
+            if (textContent) {
+                textContent.useStates(states, noAnimation, useHoverLayer);
             }
-            if (this._textGuide) {
-                this._textGuide.useStates(states);
+            if (textGuide) {
+                textGuide.useStates(states, noAnimation, useHoverLayer);
             }
 
             this._updateAnimationTargets();
@@ -1022,7 +1030,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 this._toggleHoverLayerFlag(false);
                 // NOTE: avoid unexpected refresh when moving out from hover layer!!
                 // Only clear from hover layer.
-                this.__dirty &= ~Element.REDARAW_BIT;
+                this.__dirty &= ~REDARAW_BIT;
             }
         }
     }
@@ -1352,7 +1360,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * Mark element needs to be repainted
      */
     markRedraw() {
-        this.__dirty |= Element.REDARAW_BIT;
+        this.__dirty |= REDARAW_BIT;
         const zr = this.__zr;
         if (zr) {
             if (this.__inHover) {
@@ -1604,9 +1612,6 @@ class Element<Props extends ElementProps = ElementProps> {
         out: TextPositionCalculationResult, style: ElementTextConfig, rect: RectLike
     ) => TextPositionCalculationResult
 
-
-    static REDARAW_BIT = 1;
-
     protected static initDefaultProps = (function () {
         const elProto = Element.prototype;
         elProto.type = 'element';
@@ -1618,7 +1623,7 @@ class Element<Props extends ElementProps = ElementProps> {
         elProto.dragging = false;
         elProto.ignoreClip = false;
         elProto.__inHover = false;
-        elProto.__dirty = Element.REDARAW_BIT;
+        elProto.__dirty = REDARAW_BIT;
 
 
         const logs: Dictionary<boolean> = {};

@@ -1,6 +1,6 @@
 import { Dictionary, ArrayLike, KeyOfDistributive } from './types';
 import { GradientObject } from '../graphic/Gradient';
-import { PatternObject } from '../graphic/Pattern';
+import { ImagePatternObject } from '../graphic/Pattern';
 
 
 // 用于处理merge时无法遍历Date等对象的问题
@@ -548,8 +548,8 @@ export function isGradientObject(value: any): value is GradientObject {
     return (value as GradientObject).colorStops != null;
 }
 
-export function isPatternObject(value: any): value is PatternObject {
-    return (value as PatternObject).image != null;
+export function isImagePatternObject(value: any): value is ImagePatternObject {
+    return (value as ImagePatternObject).image != null;
 }
 
 export function isRegExp(value: unknown): value is RegExp {

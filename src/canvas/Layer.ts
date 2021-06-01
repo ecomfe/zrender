@@ -1,15 +1,16 @@
 import * as util from '../core/util';
 import {devicePixelRatio} from '../config';
-import { PatternObject } from '../graphic/Pattern';
+import { ImagePatternObject } from '../graphic/Pattern';
 import CanvasPainter from './Painter';
 import { GradientObject, InnerGradientObject } from '../graphic/Gradient';
 import { ZRCanvasRenderingContext } from '../core/types';
 import Eventful from '../core/Eventful';
-import Element, { ElementEventCallback } from '../Element';
+import { ElementEventCallback } from '../Element';
 import { getCanvasGradient } from './helper';
 import { createCanvasPattern } from './graphic';
 import Displayable from '../graphic/Displayable';
 import BoundingRect from '../core/BoundingRect';
+import { REDARAW_BIT } from '../graphic/constants';
 
 function returnFalse() {
     return false;
@@ -39,7 +40,7 @@ function createDom(id: string, painter: CanvasPainter, dpr: number) {
 
 export interface LayerConfig {
     // 每次清空画布的颜色
-    clearColor?: string | GradientObject | PatternObject
+    clearColor?: string | GradientObject | ImagePatternObject
     // 是否开启动态模糊
     motionBlur?: boolean
     // 在开启动态模糊的时候使用，与上一帧混合的alpha值，值越大尾迹越明显
@@ -62,7 +63,7 @@ export default class Layer extends Eventful {
     /**
      * 每次清空画布的颜色
      */
-    clearColor: string | GradientObject | PatternObject
+    clearColor: string | GradientObject | ImagePatternObject
     /**
      * 是否开启动态模糊
      */
@@ -280,7 +281,7 @@ export default class Layer extends Eventful {
                  * or not painted this frame.
                  */
                 const shouldPaint = el.shouldBePainted(viewWidth, viewHeight, true, true);
-                const prevRect = el.__isRendered && ((el.__dirty & Element.REDARAW_BIT) || !shouldPaint)
+                const prevRect = el.__isRendered && ((el.__dirty & REDARAW_BIT) || !shouldPaint)
                     ? el.getPrevPaintRect()
                     : null;
                 if (prevRect) {
@@ -292,7 +293,7 @@ export default class Layer extends Eventful {
                  * if the element should be brushed this frame and either being
                  * dirty or not rendered before.
                  */
-                const curRect = shouldPaint && ((el.__dirty & Element.REDARAW_BIT) || !el.__isRendered)
+                const curRect = shouldPaint && ((el.__dirty & REDARAW_BIT) || !el.__isRendered)
                     ? el.getPaintRect()
                     : null;
                 if (curRect) {
@@ -352,7 +353,7 @@ export default class Layer extends Eventful {
                 }
                 i++;
             }
-        } while (hasIntersections)
+        } while (hasIntersections);
 
         this._paintRects = mergedRepaintRects;
 
@@ -396,7 +397,7 @@ export default class Layer extends Eventful {
      */
     clear(
         clearAll?: boolean,
-        clearColor?: string | GradientObject | PatternObject,
+        clearColor?: string | GradientObject | ImagePatternObject,
         repaintRects?: BoundingRect[]
     ) {
         const dom = this.dom;
@@ -444,7 +445,7 @@ export default class Layer extends Eventful {
                     (clearColor as InnerGradientObject).__canvasGradient = clearColorGradientOrPattern;
                 }
                 // Pattern
-                else if (util.isPatternObject(clearColor)) {
+                else if (util.isImagePatternObject(clearColor)) {
                     clearColorGradientOrPattern = createCanvasPattern(
                         ctx, clearColor, {
                             dirty() {
@@ -487,7 +488,7 @@ export default class Layer extends Eventful {
     }
 
     // Iterface of refresh
-    refresh: (clearColor?: string | GradientObject | PatternObject) => void
+    refresh: (clearColor?: string | GradientObject | ImagePatternObject) => void
 
     // Interface of renderToCanvas in getRenderedCanvas
     renderToCanvas: (ctx: CanvasRenderingContext2D) => void

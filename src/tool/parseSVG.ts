@@ -725,9 +725,6 @@ function parseAttributes(
     if (inheritedStyle.display === 'none') {
         disp.ignore = true;
     }
-
-    disp.z = -10000;
-    disp.z2 = -1000;
 }
 
 function applyTextAlignment(
@@ -819,6 +816,7 @@ function splitNumberSequence(rawStr: string): string[] {
 
 
 const transformRegex = /(translate|scale|rotate|skewX|skewY|matrix)\(([\-\s0-9\.eE,]*)\)/g;
+const DEGREE_TO_ANGLE = Math.PI / 180;
 
 function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
     let transform = xmlNode.getAttribute('transform');
@@ -830,30 +828,32 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
             transformOps.push(type, value);
             return '';
         });
+
         for (let i = transformOps.length - 1; i > 0; i -= 2) {
-            let value = transformOps[i];
-            let type = transformOps[i - 1];
-            let valueArr: string[];
+            const value = transformOps[i];
+            const type = transformOps[i - 1];
+            const valueArr: string[] = splitNumberSequence(value);
             mt = mt || matrix.create();
             switch (type) {
                 case 'translate':
-                    valueArr = splitNumberSequence(value);
                     matrix.translate(mt, mt, [parseFloat(valueArr[0]), parseFloat(valueArr[1] || '0')]);
                     break;
                 case 'scale':
-                    valueArr = splitNumberSequence(value);
                     matrix.scale(mt, mt, [parseFloat(valueArr[0]), parseFloat(valueArr[1] || valueArr[0])]);
                     break;
                 case 'rotate':
-                    valueArr = splitNumberSequence(value);
-                    matrix.rotate(mt, mt, -parseFloat(valueArr[0]) / 180 * Math.PI);
+                    // TODO: zrender use different hand in coordinate system.
+                    matrix.rotate(mt, mt, -parseFloat(valueArr[0]) * DEGREE_TO_ANGLE);
                     break;
-                case 'skew':
-                    valueArr = splitNumberSequence(value);
-                    console.warn('Skew transform is not supported yet');
+                case 'skewX':
+                    const sx = Math.tan(parseFloat(valueArr[0]) * DEGREE_TO_ANGLE);
+                    matrix.mul(mt, [1, 0, sx, 1, 0, 0], mt);
+                    break;
+                case 'skewY':
+                    const sy = Math.tan(parseFloat(valueArr[0]) * DEGREE_TO_ANGLE);
+                    matrix.mul(mt, [1, sy, 0, 1, 0, 0], mt);
                     break;
                 case 'matrix':
-                    valueArr = splitNumberSequence(value);
                     mt[0] = parseFloat(valueArr[0]);
                     mt[1] = parseFloat(valueArr[1]);
                     mt[2] = parseFloat(valueArr[2]);

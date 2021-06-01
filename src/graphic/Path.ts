@@ -7,7 +7,7 @@ import Displayable, { DisplayableProps,
 import Element, { ElementAnimateConfig } from '../Element';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
-import Pattern, { PatternObject } from './Pattern';
+import { PatternObject } from './Pattern';
 import { Dictionary, PropType, MapToType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
@@ -16,6 +16,7 @@ import { defaults, keys, extend, clone, isString, createObject } from '../core/u
 import Animator from '../animation/Animator';
 import { lum } from '../tool/color';
 import { DARK_LABEL_COLOR, LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, LIGHTER_LABEL_COLOR } from '../config';
+import { REDARAW_BIT, SHAPE_CHANGED_BIT, STYLE_CHANGED_BIT } from './constants';
 
 
 export interface PathStyleProps extends CommonStyleProps {
@@ -166,8 +167,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
         const style = this.style;
         if (style.decal) {
-            const decalEl: Path = this._decalEl
-                = this._decalEl || new Path();
+            const decalEl: Path = this._decalEl = this._decalEl || new Path();
             if (decalEl.buildPath === Path.prototype.buildPath) {
                 decalEl.buildPath = ctx => {
                     this.buildPath(ctx, this.shape);
@@ -192,7 +192,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
                 (decalEl as any)[pathCopyParams[i]] = this[pathCopyParams[i]];
             }
 
-            decalEl.__dirty |= Element.REDARAW_BIT;
+            decalEl.__dirty |= REDARAW_BIT;
         }
         else if (this._decalEl) {
             this._decalEl = null;
@@ -306,7 +306,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     ) {}
 
     pathUpdated() {
-        this.__dirty &= ~Path.SHAPE_CHANGED_BIT;
+        this.__dirty &= ~SHAPE_CHANGED_BIT;
     }
 
     createPathProxy() {
@@ -337,7 +337,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
                 this.createPathProxy();
             }
             let path = this.path;
-            if (firstInvoke || (this.__dirty & Path.SHAPE_CHANGED_BIT)) {
+            if (firstInvoke || (this.__dirty & SHAPE_CHANGED_BIT)) {
                 path.beginPath();
                 this.buildPath(path, this.shape, false);
                 this.pathUpdated();
@@ -416,7 +416,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      * Shape changed
      */
     dirtyShape() {
-        this.__dirty |= Path.SHAPE_CHANGED_BIT;
+        this.__dirty |= SHAPE_CHANGED_BIT;
         if (this._rect) {
             this._rect = null;
         }
@@ -486,7 +486,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      * If shape changed. used with dirtyShape
      */
     shapeChanged() {
-        return !!(this.__dirty & Path.SHAPE_CHANGED_BIT);
+        return !!(this.__dirty & SHAPE_CHANGED_BIT);
     }
 
     /**
@@ -654,8 +654,6 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         return Sub as any;
     }
 
-    static SHAPE_CHANGED_BIT = 4
-
     protected static initDefaultProps = (function () {
         const pathProto = Path.prototype;
         pathProto.type = 'path';
@@ -663,7 +661,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         pathProto.segmentIgnoreThreshold = 0;
         pathProto.subPixelOptimize = false;
         pathProto.autoBatch = false;
-        pathProto.__dirty = Element.REDARAW_BIT | Displayable.STYLE_CHANGED_BIT | Path.SHAPE_CHANGED_BIT;
+        pathProto.__dirty = REDARAW_BIT | STYLE_CHANGED_BIT | SHAPE_CHANGED_BIT;
     })()
 }
 

@@ -6,12 +6,12 @@
 import Definable from './Definable';
 import * as zrUtil from '../../core/util';
 import Displayable from '../../graphic/Displayable';
-import {PatternObject} from '../../graphic/Pattern';
+import {PatternObject, ImagePatternObject, SVGPatternObject} from '../../graphic/Pattern';
 import {createOrUpdateImage} from '../../graphic/helper/image';
 import WeakMap from '../../core/WeakMap';
 
 function isPattern(value: PatternObject | string): value is PatternObject {
-    return value && (!!(value as PatternObject).image || !!(value as PatternObject).svgElement);
+    return value && (!!(value as ImagePatternObject).image || !!(value as SVGPatternObject).svgElement);
 }
 
 const patternDomMap = new WeakMap<PatternObject, SVGElement>();
@@ -123,22 +123,22 @@ export default class PatternManager extends Definable {
      * @param patternDom DOM to update
      */
     updateDom(pattern: PatternObject, patternDom: SVGElement) {
-        const svgElement = pattern.svgElement;
+        const svgElement = (pattern as SVGPatternObject).svgElement;
 
         if (svgElement instanceof SVGElement) {
             if (svgElement.parentNode !== patternDom) {
                 patternDom.innerHTML = '';
                 patternDom.appendChild(svgElement);
 
-                patternDom.setAttribute('width', pattern.svgWidth + '');
-                patternDom.setAttribute('height', pattern.svgHeight + '');
+                patternDom.setAttribute('width', (pattern as SVGPatternObject).svgWidth + '');
+                patternDom.setAttribute('height', (pattern as SVGPatternObject).svgHeight + '');
             }
         }
         else {
             let img: SVGElement;
             const prevImage = patternDom.getElementsByTagName('image');
             if (prevImage.length) {
-                if (pattern.image) {
+                if ((pattern as ImagePatternObject).image) {
                     // Update
                     img = prevImage[0];
                 }
@@ -148,21 +148,22 @@ export default class PatternManager extends Definable {
                     return;
                 }
             }
-            else if (pattern.image) {
+            else if ((pattern as ImagePatternObject).image) {
                 // Create
                 img = this.createElement('image');
             }
 
             if (img) {
                 let imageSrc;
-                if (typeof pattern.image === 'string') {
-                    imageSrc = pattern.image;
+                const patternImage = (pattern as ImagePatternObject).image;
+                if (typeof patternImage === 'string') {
+                    imageSrc = patternImage;
                 }
-                else if (pattern.image instanceof HTMLImageElement) {
-                    imageSrc = pattern.image.src;
+                else if (patternImage instanceof HTMLImageElement) {
+                    imageSrc = patternImage.src;
                 }
-                else if (pattern.image instanceof HTMLCanvasElement) {
-                    imageSrc = pattern.image.toDataURL();
+                else if (patternImage instanceof HTMLCanvasElement) {
+                    imageSrc = patternImage.toDataURL();
                 }
 
                 if (imageSrc) {
@@ -216,8 +217,3 @@ export default class PatternManager extends Definable {
     }
 
 }
-
-type CachedImageObj = {
-    width: number,
-    height: number
-};

@@ -14,6 +14,7 @@
     "prepublish": "npm run release",
     "build": "npm run build:bundle && npm run build:lib",
     "release": "node build/build.js --minify && npm run build:lib",
+    "prepare:nightly": "node build/prepareNightly.js",
     "build:bundle": "node build/build.js",
     "build:lib": "npx tsc -m ES2015 --outDir lib",
     "watch:bundle": "node build/build.js --watch",

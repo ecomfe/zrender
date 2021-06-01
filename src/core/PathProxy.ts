@@ -92,12 +92,10 @@ export function normalizeArcAngles(angles: number[], anticlockwise: boolean): vo
     // Make startAngle < endAngle when clockwise, otherwise endAngle < startAngle.
     // The sweep angle can never been larger than P2.
     else if (!anticlockwise && newStartAngle > newEndAngle) {
-        newEndAngle = newStartAngle +
-            (PI2 - modPI2(newStartAngle - newEndAngle));
+        newEndAngle = newStartAngle + (PI2 - modPI2(newStartAngle - newEndAngle));
     }
     else if (anticlockwise && newStartAngle < newEndAngle) {
-        newEndAngle = newStartAngle -
-            (PI2 - modPI2(newEndAngle - newStartAngle));
+        newEndAngle = newStartAngle - (PI2 - modPI2(newEndAngle - newStartAngle));
     }
 
     angles[0] = newStartAngle;
@@ -112,11 +110,25 @@ export default class PathProxy {
     data: number[] | Float32Array
 
     /**
-     * Version is for detecing if the path has been changed.
+     * Version is for tracking if the path has been changed.
      */
-    private _version = 0
+    private _version: number
 
+    /**
+     * If save path data.
+     */
     private _saveData: boolean
+
+    /**
+     * If the line segment is too small to draw. It will be added to the pending pt.
+     * It will be added if the subpath needs to be finished before stroke, fill, or starting a new subpath.
+     */
+    private _pendingPtX: number;
+    private _pendingPtY: number;
+    // Distance of pending pt to previous point.
+    // 0 if there is no pending point.
+    // Only update the pending pt when distance is larger.
+    private _pendingPtDist: number;
 
     private _ctx: ExtendedCanvasRenderingContext2D
 
@@ -135,6 +147,7 @@ export default class PathProxy {
     private _ux: number
     private _uy: number
 
+    // For dash shim.
     private _lineDash: number[]
     private _needsDash: boolean
     private _dashOffset: number
@@ -219,6 +232,9 @@ export default class PathProxy {
     }
 
     moveTo(x: number, y: number) {
+        // Add pending point for previous path.
+        this._drawPendingPt();
+
         this.addData(CMD.M, x, y);
         this._ctx && this._ctx.moveTo(x, y);
 
@@ -236,10 +252,9 @@ export default class PathProxy {
     }
 
     lineTo(x: number, y: number) {
-        const exceedUnit = mathAbs(x - this._xi) > this._ux
-            || mathAbs(y - this._yi) > this._uy
-            // Force draw the first segment
-            || this._len < 5;
+        const dx = mathAbs(x - this._xi);
+        const dy = mathAbs(y - this._yi);
+        const exceedUnit = dx > this._ux || dy > this._uy;
 
         this.addData(CMD.L, x, y);
 
@@ -250,6 +265,16 @@ export default class PathProxy {
         if (exceedUnit) {
             this._xi = x;
             this._yi = y;
+            this._pendingPtDist = 0;
+        }
+        else {
+            const d2 = dx * dx + dy * dy;
+            // Only use the farthest pending point.
+            if (d2 > this._pendingPtDist) {
+                this._pendingPtX = x;
+                this._pendingPtY = y;
+                this._pendingPtDist = d2;
+            }
         }
 
         return this;
@@ -313,10 +338,10 @@ export default class PathProxy {
         return this;
     }
 
-    /**
-     * @return {module:zrender/core/PathProxy}
-     */
     closePath() {
+        // Add pending point for previous path.
+        this._drawPendingPt();
+
         this.addData(CMD.Z);
 
         const ctx = this._ctx;
@@ -449,7 +474,14 @@ export default class PathProxy {
         }
     }
 
-    _expandData() {
+    private _drawPendingPt() {
+        if (this._pendingPtDist > 0) {
+            this._ctx && this._ctx.lineTo(this._pendingPtX, this._pendingPtY);
+            this._pendingPtDist = 0;
+        }
+    }
+
+    private _expandData() {
         // Only if data is Float32Array
         if (!(this.data instanceof Array)) {
             const newData = [];
@@ -460,7 +492,7 @@ export default class PathProxy {
         }
     }
 
-    _dashedLineTo(x1: number, y1: number) {
+    private _dashedLineTo(x1: number, y1: number) {
         const dashSum = this._dashSum;
         const lineDash = this._lineDash;
         const ctx = this._ctx;
@@ -510,7 +542,7 @@ export default class PathProxy {
     }
 
     // Not accurate dashed line to
-    _dashedBezierTo(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
+    private _dashedBezierTo(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
         const ctx = this._ctx;
 
         let dashSum = this._dashSum;
@@ -577,7 +609,7 @@ export default class PathProxy {
         this._dashOffset = -mathSqrt(dx * dx + dy * dy);
     }
 
-    _dashedQuadraticTo(x1: number, y1: number, x2: number, y2: number) {
+    private _dashedQuadraticTo(x1: number, y1: number, x2: number, y2: number) {
         // Convert quadratic to cubic using degree elevation
         const x3 = x2;
         const y3 = y2;
@@ -601,6 +633,9 @@ export default class PathProxy {
         if (!this._saveData) {
             return;
         }
+
+        this._drawPendingPt();
+
         const data = this.data;
         if (data instanceof Array) {
             data.length = this._len;
@@ -879,6 +914,12 @@ export default class PathProxy {
         let accumLength = 0;
         let segCount = 0;
         let displayedLength;
+
+        let pendingPtDist = 0;
+        let pendingPtX: number;
+        let pendingPtY: number;
+
+
         if (drawPart) {
             if (!this._pathSegLen) {
                 this._calculateLength();
@@ -908,6 +949,10 @@ export default class PathProxy {
             }
             switch (cmd) {
                 case CMD.M:
+                    if (pendingPtDist > 0) {
+                        ctx.lineTo(pendingPtX, pendingPtY);
+                        pendingPtDist = 0;
+                    }
                     x0 = xi = d[i++];
                     y0 = yi = d[i++];
                     ctx.moveTo(xi, yi);
@@ -915,8 +960,10 @@ export default class PathProxy {
                 case CMD.L: {
                     x = d[i++];
                     y = d[i++];
+                    const dx = mathAbs(x - xi);
+                    const dy = mathAbs(y - yi);
                     // Not draw too small seg between
-                    if (mathAbs(x - xi) > ux || mathAbs(y - yi) > uy || i === len - 1) {
+                    if (dx > ux || dy > uy) {
                         if (drawPart) {
                             const l = pathSegLen[segCount++];
                             if (accumLength + l > displayedLength) {
@@ -930,6 +977,16 @@ export default class PathProxy {
                         ctx.lineTo(x, y);
                         xi = x;
                         yi = y;
+                        pendingPtDist = 0;
+                    }
+                    else {
+                        const d2 = dx * dx + dy * dy;
+                        // Only use the farthest pending point.
+                        if (d2 > pendingPtDist) {
+                            pendingPtX = x;
+                            pendingPtY = y;
+                            pendingPtDist = d2;
+                        }
                     }
                     break;
                 }
@@ -1058,6 +1115,11 @@ export default class PathProxy {
                     ctx.rect(x, y, width, height);
                     break;
                 case CMD.Z:
+                    if (pendingPtDist > 0) {
+                        ctx.lineTo(pendingPtX, pendingPtY);
+                        pendingPtDist = 0;
+                    }
+
                     if (drawPart) {
                         const l = pathSegLen[segCount++];
                         if (accumLength + l > displayedLength) {
@@ -1084,6 +1146,8 @@ export default class PathProxy {
         proto._dashSum = 0;
         proto._ux = 0;
         proto._uy = 0;
+        proto._pendingPtDist = 0;
+        proto._version = 0;
     })()
 }
 

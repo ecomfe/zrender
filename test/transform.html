@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <script src="../dist/zrender.js"></script>
+    <title>SVG Compare</title>
+
+    <!-- http://angrytools.com/css-generator/transform/ -->
+
+</head>
+<body>
+    <style>
+        html, body {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            background: #999;
+        }
+
+        .block {
+            width: 800px;
+            height: 120px;
+            margin-left: 10px;
+        }
+        h4 {
+            line-height: 1.5;
+            margin: 0;
+            padding-left: 10px;
+        }
+
+        #controller {
+            position: fixed;
+            right: 10px;
+            top: 10px;
+            background-color: #fff;
+            box-shadow: 0 0 5px #000;
+            padding: 10px;
+        }
+        .controller-line {
+            text-align: right;
+        }
+        .range {
+            vertical-align: middle;
+        }
+        .range-value {
+            display: inline-block;
+            width: 30px;
+            vertical-align: middle;
+            text-align: right;
+        }
+        .order-item {
+            display: inline-block;
+            vertical-align: middle;
+            border: 1px solid #000;
+            background-color: #ddd;
+            padding: 3px;
+            margin: 3px;
+            cursor: pointer;
+            user-select: none;
+        }
+    </style>
+
+
+
+
+    <div id="controller">
+        <div id="transform_matrix"></div>
+        <hr/>
+        <div class="controller-line">
+            scale x
+            <input id="scale_x_range" class="range" type="range" min="-2" max="2" step="0.1" value="1">
+            <span id="scale_x_value" class="range-value"></span>
+        </div>
+        <div class="controller-line">
+            scale y
+            <input id="scale_y_range" class="range" type="range" min="-2" max="2" step="0.1" value="-1">
+            <span id="scale_y_value" class="range-value"></span>
+        </div>
+        <div class="controller-line">
+            translate x
+            <input id="translate_x_range" class="range" type="range" min="-200" max="200" step="1" value="57">
+            <span id="translate_x_value" class="range-value"></span>
+        </div>
+        <div class="controller-line">
+            translate y
+            <input id="translate_y_range" class="range" type="range" min="-200" max="200" step="1" value="39">
+            <span id="translate_y_value" class="range-value"></span>
+        </div>
+        <div class="controller-line">
+            skew x
+            <input id="skew_x_range" class="range" type="range" min="-180" max="180" step="1" value="31">
+            <span id="skew_x_value" class="range-value"></span>
+        </div>
+        <div class="controller-line">
+            skew y
+            <input id="skew_y_range" class="range" type="range" min="-180" max="180" step="1" value="10">
+            <span id="skew_y_value" class="range-value"></span>
+        </div>
+        <div class="controller-line">
+            rotate
+            <input id="rotate_range" class="range" type="range" min="-180" max="180" step="1" value="0">
+            <span id="rotate_value" class="range-value"></span>
+        </div>
+        <br/>
+        <div>
+            Drag to change order:<br>
+            1 <span id="drop_zone_1"><span id="order_translate" draggable="true" class="order-item">translate</span></span>
+            2 <span id="drop_zone_2"><span id="order_rotate" draggable="true" class="order-item">rotate</span></span>
+            3 <span id="drop_zone_3"><span id="order_skew" draggable="true" class="order-item">skew</span></span>
+            4 <span id="drop_zone_4"><span id="order_scale" draggable="true" class="order-item">scale</span></span>
+        </div>
+        <br/>
+        <hr/>
+        <div>
+            Test Cases:<br>
+            <ol>
+                <li>scale x and scale y has different sign</li>
+                <li>skew</li>
+                <li>0 1 1 0 100 100</li>
+            </ol>
+        </div>
+
+        </div>
+    </div>
+
+    <div id="convert_to_transform"></div>
+
+
+
+
+    <h4>SVG transform: matrix(...)</h4>
+    <svg id="svg_matrix" xmlns="http://www.w3.org/2000/svg"
+        xmlns:ooo="http://xml.openoffice.org/svg/export"
+        xmlns:xlink="http://www.w3.org/1999/xlink"
+        version="1.2"
+        fill-rule="evenodd" xml:space="preserve"
+        class="block"
+        style="background: #eee;"
+        >
+    <text id="svgText_matrix"
+        fill="orange"
+        x="0"
+        y="0"
+        text-anchor="middle"
+        alignment-baseline="middle",
+        font-family="Arial" font-size="70">4</text>
+    </svg>
+
+    <h4>SVG transform: method(...) method(...)</h4>
+    <svg id="svg_method" xmlns="http://www.w3.org/2000/svg"
+        xmlns:ooo="http://xml.openoffice.org/svg/export"
+        xmlns:xlink="http://www.w3.org/1999/xlink"
+        version="1.2"
+        fill-rule="evenodd" xml:space="preserve"
+        class="block"
+        style="background: #eee;"
+        >
+    <text id="svgText_method"
+        fill="orange"
+        x="0"
+        y="0"
+        text-anchor="middle"
+        alignment-baseline="middle",
+        font-family="Arial" font-size="70">4</text>
+    </svg>
+
+    <h4>Raw HTML Cavas setTransform</h4>
+    <canvas id="canvas" class="block" style="
+        background: #eee;
+    "></canvas>
+
+    <h4>ZRender setLocalTransform</h4>
+    <div id="zr_setLocalTransform" class="block" style="
+    "></div>
+
+    <h4>ZRender parseSVG with transform: matrix(...)</h4>
+    <div id="zr_parseSVG_matrix" class="block" style="
+    "></div>
+
+    <h4>ZRender parseSVG with transform: method(...) method(...)</h4>
+    <div id="zr_parseSVG_method" class="block" style="
+    "></div>
+
+
+    <script type="text/javascript">
+
+        function initController({ onInput }) {
+            const scaleXRangeDom = document.getElementById('scale_x_range');
+            const scaleYRangeDom = document.getElementById('scale_y_range');
+            const scaleXValueDom = document.getElementById('scale_x_value');
+            const scaleYValueDom = document.getElementById('scale_y_value');
+
+            const translateXRangeDom = document.getElementById('translate_x_range');
+            const translateYRangeDom = document.getElementById('translate_y_range');
+            const translateXValueDom = document.getElementById('translate_x_value');
+            const translateYValueDom = document.getElementById('translate_y_value');
+
+            const skewXRangeDom = document.getElementById('skew_x_range');
+            const skewYRangeDom = document.getElementById('skew_y_range');
+            const skewXValueDom = document.getElementById('skew_x_value');
+            const skewYValueDom = document.getElementById('skew_y_value');
+
+            const rotateRangeDom = document.getElementById('rotate_range');
+            const rotateValueDom = document.getElementById('rotate_value');
+
+            const matrixDom = document.getElementById('transform_matrix');
+
+            function initInputListener() {
+                scaleXRangeDom.addEventListener('input', update);
+                scaleYRangeDom.addEventListener('input', update);
+                translateXRangeDom.addEventListener('input', update);
+                translateYRangeDom.addEventListener('input', update);
+                skewXRangeDom.addEventListener('input', update);
+                skewYRangeDom.addEventListener('input', update);
+                rotateRangeDom.addEventListener('input', update);
+            }
+
+            const dropZoneIdList = [
+                'drop_zone_1',
+                'drop_zone_2',
+                'drop_zone_3',
+                'drop_zone_4'
+            ];
+
+            function initOrderDrag() {
+                [
+                    'order_translate',
+                    'order_rotate',
+                    'order_skew',
+                    'order_scale'
+                ].forEach(function (id) {
+                    const el = document.getElementById(id);
+                    el.addEventListener('dragstart', handleDragStart);
+                });
+                dropZoneIdList.forEach(function (id) {
+                    const el = document.getElementById(id);
+                    el.addEventListener('dragover', handleDragOver);
+                    el.addEventListener('drop', handleDrop);
+                });
+
+                function handleDragStart(event) {
+                    const draggingDom = event.currentTarget;
+                    event.dataTransfer.setData('id', draggingDom.id);
+                    event.dataTransfer.setData('start_drop_zone', getDropZoneByDraggableEl(draggingDom).id);
+                }
+                function handleDragOver(event) {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'move';
+                }
+                function handleDrop(event) {
+                    event.preventDefault();
+                    const draggingId = event.dataTransfer.getData('id');
+                    const startDropZoneEl = document.getElementById(event.dataTransfer.getData('start_drop_zone'));
+                    const draggingEl = document.getElementById(draggingId);
+                    const endDrapZoneEl = event.currentTarget;
+                    const endOriginalDraggableEl = getDraggableElByDropZone(endDrapZoneEl);
+
+                    endDrapZoneEl.appendChild(draggingEl);
+                    startDropZoneEl.appendChild(endOriginalDraggableEl);
+
+                    update();
+                }
+            }
+
+            function getDropZoneByDraggableEl(el) {
+                return el.parentNode;
+            }
+            function getDraggableElByDropZone(zoneEl) {
+                return zoneEl.getElementsByTagName('span')[0];
+            }
+            function getTransformMethodByDraggableEl(draggableEl) {
+                return draggableEl.innerHTML;
+            }
+
+            function getOrder() {
+                const order = [];
+                dropZoneIdList.forEach(function (id) {
+                    const dropZoneEl = document.getElementById(id);
+                    const draggableEl = getDraggableElByDropZone(dropZoneEl);
+                    const transformMethod = getTransformMethodByDraggableEl(draggableEl);
+                    order.push(transformMethod);
+                });
+                return order;
+            }
+
+            function update() {
+                const scaleX = +scaleXRangeDom.value;
+                const scaleY = +scaleYRangeDom.value;
+                const translateX = +translateXRangeDom.value;
+                const translateY = +translateYRangeDom.value;
+                const skewX = +skewXRangeDom.value;
+                const skewY = +skewYRangeDom.value;
+                const rotate = +rotateRangeDom.value;
+
+                scaleXValueDom.innerHTML = scaleX;
+                scaleYValueDom.innerHTML = scaleY;
+                translateXValueDom.innerHTML = translateX;
+                translateYValueDom.innerHTML = translateY;
+                skewXValueDom.innerHTML = skewX;
+                skewYValueDom.innerHTML = skewY;
+                rotateValueDom.innerHTML = rotate;
+
+                const transformMap = {
+                    translate: [translateX, translateY],
+                    rotate: [rotate],
+                    skew: [skewX, skewY],
+                    scale: [scaleX, scaleY]
+                }
+                const order = getOrder();
+                const attrs = [];
+                order.forEach(function (transformMethod) {
+                    attrs.push({
+                        name: transformMethod,
+                        value: transformMap[transformMethod]
+                    });
+                });
+
+                const matrix = convertToTransformMatrix(attrs);
+                matrixDom.innerHTML = `matrix: ${matrix.join(' ')}`;
+
+                onInput({ matrix, transformMethodList: attrs });
+            }
+
+            initInputListener();
+            initOrderDrag();
+
+            update();
+        }
+
+        /**
+         * attrs: [{
+         *     name: 'scale' | 'skew' | 'translate' | 'rotate',
+         *     value: number[]
+         * }]
+         */
+        function convertToTransformMatrix(attrs) {
+            const transContent = [];
+            const dom = document.getElementById('convert_to_transform');
+            for (const attrItem of attrs) {
+                let value = attrItem.value;
+                if (attrItem.name === 'translate') {
+                    value = attrItem.value.map(val => val + 'px');
+                }
+                if (attrItem.name === 'skew' || attrItem.name === 'rotate') {
+                    value = attrItem.value.map(val => val + 'deg');
+                }
+                transContent.push(`${attrItem.name}(${value.join(',')})`);
+            }
+            const cssText = `transform: ${transContent.join(' ')}`;
+            dom.style.cssText = cssText;
+            const trans = window.getComputedStyle(dom, null).transform;
+            const values = trans.match(/-?\d+\.?\d*/g);
+            return values;
+        }
+
+        function paintInRawSVG_matrix(params) {
+            const mtStr = params.matrix.join(' ');
+            const textEl = document.getElementById('svgText_matrix');
+            textEl.setAttribute('transform', 'matrix(' + mtStr + ')');
+        }
+
+        function paintInRawSVG_method(params) {
+            const transStrArr = [];
+            params.transformMethodList.forEach(function (methodItem) {
+                if (methodItem.name === 'skew') {
+                    transStrArr.push(`skewX(${methodItem.value[0]})`);
+                    transStrArr.push(`skewY(${methodItem.value[1]})`);
+                }
+                else {
+                    transStrArr.push(`${methodItem.name}(${methodItem.value.join(',')})`);
+                }
+            });
+            const textEl = document.getElementById('svgText_method');
+            console.log(transStrArr.join(' '));
+            textEl.setAttribute('transform', transStrArr.join(' '));
+        }
+
+        function paintInRawCanvas(params) {
+            const mt = params.matrix.slice();
+            const dom = document.getElementById('canvas');
+            const ctx = dom.getContext('2d');
+            dom.width = 800;
+            dom.height = 120;
+            ctx.save();
+            ctx.setTransform.apply(ctx, mt);
+            ctx.fillStyle = 'green';
+            ctx.font = '70px Arial';
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+            ctx.fillText(4, 0, 0);
+            ctx.restore();
+        }
+
+        function paintInZRenderSetLocalTransform(params) {
+            const mt = params.matrix.slice();
+            const zr = zrender.init(document.getElementById('zr_setLocalTransform'));
+            zr.setBackgroundColor('#eee');
+            const text = new zrender.Text({
+                style: {
+                    text: '4',
+                    x: 0,
+                    y: 0,
+                    font: '70px Arial',
+                    fill: 'blue',
+                    align: 'center',
+                    verticalAlign: 'middle'
+                }
+            });
+            text.setLocalTransform(mt);
+            text.updateTransform();
+            zr.add(text);
+        }
+
+        // Must be called after paintInRawSVG_matrix called;
+        function paintInZRenderParseSVG_matrix(params) {
+            const mt = params.matrix.slice();
+            const zr = zrender.init(document.getElementById('zr_parseSVG_matrix'));
+            zr.setBackgroundColor('#eee');
+            const svgMatrixDom = document.getElementById('svg_matrix');
+            const result = zrender.parseSVG(svgMatrixDom);
+            zr.add(result.root);
+        }
+
+        // Must be called after paintInRawSVG_method called;
+        function paintInZRenderParseSVG_method(params) {
+            const mt = params.matrix.slice();
+            const zr = zrender.init(document.getElementById('zr_parseSVG_method'));
+            zr.setBackgroundColor('#eee');
+            const svgMatrixDom = document.getElementById('svg_method');
+            const result = zrender.parseSVG(svgMatrixDom);
+            zr.add(result.root);
+        }
+
+
+        initController({
+            onInput: function (params) {
+                console.log('matrix', params.matrix);
+                paintInRawSVG_matrix(params);
+                paintInRawSVG_method(params);
+                paintInRawCanvas(params);
+                paintInZRenderSetLocalTransform(params);
+                paintInZRenderParseSVG_matrix(params);
+                paintInZRenderParseSVG_method(params);
+            }
+        });
+
+
+
+    </script>
+
+
+
+
+</body>
+</html>
