@@ -44,7 +44,6 @@ class Transformable {
 
     /**
      * Get computed local transform
-     * It can be overrided.
      */
     getLocalTransform(m?: matrix.MatrixArray) {
         return Transformable.getLocalTransform(this, m);
@@ -284,13 +283,11 @@ class Transformable {
 
     copyTransform(source: Transformable) {
         const target = this;
-        target.x = source.x;
-        target.y = source.y;
-        target.scaleX = source.scaleY;
-        target.scaleY = source.scaleY;
-        target.originX = source.originX;
-        target.originY = source.originY;
-        target.rotation = source.rotation;
+
+        for (let i = 0; i < TRANSFORMABLE_PROPS.length; i++) {
+            const propName = TRANSFORMABLE_PROPS[i];
+            target[propName] = source[propName];
+        }
     }
 
 
@@ -349,5 +346,9 @@ class Transformable {
         proto.globalScaleRatio = 1;
     })()
 };
+
+export const TRANSFORMABLE_PROPS = [
+    'x', 'y', 'originX', 'originY', 'rotation', 'scaleX', 'scaleY', 'skewX', 'skewY'
+] as const;
 
 export default Transformable;

@@ -267,10 +267,11 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
     overlap: 'hidden' | 'show' | 'blur'
 
     /**
-     * Calculated transform after the text is attached on some element.
-     * Will override the default transform.
+     * Will use this to calculate transform matrix
+     * instead of Element itseelf if it's give.
+     * Not exposed to developers
      */
-    attachedTransform: Transformable
+    innerTransformable: Transformable
 
     private _children: (ZRImage | Rect | TSpan)[] = []
 
@@ -309,6 +310,26 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         }
     }
 
+     updateTransform() {
+        const innerTransformable = this.innerTransformable;
+        if (innerTransformable) {
+            innerTransformable.updateTransform();
+            if (innerTransformable.transform) {
+                this.transform = innerTransformable.transform;
+            }
+        }
+        else {
+            super.updateTransform();
+        }
+    }
+
+    getLocalTransform(): MatrixArray {
+        const innerTransformable = this.innerTransformable;
+        return innerTransformable
+            ? innerTransformable.getLocalTransform()
+            : super.getLocalTransform();
+    }
+    // TODO override setLocalTransform?
     getComputedTransform() {
         if (this.__hostTarget) {
             // Update host target transform

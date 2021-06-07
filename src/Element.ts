@@ -488,6 +488,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     update() {
         this.updateTransform();
+
         if (this.__dirty) {
             this.updateInnerText();
         }
@@ -502,34 +503,21 @@ class Element<Props extends ElementProps = ElementProps> {
             }
             const textConfig = this.textConfig;
             const isLocal = textConfig.local;
-            const attachedTransform = textEl.attachedTransform;
+            const innerTransformable = textEl.innerTransformable;
 
             let textAlign: TextAlign;
             let textVerticalAlign: TextVerticalAlign;
 
             let textStyleChanged = false;
 
-            // TODO Restore the element after textConfig changed.
-            // TODO Performance?
             // Apply host's transform.
-            textEl.parent = this as unknown as Group;
-            textEl.needLocalTransform = () => {
-                return attachedTransform.needLocalTransform();
-            };
-            textEl.getLocalTransform = (m: MatrixArray) => {
-                return attachedTransform.getLocalTransform(m);
-            };
+            innerTransformable.parent = isLocal ? this as unknown as Group : null;
 
             let innerOrigin = false;
 
             // Reset x/y/rotation
-            attachedTransform.x = textEl.x;
-            attachedTransform.y = textEl.y;
-            attachedTransform.originX = textEl.originX;
-            attachedTransform.originY = textEl.originY;
-            attachedTransform.rotation = textEl.rotation;
-            attachedTransform.scaleX = textEl.scaleX;
-            attachedTransform.scaleY = textEl.scaleY;
+            innerTransformable.copyTransform(textEl);
+
             // Force set attached text's position if `position` is in config.
             if (textConfig.position != null) {
                 let layoutRect = tmpBoundingRect;
@@ -552,8 +540,8 @@ class Element<Props extends ElementProps = ElementProps> {
 
                 // TODO Should modify back if textConfig.position is set to null again.
                 // Or textContent is detached.
-                attachedTransform.x = tmpTextPosCalcRes.x;
-                attachedTransform.y = tmpTextPosCalcRes.y;
+                innerTransformable.x = tmpTextPosCalcRes.x;
+                innerTransformable.y = tmpTextPosCalcRes.y;
 
                 // User specified align/verticalAlign has higher priority, which is
                 // useful in the case that attached text is rotated 90 degree.
@@ -574,26 +562,26 @@ class Element<Props extends ElementProps = ElementProps> {
                     }
 
                     innerOrigin = true;
-                    attachedTransform.originX = -attachedTransform.x + relOriginX + (isLocal ? 0 : layoutRect.x);
-                    attachedTransform.originY = -attachedTransform.y + relOriginY + (isLocal ? 0 : layoutRect.y);
+                    innerTransformable.originX = -innerTransformable.x + relOriginX + (isLocal ? 0 : layoutRect.x);
+                    innerTransformable.originY = -innerTransformable.y + relOriginY + (isLocal ? 0 : layoutRect.y);
                 }
             }
 
 
             if (textConfig.rotation != null) {
-                attachedTransform.rotation = textConfig.rotation;
+                innerTransformable.rotation = textConfig.rotation;
             }
 
             // TODO
             const textOffset = textConfig.offset;
             if (textOffset) {
-                attachedTransform.x += textOffset[0];
-                attachedTransform.y += textOffset[1];
+                innerTransformable.x += textOffset[0];
+                innerTransformable.y += textOffset[1];
 
                 // Not change the user set origin.
                 if (!innerOrigin) {
-                    attachedTransform.originX = -textOffset[0];
-                    attachedTransform.originY = -textOffset[1];
+                    innerTransformable.originX = -textOffset[0];
+                    innerTransformable.originY = -textOffset[1];
                 }
             }
 
@@ -1288,7 +1276,7 @@ class Element<Props extends ElementProps = ElementProps> {
             throw new Error('Text element has been added to zrender.');
         }
 
-        textEl.attachedTransform = new Transformable();
+        textEl.innerTransformable = new Transformable();
 
         this._attachComponent(textEl);
 
@@ -1323,7 +1311,7 @@ class Element<Props extends ElementProps = ElementProps> {
     removeTextContent() {
         const textEl = this._textContent;
         if (textEl) {
-            textEl.attachedTransform = null;
+            textEl.innerTransformable = null;
             this._detachComponent(textEl);
             this._textContent = null;
             this._innerTextDefaultStyle = null;
