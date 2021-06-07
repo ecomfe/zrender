@@ -297,7 +297,6 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
             this._updateSubTexts();
         }
 
-
         for (let i = 0; i < this._children.length; i++) {
             const child = this._children[i];
             // Set common properties.
@@ -323,12 +322,13 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         }
     }
 
-    getLocalTransform(): MatrixArray {
+    getLocalTransform(m?: MatrixArray): MatrixArray {
         const innerTransformable = this.innerTransformable;
         return innerTransformable
-            ? innerTransformable.getLocalTransform()
-            : super.getLocalTransform();
+            ? innerTransformable.getLocalTransform(m)
+            : super.getLocalTransform(m);
     }
+
     // TODO override setLocalTransform?
     getComputedTransform() {
         if (this.__hostTarget) {

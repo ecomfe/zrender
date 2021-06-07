@@ -178,8 +178,6 @@ class Transformable {
 
         const rotation = Math.atan2(m[1], m[0]);
 
-
-
         const shearX = Math.PI / 2 + rotation - Math.atan2(m[3], m[2]);
         sy = Math.sqrt(sy) * Math.cos(shearX);
         sx = Math.sqrt(sx);
