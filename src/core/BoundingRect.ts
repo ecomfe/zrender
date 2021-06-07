@@ -24,11 +24,11 @@ class BoundingRect {
     height: number
 
     constructor(x: number, y: number, width: number, height: number) {
-        if (width < 0 && isFinite(width)) {
+        if (width < 0) {
             x = x + width;
             width = -width;
         }
-        if (height < 0 && isFinite(height)) {
+        if (height < 0) {
             y = y + height;
             height = -height;
         }

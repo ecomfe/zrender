@@ -1,6 +1,6 @@
 import { Dictionary, ArrayLike, KeyOfDistributive } from './types';
 import { GradientObject } from '../graphic/Gradient';
-import { PatternObject } from '../graphic/Pattern';
+import { ImagePatternObject } from '../graphic/Pattern';
 
 
 // 用于处理merge时无法遍历Date等对象的问题
@@ -177,7 +177,9 @@ export function extend<
     T extends Dictionary<any>,
     S extends Dictionary<any>
 >(target: T, source: S): T & S {
+    // @ts-ignore
     if (Object.assign) {
+        // @ts-ignore
         Object.assign(target, source);
     }
     else {
@@ -546,8 +548,8 @@ export function isGradientObject(value: any): value is GradientObject {
     return (value as GradientObject).colorStops != null;
 }
 
-export function isPatternObject(value: any): value is PatternObject {
-    return (value as PatternObject).image != null;
+export function isImagePatternObject(value: any): value is ImagePatternObject {
+    return (value as ImagePatternObject).image != null;
 }
 
 export function isRegExp(value: unknown): value is RegExp {
@@ -660,7 +662,7 @@ export class HashMap<T, KEY extends string | number = string | number> {
 
     data: {[key in KEY]: T} = {} as {[key in KEY]: T};
 
-    constructor(obj?: HashMap<T, KEY> | Dictionary<T> | any[]) {
+    constructor(obj?: HashMap<T, KEY> | { [key in KEY]?: T } | KEY[]) {
         const isArr = isArray(obj);
         // Key should not be set on this, otherwise
         // methods get/set/... may be overrided.
@@ -682,7 +684,7 @@ export class HashMap<T, KEY extends string | number = string | number> {
     get(key: KEY): T {
         return this.data.hasOwnProperty(key) ? this.data[key] : null;
     }
-    set(key: KEY, value: T) {
+    set(key: KEY, value: T): T {
         // Comparing with invocation chaining, `return value` is more commonly
         // used in this case: `const someVal = map.set('a', genVal());`
         return (this.data[key] = value);
@@ -709,7 +711,7 @@ export class HashMap<T, KEY extends string | number = string | number> {
 }
 
 export function createHashMap<T, KEY extends string | number = string | number>(
-    obj?: HashMap<T, KEY> | Dictionary<T> | any[]
+    obj?: HashMap<T, KEY> | { [key in KEY]?: T } | KEY[]
 ) {
     return new HashMap<T, KEY>(obj);
 }

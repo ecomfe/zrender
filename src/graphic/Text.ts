@@ -5,12 +5,12 @@
 import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, MapToType } from '../core/types';
 import { parseRichText, parsePlainText } from './helper/parseText';
 import TSpan, { TSpanStyleProps } from './TSpan';
-import { retrieve2, isString, each, normalizeCssArray, trim, retrieve3, extend, keys, defaults } from '../core/util';
+import { retrieve2, each, normalizeCssArray, trim, retrieve3, extend, keys, defaults } from '../core/util';
 import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
 import ZRImage from './Image';
 import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
-import { MatrixArray, copy } from '../core/matrix';
+import { MatrixArray } from '../core/matrix';
 import Displayable, {
     DisplayableStatePropNames,
     DisplayableProps,
@@ -165,7 +165,7 @@ export interface TextStyleProps extends TextStylePropsPart {
      * truncate: truncate the text and show ellipsis
      * Do nothing if not set
      */
-    overflow?: 'break' | 'breakAll' | 'truncate'
+    overflow?: 'break' | 'breakAll' | 'truncate' | 'none'
 
     /**
      * Strategy when text lines exceeds textHeight.
@@ -295,6 +295,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         if (this.styleChanged()) {
             this._updateSubTexts();
         }
+
 
         for (let i = 0; i < this._children.length; i++) {
             const child = this._children[i];
@@ -511,6 +512,15 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
             'stroke' in style
                 ? style.stroke
                 : (!bgColorDrawn
+                    // If we use "auto lineWidth" widely, it probably bring about some bad case.
+                    // So the current strategy is:
+                    // If `style.fill` is specified (i.e., `useDefaultFill` is `false`)
+                    // (A) And if `textConfig.insideStroke/outsideStroke` is not specified as a color
+                    //   (i.e., `defaultStyle.autoStroke` is `true`), we do not actually display
+                    //   the auto stroke because we can not make sure wether the stoke is approperiate to
+                    //   the given `fill`.
+                    // (B) But if `textConfig.insideStroke/outsideStroke` is specified as a color,
+                    // we give the auto lineWidth to display the given stoke color.
                     && (!defaultStyle.autoStroke || useDefaultFill)
                 )
                 ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, defaultStyle.stroke)
@@ -725,6 +735,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
                 : (
                     !bgColorDrawn
                     && !parentBgColorDrawn
+                    // See the strategy explained above.
                     && (!defaultStyle.autoStroke || useDefaultFill)
                 ) ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, defaultStyle.stroke)
                 : null
@@ -782,13 +793,14 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         const textBackgroundColor = style.backgroundColor;
         const textBorderWidth = style.borderWidth;
         const textBorderColor = style.borderColor;
-        const isPlainBg = isString(textBackgroundColor);
+        const isImageBg = textBackgroundColor && (textBackgroundColor as {image: ImageLike}).image;
+        const isPlainOrGradientBg = textBackgroundColor && !isImageBg;
         const textBorderRadius = style.borderRadius;
         const self = this;
 
         let rectEl: Rect;
         let imgEl: ZRImage;
-        if (isPlainBg || (textBorderWidth && textBorderColor)) {
+        if (isPlainOrGradientBg || (textBorderWidth && textBorderColor)) {
             // Background is color
             rectEl = this._getOrCreateChild(Rect);
             rectEl.useStyle(rectEl.createStyle());    // Create an empty style.
@@ -802,12 +814,12 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
             rectEl.dirtyShape();
         }
 
-        if (isPlainBg) {
+        if (isPlainOrGradientBg) {
             const rectStyle = rectEl.style;
             rectStyle.fill = textBackgroundColor as string || null;
             rectStyle.fillOpacity = retrieve2(style.fillOpacity, 1);
         }
-        else if (textBackgroundColor && (textBackgroundColor as {image: ImageLike}).image) {
+        else if (isImageBg) {
             imgEl = this._getOrCreateChild(ZRImage);
             imgEl.onload = function () {
                 // Refresh and relayout after image loaded.

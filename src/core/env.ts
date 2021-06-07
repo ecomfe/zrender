@@ -22,6 +22,8 @@ class Env {
     touchEventsSupported = false
     pointerEventsSupported = false
     domSupported = false
+    transformSupported = false
+    transform3dSupported = false
 }
 
 const env = new Env();
@@ -87,6 +89,29 @@ function detect(ua: string, env: Env) {
     env.pointerEventsSupported = 'onpointerdown' in window
         && (browser.edge || (browser.ie && +browser.version >= 11));
     env.domSupported = typeof document !== 'undefined';
+
+    const style = document.documentElement.style;
+
+    env.transform3dSupported = (
+        // IE9 only supports transform 2D
+        // transform 3D supported since IE10
+        // we detect it by whether 'transition' is in style
+        (browser.ie && 'transition' in style)
+        // edge
+        || browser.edge
+        // webkit
+        || (('WebKitCSSMatrix' in window) && ('m11' in new WebKitCSSMatrix()))
+        // gecko-based browsers
+        || 'MozPerspective' in style
+    ) // Opera supports CSS transforms after version 12
+      && !('OTransition' in style);
+
+    // except IE 6-8 and very old firefox 2-3 & opera 10.1
+    // other browsers all support `transform`
+    env.transformSupported = env.transform3dSupported 
+        // transform 2D is supported in IE9
+        || (browser.ie && +browser.version >= 9);
+
 }
 
 

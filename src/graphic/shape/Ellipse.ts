@@ -4,14 +4,14 @@
 
 import Path, { PathProps } from '../Path';
 
-class EllipseShape {
+export class EllipseShape {
     cx = 0
     cy = 0
     rx = 0
     ry = 0
 }
 
-interface EllipseProps extends PathProps {
+export interface EllipseProps extends PathProps {
     shape?: Partial<EllipseShape>
 }
 class Ellipse extends Path<EllipseProps> {

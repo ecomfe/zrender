@@ -20,12 +20,16 @@ class Transformable {
 
     x: number
     y: number
+
     scaleX: number
     scaleY: number
 
+    skewX: number
+    skewY: number
+
     rotation: number
     /**
-     * 旋转和缩放的原点
+     * Origin of scale, rotation, skew
      */
     originX: number
     originY: number
@@ -59,6 +63,14 @@ class Transformable {
     setScale(arr: number[]) {
         this.scaleX = arr[0];
         this.scaleY = arr[1];
+    }
+
+    /**
+     * Set skew from array
+     */
+    setSkew(arr: number[]) {
+        this.skewX = arr[0];
+        this.skewY = arr[1];
     }
 
     /**
@@ -164,34 +176,26 @@ class Transformable {
         }
         let sx = m[0] * m[0] + m[1] * m[1];
         let sy = m[2] * m[2] + m[3] * m[3];
-        if (isNotAroundZero(sx - 1)) {
-            sx = Math.sqrt(sx);
-        }
-        if (isNotAroundZero(sy - 1)) {
-            sy = Math.sqrt(sy);
-        }
 
-        if (m[0] < 0) {
-            sx = -sx;
-        }
-        if (m[3] < 0) {
-            sy = -sy;
-        }
+        const rotation = Math.atan2(m[1], m[0]);
 
-        // rotation is inversed in zrender.
-        this.rotation = Math.atan2(-m[1] / sy, m[0] / sx);
 
-        // Flip can be both represented with rotation and negative scale.
-        if (sx < 0 && sy < 0) {
-            this.rotation += Math.PI;
-            sx = -sx;
-            sy = -sy;
-        }
 
-        this.x = m[4];
-        this.y = m[5];
+        const shearX = Math.PI / 2 + rotation - Math.atan2(m[3], m[2]);
+        sy = Math.sqrt(sy) * Math.cos(shearX);
+        sx = Math.sqrt(sx);
+
+        this.skewX = shearX;
+        this.skewY = 0;
+        this.rotation = -rotation;
+
+        this.x = +m[4];
+        this.y = +m[5];
         this.scaleX = sx;
         this.scaleY = sy;
+
+        this.originX = 0;
+        this.originY = 0;
     }
     /**
      * 分解`transform`矩阵到`position`, `rotation`, `scale`
@@ -292,7 +296,6 @@ class Transformable {
 
     static getLocalTransform(target: Transformable, m?: matrix.MatrixArray): matrix.MatrixArray {
         m = m || [];
-        mIdentity(m);
 
         const ox = target.originX || 0;
         const oy = target.originY || 0;
@@ -301,27 +304,33 @@ class Transformable {
         const rotation = target.rotation || 0;
         const x = target.x;
         const y = target.y;
+        const skewX = target.skewX ? Math.tan(target.skewX) : 0;
+        // TODO: zrender use different hand in coordinate system and y axis is inversed.
+        const skewY = target.skewY ? Math.tan(-target.skewY) : 0;
 
-        // Translate to origin
-        m[4] -= ox;
-        m[5] -= oy;
-        // Apply scale
-        m[0] *= sx;
-        m[1] *= sy;
-        m[2] *= sx;
-        m[3] *= sy;
-        m[4] *= sx;
-        m[5] *= sy;
-
-        if (rotation) {
-            matrix.rotate(m, m, rotation);
+        // The order of transform (-origin * scale * skew * rotate * origin * translate).
+        // We merge (-origin * scale * skew) into one. Also did identity in these operations.
+        // origin
+        if (ox || oy) {
+            m[4] = -ox * sx - skewX * oy * sy;
+            m[5] = -oy * sy - skewY * ox * sx;
         }
-        // Translate back from origin
-        m[4] += ox;
-        m[5] += oy;
+        else {
+            m[4] = m[5] = 0;
+        }
+        // scale
+        m[0] = sx;
+        m[3] = sy;
+        // skew
+        m[1] = skewY * sx;
+        m[2] = skewX * sy;
 
-        m[4] += x;
-        m[5] += y;
+        // Apply rotation
+        rotation && matrix.rotate(m, m, rotation);
+
+        // Translate back from origin and apply translation
+        m[4] += ox + x;
+        m[5] += oy + y;
 
         return m;
     }
@@ -334,6 +343,8 @@ class Transformable {
         proto.scaleY = 1;
         proto.originX = 0;
         proto.originY = 0;
+        proto.skewX = 0;
+        proto.skewY = 0;
         proto.rotation = 0;
         proto.globalScaleRatio = 1;
     })()

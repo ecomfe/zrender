@@ -5,7 +5,7 @@ const path = require('path');
 const processs = require('process');
 const chalk = require('chalk');
 const progress = require('./progress');
-const UglifyJS = require("uglify-js");
+const UglifyJS = require('uglify-js');
 const fs = require('fs');
 
 function current() {

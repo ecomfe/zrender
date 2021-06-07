@@ -1,7 +1,7 @@
 import Displayable, { DEFAULT_COMMON_STYLE } from '../graphic/Displayable';
 import PathProxy from '../core/PathProxy';
 import { GradientObject } from '../graphic/Gradient';
-import { PatternObject } from '../graphic/Pattern';
+import { ImagePatternObject, InnerImagePatternObject } from '../graphic/Pattern';
 import { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
 import { ZRCanvasRenderingContext } from '../core/types';
@@ -14,8 +14,8 @@ import { DEFAULT_FONT } from '../contain/text';
 import { MatrixArray } from '../core/matrix';
 import { map } from '../core/util';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
-import Element from '../Element';
 import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
+import { REDARAW_BIT, SHAPE_CHANGED_BIT } from '../graphic/constants';
 
 const pathProxyForDraw = new PathProxy(true);
 
@@ -58,13 +58,16 @@ function doStrokePath(ctx: CanvasRenderingContext2D, style: PathStyleProps) {
 export function createCanvasPattern(
     this: void,
     ctx: CanvasRenderingContext2D,
-    pattern: PatternObject,
+    pattern: ImagePatternObject,
     el: {dirty: () => void}
 ): CanvasPattern {
-    const image = createOrUpdateImage(pattern.image, pattern.__image, el);
+    const image = createOrUpdateImage(pattern.image, (pattern as InnerImagePatternObject).__image, el);
     if (isImageReady(image)) {
         const canvasPattern = ctx.createPattern(image, pattern.repeat || 'repeat');
-        if (typeof DOMMatrix === 'function') {
+        if (
+            typeof DOMMatrix === 'function'
+            && canvasPattern.setTransform   // setTransform may not be supported in some old devices.
+        ) {
             const matrix = new DOMMatrix();
             matrix.rotateSelf(0, 0, (pattern.rotation || 0) / Math.PI * 180);
             matrix.scaleSelf((pattern.scaleX || 1), (pattern.scaleY || 1));
@@ -100,8 +103,8 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
 
         const hasFillGradient = hasFill && !!(fill as GradientObject).colorStops;
         const hasStrokeGradient = hasStroke && !!(stroke as GradientObject).colorStops;
-        const hasFillPattern = hasFill && !!(fill as PatternObject).image;
-        const hasStrokePattern = hasStroke && !!(stroke as PatternObject).image;
+        const hasFillPattern = hasFill && !!(fill as ImagePatternObject).image;
+        const hasStrokePattern = hasStroke && !!(stroke as ImagePatternObject).image;
 
         let fillGradient;
         let strokeGradient;
@@ -129,14 +132,14 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         if (hasFillPattern) {
             // Pattern might be null if image not ready (even created from dataURI)
             fillPattern = (el.__dirty || !el.__canvasFillPattern)
-                ? createCanvasPattern(ctx, fill as PatternObject, el)
+                ? createCanvasPattern(ctx, fill as ImagePatternObject, el)
                 : el.__canvasFillPattern;
             el.__canvasFillPattern = fillPattern;
         }
         if (hasStrokePattern) {
             // Pattern might be null if image not ready (even created from dataURI)
             strokePattern = (el.__dirty || !el.__canvasStrokePattern)
-                ? createCanvasPattern(ctx, stroke as PatternObject, el)
+                ? createCanvasPattern(ctx, stroke as ImagePatternObject, el)
                 : el.__canvasStrokePattern;
             el.__canvasStrokePattern = fillPattern;
         }
@@ -193,7 +196,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
     // 1. Path is dirty
     // 2. Path needs javascript implemented lineDash stroking.
     //    In this case, lineDash information will not be saved in PathProxy
-    if (firstDraw || (el.__dirty & Path.SHAPE_CHANGED_BIT)
+    if (firstDraw || (el.__dirty & SHAPE_CHANGED_BIT)
         || (lineDash && !ctxLineDash && hasStroke)
     ) {
         path.setDPR((ctx as any).dpr);
@@ -399,7 +402,9 @@ function bindCommonProps(
             flushPathDrawn(ctx, scope);
             styleChanged = true;
         }
-        ctx.globalAlpha = style.opacity == null ? DEFAULT_COMMON_STYLE.opacity : style.opacity;
+        // Ensure opacity is between 0 ~ 1. Invalid opacity will lead to a failure set and use the leaked opacity from the previous.
+        const opacity = Math.max(Math.min(style.opacity, 1), 0);
+        ctx.globalAlpha = isNaN(opacity) ? DEFAULT_COMMON_STYLE.opacity : opacity;
     }
 
     if (forceSetAll || style.blend !== prevStyle.blend) {
@@ -635,7 +640,7 @@ export function brush(
         // Or this element will always been rendered in progressive rendering.
         // But other dirty bit should not be cleared, otherwise it cause the shape
         // can not be updated in this case.
-        el.__dirty &= ~Element.REDARAW_BIT;
+        el.__dirty &= ~REDARAW_BIT;
         el.__isRendered = false;
         return;
     }

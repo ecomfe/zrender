@@ -45,9 +45,6 @@ type ZREventProperties = {
     // 'only_globalout" means: only trigger "globalout" event, but do not
     //     trigger other event to zr user.
     zrEventControl: 'no_globalout' | 'only_globalout'
-    // Means that this event is `mouseout` from `painter.getViewportRoot()`
-    // to other el that `domBelongToZr` is marked as `true`.
-    zrIsToLocalDOM: boolean
 
     zrByTouch: boolean
 }
@@ -73,7 +70,9 @@ export type ElementEventNameWithOn = 'onclick' | 'ondblclick' | 'onmousewheel' |
     'onmouseup' | 'onmousedown' | 'onmousemove' | 'oncontextmenu' |
     'ondrag' | 'ondragstart' | 'ondragend' | 'ondragenter' | 'ondragleave' | 'ondragover' | 'ondrop';
 
-
+export type RenderedEvent = {
+    elapsedTime: number
+};
 
 // Useful type methods
 export type PropType<TObj, TProp extends keyof TObj> = TObj[TProp];

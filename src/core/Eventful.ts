@@ -1,6 +1,6 @@
 // Return true to cancel bubble
 export type EventCallback<Ctx, Impl, EvtParam = unknown> = (
-    this: CbThis<Ctx, Impl>, eventParam?: EvtParam, ...args: unknown[]
+    this: CbThis<Ctx, Impl>, eventParam: EvtParam, ...args: unknown[]
 ) => boolean | void
 export type EventQuery = string | Object
 
@@ -225,6 +225,7 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
                 // Optimize advise from backbone
                 switch (argLen) {
                     case 0:
+                        // @ts-ignore
                         hItem.h.call(hItem.ctx);
                         break;
                     case 1:
@@ -279,6 +280,7 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
                 // Optimize advise from backbone
                 switch (argLen) {
                     case 0:
+                        // @ts-ignore
                         hItem.h.call(ctx);
                         break;
                     case 1:

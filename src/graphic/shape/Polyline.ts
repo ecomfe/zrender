@@ -6,7 +6,7 @@ import Path, { PathProps } from '../Path';
 import * as polyHelper from '../helper/poly';
 import { VectorArray } from '../../core/vector';
 
-class PolylineShape {
+export class PolylineShape {
     points: VectorArray[] = null
     // Percent of displayed polyline. For animating purpose
     percent?: number = 1
@@ -14,7 +14,7 @@ class PolylineShape {
     smoothConstraint?: VectorArray[] = null
 }
 
-interface PolylineProps extends PathProps {
+export interface PolylineProps extends PathProps {
     shape?: Partial<PolylineShape>
 }
 class Polyline extends Path<PolylineProps> {

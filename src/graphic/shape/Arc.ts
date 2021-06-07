@@ -4,7 +4,7 @@
 
 import Path, { PathProps } from '../Path';
 
-class ArcShape {
+export class ArcShape {
     cx = 0;
     cy = 0;
     r = 0;
@@ -13,7 +13,7 @@ class ArcShape {
     clockwise? = true
 }
 
-interface ArcProps extends PathProps {
+export interface ArcProps extends PathProps {
     shape?: Partial<ArcShape>
 }
 
