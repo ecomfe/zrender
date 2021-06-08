@@ -9,7 +9,7 @@ import { pathToPolygons } from './convertPath';
 import { clonePath } from './path';
 
 // Default shape dividers
-
+// TODO divide polygon by grids.
 interface BinaryDivide {
     (shape: Path['shape']): Path['shape'][]
 }
@@ -30,7 +30,7 @@ function getDividingGrids(dimSize: number[], rowDim: number, count: number) {
         grids.push(columnCount);
     }
     const currentCount = rowCount * columnCount;
-    // Distrute the remaind grid evenly on each row.
+    // Distribute the remaind grid evenly on each row.
     const remained = count - currentCount;
     if (remained > 0) {
         // const stride = Math.max(Math.floor(rowCount / remained), 1);

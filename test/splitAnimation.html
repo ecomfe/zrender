@@ -74,11 +74,11 @@
                 zr.add(circle);
             });
             zrender.morph.separateMorph(rect, splittedCircles, {
-                splitPath: splitRect,
+                // dividePath: splitRect,
                 duration: 1000
             });
 
-            setTimeout(mergeToRect, 800);
+            setTimeout(mergeToRect, 1200);
         }
 
         function mergeToRect() {
@@ -87,11 +87,11 @@
                 zr.remove(circle);
             });
             zrender.morph.combineMorph(splittedCircles, rect, {
-                splitPath: splitRect,
+                // dividePath: splitRect,
                 duration: 1000
             });
 
-            setTimeout(splitToCircles, 800);
+            setTimeout(splitToCircles, 1200);
         }
 
         setTimeout(splitToCircles, 100);

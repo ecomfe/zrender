@@ -2,7 +2,7 @@ import PathProxy from '../core/PathProxy';
 import { cubicSubdivide } from '../core/curve';
 import Path from '../graphic/Path';
 import Element, { ElementAnimateConfig } from '../Element';
-import { defaults, assert } from '../core/util';
+import { defaults, assert, map } from '../core/util';
 import { lerp } from '../core/vector';
 import Group, { GroupLike } from '../graphic/Group';
 import { clonePath } from './path';
@@ -533,6 +533,51 @@ export function morphPath(
     return toPath;
 }
 
+// https://github.com/mapbox/earcut/blob/master/src/earcut.js#L437
+function zOrder(x: number, y: number, minX: number, minY: number) {
+    // coords are transformed into non-negative 15-bit integer range
+    x = 32767 * (x - minX);
+    y = 32767 * (y - minY);
+
+    x = (x | (x << 8)) & 0x00FF00FF;
+    x = (x | (x << 4)) & 0x0F0F0F0F;
+    x = (x | (x << 2)) & 0x33333333;
+    x = (x | (x << 1)) & 0x55555555;
+
+    y = (y | (y << 8)) & 0x00FF00FF;
+    y = (y | (y << 4)) & 0x0F0F0F0F;
+    y = (y | (y << 2)) & 0x33333333;
+    y = (y | (y << 1)) & 0x55555555;
+
+    return x | (y << 1);
+}
+
+// Sort paths on z order.
+// So the left most source can animate to the left most target, not right most target.
+// Hope in this way. We can make sure each element is animated to the proper target. Not the farthest.
+function sortPathsOnZOrder(pathList: Path[]): Path[] {
+    let xMin = Infinity;
+    let yMin = Infinity;
+    const cps = map(pathList, path => {
+        const rect = path.getBoundingRect();
+        const x = rect.x + rect.width / 2;
+        const y = rect.y + rect.height / 2;
+        xMin = Math.min(x, xMin);
+        yMin = Math.min(y, yMin);
+        return [x, y];
+    });
+
+    const items = map(cps, (cp, idx) => {
+        return {
+            cp,
+            z: zOrder(cp[0], cp[1], xMin, yMin),
+            path: pathList[idx]
+        }
+    });
+
+    return items.sort((a, b) => a.z - b.z).map(item => item.path);
+}
+
 export interface DividePathParams {
     path: Path,
     count: number
@@ -549,6 +594,11 @@ export interface CombineConfig extends ElementAnimateConfig {
      * Transform of returned will be ignored.
      */
     dividePath?: DividePath
+
+    /**
+     * If sort splitted paths so the movement between them can be more natural
+     */
+    sort?: boolean
 }
 /**
  * Make combine morphing from many paths to one.
@@ -559,7 +609,7 @@ export function combineMorph(
     toPath: Path,
     animationOpts: CombineConfig
 ) {
-    const fromPathList: Path[] = [];
+    let fromPathList: Path[] = [];
 
     function addFromPath(fromList: Element[]) {
         for (let i = 0; i < fromList.length; i++) {
@@ -583,16 +633,20 @@ export function combineMorph(
 
     const dividePath = animationOpts.dividePath || defaultDividePath;
 
-    const toSubPathList = dividePath({
+    let toSubPathList = dividePath({
         path: toPath, count: separateCount
     });
     assert(toSubPathList.length === separateCount);
+
+    fromPathList = sortPathsOnZOrder(fromPathList);
+    toSubPathList = sortPathsOnZOrder(toSubPathList);
 
     const oldDone = animationOpts.done;
     // const oldAborted = animationOpts.aborted;
     const oldDuring = animationOpts.during;
 
     const identityTransform = new Transformable();
+
     for (let i = 0; i < separateCount; i++) {
         const from = fromPathList[i];
         const to = toSubPathList[i];
@@ -676,6 +730,10 @@ export function combineMorph(
 }
 export interface SeparateConfig extends ElementAnimateConfig {
     dividePath?: DividePath
+    /**
+     * If sort splitted paths so the movement between them can be more natural
+     */
+     sort?: boolean
     // // If the from path of separate animation is doing combine animation.
     // // And the paths number is not same with toPathList. We need to do enter/leave animation
     // // on the missing/spare paths.
@@ -735,6 +793,9 @@ export function separateMorph(
         }
         assert(fromPathList.length === toLen);
     }
+
+    fromPathList = sortPathsOnZOrder(fromPathList);
+    toPathList = sortPathsOnZOrder(toPathList);
 
     for (let i = 0; i < toLen; i++) {
         morphPath(fromPathList[i], toPathList[i], animationOpts);
