@@ -534,10 +534,11 @@ export function morphPath(
 }
 
 // https://github.com/mapbox/earcut/blob/master/src/earcut.js#L437
-function zOrder(x: number, y: number, minX: number, minY: number) {
-    // coords are transformed into non-negative 15-bit integer range
-    x = 32767 * (x - minX);
-    y = 32767 * (y - minY);
+function zOrder(x: number, y: number, minX: number, minY: number, maxX: number, maxY: number) {
+    // Normalize coords to 0 - 1
+    // The transformed into non-negative 15-bit integer range
+    x = 32767 * (x - minX) / (maxX - maxY);
+    y = 32767 * (y - minY) / (maxX - maxY);
 
     x = (x | (x << 8)) & 0x00FF00FF;
     x = (x | (x << 4)) & 0x0F0F0F0F;
@@ -552,25 +553,29 @@ function zOrder(x: number, y: number, minX: number, minY: number) {
     return x | (y << 1);
 }
 
-// Sort paths on z order.
+// Sort paths on z order. https://jsfiddle.net/pissang/2jk7x145/
 // So the left most source can animate to the left most target, not right most target.
 // Hope in this way. We can make sure each element is animated to the proper target. Not the farthest.
 function sortPathsOnZOrder(pathList: Path[]): Path[] {
     let xMin = Infinity;
     let yMin = Infinity;
+    let xMax = -Infinity;
+    let yMax = -Infinity;
     const cps = map(pathList, path => {
         const rect = path.getBoundingRect();
         const x = rect.x + rect.width / 2;
         const y = rect.y + rect.height / 2;
         xMin = Math.min(x, xMin);
         yMin = Math.min(y, yMin);
+        xMax = Math.max(x, xMax);
+        yMax = Math.max(y, yMax);
         return [x, y];
     });
 
     const items = map(cps, (cp, idx) => {
         return {
             cp,
-            z: zOrder(cp[0], cp[1], xMin, yMin),
+            z: zOrder(cp[0], cp[1], xMin, yMin, xMax, yMax),
             path: pathList[idx]
         }
     });
@@ -598,7 +603,7 @@ export interface CombineConfig extends ElementAnimateConfig {
     /**
      * If sort splitted paths so the movement between them can be more natural
      */
-    sort?: boolean
+    // sort?: boolean
 }
 /**
  * Make combine morphing from many paths to one.
@@ -733,7 +738,7 @@ export interface SeparateConfig extends ElementAnimateConfig {
     /**
      * If sort splitted paths so the movement between them can be more natural
      */
-     sort?: boolean
+    // sort?: boolean
     // // If the from path of separate animation is doing combine animation.
     // // And the paths number is not same with toPathList. We need to do enter/leave animation
     // // on the missing/spare paths.

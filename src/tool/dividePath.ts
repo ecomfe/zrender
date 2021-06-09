@@ -42,6 +42,7 @@ function getDividingGrids(dimSize: number[], rowDim: number, count: number) {
 }
 
 
+// TODO cornerRadius
 function divideSector(sectorShape: Sector['shape'], count: number, outShapes: Sector['shape'][]) {
     const r0 = sectorShape.r0;
     const r = sectorShape.r;

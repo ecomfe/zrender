@@ -42,8 +42,8 @@
                     },
                     shape: {
                         r: 20,
-                        cx: i *  40 + 100,
-                        cy: k * 40 + 100
+                        cx: i * 60 + 100,
+                        cy: k * 60 + 100
                     }
                 }))
             }
@@ -74,7 +74,7 @@
                 zr.add(circle);
             });
             zrender.morph.separateMorph(rect, splittedCircles, {
-                // dividePath: splitRect,
+                dividePath: splitRect,
                 duration: 1000
             });
 
@@ -87,7 +87,7 @@
                 zr.remove(circle);
             });
             zrender.morph.combineMorph(splittedCircles, rect, {
-                // dividePath: splitRect,
+                dividePath: splitRect,
                 duration: 1000
             });
 
