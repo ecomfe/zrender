@@ -12,13 +12,13 @@
 </body>
     <script type="text/javascript">
 
-    requireES(['zrender/esm/zrender', 'zrender/esm/core/PathProxy'], function(zrender, PathProxy) {
+    requireES(['zrender/lib/zrender', 'zrender/lib/core/PathProxy'], function(zrender, PathProxy) {
         var canvas = document.createElement('canvas')
         document.getElementById("Main").appendChild(canvas);
         canvas.width = 1024;
         canvas.height = 600;
         var ctx = canvas.getContext("2d");
-        var path = new PathProxy();
+        var path = new PathProxy.default();
         path.setContext(ctx);
         path.beginPath();
         path.moveTo(20, 20);

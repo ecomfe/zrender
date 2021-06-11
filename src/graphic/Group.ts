@@ -220,6 +220,7 @@ class Group extends Element<GroupProps> {
      * Visit all descendants.
      * Return false in callback to stop visit descendants of current node
      */
+    // TODO Group itself should also invoke the callback.
     traverse<T>(
         cb: (this: T, el: Element) => boolean | void,
         context?: T

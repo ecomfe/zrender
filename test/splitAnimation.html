@@ -75,7 +75,8 @@
             });
             zrender.morph.separateMorph(rect, splittedCircles, {
                 dividePath: splitRect,
-                duration: 1000
+                duration: 1000,
+                easing: 'cubicInOut'
             });
 
             setTimeout(mergeToRect, 1200);
@@ -88,7 +89,8 @@
             });
             zrender.morph.combineMorph(splittedCircles, rect, {
                 dividePath: splitRect,
-                duration: 1000
+                duration: 1000,
+                easing: 'cubicInOut'
             });
 
             setTimeout(splitToCircles, 1200);
