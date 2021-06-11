@@ -69,7 +69,7 @@ function divideSector(sectorShape: Sector['shape'], count: number, outShapes: Se
                 newShape.r = r0 + columnSize * (column + 1);
             }
             else {
-                newShape.startAngle = r0 + columnSize * column;
+                newShape.startAngle = startAngle + columnSize * column;
                 newShape.endAngle = startAngle + columnSize * (column + 1);
                 newShape.r0 = r0 + rowSize * row;
                 newShape.r = r0 + rowSize * (row + 1);
@@ -78,7 +78,6 @@ function divideSector(sectorShape: Sector['shape'], count: number, outShapes: Se
             newShape.clockwise = sectorShape.clockwise;
             newShape.cx = sectorShape.cx;
             newShape.cy = sectorShape.cy;
-
 
             outShapes.push(newShape);
         }
