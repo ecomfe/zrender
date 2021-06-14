@@ -22,8 +22,12 @@ function getDividingGrids(dimSize: number[], rowDim: number, count: number) {
     const columnSize = dimSize[1 - rowDim];
 
     const ratio = Math.abs(rowSize / columnSize);
-    const rowCount = Math.ceil(Math.sqrt(ratio * count));
-    const columnCount = Math.floor(count / rowCount);
+    let rowCount = Math.ceil(Math.sqrt(ratio * count));
+    let columnCount = Math.floor(count / rowCount);
+    if (columnCount === 0) {
+        columnCount = 1;
+        rowCount = count;
+    }
 
     const grids: number[] = [];
     for (let i = 0; i < rowCount; i++) {
