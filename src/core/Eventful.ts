@@ -1,20 +1,26 @@
+import { Dictionary, WithThisType } from './types';
+
 // Return true to cancel bubble
-export type EventCallback<Ctx, Impl, EvtParam = unknown> = (
-    this: CbThis<Ctx, Impl>, eventParam: EvtParam, ...args: unknown[]
-) => boolean | void
+export type EventCallbackSingleParam<EvtParam = any> = EvtParam extends any
+    ? (params: EvtParam) => boolean | void
+    : never
+
+export type EventCallback<EvtParams = any[]> = EvtParams extends any[]
+    ? (...args: EvtParams) => boolean | void
+    : never
 export type EventQuery = string | Object
 
 type CbThis<Ctx, Impl> = unknown extends Ctx ? Impl : Ctx;
 
-type EventHandler<Ctx, Impl, EvtParam> = {
-    h: EventCallback<Ctx, Impl, EvtParam>
+type EventHandler<Ctx, Impl, EvtParams> = {
+    h: EventCallback<EvtParams>
     ctx: CbThis<Ctx, Impl>
     query: EventQuery
 
     callAtLast: boolean
 }
 
-type DefaultEventDefinition = {[eventName: string]: unknown};
+type DefaultEventDefinition = Dictionary<EventCallback<any[]>>;
 
 export interface EventProcessor<EvtDef = DefaultEventDefinition> {
     normalizeQuery?: (query: EventQuery) => EventQuery
@@ -58,9 +64,9 @@ export interface EventProcessor<EvtDef = DefaultEventDefinition> {
  * @param eventProcessor.afterTrigger Called after all handlers called.
  *        param: {string} eventType
  */
-export default class Eventful<EvtDef = DefaultEventDefinition> {
+export default class Eventful<EvtDef extends DefaultEventDefinition = DefaultEventDefinition> {
 
-    private _$handlers: {[key: string]: EventHandler<any, any, EvtDef[keyof EvtDef]>[]}
+    private _$handlers: Dictionary<EventHandler<any, any, any[]>[]>
 
     protected _$eventProcessor: EventProcessor<EvtDef>
 
@@ -72,13 +78,13 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
 
     on<Ctx, EvtNm extends keyof EvtDef>(
         event: EvtNm,
-        handler: EventCallback<Ctx, this, EvtDef[EvtNm]>,
+        handler: WithThisType<EvtDef[EvtNm], CbThis<Ctx, this>>,
         context?: Ctx
     ): this
     on<Ctx, EvtNm extends keyof EvtDef>(
         event: EvtNm,
         query: EventQuery,
-        handler: EventCallback<Ctx, this, EvtDef[EvtNm]>,
+        handler: WithThisType<EvtDef[EvtNm], CbThis<Ctx, this>>,
         context?: Ctx
     ): this
     /**
@@ -91,8 +97,8 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
      */
     on<Ctx, EvtNm extends keyof EvtDef>(
         event: EvtNm,
-        query: EventQuery | EventCallback<Ctx, this, EvtDef[EvtNm]>,
-        handler?: EventCallback<Ctx, this, EvtDef[EvtNm]> | Ctx,
+        query: EventQuery | WithThisType<EventCallback<EvtDef[EvtNm]>, CbThis<Ctx, this>>,
+        handler?: WithThisType<EventCallback<EvtDef[EvtNm]>, CbThis<Ctx, this>> | Ctx,
         context?: Ctx
     ): this {
         if (!this._$handlers) {
@@ -103,7 +109,7 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
 
         if (typeof query === 'function') {
             context = handler as Ctx;
-            handler = query as EventCallback<Ctx, this, EvtDef[keyof EvtDef]>;
+            handler = query as (...args: any) => any;
             query = null;
         }
 
@@ -126,8 +132,8 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
             }
         }
 
-        const wrap: EventHandler<Ctx, this, EvtDef[keyof EvtDef]> = {
-            h: handler as EventCallback<Ctx, this, EvtDef[keyof EvtDef]>,
+        const wrap: EventHandler<Ctx, this, unknown[]> = {
+            h: handler as EventCallback<unknown[]>,
             query: query,
             ctx: (context || this) as CbThis<Ctx, this>,
             // FIXME
@@ -199,8 +205,10 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
      *
      * @param {string} eventType The event name.
      */
-    trigger(eventType: keyof EvtDef, eventParam?: EvtDef[keyof EvtDef], ...args: any[]): this;
-    trigger(eventType: keyof EvtDef, ...args: any[]): this {
+    trigger<EvtNm extends keyof EvtDef>(
+        eventType: EvtNm,
+        ...args: Parameters<EvtDef[EvtNm]>
+    ): this {
         if (!this._$handlers) {
             return this;
         }
@@ -225,7 +233,6 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
                 // Optimize advise from backbone
                 switch (argLen) {
                     case 0:
-                        // @ts-ignore
                         hItem.h.call(hItem.ctx);
                         break;
                     case 1:
@@ -253,7 +260,7 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
      *
      * @param {string} type The event name.
      */
-    triggerWithContext(type: keyof EvtDef) {
+    triggerWithContext(type: keyof EvtDef, ...args: any[]): this {
         if (!this._$handlers) {
             return this;
         }
@@ -262,7 +269,6 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
         const eventProcessor = this._$eventProcessor;
 
         if (_h) {
-            const args: any = arguments;
             const argLen = args.length;
             const ctx = args[argLen - 1];
 
@@ -280,7 +286,6 @@ export default class Eventful<EvtDef = DefaultEventDefinition> {
                 // Optimize advise from backbone
                 switch (argLen) {
                     case 0:
-                        // @ts-ignore
                         hItem.h.call(ctx);
                         break;
                     case 1:

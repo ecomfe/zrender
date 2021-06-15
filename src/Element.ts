@@ -8,7 +8,7 @@ import {
 } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
-import Eventful, {EventQuery, EventCallback} from './core/Eventful';
+import Eventful from './core/Eventful';
 import ZRText, { DefaultTextStyle } from './graphic/Text';
 import { calculateTextPosition, TextPositionCalculationResult, parsePercent } from './contain/text';
 import {
@@ -29,7 +29,6 @@ import { LIGHT_LABEL_COLOR, DARK_LABEL_COLOR } from './config';
 import { parse, stringify } from './tool/color';
 import env from './core/env';
 import { REDARAW_BIT } from './graphic/constants';
-import { MatrixArray } from './core/matrix';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -288,13 +287,13 @@ export type ElementCommonState = {
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 let tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
 
-interface Element<Props extends ElementProps = ElementProps> extends Transformable, Eventful, ElementEventHandlerProps {
-    // Provide more typed event callback params for mouse events.
-    on<Ctx>(event: ElementEventName, handler: ElementEventCallback<Ctx, this>, context?: Ctx): this
-    on<Ctx>(event: string, handler: EventCallback<Ctx, this>, context?: Ctx): this
-
-    on<Ctx>(event: ElementEventName, query: EventQuery, handler: ElementEventCallback<Ctx, this>, context?: Ctx): this
-    on<Ctx>(event: string, query: EventQuery, handler: EventCallback<Ctx, this>, context?: Ctx): this
+interface Element<Props extends ElementProps = ElementProps> extends Transformable,
+    Eventful<{
+        [key in ElementEventName]: (e: ElementEvent) => void | boolean
+    } & {
+        [key in string]: (...args: any) => void | boolean
+    }>,
+    ElementEventHandlerProps {
 }
 
 class Element<Props extends ElementProps = ElementProps> {

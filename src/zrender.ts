@@ -16,7 +16,7 @@ import {PainterBase} from './PainterBase';
 import Animation from './animation/Animation';
 import HandlerProxy from './dom/HandlerProxy';
 import Element, {ElementEventCallback, ElementEvent} from './Element';
-import { Dictionary, ElementEventName, RenderedEvent } from './core/types';
+import { Dictionary, ElementEventName, RenderedEvent, WithThisType } from './core/types';
 import { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
@@ -406,10 +406,10 @@ class ZRender {
         return this.handler.findHover(x, y);
     }
 
-    on<Ctx>(eventName: ElementEventName, eventHandler: ElementEventCallback<Ctx, unknown>, context?: Ctx): this
-    on<Ctx>(eventName: string, eventHandler: EventCallback<Ctx, unknown>, context?: Ctx): this
+    on<Ctx>(eventName: ElementEventName, eventHandler: ElementEventCallback<Ctx, ZRenderType>, context?: Ctx): this
+    on<Ctx>(eventName: string, eventHandler: WithThisType<EventCallback<any[]>, unknown extends Ctx ? ZRenderType : Ctx>, context?: Ctx): this
     // eslint-disable-next-line max-len
-    on<Ctx>(eventName: string, eventHandler: EventCallback<Ctx, unknown> | EventCallback<Ctx, unknown, ElementEvent>, context?: Ctx): this {
+    on<Ctx>(eventName: string, eventHandler: (...args: any) => any, context?: Ctx): this {
         this.handler.on(eventName, eventHandler, context);
         return this;
     }
@@ -420,7 +420,7 @@ class ZRender {
      * @param eventHandler Handler function
      */
     // eslint-disable-next-line max-len
-    off(eventName?: string, eventHandler?: EventCallback<unknown, unknown> | EventCallback<unknown, unknown, ElementEvent>) {
+    off(eventName?: string, eventHandler?: EventCallback) {
         this.handler.off(eventName, eventHandler);
     }
 
