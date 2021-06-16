@@ -810,7 +810,7 @@ class ZRText extends Displayable<TextProps> {
 
         let rectEl: Rect;
         let imgEl: ZRImage;
-        if (isPlainOrGradientBg || (textBorderWidth && textBorderColor)) {
+        if (isPlainOrGradientBg || style.lineHeight || (textBorderWidth && textBorderColor)) {
             // Background is color
             rectEl = this._getOrCreateChild(Rect);
             rectEl.useStyle(rectEl.createStyle());    // Create an empty style.
@@ -985,6 +985,7 @@ function getStyleText(style: TextStylePropsPart): string {
 function needDrawBackground(style: TextStylePropsPart): boolean {
     return !!(
         style.backgroundColor
+        || style.lineHeight
         || (style.borderWidth && style.borderColor)
     );
 }
