@@ -2,7 +2,7 @@ import PathProxy from '../core/PathProxy';
 import { cubicSubdivide } from '../core/curve';
 import Path from '../graphic/Path';
 import Element, { ElementAnimateConfig } from '../Element';
-import { defaults, assert, map } from '../core/util';
+import { defaults, map } from '../core/util';
 import { lerp } from '../core/vector';
 import Group, { GroupLike } from '../graphic/Group';
 import { clonePath } from './path';
@@ -605,6 +605,14 @@ export interface CombineConfig extends ElementAnimateConfig {
      */
     // sort?: boolean
 }
+
+function createEmptyReturn() {
+    return {
+        fromIndividuals: [] as Path[],
+        toIndividuals: [] as Path[],
+        count: 0
+    }
+}
 /**
  * Make combine morphing from many paths to one.
  * Will return a group to replace the original path.
@@ -633,7 +641,7 @@ export function combineMorph(
 
     // fromPathList.length is 0.
     if (!separateCount) {
-        return;
+        return createEmptyReturn();
     }
 
     const dividePath = animationOpts.dividePath || defaultDividePath;
@@ -641,7 +649,10 @@ export function combineMorph(
     let toSubPathList = dividePath({
         path: toPath, count: separateCount
     });
-    assert(toSubPathList.length === separateCount);
+    if (toSubPathList.length !== separateCount) {
+        console.error('Invalid morphing: unmatched splitted path');
+        return createEmptyReturn();
+    }
 
     fromPathList = sortPathsOnZOrder(fromPathList);
     toSubPathList = sortPathsOnZOrder(toSubPathList);
@@ -796,7 +807,10 @@ export function separateMorph(
             // Use transform of source path.
             fromPathList[i].copyTransform(fromPath);
         }
-        assert(fromPathList.length === toLen);
+        if (fromPathList.length !== toLen) {
+            console.error('Invalid morphing: unmatched splitted path');
+            return createEmptyReturn();
+        }
     }
 
     fromPathList = sortPathsOnZOrder(fromPathList);
