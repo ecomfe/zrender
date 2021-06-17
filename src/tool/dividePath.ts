@@ -1,6 +1,7 @@
 import { fromPoints } from '../core/bbox';
 import BoundingRect from '../core/BoundingRect';
 import Point from '../core/Point';
+import { each, map } from '../core/util';
 import Path from '../graphic/Path';
 import Polygon from '../graphic/shape/Polygon';
 import Rect from '../graphic/shape/Rect';
@@ -331,10 +332,55 @@ export function split(
             break;
         default:
             // TODO
-            const polygons = pathToPolygons(path.getUpdatedPathProxy());
-            binaryDivideRecursive(binaryDividePolygon, {
-                points: polygonConvert(polygons[0])
-            }, count, outShapes);
+            const polygons = map(pathToPolygons(path.getUpdatedPathProxy()), poly => polygonConvert(poly));
+            const polygonCount = polygons.length;
+            if (polygonCount === 0) {
+                binaryDivideRecursive(binaryDividePolygon, {
+                    points: polygons[0]
+                }, count, outShapes);
+            }
+            else if (polygonCount === count) {   // In case we only split batched paths to non-batched paths. No need to split.
+                for (let i = 0; i < polygonCount; i++) {
+                    outShapes.push({
+                        points: polygons[i]
+                    } as Polygon['shape']);
+                }
+            }
+            else {
+                // Most complex case. Assign multiple subpath to each polygon based on it's area.
+                let totalArea = 0;
+                const items = map(polygons, poly => {
+                    const min: number[] = [];
+                    const max: number[] = [];
+                    fromPoints(poly, min, max);
+                    // TODO: polygon area?
+                    const area = (max[1] - min[1]) * (max[0] - min[0]);
+                    totalArea += area;
+                    return { poly, area };
+                });
+                items.sort((a, b) => b.area - a.area);
+
+                let left = count;
+                for (let i = 0; i < polygonCount; i++) {
+                    const item = items[i];
+                    if (left <= 0) {
+                        break;
+                    }
+
+                    const selfCount = i === polygonCount - 1
+                        ? left   // Use the last piece directly
+                        : Math.ceil(item.area / totalArea * count);
+
+                    if (selfCount < 0) {
+                        continue;
+                    }
+
+                    binaryDivideRecursive(binaryDividePolygon, {
+                        points: item.poly
+                    }, selfCount, outShapes);
+                    left -= selfCount;
+                };
+            }
             OutShapeCtor = Polygon;
             break;
     }
