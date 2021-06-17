@@ -537,8 +537,8 @@ export function morphPath(
 function zOrder(x: number, y: number, minX: number, minY: number, maxX: number, maxY: number) {
     // Normalize coords to 0 - 1
     // The transformed into non-negative 15-bit integer range
-    x = 32767 * (x - minX) / (maxX - maxY);
-    y = 32767 * (y - minY) / (maxX - maxY);
+    x = 32767 * (x - minX) / (maxX - minX);
+    y = 32767 * (y - minY) / (maxY - minY);
 
     x = (x | (x << 8)) & 0x00FF00FF;
     x = (x | (x << 4)) & 0x0F0F0F0F;
