@@ -474,14 +474,27 @@ export function mergePath(pathEls: Path[], opts: PathProps) {
  * Notice: the shape of cloned path will be fixed.
  * Only style and transform can be changed.
  */
-export function clonePath(sourcePath: Path) {
+export function clonePath(sourcePath: Path, opts?: {
+    /**
+     * If bake global transform to new.
+     */
+    bakeTransform?: boolean
+}) {
+    opts = opts || {};
     const path = new Path();
     path.setStyle(sourcePath.style);
 
-    // TODO Copy getLocalTransform, updateTransform since they can be changed.
-    path.copyTransform(sourcePath);
-
     path.path = sourcePath.getUpdatedPathProxy().clone();
+    // Disable this methods.
+    // TODO other methods?
+    path.path.reset = noop;
+    if (opts.bakeTransform) {
+        transformPath(path.path, sourcePath.getComputedTransform());
+    }
+    else {
+        // TODO Copy getLocalTransform, updateTransform since they can be changed.
+        path.copyTransform(sourcePath);
+    }
     path.getUpdatedPathProxy = function () {
         // Not update anymore.
         return path.path;

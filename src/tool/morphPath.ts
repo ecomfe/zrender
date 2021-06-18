@@ -587,7 +587,7 @@ export interface DividePathParams {
     path: Path,
     count: number
 };
-interface DividePath {
+export interface DividePath {
     (params: DividePathParams): Path[]
 }
 
@@ -666,9 +666,10 @@ export function combineMorph(
     for (let i = 0; i < separateCount; i++) {
         const from = fromPathList[i];
         const to = toSubPathList[i];
+
         to.parent = toPath as unknown as Group;
 
-        // Ignore set transform in each subpath.
+        // Ignore transform in each subpath.
         to.copyTransform(identityTransform);
 
         prepareMorphPath(from, to);
@@ -803,9 +804,10 @@ export function separateMorph(
     }
     else {
         fromPathList = dividePath({ path: fromPath, count: toLen });
+        const fromPathTransform = fromPath.getComputedTransform();
         for (let i = 0; i < fromPathList.length; i++) {
-            // Use transform of source path.
-            fromPathList[i].copyTransform(fromPath);
+            // Force use transform of source path.
+            fromPathList[i].setLocalTransform(fromPathTransform);
         }
         if (fromPathList.length !== toLen) {
             console.error('Invalid morphing: unmatched splitted path');
