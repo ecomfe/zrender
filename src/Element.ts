@@ -284,6 +284,12 @@ export type ElementCommonState = {
     hoverLayer?: boolean
 }
 
+export type ElementCalculateTextPosition = (
+    out: TextPositionCalculationResult,
+    style: ElementTextConfig,
+    rect: RectLike
+) => TextPositionCalculationResult;
+
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 let tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
 
@@ -1608,9 +1614,7 @@ class Element<Props extends ElementProps = ElementProps> {
      *             verticalAlign: string. optional. use style.textVerticalAlign by default.
      *         }
      */
-    calculateTextPosition: (
-        out: TextPositionCalculationResult, style: ElementTextConfig, rect: RectLike
-    ) => TextPositionCalculationResult
+    calculateTextPosition: ElementCalculateTextPosition;
 
     protected static initDefaultProps = (function () {
         const elProto = Element.prototype;
