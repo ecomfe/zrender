@@ -1,12 +1,5 @@
 import Path, { PathProps } from '../Path';
 import * as roundSectorHelper from '../helper/roundSector';
-import {BuiltinTextPosition} from '../../core/types';
-
-type SectorTextPosition = BuiltinTextPosition
-    | 'start' | 'end'
-    | 'startTop' | 'insideStartTop' | 'insideStart' | 'insideStartBottom' | 'startBottom'
-    | 'middleTop' | 'insideMiddleTop' | 'middle' | 'insideMiddleBottom' | 'middleBottom'
-    | 'endTop' | 'insideEndTop' | 'insideEnd' | 'insideEndBottom' | 'endBottom';
 
 export class SectorShape {
     cx = 0
