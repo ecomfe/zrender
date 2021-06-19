@@ -471,36 +471,41 @@ export function mergePath(pathEls: Path[], opts: PathProps) {
 
 /**
  * Clone a path.
- * Notice: the shape of cloned path will be fixed.
- * Only style and transform can be changed.
  */
 export function clonePath(sourcePath: Path, opts?: {
     /**
-     * If bake global transform to new.
+     * If bake global transform to path.
      */
     bakeTransform?: boolean
+    /**
+     * Convert global transform to local.
+     */
+    toLocal?: boolean
 }) {
     opts = opts || {};
     const path = new Path();
+    if (sourcePath.shape) {
+        path.setShape(sourcePath.shape);
+    }
     path.setStyle(sourcePath.style);
 
-    path.path = sourcePath.getUpdatedPathProxy().clone();
-    // Disable this methods.
-    // TODO other methods?
-    path.path.reset = noop;
     if (opts.bakeTransform) {
         transformPath(path.path, sourcePath.getComputedTransform());
     }
     else {
         // TODO Copy getLocalTransform, updateTransform since they can be changed.
-        path.copyTransform(sourcePath);
+        if (opts.toLocal) {
+            path.setLocalTransform(sourcePath.getComputedTransform());
+        }
+        else {
+            path.copyTransform(sourcePath);
+        }
     }
-    path.getUpdatedPathProxy = function () {
-        // Not update anymore.
-        return path.path;
-    };
-    // Do nothing
-    path.buildPath = noop;
+
+    // These methods may be overridden
+    path.buildPath = sourcePath.buildPath;
+    (path as SVGPath).applyTransform = (path as SVGPath).applyTransform;
+
     path.z = sourcePath.z;
     path.z2 = sourcePath.z2;
     path.zlevel = sourcePath.zlevel;

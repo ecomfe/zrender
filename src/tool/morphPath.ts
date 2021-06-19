@@ -429,6 +429,7 @@ function prepareMorphPath(
         const onet = 1 - t;
 
         const newCp: number[] = [];
+
         for (let i = 0; i < morphingData.length; i++) {
             const item = morphingData[i];
             const from = item.from;
@@ -789,17 +790,14 @@ export function separateMorph(
         addFromPath(fromPath.childrenRef());
 
         const fromLen = fromPathList.length;
-        if (fromLen !== toLen) {
-            if (fromLen < toLen) {
-                let k = 0;
-                for (let i = fromLen; i < toLen; i++) {
-                    // Create a clone
-                    fromPathList.push(clonePath(fromPathList[k++ % fromLen]));
-                }
+        if (fromLen < toLen) {
+            let k = 0;
+            for (let i = fromLen; i < toLen; i++) {
+                // Create a clone
+                fromPathList.push(clonePath(fromPathList[k++ % fromLen]));
             }
-            // Else simply remove.
         }
-
+        // Else simply remove if fromLen > toLen
         fromPathList.length = toLen;
     }
     else {
@@ -817,6 +815,7 @@ export function separateMorph(
 
     fromPathList = sortPathsOnZOrder(fromPathList);
     toPathList = sortPathsOnZOrder(toPathList);
+
 
     for (let i = 0; i < toLen; i++) {
         morphPath(fromPathList[i], toPathList[i], animationOpts);
