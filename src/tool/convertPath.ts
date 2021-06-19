@@ -190,7 +190,7 @@ export function pathToBezierCurves(path: PathProxy) {
 
 function adpativeBezier(
     x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number,
-    out: number[]
+    out: number[], scale: number
 ) {
     // This bezier is used to simulates a line when converting path to beziers.
     if (aroundEqual(x0, x1) && aroundEqual(y0, y1) && aroundEqual(x2, x3) && aroundEqual(y2, y3)) {
@@ -198,7 +198,7 @@ function adpativeBezier(
         return;
     }
 
-    const PIXEL_DISTANCE = 2;
+    const PIXEL_DISTANCE = 2 / scale;
     const PIXEL_DISTANCE_SQR = PIXEL_DISTANCE * PIXEL_DISTANCE;
 
     // Determine if curve is straight enough
@@ -250,19 +250,21 @@ function adpativeBezier(
 
     adpativeBezier(
         tmpSegX[0], tmpSegY[0], tmpSegX[1], tmpSegY[1], tmpSegX[2], tmpSegY[2], tmpSegX[3], tmpSegY[3],
-        out
+        out, scale
     );
     adpativeBezier(
         tmpSegX[4], tmpSegY[4], tmpSegX[5], tmpSegY[5], tmpSegX[6], tmpSegY[6], tmpSegX[7], tmpSegY[7],
-        out
+        out, scale
     );
 }
 
-export function pathToPolygons(path: PathProxy) {
+export function pathToPolygons(path: PathProxy, scale?: number) {
     // TODO Optimize simple case like path is polygon and rect?
     const bezierArrayGroups = pathToBezierCurves(path);
 
     const polygons: number[][] = [];
+
+    scale = scale || 1;
 
     for (let i = 0; i < bezierArrayGroups.length; i++) {
         const beziers = bezierArrayGroups[i];
@@ -281,7 +283,7 @@ export function pathToPolygons(path: PathProxy) {
             const x3 = beziers[k++];
             const y3 = beziers[k++];
 
-            adpativeBezier(x0, y0, x1, y1, x2, y2, x3, y3, polygon);
+            adpativeBezier(x0, y0, x1, y1, x2, y2, x3, y3, polygon, scale);
 
             x0 = x3;
             y0 = y3;

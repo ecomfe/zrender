@@ -331,8 +331,12 @@ export function split(
             OutShapeCtor = Sector;
             break;
         default:
-            // TODO
-            const polygons = map(pathToPolygons(path.getUpdatedPathProxy()), poly => polygonConvert(poly));
+            const m = path.getComputedTransform();
+            const scale = m ? Math.sqrt(Math.max(m[0] * m[0] + m[1] * m[1], m[2] * m[2] + m[3] * m[3])) : 1;
+            const polygons = map(
+                pathToPolygons(path.getUpdatedPathProxy(), scale),
+                poly => polygonConvert(poly)
+            );
             const polygonCount = polygons.length;
             if (polygonCount === 0) {
                 binaryDivideRecursive(binaryDividePolygon, {
