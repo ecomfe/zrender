@@ -408,17 +408,11 @@ function prepareMorphPath(
     function updateIdentityTransform(this: Transformable) {
         this.transform = null;
     }
-    if (fromPathTransform) {
-        applyTransformOnBeziers(fromBezierCurves, fromPathTransform);
-        // Just ignore transform
-        saveAndModifyMethod(fromPath, 'updateTransform', { replace: updateIdentityTransform });
-        fromPath.transform = null;
-    }
-    if (toPathTransform) {
-        applyTransformOnBeziers(toBezierCurves, toPathTransform);
-        saveAndModifyMethod(toPath, 'updateTransform', { replace: updateIdentityTransform });
-        toPath.transform = null;
-    }
+    fromPathTransform && applyTransformOnBeziers(fromBezierCurves, fromPathTransform);
+    toPathTransform && applyTransformOnBeziers(toBezierCurves, toPathTransform);
+    // Just ignore transform
+    saveAndModifyMethod(toPath, 'updateTransform', { replace: updateIdentityTransform });
+    toPath.transform = null;
 
     const morphingData = findBestMorphingRotation(fromBezierCurves, toBezierCurves, 10, Math.PI);
 
@@ -505,7 +499,6 @@ export function morphPath(
     function restoreToPath() {
         restoreMethod(toPath, 'buildPath');
         restoreMethod(toPath, 'updateTransform');
-        restoreMethod(fromPath, 'updateTransform');
         // Mark as not in morphing
         (toPath as MorphingPath).__morphT = -1;
         // Cleanup.
@@ -815,7 +808,6 @@ export function separateMorph(
 
     fromPathList = sortPathsOnZOrder(fromPathList);
     toPathList = sortPathsOnZOrder(toPathList);
-
 
     for (let i = 0; i < toLen; i++) {
         morphPath(fromPathList[i], toPathList[i], animationOpts);
