@@ -2,7 +2,7 @@ import PathProxy from '../core/PathProxy';
 import { cubicSubdivide } from '../core/curve';
 import Path from '../graphic/Path';
 import Element, { ElementAnimateConfig } from '../Element';
-import { defaults, map } from '../core/util';
+import { defaults, extend, map } from '../core/util';
 import { lerp } from '../core/vector';
 import Group, { GroupLike } from '../graphic/Group';
 import { clonePath } from './path';
@@ -585,6 +585,10 @@ export interface DividePath {
     (params: DividePathParams): Path[]
 }
 
+export interface IndividualDelay {
+    (index: number, count: number, fromPath: Path, toPath: Path): number
+}
+
 function defaultDividePath(param: DividePathParams) {
     return split(param.path, param.count);
 }
@@ -593,7 +597,7 @@ export interface CombineConfig extends ElementAnimateConfig {
      * Transform of returned will be ignored.
      */
     dividePath?: DividePath
-
+    individualDelay?: IndividualDelay
     /**
      * If sort splitted paths so the movement between them can be more natural
      */
@@ -654,6 +658,7 @@ export function combineMorph(
     const oldDone = animationOpts.done;
     // const oldAborted = animationOpts.aborted;
     const oldDuring = animationOpts.during;
+    const individualDelay = animationOpts.individualDelay;
 
     const identityTransform = new Transformable();
 
@@ -666,7 +671,10 @@ export function combineMorph(
         // Ignore transform in each subpath.
         to.copyTransform(identityTransform);
 
-        prepareMorphPath(from, to);
+        // Will do morphPath for each individual if individualDelay is set.
+        if (!individualDelay) {
+            prepareMorphPath(from, to);
+        }
     }
 
     (toPath as CombineMorphingPath).__isCombineMorphing = true;
@@ -700,34 +708,51 @@ export function combineMorph(
 
         restoreMethod(toPath, 'addSelfToZr');
         restoreMethod(toPath, 'removeSelfFromZr');
-
-        for (let i = 0; i < fromList.length; i++) {
-            restoreMethod(fromList[i], 'updateTransform');
-        }
     }
 
-    (toPath as MorphingPath).__morphT = 0;
-    toPath.animateTo({
-        __morphT: 1
-    } as any, defaults({
-        during(p) {
-            for (let i = 0; i < toSubPathList.length; i++) {
-                const child = toSubPathList[i] as MorphingPath;
-                child.__morphT = (toPath as MorphingPath).__morphT;
-                child.dirtyShape();
+    const toLen = toSubPathList.length;
+
+    if (individualDelay) {
+        let animating = toLen;
+        const eachDone = () => {
+            animating--;
+            if (animating === 0) {
+                restoreToPath();
+                oldDone && oldDone();
             }
-            oldDuring && oldDuring(p);
-        },
-        done() {
-            restoreToPath();
-            oldDone && oldDone();
         }
-        // NOTE: Don't do restore if aborted.
-        // Because all status was just set when animation started.
-        // aborted() {
-        //     oldAborted && oldAborted();
-        // }
-    } as ElementAnimateConfig, animationOpts));
+        // Animate each element individually.
+        for (let i = 0; i < toLen; i++) {
+            // TODO only call during once?
+            const indivdualAnimationOpts = individualDelay ? defaults({
+                delay: individualDelay(i, toLen, fromPathList[i], toSubPathList[i]),
+                done: eachDone
+            } as ElementAnimateConfig, animationOpts) : animationOpts;
+            morphPath(fromPathList[i], toSubPathList[i], indivdualAnimationOpts);
+        }
+    }
+    else {
+        (toPath as MorphingPath).__morphT = 0;
+        toPath.animateTo({
+            __morphT: 1
+        } as any, defaults({
+            during(p) {
+                for (let i = 0; i < toLen; i++) {
+                    const child = toSubPathList[i] as MorphingPath;
+                    child.__morphT = (toPath as MorphingPath).__morphT;
+                    child.dirtyShape();
+                }
+                oldDuring && oldDuring(p);
+            },
+            done() {
+                restoreToPath();
+                for (let i = 0; i < fromList.length; i++) {
+                    restoreMethod(fromList[i], 'updateTransform');
+                }
+                oldDone && oldDone();
+            }
+        } as ElementAnimateConfig, animationOpts));
+    }
 
     if (toPath.__zr) {
         addToSubPathListToZr(toPath.__zr);
@@ -736,11 +761,12 @@ export function combineMorph(
     return {
         fromIndividuals: fromPathList,
         toIndividuals: toSubPathList,
-        count: toSubPathList.length
+        count: toLen
     };
 }
 export interface SeparateConfig extends ElementAnimateConfig {
     dividePath?: DividePath
+    individualDelay?: IndividualDelay
     /**
      * If sort splitted paths so the movement between them can be more natural
      */
@@ -809,8 +835,12 @@ export function separateMorph(
     fromPathList = sortPathsOnZOrder(fromPathList);
     toPathList = sortPathsOnZOrder(toPathList);
 
+    const individualDelay = animationOpts.individualDelay;
     for (let i = 0; i < toLen; i++) {
-        morphPath(fromPathList[i], toPathList[i], animationOpts);
+        const indivdualAnimationOpts = individualDelay ? defaults({
+            delay: individualDelay(i, toLen, fromPathList[i], toPathList[i])
+        } as ElementAnimateConfig, animationOpts) : animationOpts;
+        morphPath(fromPathList[i], toPathList[i], indivdualAnimationOpts);
     }
 
     return {
