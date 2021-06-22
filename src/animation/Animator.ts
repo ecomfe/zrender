@@ -145,21 +145,6 @@ function is1DArraySame(arr0: NumberArray, arr1: NumberArray) {
     return true;
 }
 
-function is2DArraySame(arr0: NumberArray[], arr1: NumberArray[]) {
-    const len = arr0.length;
-    if (len !== arr1.length) {
-        return false;
-    }
-    const len2 = arr0[0].length;
-    for (let i = 0; i < len; i++) {
-        for (let j = 0; j < len2; j++) {
-            if (arr0[i][j] !== arr1[i][j]) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
 
 /**
  * Catmull Rom interpolate number
@@ -311,8 +296,10 @@ class Track {
     }
 
     needsAnimate() {
-        // return this.keyframes.length >= 2;
-        return !this._isAllValueEqual && this.keyframes.length >= 2 && this.interpolable;
+        return !this._isAllValueEqual
+             && this.keyframes.length >= 2
+             && this.interpolable
+             && this.maxTime > 0;
     }
 
     getAdditiveTrack() {
