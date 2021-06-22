@@ -706,10 +706,10 @@ export default class Animator<T> {
 
     private _additiveAnimators: Animator<any>[]
 
-    private _doneList: DoneCallback[]
-    private _onframeList: OnframeCallback<T>[]
+    private _doneCbs: DoneCallback[]
+    private _onframeCbs: OnframeCallback<T>[]
 
-    private _abortedList: AbortCallback[]
+    private _abortedCbs: AbortCallback[]
 
     private _clip: Clip = null
 
@@ -811,7 +811,7 @@ export default class Animator<T> {
         // Clear clip
         this._clip = null;
 
-        const doneList = this._doneList;
+        const doneList = this._doneCbs;
         if (doneList) {
             const len = doneList.length;
             for (let i = 0; i < len; i++) {
@@ -823,7 +823,7 @@ export default class Animator<T> {
         this._setTracksFinished();
 
         const animation = this.animation;
-        const abortedList = this._abortedList;
+        const abortedList = this._abortedCbs;
 
         if (animation) {
             animation.removeClip(this._clip);
@@ -877,7 +877,7 @@ export default class Animator<T> {
         for (let i = 0; i < this._trackKeys.length; i++) {
             const propName = this._trackKeys[i];
             const track = this._tracks[propName];
-            const additiveTrack = this._getAdditiveTrack(propName)
+            const additiveTrack = this._getAdditiveTrack(propName);
             const kfs = track.keyframes;
             track.prepare(additiveTrack);
             if (track.needsAnimate()) {
@@ -920,7 +920,7 @@ export default class Animator<T> {
                         // Because target may be changed.
                         tracks[i].step(self._target, percent);
                     }
-                    const onframeList = self._onframeList;
+                    const onframeList = self._onframeCbs;
                     if (onframeList) {
                         for (let i = 0; i < onframeList.length; i++) {
                             onframeList[i](self._target, percent);
@@ -980,10 +980,10 @@ export default class Animator<T> {
      */
     during(cb: OnframeCallback<T>) {
         if (cb) {
-            if (!this._onframeList) {
-                this._onframeList = [];
+            if (!this._onframeCbs) {
+                this._onframeCbs = [];
             }
-            this._onframeList.push(cb);
+            this._onframeCbs.push(cb);
         }
         return this;
     }
@@ -993,20 +993,20 @@ export default class Animator<T> {
      */
     done(cb: DoneCallback) {
         if (cb) {
-            if (!this._doneList) {
-                this._doneList = [];
+            if (!this._doneCbs) {
+                this._doneCbs = [];
             }
-            this._doneList.push(cb);
+            this._doneCbs.push(cb);
         }
         return this;
     }
 
     aborted(cb: AbortCallback) {
         if (cb) {
-            if (!this._abortedList) {
-                this._abortedList = [];
+            if (!this._abortedCbs) {
+                this._abortedCbs = [];
             }
-            this._abortedList.push(cb);
+            this._abortedCbs.push(cb);
         }
         return this;
     }
