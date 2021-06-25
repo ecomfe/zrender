@@ -11,8 +11,6 @@ const PI2 = Math.PI * 2;
 
 const EPSILON = 1e-4;
 
-type PathData = Float32Array | number[];
-
 function isAroundEqual(a: number, b: number) {
     return Math.abs(a - b) < EPSILON;
 }

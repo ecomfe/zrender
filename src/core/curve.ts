@@ -480,7 +480,7 @@ export function quadraticLength(
 
     let d = 0;
 
-    const step = 1  / iteration;
+    const step = 1 / iteration;
 
     for (let i = 1; i <= iteration; i++) {
         let t = i * step;

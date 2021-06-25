@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Path to Polygon</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+    <div id="main" style="width: 800px; height: 500px;"></div>
+    <script>
+        const zr = zrender.init(document.getElementById('main'));
+
+        const isogon = new zrender.Isogon({
+            shape: {
+                x: 120,
+                y: 120,
+                r: 100,
+                n: 20
+            },
+            style: {
+                lineWidth: 1,
+                fill: 'none',
+                stroke: '#000'
+            }
+        });
+        const polygons = zrender.morph.defaultDividePath(isogon, 40);
+        for (let i = 0; i < polygons.length; i++) {
+            zr.add(polygons[i]);
+        }
+
+        const circle = new zrender.Circle({
+            shape: {
+                cx: 340,
+                cy: 120,
+                r: 100
+            },
+            style: {
+                lineWidth: 1,
+                fill: 'none',
+                stroke: '#000'
+            }
+        });
+        const polygons2 = zrender.morph.defaultDividePath(circle, 40);
+        for (let i = 0; i < polygons2.length; i++) {
+            zr.add(polygons2[i]);
+        }
+
+    </script>
+</body>
+</html>

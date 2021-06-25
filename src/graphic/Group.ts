@@ -113,6 +113,14 @@ class Group extends Element<GroupProps> {
         return this;
     }
 
+    replace(oldChild: Element, newChild: Element) {
+        const idx = zrUtil.indexOf(this._children, oldChild);
+        if (idx >= 0) {
+            this.replaceAt(newChild, idx);
+        }
+        return this;
+    }
+
     replaceAt(child: Element, index: number) {
         const children = this._children;
         const old = children[index];
@@ -212,6 +220,7 @@ class Group extends Element<GroupProps> {
      * Visit all descendants.
      * Return false in callback to stop visit descendants of current node
      */
+    // TODO Group itself should also invoke the callback.
     traverse<T>(
         cb: (this: T, el: Element) => boolean | void,
         context?: T
@@ -281,5 +290,9 @@ class Group extends Element<GroupProps> {
 }
 
 Group.prototype.type = 'group';
+// Storage will use childrenRef to get children to render.
+export interface GroupLike extends Element {
+    childrenRef(): Element[]
+}
 
 export default Group;

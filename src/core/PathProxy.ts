@@ -1137,6 +1137,15 @@ export default class PathProxy {
         }
     }
 
+    clone() {
+        const newProxy = new PathProxy();
+        const data = this.data;
+        newProxy.data = data.slice ? data.slice()
+            : Array.prototype.slice.call(data);
+        newProxy._len = this._len;
+        return newProxy;
+    }
+
     private static initDefaultProps = (function () {
         const proto = PathProxy.prototype;
         proto._saveData = true;

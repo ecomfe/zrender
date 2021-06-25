@@ -64,7 +64,7 @@ export type ZRPinchEvent = ZRRawEvent & {
 
 export type ElementEventName = 'click' | 'dblclick' | 'mousewheel' | 'mouseout' |
     'mouseover' | 'mouseup' | 'mousedown' | 'mousemove' | 'contextmenu' |
-    'drag' | 'dragstart' | 'dragend' | 'dragenter' | 'dragleave' | 'dragover' | 'drop';
+    'drag' | 'dragstart' | 'dragend' | 'dragenter' | 'dragleave' | 'dragover' | 'drop' | 'globalout';
 
 export type ElementEventNameWithOn = 'onclick' | 'ondblclick' | 'onmousewheel' | 'onmouseout' |
     'onmouseup' | 'onmousedown' | 'onmousemove' | 'oncontextmenu' |
@@ -90,3 +90,6 @@ export type MapToType<T extends Dictionary<any>, S> = {
 // `keyof A | B` does not equals to `Keyof A | Keyof B`
 // KeyOfDistributive<A | B> equals to `KeyOfDistributive<A> | KeyOfDistributive<B>`
 export type KeyOfDistributive<T> = T extends unknown ? keyof T : never;
+
+export type WithThisType<Func extends (...args: any) => any, This> =
+    (this: This, ...args: Parameters<Func>) => ReturnType<Func>;

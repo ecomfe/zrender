@@ -43,6 +43,13 @@ class Transformable {
     invTransform: matrix.MatrixArray
 
     /**
+     * Get computed local transform
+     */
+    getLocalTransform(m?: matrix.MatrixArray) {
+        return Transformable.getLocalTransform(this, m);
+    }
+
+    /**
      * Set position from array
      */
     setPosition(arr: number[]) {
@@ -88,12 +95,11 @@ class Transformable {
      * Update global transform
      */
     updateTransform() {
-        const parent = this.parent;
-        const parentHasTransform = parent && parent.transform;
+        const parentTransform = this.parent && this.parent.transform;
         const needLocalTransform = this.needLocalTransform();
 
         let m = this.transform;
-        if (!(needLocalTransform || parentHasTransform)) {
+        if (!(needLocalTransform || parentTransform)) {
             m && mIdentity(m);
             return;
         }
@@ -108,12 +114,12 @@ class Transformable {
         }
 
         // 应用父节点变换
-        if (parentHasTransform) {
+        if (parentTransform) {
             if (needLocalTransform) {
-                matrix.mul(m, parent.transform, m);
+                matrix.mul(m, parentTransform, m);
             }
             else {
-                matrix.copy(m, parent.transform);
+                matrix.copy(m, parentTransform);
             }
         }
         // 保存这个变换矩阵
@@ -139,12 +145,6 @@ class Transformable {
 
         this.invTransform = this.invTransform || matrix.create();
         matrix.invert(this.invTransform, m);
-    }
-    /**
-     * Get computed local transform
-     */
-    getLocalTransform(m?: matrix.MatrixArray) {
-        return Transformable.getLocalTransform(this, m);
     }
 
     /**
@@ -177,8 +177,6 @@ class Transformable {
         let sy = m[2] * m[2] + m[3] * m[3];
 
         const rotation = Math.atan2(m[1], m[0]);
-
-
 
         const shearX = Math.PI / 2 + rotation - Math.atan2(m[3], m[2]);
         sy = Math.sqrt(sy) * Math.cos(shearX);
@@ -281,6 +279,15 @@ class Transformable {
             : 1;
     }
 
+    copyTransform(source: Transformable) {
+        const target = this;
+
+        for (let i = 0; i < TRANSFORMABLE_PROPS.length; i++) {
+            const propName = TRANSFORMABLE_PROPS[i];
+            target[propName] = source[propName];
+        }
+    }
+
 
     static getLocalTransform(target: Transformable, m?: matrix.MatrixArray): matrix.MatrixArray {
         m = m || [];
@@ -337,5 +344,9 @@ class Transformable {
         proto.globalScaleRatio = 1;
     })()
 };
+
+export const TRANSFORMABLE_PROPS = [
+    'x', 'y', 'originX', 'originY', 'rotation', 'scaleX', 'scaleY', 'skewX', 'skewY'
+] as const;
 
 export default Transformable;

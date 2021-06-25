@@ -100,8 +100,9 @@
             let nextShape = shapes[currentShapeIdx];
             zr.remove(currentShape);
             zr.add(nextShape);
-            zrender.morphPath(currentShape, nextShape, {
+            zrender.morph.morphPath(currentShape, nextShape, {
                 duration: 1000,
+                easing: 'cubicInOut',
                 done() {
                     setTimeout(morphShape, 100);
                 }
