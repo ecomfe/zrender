@@ -532,8 +532,8 @@ export function morphPath(
 // function zOrder(x: number, y: number, minX: number, minY: number, maxX: number, maxY: number) {
 //     // Normalize coords to 0 - 1
 //     // The transformed into non-negative 15-bit integer range
-//     x = 32767 * (x - minX) / (maxX - minX);
-//     y = 32767 * (y - minY) / (maxY - minY);
+//     x = (maxX === minX) ? 0 : Math.round(32767 * (x - minX) / (maxX - minX));
+//     y = (maxY === minY) ? 0 : Math.round(32767 * (y - minY) / (maxY - minY));
 
 //     x = (x | (x << 8)) & 0x00FF00FF;
 //     x = (x | (x << 4)) & 0x0F0F0F0F;
@@ -552,8 +552,9 @@ export function morphPath(
 // https://jsfiddle.net/pissang/xdnbzg6v/
 function hilbert(x: number, y: number, minX: number, minY: number, maxX: number, maxY: number) {
     const bits = 16;
-    x = Math.round(32767 * (x - minX) / (maxX - minX));
-    y = Math.round(32767 * (y - minY) / (maxY - minY));
+    x = (maxX === minX) ? 0 : Math.round(32767 * (x - minX) / (maxX - minX));
+    y = (maxY === minY) ? 0 : Math.round(32767 * (y - minY) / (maxY - minY));
+
     let d = 0;
     let tmp: number;
     for (let s = (1 << bits) / 2; s > 0; s /= 2) {
@@ -587,8 +588,9 @@ function sortPaths(pathList: Path[]): Path[] {
     let yMax = -Infinity;
     const cps = map(pathList, path => {
         const rect = path.getBoundingRect();
-        const x = rect.x + rect.width / 2;
-        const y = rect.y + rect.height / 2;
+        const m = path.getComputedTransform();
+        const x = rect.x + rect.width / 2 + (m ? m[4] : 0);
+        const y = rect.y + rect.height / 2 + (m ? m[5] : 0);
         xMin = Math.min(x, xMin);
         yMin = Math.min(y, yMin);
         xMax = Math.max(x, xMax);
