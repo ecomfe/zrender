@@ -761,7 +761,7 @@ export function combineMorph(
         for (let i = 0; i < toLen; i++) {
             // TODO only call during once?
             const indivdualAnimationOpts = individualDelay ? defaults({
-                delay: individualDelay(i, toLen, fromPathList[i], toSubPathList[i]),
+                delay: (animationOpts.delay || 0) + individualDelay(i, toLen, fromPathList[i], toSubPathList[i]),
                 done: eachDone
             } as ElementAnimateConfig, animationOpts) : animationOpts;
             morphPath(fromPathList[i], toSubPathList[i], indivdualAnimationOpts);
@@ -874,7 +874,7 @@ export function separateMorph(
     const individualDelay = animationOpts.individualDelay;
     for (let i = 0; i < toLen; i++) {
         const indivdualAnimationOpts = individualDelay ? defaults({
-            delay: individualDelay(i, toLen, fromPathList[i], toPathList[i])
+            delay: (animationOpts.delay || 0) + individualDelay(i, toLen, fromPathList[i], toPathList[i])
         } as ElementAnimateConfig, animationOpts) : animationOpts;
         morphPath(fromPathList[i], toPathList[i], indivdualAnimationOpts);
     }
