@@ -3,7 +3,7 @@ import PathProxy from '../core/PathProxy';
 import transformPath from './transformPath';
 import { VectorArray } from '../core/vector';
 import { MatrixArray } from '../core/matrix';
-import { extend, noop } from '../core/util';
+import { extend } from '../core/util';
 
 // command chars
 // const cc = [

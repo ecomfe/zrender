@@ -528,37 +528,69 @@ export function morphPath(
 }
 
 // https://github.com/mapbox/earcut/blob/master/src/earcut.js#L437
-function zOrder(x: number, y: number, minX: number, minY: number, maxX: number, maxY: number) {
-    // Normalize coords to 0 - 1
-    // The transformed into non-negative 15-bit integer range
-    x = 32767 * (x - minX) / (maxX - minX);
-    y = 32767 * (y - minY) / (maxY - minY);
+// https://jsfiddle.net/pissang/2jk7x145/
+// function zOrder(x: number, y: number, minX: number, minY: number, maxX: number, maxY: number) {
+//     // Normalize coords to 0 - 1
+//     // The transformed into non-negative 15-bit integer range
+//     x = (maxX === minX) ? 0 : Math.round(32767 * (x - minX) / (maxX - minX));
+//     y = (maxY === minY) ? 0 : Math.round(32767 * (y - minY) / (maxY - minY));
 
-    x = (x | (x << 8)) & 0x00FF00FF;
-    x = (x | (x << 4)) & 0x0F0F0F0F;
-    x = (x | (x << 2)) & 0x33333333;
-    x = (x | (x << 1)) & 0x55555555;
+//     x = (x | (x << 8)) & 0x00FF00FF;
+//     x = (x | (x << 4)) & 0x0F0F0F0F;
+//     x = (x | (x << 2)) & 0x33333333;
+//     x = (x | (x << 1)) & 0x55555555;
 
-    y = (y | (y << 8)) & 0x00FF00FF;
-    y = (y | (y << 4)) & 0x0F0F0F0F;
-    y = (y | (y << 2)) & 0x33333333;
-    y = (y | (y << 1)) & 0x55555555;
+//     y = (y | (y << 8)) & 0x00FF00FF;
+//     y = (y | (y << 4)) & 0x0F0F0F0F;
+//     y = (y | (y << 2)) & 0x33333333;
+//     y = (y | (y << 1)) & 0x55555555;
 
-    return x | (y << 1);
+//     return x | (y << 1);
+// }
+
+// https://github.com/w8r/hilbert/blob/master/hilbert.js#L30
+// https://jsfiddle.net/pissang/xdnbzg6v/
+function hilbert(x: number, y: number, minX: number, minY: number, maxX: number, maxY: number) {
+    const bits = 16;
+    x = (maxX === minX) ? 0 : Math.round(32767 * (x - minX) / (maxX - minX));
+    y = (maxY === minY) ? 0 : Math.round(32767 * (y - minY) / (maxY - minY));
+
+    let d = 0;
+    let tmp: number;
+    for (let s = (1 << bits) / 2; s > 0; s /= 2) {
+        let rx = 0, ry = 0;
+
+        if ((x & s) > 0) rx = 1;
+        if ((y & s) > 0) ry = 1;
+
+        d += s * s * ((3 * rx) ^ ry);
+
+        if (ry === 0) {
+            if (rx === 1) {
+                x = s - 1 - x;
+                y = s - 1 - y;
+            }
+            tmp = x;
+            x = y;
+            y = tmp;
+        }
+    }
+    return d;
 }
 
-// Sort paths on z order. https://jsfiddle.net/pissang/2jk7x145/
+// Sort paths on hilbert. Not using z-order because it may still have large cross.
 // So the left most source can animate to the left most target, not right most target.
 // Hope in this way. We can make sure each element is animated to the proper target. Not the farthest.
-function sortPathsOnZOrder(pathList: Path[]): Path[] {
+function sortPaths(pathList: Path[]): Path[] {
     let xMin = Infinity;
     let yMin = Infinity;
     let xMax = -Infinity;
     let yMax = -Infinity;
     const cps = map(pathList, path => {
         const rect = path.getBoundingRect();
-        const x = rect.x + rect.width / 2;
-        const y = rect.y + rect.height / 2;
+        const m = path.getComputedTransform();
+        const x = rect.x + rect.width / 2 + (m ? m[4] : 0);
+        const y = rect.y + rect.height / 2 + (m ? m[5] : 0);
         xMin = Math.min(x, xMin);
         yMin = Math.min(y, yMin);
         xMax = Math.max(x, xMax);
@@ -569,7 +601,7 @@ function sortPathsOnZOrder(pathList: Path[]): Path[] {
     const items = map(cps, (cp, idx) => {
         return {
             cp,
-            z: zOrder(cp[0], cp[1], xMin, yMin, xMax, yMax),
+            z: hilbert(cp[0], cp[1], xMin, yMin, xMax, yMax),
             path: pathList[idx]
         }
     });
@@ -597,6 +629,10 @@ export interface CombineConfig extends ElementAnimateConfig {
      * Transform of returned will be ignored.
      */
     dividePath?: DividePath
+    /**
+     * delay of each individual.
+     * Because individual are sorted on z-order. The index is also sorted top-left / right-down.
+     */
     individualDelay?: IndividualDelay
     /**
      * If sort splitted paths so the movement between them can be more natural
@@ -652,8 +688,8 @@ export function combineMorph(
         return createEmptyReturn();
     }
 
-    fromPathList = sortPathsOnZOrder(fromPathList);
-    toSubPathList = sortPathsOnZOrder(toSubPathList);
+    fromPathList = sortPaths(fromPathList);
+    toSubPathList = sortPaths(toSubPathList);
 
     const oldDone = animationOpts.done;
     // const oldAborted = animationOpts.aborted;
@@ -725,7 +761,7 @@ export function combineMorph(
         for (let i = 0; i < toLen; i++) {
             // TODO only call during once?
             const indivdualAnimationOpts = individualDelay ? defaults({
-                delay: individualDelay(i, toLen, fromPathList[i], toSubPathList[i]),
+                delay: (animationOpts.delay || 0) + individualDelay(i, toLen, fromPathList[i], toSubPathList[i]),
                 done: eachDone
             } as ElementAnimateConfig, animationOpts) : animationOpts;
             morphPath(fromPathList[i], toSubPathList[i], indivdualAnimationOpts);
@@ -832,13 +868,13 @@ export function separateMorph(
         }
     }
 
-    fromPathList = sortPathsOnZOrder(fromPathList);
-    toPathList = sortPathsOnZOrder(toPathList);
+    fromPathList = sortPaths(fromPathList);
+    toPathList = sortPaths(toPathList);
 
     const individualDelay = animationOpts.individualDelay;
     for (let i = 0; i < toLen; i++) {
         const indivdualAnimationOpts = individualDelay ? defaults({
-            delay: individualDelay(i, toLen, fromPathList[i], toPathList[i])
+            delay: (animationOpts.delay || 0) + individualDelay(i, toLen, fromPathList[i], toPathList[i])
         } as ElementAnimateConfig, animationOpts) : animationOpts;
         morphPath(fromPathList[i], toPathList[i], indivdualAnimationOpts);
     }
