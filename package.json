@@ -26,7 +26,7 @@
   "module": "index.js",
   "main": "dist/zrender.js",
   "dependencies": {
-    "tslib": "2.0.3"
+    "tslib": "2.3.0"
   },
   "sideEffects": [
     "lib/canvas/canvas.js",
@@ -47,7 +47,7 @@
     "rollup-plugin-typescript2": "^0.25.3",
     "rollup-plugin-uglify": "^6.0.4",
     "ts-jest": "^25.2.0",
-    "typescript": "^4.1.2",
+    "typescript": "4.3.5",
     "uglify-js": "^3.10.0"
   }
 }
