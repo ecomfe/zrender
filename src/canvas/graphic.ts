@@ -20,9 +20,9 @@ import { REDARAW_BIT, SHAPE_CHANGED_BIT } from '../graphic/constants';
 const pathProxyForDraw = new PathProxy(true);
 
 // Not use el#hasStroke because style may be different.
-function styleHasStroke(style: PathStyleProps) {
+function styleHasStroke(style: PathStyleProps, excludeLineWidth?: boolean) {
     const stroke = style.stroke;
-    return !(stroke == null || stroke === 'none' || !(style.lineWidth > 0));
+    return stroke != null && stroke !== 'none' && (excludeLineWidth || style.lineWidth > 0);
 }
 
 function styleHasFill(style: PathStyleProps) {
@@ -459,14 +459,14 @@ function bindPathAndTextCommonStyle(
             flushPathDrawn(ctx, scope);
             styleChanged = true;
         }
-        ctx.fillStyle = style.fill as string;
+        ctx.fillStyle = styleHasFill(style) ? style.fill : '';
     }
     if (forceSetAll || style.stroke !== prevStyle.stroke) {
         if (!styleChanged) {
             flushPathDrawn(ctx, scope);
             styleChanged = true;
         }
-        ctx.strokeStyle = style.stroke as string;
+        ctx.strokeStyle = styleHasStroke(style, true) ? style.stroke : '';
     }
     if (forceSetAll || style.opacity !== prevStyle.opacity) {
         if (!styleChanged) {
