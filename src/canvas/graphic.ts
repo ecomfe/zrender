@@ -25,6 +25,14 @@ function styleHasStroke(style: PathStyleProps) {
     return !(stroke == null || stroke === 'none' || !(style.lineWidth > 0));
 }
 
+// ignore lineWidth and must be string
+// Expected color but found '[' when color is gradient
+function isValidStrokeFillStyle(
+    strokeOrFill: PathStyleProps['stroke'] | PathStyleProps['fill']
+): strokeOrFill is string {
+    return strokeOrFill != null && strokeOrFill !== 'none' && typeof strokeOrFill === 'string';
+}
+
 function styleHasFill(style: PathStyleProps) {
     const fill = style.fill;
     return fill != null && fill !== 'none';
@@ -459,14 +467,14 @@ function bindPathAndTextCommonStyle(
             flushPathDrawn(ctx, scope);
             styleChanged = true;
         }
-        ctx.fillStyle = style.fill as string;
+        isValidStrokeFillStyle(style.fill) && (ctx.fillStyle = style.fill);
     }
     if (forceSetAll || style.stroke !== prevStyle.stroke) {
         if (!styleChanged) {
             flushPathDrawn(ctx, scope);
             styleChanged = true;
         }
-        ctx.strokeStyle = style.stroke as string;
+        isValidStrokeFillStyle(style.stroke) && (ctx.strokeStyle = style.stroke);
     }
     if (forceSetAll || style.opacity !== prevStyle.opacity) {
         if (!styleChanged) {
