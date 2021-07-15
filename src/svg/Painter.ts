@@ -3,7 +3,7 @@
  * @module zrender/svg/Painter
  */
 
-import {createElement} from './core';
+import {createElement, normalizeColor} from './core';
 import * as util from '../core/util';
 import Path from '../graphic/Path';
 import ZRImage from '../graphic/Image';
@@ -194,7 +194,10 @@ class SVGPainter implements PainterBase {
         bgNode.setAttribute('x', 0 as any);
         bgNode.setAttribute('y', 0 as any);
         bgNode.setAttribute('id', 0 as any);
-        bgNode.style.fill = backgroundColor;
+        const { color, opacity } = normalizeColor(backgroundColor);
+        bgNode.setAttribute('fill', color);
+        bgNode.setAttribute('fill-opacity', opacity as any);
+
         this._backgroundRoot.appendChild(bgNode);
         this._backgroundNode = bgNode;
     }

@@ -2,7 +2,7 @@
 // 1. shadow
 // 2. Image: sx, sy, sw, sh
 
-import {createElement} from './core';
+import {createElement, normalizeColor} from './core';
 import { PathRebuilder } from '../core/PathProxy';
 import * as matrix from '../core/matrix';
 import Path, { PathStyleProps } from '../graphic/Path';
@@ -92,12 +92,14 @@ function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan |
     }
 
     if (pathHasFill(style)) {
-        let fill = style.fill;
-        fill = fill === 'transparent' ? NONE : fill;
-        attr(svgEl, 'fill', fill as string);
+        const fill = normalizeColor(style.fill as string);
+        attr(svgEl, 'fill', fill.color);
         attr(svgEl,
             'fill-opacity',
-            (style.fillOpacity != null ? style.fillOpacity * opacity : opacity) + ''
+            (style.fillOpacity != null
+                ? style.fillOpacity * fill.opacity * opacity
+                : fill.opacity * opacity
+            ) + ''
         );
     }
     else {
@@ -105,9 +107,8 @@ function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan |
     }
 
     if (pathHasStroke(style)) {
-        let stroke = style.stroke;
-        stroke = stroke === 'transparent' ? NONE : stroke;
-        attr(svgEl, 'stroke', stroke as string);
+        const stroke = normalizeColor(style.stroke as string);
+        attr(svgEl, 'stroke', stroke.color);
         const strokeWidth = style.lineWidth;
         const strokeScale = style.strokeNoScale
             ? (el as Path).getLineScale()
@@ -115,7 +116,11 @@ function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan |
         attr(svgEl, 'stroke-width', (strokeScale ? strokeWidth / strokeScale : 0) + '');
         // stroke then fill for text; fill then stroke for others
         attr(svgEl, 'paint-order', style.strokeFirst ? 'stroke' : 'fill');
-        attr(svgEl, 'stroke-opacity', (style.strokeOpacity != null ? style.strokeOpacity * opacity : opacity) + '');
+        attr(svgEl, 'stroke-opacity', (
+            style.strokeOpacity != null
+                ? style.strokeOpacity * stroke.opacity * opacity
+                : stroke.opacity * opacity
+        ) + '');
         let lineDash = style.lineDash && strokeWidth > 0 && normalizeLineDash(style.lineDash, strokeWidth);
         if (lineDash) {
             let lineDashOffset = style.lineDashOffset;
@@ -169,7 +174,14 @@ class SVGPathRebuilder implements PathRebuilder {
     arc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise: boolean) {
         this.ellipse(cx, cy, r, r, 0, startAngle, endAngle, anticlockwise);
     }
-    ellipse(cx: number, cy: number, rx: number, ry: number, psi: number, startAngle: number, endAngle: number, anticlockwise: boolean) {
+    ellipse(
+        cx: number, cy: number,
+        rx: number, ry: number,
+        psi: number,
+        startAngle: number,
+        endAngle: number,
+        anticlockwise: boolean
+    ) {
 
         const firstCmd = this._d.length === 0;
 
@@ -237,6 +249,7 @@ class SVGPathRebuilder implements PathRebuilder {
         this._add('L', x + w, y + h);
         this._add('L', x, y + h);
         this._add('L', x, y);
+        this._add('Z');
     }
     closePath() {
         // Not use Z as first command

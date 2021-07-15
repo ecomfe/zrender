@@ -7,6 +7,7 @@ import Definable from './Definable';
 import Displayable from '../../graphic/Displayable';
 import { PathStyleProps } from '../../graphic/Path';
 import { Dictionary } from '../../core/types';
+import { normalizeColor } from '../core';
 
 type DisplayableExtended = Displayable & {
     _shadowDom: SVGElement
@@ -35,7 +36,7 @@ export default class ShadowManager extends Definable {
         if (!shadowDom) {
             shadowDom = this.createElement('filter') as SVGFilterElement;
             shadowDom.setAttribute('id', 'zr' + this._zrId + '-shadow-' + this.nextId++);
-            const domChild = this.createElement('feDropShadow')
+            const domChild = this.createElement('feDropShadow');
             shadowDom.appendChild(domChild);
             this.addDom(shadowDom);
         }
@@ -98,11 +99,12 @@ export default class ShadowManager extends Definable {
         let offsetX = style.shadowOffsetX || 0;
         let offsetY = style.shadowOffsetY || 0;
         let blur = style.shadowBlur;
-        let color = style.shadowColor;
+        const normalizedColor = normalizeColor(style.shadowColor);
 
         domChild.setAttribute('dx', offsetX / scaleX + '');
         domChild.setAttribute('dy', offsetY / scaleY + '');
-        domChild.setAttribute('flood-color', color);
+        domChild.setAttribute('flood-color', normalizedColor.color);
+        domChild.setAttribute('flood-opacity', normalizedColor.opacity + '');
 
         // Divide by two here so that it looks the same as in canvas
         // See: https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-shadowblur
@@ -134,9 +136,11 @@ export default class ShadowManager extends Definable {
         let shadowDomsPool = this._shadowDomPool;
 
         // let currentUsedShadow = 0;
-        for (let key in this._shadowDomMap) {
-            const dom = this._shadowDomMap[key];
-            shadowDomsPool.push(dom);
+        const shadowDomMap = this._shadowDomMap;
+        for (let key in shadowDomMap) {
+            if (shadowDomMap.hasOwnProperty(key)) {
+                shadowDomsPool.push(shadowDomMap[key]);
+            }
             // currentUsedShadow++;
         }
 
