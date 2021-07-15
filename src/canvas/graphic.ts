@@ -20,9 +20,17 @@ import { REDARAW_BIT, SHAPE_CHANGED_BIT } from '../graphic/constants';
 const pathProxyForDraw = new PathProxy(true);
 
 // Not use el#hasStroke because style may be different.
-function styleHasStroke(style: PathStyleProps, excludeLineWidth?: boolean) {
+function styleHasStroke(style: PathStyleProps) {
     const stroke = style.stroke;
-    return stroke != null && stroke !== 'none' && (excludeLineWidth || style.lineWidth > 0);
+    return !(stroke == null || stroke === 'none' || !(style.lineWidth > 0));
+}
+
+// ignore lineWidth and must be string
+// Expected color but found '[' when color is gradient
+function isValidStrokeFillStyle(
+    strokeOrFill: PathStyleProps['stroke'] | PathStyleProps['fill']
+): strokeOrFill is string {
+    return strokeOrFill != null && strokeOrFill !== 'none' && typeof strokeOrFill === 'string';
 }
 
 function styleHasFill(style: PathStyleProps) {
@@ -459,14 +467,14 @@ function bindPathAndTextCommonStyle(
             flushPathDrawn(ctx, scope);
             styleChanged = true;
         }
-        ctx.fillStyle = styleHasFill(style) ? style.fill : '';
+        isValidStrokeFillStyle(style.fill) && (ctx.fillStyle = style.fill);
     }
     if (forceSetAll || style.stroke !== prevStyle.stroke) {
         if (!styleChanged) {
             flushPathDrawn(ctx, scope);
             styleChanged = true;
         }
-        ctx.strokeStyle = styleHasStroke(style, true) ? style.stroke : '';
+        isValidStrokeFillStyle(style.stroke) && (ctx.strokeStyle = style.stroke);
     }
     if (forceSetAll || style.opacity !== prevStyle.opacity) {
         if (!styleChanged) {
