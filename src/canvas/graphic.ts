@@ -30,7 +30,7 @@ function styleHasStroke(style: PathStyleProps) {
 function isValidStrokeFillStyle(
     strokeOrFill: PathStyleProps['stroke'] | PathStyleProps['fill']
 ): strokeOrFill is string {
-    return strokeOrFill != null && strokeOrFill !== 'none' && typeof strokeOrFill === 'string';
+    return typeof strokeOrFill === 'string' && strokeOrFill !== 'none';
 }
 
 function styleHasFill(style: PathStyleProps) {
