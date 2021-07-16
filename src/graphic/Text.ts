@@ -745,7 +745,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         const defaultStyle = this._defaultStyle;
         let useDefaultFill = false;
         let defaultLineWidth = 0;
-        const textFill = getStroke(
+        const textFill = getFill(
             'fill' in tokenStyle ? tokenStyle.fill
                 : 'fill' in style ? style.fill
                 : (useDefaultFill = true, defaultStyle.fill)
