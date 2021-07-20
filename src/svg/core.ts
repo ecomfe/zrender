@@ -9,7 +9,7 @@ export function normalizeColor(color: string): { color: string, opacity: number 
     if (!color || color === 'transparent') {
         color = 'none';
     }
-    else if (color.indexOf('rgba') > -1) {
+    else if (typeof color === 'string' && color.indexOf('rgba') > -1) {
         const arr = parse(color);
         if (arr) {
             color = 'rgb(' + arr[0] + ',' + arr[1] + ',' + arr[2] + ')';

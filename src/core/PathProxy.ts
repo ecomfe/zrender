@@ -281,6 +281,8 @@ export default class PathProxy {
     }
 
     bezierCurveTo(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
+        this._drawPendingPt();
+
         this.addData(CMD.C, x1, y1, x2, y2, x3, y3);
         if (this._ctx) {
             this._needsDash ? this._dashedBezierTo(x1, y1, x2, y2, x3, y3)
@@ -292,6 +294,8 @@ export default class PathProxy {
     }
 
     quadraticCurveTo(x1: number, y1: number, x2: number, y2: number) {
+        this._drawPendingPt();
+
         this.addData(CMD.Q, x1, y1, x2, y2);
         if (this._ctx) {
             this._needsDash ? this._dashedQuadraticTo(x1, y1, x2, y2)
@@ -303,6 +307,8 @@ export default class PathProxy {
     }
 
     arc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise?: boolean) {
+        this._drawPendingPt();
+
         tmpAngles[0] = startAngle;
         tmpAngles[1] = endAngle;
         normalizeArcAngles(tmpAngles, anticlockwise);
@@ -312,10 +318,10 @@ export default class PathProxy {
 
         let delta = endAngle - startAngle;
 
-
         this.addData(
             CMD.A, cx, cy, r, r, startAngle, delta, 0, anticlockwise ? 0 : 1
         );
+
         this._ctx && this._ctx.arc(cx, cy, r, startAngle, endAngle, anticlockwise);
 
         this._xi = mathCos(endAngle) * r + cx;
@@ -325,6 +331,8 @@ export default class PathProxy {
 
     // TODO
     arcTo(x1: number, y1: number, x2: number, y2: number, radius: number) {
+        this._drawPendingPt();
+
         if (this._ctx) {
             this._ctx.arcTo(x1, y1, x2, y2, radius);
         }
@@ -333,6 +341,8 @@ export default class PathProxy {
 
     // TODO
     rect(x: number, y: number, w: number, h: number) {
+        this._drawPendingPt();
+
         this._ctx && this._ctx.rect(x, y, w, h);
         this.addData(CMD.R, x, y, w, h);
         return this;
@@ -947,12 +957,14 @@ export default class PathProxy {
                 x0 = xi;
                 y0 = yi;
             }
+            // Only lineTo support ignoring small segments.
+            // Otherwise if the pending point should always been flushed.
+            if (cmd !== CMD.L && pendingPtDist > 0) {
+                ctx.lineTo(pendingPtX, pendingPtY);
+                pendingPtDist = 0;
+            }
             switch (cmd) {
                 case CMD.M:
-                    if (pendingPtDist > 0) {
-                        ctx.lineTo(pendingPtX, pendingPtY);
-                        pendingPtDist = 0;
-                    }
                     x0 = xi = d[i++];
                     y0 = yi = d[i++];
                     ctx.moveTo(xi, yi);
@@ -1115,11 +1127,6 @@ export default class PathProxy {
                     ctx.rect(x, y, width, height);
                     break;
                 case CMD.Z:
-                    if (pendingPtDist > 0) {
-                        ctx.lineTo(pendingPtX, pendingPtY);
-                        pendingPtDist = 0;
-                    }
-
                     if (drawPart) {
                         const l = pathSegLen[segCount++];
                         if (accumLength + l > displayedLength) {
