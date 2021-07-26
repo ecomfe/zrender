@@ -533,6 +533,11 @@ function pushTokens(
         strLines = str.split('\n');
     }
 
+    // fallback in case of undefined exception
+    if (strLines === undefined) {
+        strLines = str.split('\n')
+    }
+
     for (let i = 0; i < strLines.length; i++) {
         const text = strLines[i];
         const token = new RichTextToken();
