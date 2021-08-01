@@ -83,7 +83,7 @@ class BezierCurve extends Path<BezierCurveProps> {
 
         ctx.moveTo(x1, y1);
 
-        if (cpx2 == null || cpy2 == null) {
+        if (!cpx2 || !cpy2) {
             if (percent < 1) {
                 quadraticSubdivide(x1, cpx1, x2, percent, out);
                 cpx1 = out[1];
