@@ -118,6 +118,7 @@ export default class ShadowManager extends Definable {
         shadowDom.setAttribute('y', '-100%');
         shadowDom.setAttribute('width', '300%');
         shadowDom.setAttribute('height', '300%');
+        shadowDom.setAttribute('filterUnits', 'userSpaceOnUse');
 
         // Store dom element in shadow, to avoid creating multiple
         // dom instances for the same shadow element
