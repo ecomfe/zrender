@@ -26,7 +26,7 @@
   "module": "index.js",
   "main": "dist/zrender.js",
   "dependencies": {
-    "tslib": "2.0.3"
+    "tslib": "2.3.0"
   },
   "sideEffects": [
     "lib/canvas/canvas.js",
@@ -35,8 +35,8 @@
   "devDependencies": {
     "@microsoft/api-extractor": "^7.7.2",
     "@types/jest": "^25.1.2",
-    "@typescript-eslint/eslint-plugin": "^2.24.0",
-    "@typescript-eslint/parser": "^2.24.0",
+    "@typescript-eslint/eslint-plugin": "^4.9.1",
+    "@typescript-eslint/parser": "^4.9.1",
     "chalk": "^3.0.0",
     "commander": "2.11.0",
     "eslint": "6.3.0",
@@ -47,7 +47,7 @@
     "rollup-plugin-typescript2": "^0.25.3",
     "rollup-plugin-uglify": "^6.0.4",
     "ts-jest": "^25.2.0",
-    "typescript": "^4.1.2",
+    "typescript": "4.3.5",
     "uglify-js": "^3.10.0"
   }
 }

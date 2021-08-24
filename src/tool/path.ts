@@ -448,13 +448,7 @@ export function mergePath(pathEls: Path[], opts: PathProps) {
     const len = pathEls.length;
     for (let i = 0; i < len; i++) {
         const pathEl = pathEls[i];
-        if (!pathEl.path) {
-            pathEl.createPathProxy();
-        }
-        if (pathEl.shapeChanged()) {
-            pathEl.buildPath(pathEl.path, pathEl.shape, true);
-        }
-        pathList.push(pathEl.path);
+        pathList.push(pathEl.getUpdatedPathProxy(true));
     }
 
     const pathBundle = new Path(opts);
@@ -473,4 +467,48 @@ export function mergePath(pathEls: Path[], opts: PathProps) {
     };
 
     return pathBundle;
+}
+
+/**
+ * Clone a path.
+ */
+export function clonePath(sourcePath: Path, opts?: {
+    /**
+     * If bake global transform to path.
+     */
+    bakeTransform?: boolean
+    /**
+     * Convert global transform to local.
+     */
+    toLocal?: boolean
+}) {
+    opts = opts || {};
+    const path = new Path();
+    if (sourcePath.shape) {
+        path.setShape(sourcePath.shape);
+    }
+    path.setStyle(sourcePath.style);
+
+    if (opts.bakeTransform) {
+        transformPath(path.path, sourcePath.getComputedTransform());
+    }
+    else {
+        // TODO Copy getLocalTransform, updateTransform since they can be changed.
+        if (opts.toLocal) {
+            path.setLocalTransform(sourcePath.getComputedTransform());
+        }
+        else {
+            path.copyTransform(sourcePath);
+        }
+    }
+
+    // These methods may be overridden
+    path.buildPath = sourcePath.buildPath;
+    (path as SVGPath).applyTransform = (path as SVGPath).applyTransform;
+
+    path.z = sourcePath.z;
+    path.z2 = sourcePath.z2;
+    path.zlevel = sourcePath.zlevel;
+
+    return path;
 }

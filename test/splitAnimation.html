@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Split Animation</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <div id="main"></div>
+    <script type="text/javascript">
+        const zr = zrender.init(document.getElementById('main'));
+
+        function morphBetween(one, many) {
+            const config = {
+                duration: 1000,
+                easing: 'cubicInOut'
+            }
+
+            zr.add(one);
+
+            function animateIndividuals({fromIndividuals, toIndividuals}) {
+                toIndividuals.forEach((toIndivdual, idx) => {
+                    toIndivdual.animateFrom({
+                        style: fromIndividuals[idx].style
+                    }, config);
+                });
+            }
+
+            function oneToMany() {
+                zr.remove(one);
+                many.forEach(single => {
+                    zr.add(single);
+                });
+                const result = zrender.morph.separateMorph(one, many, config);
+
+                animateIndividuals(result);
+
+                setTimeout(manyToOne, 1200);
+            }
+
+            function manyToOne() {
+                zr.add(one);
+                many.forEach(single => {
+                    zr.remove(single);
+                });
+                const result = zrender.morph.combineMorph(many, one, config);
+
+                animateIndividuals(result);
+
+                setTimeout(oneToMany, 1200);
+            }
+
+            setTimeout(oneToMany, 100);
+        }
+
+        // Simple one to many
+        (() => {
+            const rect = new zrender.Rect({
+                style: {
+                    fill: 'red',
+                    opacity: 0.5
+                },
+                shape: {
+                    x: 50,
+                    y: 50,
+                    width: 200,
+                    height: 200
+                }
+            });
+            const circles = [];
+            for (let i = 0; i < 5; i++) {
+                for (let k = 0; k < 5; k++) {
+                    circles.push(new zrender.Circle({
+                        style: {
+                            fill: zrender.color.random(),
+                            opacity: 0.5
+                        },
+                        shape: {
+                            r: 20,
+                            cx: i * 60 + 50,
+                            cy: k * 60 + 50
+                        }
+                    }))
+                }
+            }
+            morphBetween(rect, circles);
+        })();
+
+        // Batch to many (same path count)
+        (() => {
+            const rectCompound = new zrender.CompoundPath({
+                style: {
+                    fill: 'red',
+                    opacity: 0.5
+                },
+                shape: {
+                    paths: []
+                },
+
+                x: 300,
+                y: 0
+            });
+            const circles = [];
+            for (let i = 0; i < 5; i++) {
+                for (let k = 0; k < 5; k++) {
+                    rectCompound.shape.paths.push(new zrender.Rect({
+                        shape: {
+                            x: i * 40 + 50,
+                            y: k * 40 + 50,
+                            width: 30,
+                            height: 30
+                        }
+                    }));
+
+                    circles.push(new zrender.Circle({
+                        style: {
+                            fill: zrender.color.random(),
+                            opacity: 0.5
+                        },
+                        shape: {
+                            r: 20,
+                            cx: i * 60 + 50,
+                            cy: k * 60 + 50
+                        },
+                        x: 300,
+                        y: 0
+                    }));
+                };
+            }
+            morphBetween(rectCompound, circles);
+        })();
+
+        // Batch to many (Different path count)
+        (() => {
+            const rectCompound = new zrender.CompoundPath({
+                style: {
+                    fill: 'red',
+                    opacity: 0.5
+                },
+                shape: {
+                    paths: []
+                },
+
+                x: 600,
+                y: 0
+            });
+            for (let i = 0; i < 4; i++) {
+                rectCompound.shape.paths.push(new zrender.Rect({
+                    shape: {
+                        x: i * 100 + 50,
+                        y: 100,
+                        width: 80 - i * 10,
+                        height: 80 - i * 10
+                    }
+                }));
+            }
+            const circles = [];
+            for (let i = 0; i < 5; i++) {
+                for (let k = 0; k < 5; k++) {
+                    circles.push(new zrender.Circle({
+                        style: {
+                            fill: zrender.color.random(),
+                            opacity: 0.5
+                        },
+                        shape: {
+                            r: 20,
+                            cx: i * 60 + 50,
+                            cy: k * 60 + 50
+                        },
+                        x: 600,
+                        y: 0
+                    }));
+                };
+            }
+            morphBetween(rectCompound, circles);
+        })();
+    </script>
+</body>
+</html>

@@ -10,12 +10,17 @@ import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
 import ZRImage from './Image';
 import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
-import { MatrixArray, copy } from '../core/matrix';
-import Displayable, { DisplayableStatePropNames, DisplayableProps, DEFAULT_COMMON_ANIMATION_PROPS } from './Displayable';
+import { MatrixArray } from '../core/matrix';
+import Displayable, {
+    DisplayableStatePropNames,
+    DisplayableProps,
+    DEFAULT_COMMON_ANIMATION_PROPS
+} from './Displayable';
 import { ZRenderType } from '../zrender';
 import Animator from '../animation/Animator';
 import Transformable from '../core/Transformable';
 import { ElementCommonState } from '../Element';
+import { GroupLike } from './Group';
 
 type TextContentBlock = ReturnType<typeof parseRichText>
 type TextLine = TextContentBlock['lines'][0]
@@ -248,7 +253,7 @@ interface ZRText {
     stateProxy: (stateName: string) => TextState
 }
 
-class ZRText extends Displayable<TextProps> {
+class ZRText extends Displayable<TextProps> implements GroupLike {
 
     type = 'text'
 
@@ -262,10 +267,11 @@ class ZRText extends Displayable<TextProps> {
     overlap: 'hidden' | 'show' | 'blur'
 
     /**
-     * Calculated transform after the text is attached on some element.
-     * Will override the default transform.
+     * Will use this to calculate transform matrix
+     * instead of Element itseelf if it's give.
+     * Not exposed to developers
      */
-    attachedTransform: Transformable
+    innerTransformable: Transformable
 
     private _children: (ZRImage | Rect | TSpan)[] = []
 
@@ -283,11 +289,13 @@ class ZRText extends Displayable<TextProps> {
     }
 
     update() {
+
+        super.update();
+
         // Update children
         if (this.styleChanged()) {
             this._updateSubTexts();
         }
-
 
         for (let i = 0; i < this._children.length; i++) {
             const child = this._children[i];
@@ -299,25 +307,29 @@ class ZRText extends Displayable<TextProps> {
             child.cursor = this.cursor;
             child.invisible = this.invisible;
         }
+    }
 
-        const attachedTransform = this.attachedTransform;
-        if (attachedTransform) {
-            attachedTransform.updateTransform();
-            const m = attachedTransform.transform;
-            if (m) {
-                this.transform = this.transform || [];
-                // Copy to the transform will be actually used.
-                copy(this.transform, m);
-            }
-            else {
-                this.transform = null;
+     updateTransform() {
+        const innerTransformable = this.innerTransformable;
+        if (innerTransformable) {
+            innerTransformable.updateTransform();
+            if (innerTransformable.transform) {
+                this.transform = innerTransformable.transform;
             }
         }
         else {
-            super.update();
+            super.updateTransform();
         }
     }
 
+    getLocalTransform(m?: MatrixArray): MatrixArray {
+        const innerTransformable = this.innerTransformable;
+        return innerTransformable
+            ? innerTransformable.getLocalTransform(m)
+            : super.getLocalTransform(m);
+    }
+
+    // TODO override setLocalTransform?
     getComputedTransform() {
         if (this.__hostTarget) {
             // Update host target transform
@@ -326,8 +338,7 @@ class ZRText extends Displayable<TextProps> {
             this.__hostTarget.updateInnerText(true);
         }
 
-        return this.attachedTransform ? this.attachedTransform.getComputedTransform()
-            : super.getComputedTransform();
+        return super.getComputedTransform();
     }
 
     private _updateSubTexts() {
@@ -734,7 +745,7 @@ class ZRText extends Displayable<TextProps> {
         const defaultStyle = this._defaultStyle;
         let useDefaultFill = false;
         let defaultLineWidth = 0;
-        const textFill = getStroke(
+        const textFill = getFill(
             'fill' in tokenStyle ? tokenStyle.fill
                 : 'fill' in style ? style.fill
                 : (useDefaultFill = true, defaultStyle.fill)
@@ -810,7 +821,7 @@ class ZRText extends Displayable<TextProps> {
 
         let rectEl: Rect;
         let imgEl: ZRImage;
-        if (isPlainOrGradientBg || (textBorderWidth && textBorderColor)) {
+        if (isPlainOrGradientBg || style.lineHeight || (textBorderWidth && textBorderColor)) {
             // Background is color
             rectEl = this._getOrCreateChild(Rect);
             rectEl.useStyle(rectEl.createStyle());    // Create an empty style.
@@ -985,6 +996,7 @@ function getStyleText(style: TextStylePropsPart): string {
 function needDrawBackground(style: TextStylePropsPart): boolean {
     return !!(
         style.backgroundColor
+        || style.lineHeight
         || (style.borderWidth && style.borderColor)
     );
 }

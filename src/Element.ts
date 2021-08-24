@@ -8,7 +8,7 @@ import {
 } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
-import Eventful, {EventQuery, EventCallback} from './core/Eventful';
+import Eventful from './core/Eventful';
 import ZRText, { DefaultTextStyle } from './graphic/Text';
 import { calculateTextPosition, TextPositionCalculationResult, parsePercent } from './contain/text';
 import {
@@ -28,7 +28,7 @@ import Point from './core/Point';
 import { LIGHT_LABEL_COLOR, DARK_LABEL_COLOR } from './config';
 import { parse, stringify } from './tool/color';
 import env from './core/env';
-import { REDARAW_BIT, STYLE_CHANGED_BIT } from './graphic/constants';
+import { REDARAW_BIT } from './graphic/constants';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -284,16 +284,22 @@ export type ElementCommonState = {
     hoverLayer?: boolean
 }
 
+export type ElementCalculateTextPosition = (
+    out: TextPositionCalculationResult,
+    style: ElementTextConfig,
+    rect: RectLike
+) => TextPositionCalculationResult;
+
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 let tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
 
-interface Element<Props extends ElementProps = ElementProps> extends Transformable, Eventful, ElementEventHandlerProps {
-    // Provide more typed event callback params for mouse events.
-    on<Ctx>(event: ElementEventName, handler: ElementEventCallback<Ctx, this>, context?: Ctx): this
-    on<Ctx>(event: string, handler: EventCallback<Ctx, this>, context?: Ctx): this
-
-    on<Ctx>(event: ElementEventName, query: EventQuery, handler: ElementEventCallback<Ctx, this>, context?: Ctx): this
-    on<Ctx>(event: string, query: EventQuery, handler: EventCallback<Ctx, this>, context?: Ctx): this
+interface Element<Props extends ElementProps = ElementProps> extends Transformable,
+    Eventful<{
+        [key in ElementEventName]: (e: ElementEvent) => void | boolean
+    } & {
+        [key in string]: (...args: any) => void | boolean
+    }>,
+    ElementEventHandlerProps {
 }
 
 class Element<Props extends ElementProps = ElementProps> {
@@ -487,6 +493,7 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     update() {
         this.updateTransform();
+
         if (this.__dirty) {
             this.updateInnerText();
         }
@@ -501,35 +508,21 @@ class Element<Props extends ElementProps = ElementProps> {
             }
             const textConfig = this.textConfig;
             const isLocal = textConfig.local;
-            const attachedTransform = textEl.attachedTransform;
+            const innerTransformable = textEl.innerTransformable;
 
             let textAlign: TextAlign;
             let textVerticalAlign: TextVerticalAlign;
 
             let textStyleChanged = false;
 
-            // TODO Restore the element after textConfig changed.
-
-            // NOTE: Can't be used both as normal element and as textContent.
-            if (isLocal) {
-                // Apply host's transform.
-                // TODO parent is always be group for developers. But can be displayble inside.
-                attachedTransform.parent = this as unknown as Group;
-            }
-            else {
-                attachedTransform.parent = null;
-            }
+            // Apply host's transform.
+            innerTransformable.parent = isLocal ? this as unknown as Group : null;
 
             let innerOrigin = false;
 
             // Reset x/y/rotation
-            attachedTransform.x = textEl.x;
-            attachedTransform.y = textEl.y;
-            attachedTransform.originX = textEl.originX;
-            attachedTransform.originY = textEl.originY;
-            attachedTransform.rotation = textEl.rotation;
-            attachedTransform.scaleX = textEl.scaleX;
-            attachedTransform.scaleY = textEl.scaleY;
+            innerTransformable.copyTransform(textEl);
+
             // Force set attached text's position if `position` is in config.
             if (textConfig.position != null) {
                 let layoutRect = tmpBoundingRect;
@@ -552,8 +545,8 @@ class Element<Props extends ElementProps = ElementProps> {
 
                 // TODO Should modify back if textConfig.position is set to null again.
                 // Or textContent is detached.
-                attachedTransform.x = tmpTextPosCalcRes.x;
-                attachedTransform.y = tmpTextPosCalcRes.y;
+                innerTransformable.x = tmpTextPosCalcRes.x;
+                innerTransformable.y = tmpTextPosCalcRes.y;
 
                 // User specified align/verticalAlign has higher priority, which is
                 // useful in the case that attached text is rotated 90 degree.
@@ -574,26 +567,26 @@ class Element<Props extends ElementProps = ElementProps> {
                     }
 
                     innerOrigin = true;
-                    attachedTransform.originX = -attachedTransform.x + relOriginX + (isLocal ? 0 : layoutRect.x);
-                    attachedTransform.originY = -attachedTransform.y + relOriginY + (isLocal ? 0 : layoutRect.y);
+                    innerTransformable.originX = -innerTransformable.x + relOriginX + (isLocal ? 0 : layoutRect.x);
+                    innerTransformable.originY = -innerTransformable.y + relOriginY + (isLocal ? 0 : layoutRect.y);
                 }
             }
 
 
             if (textConfig.rotation != null) {
-                attachedTransform.rotation = textConfig.rotation;
+                innerTransformable.rotation = textConfig.rotation;
             }
 
             // TODO
             const textOffset = textConfig.offset;
             if (textOffset) {
-                attachedTransform.x += textOffset[0];
-                attachedTransform.y += textOffset[1];
+                innerTransformable.x += textOffset[0];
+                innerTransformable.y += textOffset[1];
 
                 // Not change the user set origin.
                 if (!innerOrigin) {
-                    attachedTransform.originX = -textOffset[0];
-                    attachedTransform.originY = -textOffset[1];
+                    innerTransformable.originX = -textOffset[0];
+                    innerTransformable.originY = -textOffset[1];
                 }
             }
 
@@ -1288,7 +1281,7 @@ class Element<Props extends ElementProps = ElementProps> {
             throw new Error('Text element has been added to zrender.');
         }
 
-        textEl.attachedTransform = new Transformable();
+        textEl.innerTransformable = new Transformable();
 
         this._attachComponent(textEl);
 
@@ -1323,7 +1316,7 @@ class Element<Props extends ElementProps = ElementProps> {
     removeTextContent() {
         const textEl = this._textContent;
         if (textEl) {
-            textEl.attachedTransform = null;
+            textEl.innerTransformable = null;
             this._detachComponent(textEl);
             this._textContent = null;
             this._innerTextDefaultStyle = null;
@@ -1402,6 +1395,10 @@ class Element<Props extends ElementProps = ElementProps> {
      * Not recursively because it will be invoked when element added to storage.
      */
     addSelfToZr(zr: ZRenderType) {
+        if (this.__zr === zr) {
+            return;
+        }
+
         this.__zr = zr;
         // 添加动画
         const animators = this.animators;
@@ -1427,6 +1424,10 @@ class Element<Props extends ElementProps = ElementProps> {
      * Not recursively because it will be invoked when element added to storage.
      */
     removeSelfFromZr(zr: ZRenderType) {
+        if (!this.__zr) {
+            return;
+        }
+
         this.__zr = null;
         // Remove animation
         const animators = this.animators;
@@ -1564,7 +1565,7 @@ class Element<Props extends ElementProps = ElementProps> {
 
     // Overload definitions
     animateFrom(
-        target: Props, cfg: Omit<ElementAnimateConfig, 'setToFinal'>, animationProps?: MapToType<Props, boolean>
+        target: Props, cfg: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>
     ) {
         animateTo(this, target, cfg, animationProps, true);
     }
@@ -1608,9 +1609,7 @@ class Element<Props extends ElementProps = ElementProps> {
      *             verticalAlign: string. optional. use style.textVerticalAlign by default.
      *         }
      */
-    calculateTextPosition: (
-        out: TextPositionCalculationResult, style: ElementTextConfig, rect: RectLike
-    ) => TextPositionCalculationResult
+    calculateTextPosition: ElementCalculateTextPosition;
 
     protected static initDefaultProps = (function () {
         const elProto = Element.prototype;

@@ -2,229 +2,15 @@ import PathProxy from '../core/PathProxy';
 import { cubicSubdivide } from '../core/curve';
 import Path from '../graphic/Path';
 import Element, { ElementAnimateConfig } from '../Element';
-import { defaults, assert, noop, clone } from '../core/util';
+import { defaults, extend, map } from '../core/util';
 import { lerp } from '../core/vector';
-import Rect from '../graphic/shape/Rect';
-import Sector from '../graphic/shape/Sector';
+import Group, { GroupLike } from '../graphic/Group';
+import { clonePath } from './path';
+import { MatrixArray } from '../core/matrix';
+import Transformable from '../core/Transformable';
 import { ZRenderType } from '../zrender';
-import Group from '../graphic/Group';
-
-const CMD = PathProxy.CMD;
-const PI2 = Math.PI * 2;
-
-const PROP_XY = ['x', 'y'] as const;
-const PROP_WH = ['width', 'height'] as const;
-
-const tmpArr: number[] = [];
-
-
-interface CombiningPath extends Path {
-    __combiningSubList: Path[];
-    __oldAddSelfToZr: Element['addSelfToZr'];
-    __oldRemoveSelfFromZr: Element['removeSelfFromZr'];
-    __oldBuildPath: Path['buildPath'];
-    // See `Stroage['_updateAndAddDisplayable']`
-    childrenRef(): Path[];
-}
-
-export type MorphDividingMethod = 'split' | 'duplicate';
-
-export interface CombineSeparateConfig extends ElementAnimateConfig {
-    dividingMethod?: MorphDividingMethod;
-}
-
-export interface CombineSeparateResult {
-    // The length of `fromIndividuals`, `toIndividuals`
-    // are the same as `count`.
-    fromIndividuals: Path[];
-    toIndividuals: Path[];
-    count: number;
-}
-
-function aroundEqual(a: number, b: number) {
-    return Math.abs(a - b) < 1e-5;
-}
-
-export function pathToBezierCurves(path: PathProxy) {
-
-    const data = path.data;
-    const len = path.len();
-
-    const bezierArray: number[][] = [];
-    let currentSubpath: number[];
-
-    let xi = 0;
-    let yi = 0;
-    let x0 = 0;
-    let y0 = 0;
-
-    function createNewSubpath(x: number, y: number) {
-        // More than one M command
-        if (currentSubpath && currentSubpath.length > 2) {
-            bezierArray.push(currentSubpath);
-        }
-        currentSubpath = [x, y];
-    }
-
-    function addLine(x0: number, y0: number, x1: number, y1: number) {
-        if (!(aroundEqual(x0, x1) && aroundEqual(y0, y1))) {
-            currentSubpath.push(x0, y0, x1, y1, x1, y1);
-        }
-    }
-
-    function addArc(startAngle: number, endAngle: number, cx: number, cy: number, rx: number, ry: number) {
-        // https://stackoverflow.com/questions/1734745/how-to-create-circle-with-b%C3%A9zier-curves
-        const delta = Math.abs(endAngle - startAngle);
-        const len = Math.tan(delta / 4) * 4 / 3;
-        const dir = endAngle < startAngle ? -1 : 1;
-
-        const c1 = Math.cos(startAngle);
-        const s1 = Math.sin(startAngle);
-        const c2 = Math.cos(endAngle);
-        const s2 = Math.sin(endAngle);
-
-        const x1 = c1 * rx + cx;
-        const y1 = s1 * ry + cy;
-
-        const x4 = c2 * rx + cx;
-        const y4 = s2 * ry + cy;
-
-        const hx = rx * len * dir;
-        const hy = ry * len * dir;
-        currentSubpath.push(
-            // Move control points on tangent.
-            x1 - hx * s1, y1 + hy * c1,
-            x4 + hx * s2, y4 - hy * c2,
-            x4, y4
-        );
-    }
-
-    let x1;
-    let y1;
-    let x2;
-    let y2;
-
-    for (let i = 0; i < len;) {
-        const cmd = data[i++];
-        const isFirst = i === 1;
-
-        if (isFirst) {
-            // 如果第一个命令是 L, C, Q
-            // 则 previous point 同绘制命令的第一个 point
-            // 第一个命令为 Arc 的情况下会在后面特殊处理
-            xi = data[i];
-            yi = data[i + 1];
-
-            x0 = xi;
-            y0 = yi;
-
-            if (cmd === CMD.L || cmd === CMD.C || cmd === CMD.Q) {
-                // Start point
-                currentSubpath = [x0, y0];
-            }
-        }
-
-        switch (cmd) {
-            case CMD.M:
-                // moveTo 命令重新创建一个新的 subpath, 并且更新新的起点
-                // 在 closePath 的时候使用
-                xi = x0 = data[i++];
-                yi = y0 = data[i++];
-
-                createNewSubpath(x0, y0);
-                break;
-            case CMD.L:
-                x1 = data[i++];
-                y1 = data[i++];
-                addLine(xi, yi, x1, y1);
-                xi = x1;
-                yi = y1;
-                break;
-            case CMD.C:
-                currentSubpath.push(
-                    data[i++], data[i++], data[i++], data[i++],
-                    xi = data[i++], yi = data[i++]
-                );
-                break;
-            case CMD.Q:
-                x1 = data[i++];
-                y1 = data[i++];
-                x2 = data[i++];
-                y2 = data[i++];
-                currentSubpath.push(
-                    // Convert quadratic to cubic
-                    xi + 2 / 3 * (x1 - xi), yi + 2 / 3 * (y1 - yi),
-                    x2 + 2 / 3 * (x1 - x2), y2 + 2 / 3 * (y1 - y2),
-                    x2, y2
-                );
-                xi = x2;
-                yi = y2;
-                break;
-            case CMD.A:
-                const cx = data[i++];
-                const cy = data[i++];
-                const rx = data[i++];
-                const ry = data[i++];
-                const startAngle = data[i++];
-                const endAngle = data[i++] + startAngle;
-
-                // TODO Arc rotation
-                i += 1;
-                const anticlockwise = !data[i++];
-
-                x1 = Math.cos(startAngle) * rx + cx;
-                y1 = Math.sin(startAngle) * ry + cy;
-                if (isFirst) {
-                    // 直接使用 arc 命令
-                    // 第一个命令起点还未定义
-                    x0 = x1;
-                    y0 = y1;
-                    createNewSubpath(x0, y0);
-                }
-                else {
-                    // Connect a line between current point to arc start point.
-                    addLine(xi, yi, x1, y1);
-                }
-
-                xi = Math.cos(endAngle) * rx + cx;
-                yi = Math.sin(endAngle) * ry + cy;
-
-                const step = (anticlockwise ? -1 : 1) * Math.PI / 2;
-
-                for (let angle = startAngle; anticlockwise ? angle > endAngle : angle < endAngle; angle += step) {
-                    const nextAngle = anticlockwise ? Math.max(angle + step, endAngle)
-                        : Math.min(angle + step, endAngle);
-                    addArc(angle, nextAngle, cx, cy, rx, ry);
-                }
-
-                break;
-            case CMD.R:
-                x0 = xi = data[i++];
-                y0 = yi = data[i++];
-                x1 = x0 + data[i++];
-                y1 = y0 + data[i++];
-
-                // rect is an individual path.
-                createNewSubpath(x1, y0);
-                addLine(x1, y0, x1, y1);
-                addLine(x1, y1, x0, y1);
-                addLine(x0, y1, x0, y0);
-                addLine(x0, y0, x1, y0);
-                break;
-            case CMD.Z:
-                currentSubpath && addLine(xi, yi, x0, y0);
-                xi = x0;
-                yi = y0;
-                break;
-        }
-    }
-
-    if (currentSubpath && currentSubpath.length > 2) {
-        bezierArray.push(currentSubpath);
-    }
-
-    return bezierArray;
-}
+import { split } from './dividePath';
+import { pathToBezierCurves } from './convertPath';
 
 function alignSubpath(subpath1: number[], subpath2: number[]): [number[], number[]] {
     const len1 = subpath1.length;
@@ -232,6 +18,8 @@ function alignSubpath(subpath1: number[], subpath2: number[]): [number[], number
     if (len1 === len2) {
         return [subpath1, subpath2];
     }
+    const tmpSegX: number[] = [];
+    const tmpSegY: number[] = [];
 
     const shorterPath = len1 < len2 ? subpath1 : subpath2;
     const shorterLen = Math.min(len1, len2);
@@ -243,9 +31,6 @@ function alignSubpath(subpath1: number[], subpath2: number[]): [number[], number
 
     const newSubpath = [shorterPath[0], shorterPath[1]];
     let remained = diff;
-
-    const tmpSegX: number[] = [];
-    const tmpSegY: number[] = [];
 
     for (let i = 2; i < shorterLen;) {
         let x0 = shorterPath[i - 2];
@@ -346,8 +131,11 @@ export function alignBezierCurves(array1: number[][], array2: number[][]) {
 
 interface MorphingPath extends Path {
     __morphT: number;
-    __oldBuildPath: Path['buildPath'];
-    __morphingData: MorphingData;
+}
+
+export interface CombineMorphingPath extends Path {
+    childrenRef(): (CombineMorphingPath | Path)[]
+    __isCombineMorphing: boolean;
 }
 
 export function centroid(array: number[]) {
@@ -543,59 +331,180 @@ function findBestMorphingRotation(
     return result;
 }
 
-/**
- * Morphing from old path to new path.
- */
-export function morphPath(
-    // `fromPath` only provides the current path state, which will
-    // not be rendered or kept.
-    // Note:
-    // should be able to handle `isIndividualMorphingPath(fromPath)` is `ture`.
+export function isCombineMorphing(path: Element): path is CombineMorphingPath {
+    return (path as CombineMorphingPath).__isCombineMorphing;
+}
+
+export function isMorphing(el: Element) {
+    return (el as MorphingPath).__morphT >= 0;
+}
+
+const SAVED_METHOD_PREFIX = '__mOriginal_';
+function saveAndModifyMethod<T extends object, M extends keyof T>(
+    obj: T,
+    methodName: M,
+    modifiers: { replace?: T[M], after?: T[M], before?: T[M] }
+) {
+    const savedMethodName = SAVED_METHOD_PREFIX + methodName;
+    const originalMethod = (obj as any)[savedMethodName] || obj[methodName];
+    if (!(obj as any)[savedMethodName]) {
+        (obj as any)[savedMethodName] = obj[methodName];
+    }
+    const replace = modifiers.replace;
+    const after = modifiers.after;
+    const before = modifiers.before;
+
+    (obj as any)[methodName] = function () {
+        const args = arguments;
+        let res;
+        before && (before as unknown as Function).apply(this, args);
+        // Still call the original method if not replacement.
+        if (replace) {
+            res = (replace as unknown as Function).apply(this, args);
+        }
+        else {
+            res = originalMethod.apply(this, args);
+        }
+        after && (after as unknown as Function).apply(this, args);
+        return res;
+    };
+}
+function restoreMethod<T extends object>(
+    obj: T,
+    methodName: keyof T
+) {
+    const savedMethodName = SAVED_METHOD_PREFIX + methodName;
+    if ((obj as any)[savedMethodName]) {
+        obj[methodName] = (obj as any)[savedMethodName];
+        (obj as any)[savedMethodName] = null;
+    }
+}
+
+function applyTransformOnBeziers(bezierCurves: number[][], mm: MatrixArray) {
+    for (let i = 0; i < bezierCurves.length; i++) {
+        const subBeziers = bezierCurves[i];
+        for (let k = 0; k < subBeziers.length;) {
+            const x = subBeziers[k];
+            const y = subBeziers[k + 1];
+
+            subBeziers[k++] = mm[0] * x + mm[2] * y + mm[4];
+            subBeziers[k++] = mm[1] * x + mm[3] * y + mm[5];
+        }
+    }
+}
+
+function prepareMorphPath(
     fromPath: Path,
-    // `toPath` is the target path that will be rendered and kept.
-    // Note:
-    // (1) `toPath` and `fromPath` might be the same.
-    // e.g., when triggering the same transition repeatly.
-    // (2) should be able to handle `isIndividualMorphingPath(toPath)` is `ture`.
-    toPath: Path,
-    animationOpts: ElementAnimateConfig
-): Path {
-    let fromPathProxy: PathProxy;
-    let toPathProxy: PathProxy;
-
-    if (!fromPath || !toPath) {
-        return toPath;
-    }
-
-    // Calculate the current path into `fromPathProxy` from `fromPathInput`.
-    !fromPath.path && fromPath.createPathProxy();
-    fromPathProxy = fromPath.path;
-    fromPathProxy.beginPath();
-    fromPath.buildPath(fromPathProxy, fromPath.shape);
-
-    // Calculate the target path into `toPathProxy` from `toPath`.
-    !toPath.path && toPath.createPathProxy();
-    toPathProxy = toPath.path;
-    // From and to might be the same path.
-    toPathProxy === fromPathProxy && (toPathProxy = new PathProxy(false));
-    toPathProxy.beginPath();
-    // toPath should always calculate the final state rather than morphing state.
-    if (isIndividualMorphingPath(toPath)) {
-        toPath.__oldBuildPath(toPathProxy, toPath.shape);
-    }
-    else {
-        toPath.buildPath(toPathProxy, toPath.shape);
-    }
+    toPath: Path
+) {
+    const fromPathProxy = fromPath.getUpdatedPathProxy();
+    const toPathProxy = toPath.getUpdatedPathProxy();
 
     const [fromBezierCurves, toBezierCurves] =
         alignBezierCurves(pathToBezierCurves(fromPathProxy), pathToBezierCurves(toPathProxy));
 
-    const morphingData = findBestMorphingRotation(fromBezierCurves, toBezierCurves, 10, Math.PI);
-    becomeIndividualMorphingPath(toPath, morphingData, 0);
+    const fromPathTransform = fromPath.getComputedTransform();
+    const toPathTransform = toPath.getComputedTransform();
+    function updateIdentityTransform(this: Transformable) {
+        this.transform = null;
+    }
+    fromPathTransform && applyTransformOnBeziers(fromBezierCurves, fromPathTransform);
+    toPathTransform && applyTransformOnBeziers(toBezierCurves, toPathTransform);
+    // Just ignore transform
+    saveAndModifyMethod(toPath, 'updateTransform', { replace: updateIdentityTransform });
+    toPath.transform = null;
 
-    const oldDone = animationOpts && animationOpts.done;
-    const oldAborted = animationOpts && animationOpts.aborted;
-    const oldDuring = animationOpts && animationOpts.during;
+    const morphingData = findBestMorphingRotation(fromBezierCurves, toBezierCurves, 10, Math.PI);
+
+    const tmpArr: number[] = [];
+
+    saveAndModifyMethod(toPath, 'buildPath', { replace(path: PathProxy) {
+        const t = (toPath as MorphingPath).__morphT;
+        const onet = 1 - t;
+
+        const newCp: number[] = [];
+
+        for (let i = 0; i < morphingData.length; i++) {
+            const item = morphingData[i];
+            const from = item.from;
+            const to = item.to;
+            const angle = item.rotation * t;
+            const fromCp = item.fromCp;
+            const toCp = item.toCp;
+            const sa = Math.sin(angle);
+            const ca = Math.cos(angle);
+
+            lerp(newCp, fromCp, toCp, t);
+
+            for (let m = 0; m < from.length; m += 2) {
+                const x0 = from[m];
+                const y0 = from[m + 1];
+                const x1 = to[m];
+                const y1 = to[m + 1];
+
+                const x = x0 * onet + x1 * t;
+                const y = y0 * onet + y1 * t;
+
+                tmpArr[m] = (x * ca - y * sa) + newCp[0];
+                tmpArr[m + 1] = (x * sa + y * ca) + newCp[1];
+            }
+
+            let x0 = tmpArr[0];
+            let y0 = tmpArr[1];
+
+            path.moveTo(x0, y0);
+
+            for (let m = 2; m < from.length;) {
+                const x1 = tmpArr[m++];
+                const y1 = tmpArr[m++];
+                const x2 = tmpArr[m++];
+                const y2 = tmpArr[m++];
+                const x3 = tmpArr[m++];
+                const y3 = tmpArr[m++];
+
+                // Is a line.
+                if (x0 === x1 && y0 === y1 && x2 === x3 && y2 === y3) {
+                    path.lineTo(x3, y3);
+                }
+                else {
+                    path.bezierCurveTo(x1, y1, x2, y2, x3, y3);
+                }
+                x0 = x3;
+                y0 = y3;
+            }
+        }
+    } });
+}
+
+/**
+ * Morphing from old path to new path.
+ */
+export function morphPath(
+    fromPath: Path,
+    toPath: Path,
+    animationOpts: ElementAnimateConfig
+): Path {
+    if (!fromPath || !toPath) {
+        return toPath;
+    }
+
+    const oldDone = animationOpts.done;
+    // const oldAborted = animationOpts.aborted;
+    const oldDuring = animationOpts.during;
+
+    prepareMorphPath(fromPath, toPath);
+
+    (toPath as MorphingPath).__morphT = 0;
+
+    function restoreToPath() {
+        restoreMethod(toPath, 'buildPath');
+        restoreMethod(toPath, 'updateTransform');
+        // Mark as not in morphing
+        (toPath as MorphingPath).__morphT = -1;
+        // Cleanup.
+        toPath.createPathProxy();
+        toPath.dirtyShape();
+    }
 
     toPath.animateTo({
         __morphT: 1
@@ -605,458 +514,376 @@ export function morphPath(
             oldDuring && oldDuring(p);
         },
         done() {
-            restoreIndividualMorphingPath(toPath);
-            // Cleanup.
-            toPath.createPathProxy();
-            toPath.dirtyShape();
+            restoreToPath();
             oldDone && oldDone();
-        },
-        aborted() {
-            oldAborted && oldAborted();
         }
+        // NOTE: Don't do restore if aborted.
+        // Because all status was just set when animation started.
+        // aborted() {
+        //     oldAborted && oldAborted();
+        // }
     } as ElementAnimateConfig, animationOpts));
 
     return toPath;
 }
 
-function morphingPathBuildPath(
-    this: Pick<MorphingPath, '__morphT' | '__morphingData'>,
-    path: PathProxy
-): void {
-    const morphingData = this.__morphingData;
-    const t = this.__morphT;
-    const onet = 1 - t;
+// https://github.com/mapbox/earcut/blob/master/src/earcut.js#L437
+// https://jsfiddle.net/pissang/2jk7x145/
+// function zOrder(x: number, y: number, minX: number, minY: number, maxX: number, maxY: number) {
+//     // Normalize coords to 0 - 1
+//     // The transformed into non-negative 15-bit integer range
+//     x = (maxX === minX) ? 0 : Math.round(32767 * (x - minX) / (maxX - minX));
+//     y = (maxY === minY) ? 0 : Math.round(32767 * (y - minY) / (maxY - minY));
 
-    const newCp: number[] = [];
-    for (let i = 0; i < morphingData.length; i++) {
-        const item = morphingData[i];
-        const from = item.from;
-        const to = item.to;
-        const angle = item.rotation * t;
-        const fromCp = item.fromCp;
-        const toCp = item.toCp;
-        const sa = Math.sin(angle);
-        const ca = Math.cos(angle);
+//     x = (x | (x << 8)) & 0x00FF00FF;
+//     x = (x | (x << 4)) & 0x0F0F0F0F;
+//     x = (x | (x << 2)) & 0x33333333;
+//     x = (x | (x << 1)) & 0x55555555;
 
-        lerp(newCp, fromCp, toCp, t);
+//     y = (y | (y << 8)) & 0x00FF00FF;
+//     y = (y | (y << 4)) & 0x0F0F0F0F;
+//     y = (y | (y << 2)) & 0x33333333;
+//     y = (y | (y << 1)) & 0x55555555;
 
-        for (let m = 0; m < from.length; m += 2) {
-            const x0 = from[m];
-            const y0 = from[m + 1];
-            const x1 = to[m];
-            const y1 = to[m + 1];
+//     return x | (y << 1);
+// }
 
-            const x = x0 * onet + x1 * t;
-            const y = y0 * onet + y1 * t;
+// https://github.com/w8r/hilbert/blob/master/hilbert.js#L30
+// https://jsfiddle.net/pissang/xdnbzg6v/
+function hilbert(x: number, y: number, minX: number, minY: number, maxX: number, maxY: number) {
+    const bits = 16;
+    x = (maxX === minX) ? 0 : Math.round(32767 * (x - minX) / (maxX - minX));
+    y = (maxY === minY) ? 0 : Math.round(32767 * (y - minY) / (maxY - minY));
 
-            tmpArr[m] = (x * ca - y * sa) + newCp[0];
-            tmpArr[m + 1] = (x * sa + y * ca) + newCp[1];
-        }
+    let d = 0;
+    let tmp: number;
+    for (let s = (1 << bits) / 2; s > 0; s /= 2) {
+        let rx = 0, ry = 0;
 
-        for (let m = 0; m < from.length;) {
-            if (m === 0) {
-                path.moveTo(tmpArr[m++], tmpArr[m++]);
+        if ((x & s) > 0) rx = 1;
+        if ((y & s) > 0) ry = 1;
+
+        d += s * s * ((3 * rx) ^ ry);
+
+        if (ry === 0) {
+            if (rx === 1) {
+                x = s - 1 - x;
+                y = s - 1 - y;
             }
-            path.bezierCurveTo(
-                tmpArr[m++], tmpArr[m++],
-                tmpArr[m++], tmpArr[m++],
-                tmpArr[m++], tmpArr[m++]
-            );
+            tmp = x;
+            x = y;
+            y = tmp;
         }
     }
-};
+    return d;
+}
 
-function becomeIndividualMorphingPath(
+// Sort paths on hilbert. Not using z-order because it may still have large cross.
+// So the left most source can animate to the left most target, not right most target.
+// Hope in this way. We can make sure each element is animated to the proper target. Not the farthest.
+function sortPaths(pathList: Path[]): Path[] {
+    let xMin = Infinity;
+    let yMin = Infinity;
+    let xMax = -Infinity;
+    let yMax = -Infinity;
+    const cps = map(pathList, path => {
+        const rect = path.getBoundingRect();
+        const m = path.getComputedTransform();
+        const x = rect.x + rect.width / 2 + (m ? m[4] : 0);
+        const y = rect.y + rect.height / 2 + (m ? m[5] : 0);
+        xMin = Math.min(x, xMin);
+        yMin = Math.min(y, yMin);
+        xMax = Math.max(x, xMax);
+        yMax = Math.max(y, yMax);
+        return [x, y];
+    });
+
+    const items = map(cps, (cp, idx) => {
+        return {
+            cp,
+            z: hilbert(cp[0], cp[1], xMin, yMin, xMax, yMax),
+            path: pathList[idx]
+        }
+    });
+
+    return items.sort((a, b) => a.z - b.z).map(item => item.path);
+}
+
+export interface DividePathParams {
     path: Path,
-    morphingData: MorphingData,
-    morphT: number
-): void {
-    if (isIndividualMorphingPath(path)) {
-        updateIndividualMorphingPath(path, morphingData, morphT);
-        return;
+    count: number
+};
+export interface DividePath {
+    (params: DividePathParams): Path[]
+}
+
+export interface IndividualDelay {
+    (index: number, count: number, fromPath: Path, toPath: Path): number
+}
+
+function defaultDividePath(param: DividePathParams) {
+    return split(param.path, param.count);
+}
+export interface CombineConfig extends ElementAnimateConfig {
+    /**
+     * Transform of returned will be ignored.
+     */
+    dividePath?: DividePath
+    /**
+     * delay of each individual.
+     * Because individual are sorted on z-order. The index is also sorted top-left / right-down.
+     */
+    individualDelay?: IndividualDelay
+    /**
+     * If sort splitted paths so the movement between them can be more natural
+     */
+    // sort?: boolean
+}
+
+function createEmptyReturn() {
+    return {
+        fromIndividuals: [] as Path[],
+        toIndividuals: [] as Path[],
+        count: 0
     }
-
-    const morphingPath = path as MorphingPath;
-    morphingPath.__oldBuildPath = morphingPath.buildPath;
-    morphingPath.buildPath = morphingPathBuildPath;
-    updateIndividualMorphingPath(morphingPath, morphingData, morphT);
 }
-
-function updateIndividualMorphingPath(
-    morphingPath: MorphingPath,
-    morphingData: MorphingData,
-    morphT: number
-): void {
-    morphingPath.__morphingData = morphingData;
-    morphingPath.__morphT = morphT;
-}
-
-function restoreIndividualMorphingPath(path: Path): void {
-    if (isIndividualMorphingPath(path)) {
-        path.buildPath = path.__oldBuildPath;
-        path.__oldBuildPath = path.__morphingData = null;
-    }
-}
-
-function isIndividualMorphingPath(path: Path): path is MorphingPath {
-    return (path as MorphingPath).__oldBuildPath != null;
-}
-
-export function isCombiningPath(path: Path): path is CombiningPath {
-    return !!(path as CombiningPath).__combiningSubList;
-}
-
-export function isInAnyMorphing(path: Path): boolean {
-    return isIndividualMorphingPath(path) || isCombiningPath(path);
-}
-
-
 /**
- * Make combining morphing from many paths to one.
- * Make the MorphingKind of `toPath` become `'COMBINING'`.
+ * Make combine morphing from many paths to one.
+ * Will return a group to replace the original path.
  */
-export function combine(
-    fromPathList: Path[],
+export function combineMorph(
+    fromList: (CombineMorphingPath | Path)[],
     toPath: Path,
-    animationOpts: CombineSeparateConfig,
-    copyPropsIfDivided?: (srcPath: Path, tarPath: Path, needClone: boolean) => void
-): CombineSeparateResult {
+    animationOpts: CombineConfig
+) {
+    let fromPathList: Path[] = [];
 
-    const fromIndividuals: Path[] = [];
-    let separateCount = 0;
-    for (let i = 0; i < fromPathList.length; i++) {
-        const fromPath = fromPathList[i];
-        if (isCombiningPath(fromPath)) {
-            // If fromPath is combining, use the combineFromList as the from.
-            const fromCombiningSubList = fromPath.__combiningSubList;
-            for (let j = 0; j < fromCombiningSubList.length; j++) {
-                fromIndividuals.push(fromCombiningSubList[j]);
+    function addFromPath(fromList: Element[]) {
+        for (let i = 0; i < fromList.length; i++) {
+            const from = fromList[i];
+            if (isCombineMorphing(from)) {
+                addFromPath((from as GroupLike).childrenRef());
             }
-            separateCount += fromCombiningSubList.length;
-        }
-        else {
-            fromIndividuals.push(fromPath);
-            separateCount++;
+            else if (from instanceof Path) {
+                fromPathList.push(from);
+            }
         }
     }
+    addFromPath(fromList);
+
+    const separateCount = fromPathList.length;
 
     // fromPathList.length is 0.
     if (!separateCount) {
-        return;
+        return createEmptyReturn();
     }
 
-    // PENDING: more separate strategies other than `divideShape`?
-    const dividingMethod = animationOpts ? animationOpts.dividingMethod : null;
-    const toPathSplittedList = divideShape(toPath, separateCount, dividingMethod);
-    assert(toPathSplittedList.length === separateCount);
+    const dividePath = animationOpts.dividePath || defaultDividePath;
 
-    const oldDone = animationOpts && animationOpts.done;
-    const oldAborted = animationOpts && animationOpts.aborted;
-    const oldDuring = animationOpts && animationOpts.during;
+    let toSubPathList = dividePath({
+        path: toPath, count: separateCount
+    });
+    if (toSubPathList.length !== separateCount) {
+        console.error('Invalid morphing: unmatched splitted path');
+        return createEmptyReturn();
+    }
 
-    let doneCount = 0;
-    let abortedCalled = false;
-    const morphAnimationOpts = defaults({
-        during(p) {
-            oldDuring && oldDuring(p);
-        },
-        done() {
-            doneCount++;
-            if (doneCount === toPathSplittedList.length) {
-                restoreCombiningPath(toPath);
-                oldDone && oldDone();
-            }
-        },
-        aborted() {
-            // PENDING: is it logically correct?
-            if (!abortedCalled) {
-                abortedCalled = true;
-                oldAborted && oldAborted();
-            }
-        }
-    } as ElementAnimateConfig, animationOpts);
+    fromPathList = sortPaths(fromPathList);
+    toSubPathList = sortPaths(toSubPathList);
+
+    const oldDone = animationOpts.done;
+    // const oldAborted = animationOpts.aborted;
+    const oldDuring = animationOpts.during;
+    const individualDelay = animationOpts.individualDelay;
+
+    const identityTransform = new Transformable();
 
     for (let i = 0; i < separateCount; i++) {
-        const from = fromIndividuals[i];
-        const to = toPathSplittedList[i];
-        copyPropsIfDivided && copyPropsIfDivided(toPath, to, true);
-        morphPath(from, to, morphAnimationOpts);
+        const from = fromPathList[i];
+        const to = toSubPathList[i];
+
+        to.parent = toPath as unknown as Group;
+
+        // Ignore transform in each subpath.
+        to.copyTransform(identityTransform);
+
+        // Will do morphPath for each individual if individualDelay is set.
+        if (!individualDelay) {
+            prepareMorphPath(from, to);
+        }
     }
 
-    becomeCombiningPath(toPath, toPathSplittedList);
-
-    return {
-        fromIndividuals: fromIndividuals,
-        toIndividuals: toPathSplittedList,
-        count: separateCount
+    (toPath as CombineMorphingPath).__isCombineMorphing = true;
+    (toPath as CombineMorphingPath).childrenRef = function () {
+        return toSubPathList;
     };
-}
 
-
-// PENDING: This is NOT a good implementation to decorate path methods.
-// Potential flaw: when get path by `group.childAt(i)`,
-// it might return the `combiningSubList` group, which is not expected.
-// Probably this feature should be implemented same as the way of rich text?
-function becomeCombiningPath(path: Path, combiningSubList: Path[]): void {
-    if (isCombiningPath(path)) {
-        updateCombiningPathSubList(path, combiningSubList);
-        return;
+    function addToSubPathListToZr(zr: ZRenderType) {
+        for (let i = 0; i < toSubPathList.length; i++) {
+            toSubPathList[i].addSelfToZr(zr);
+        }
     }
-
-    const combiningPath = path as CombiningPath;
-
-    updateCombiningPathSubList(combiningPath, combiningSubList);
-
-    // PENDING: Too tricky. error-prone.
-    // Decorate methods. Do not do it repeatly.
-    combiningPath.__oldAddSelfToZr = path.addSelfToZr;
-    combiningPath.__oldRemoveSelfFromZr = path.removeSelfFromZr;
-    combiningPath.addSelfToZr = combiningAddSelfToZr;
-    combiningPath.removeSelfFromZr = combiningRemoveSelfFromZr;
-    combiningPath.__oldBuildPath = combiningPath.buildPath;
-    combiningPath.buildPath = noop;
-    combiningPath.childrenRef = combiningChildrenRef;
-
-    // PENDING: bounding rect?
-}
-
-function restoreCombiningPath(path: Path): void {
-    if (!isCombiningPath(path)) {
-        return;
-    }
-
-    const combiningPath = path as CombiningPath;
-
-    updateCombiningPathSubList(combiningPath, null);
-
-    combiningPath.addSelfToZr = combiningPath.__oldAddSelfToZr;
-    combiningPath.removeSelfFromZr = combiningPath.__oldRemoveSelfFromZr;
-    combiningPath.buildPath = combiningPath.__oldBuildPath;
-    combiningPath.childrenRef =
-        combiningPath.__combiningSubList =
-        combiningPath.__oldAddSelfToZr =
-        combiningPath.__oldRemoveSelfFromZr =
-        combiningPath.__oldBuildPath = null;
-}
-
-function updateCombiningPathSubList(
-    combiningPath: CombiningPath,
-    // Especially, `combiningSubList` is null/undefined means that remove sub list.
-    combiningSubList: Path[]
-): void {
-    if (combiningPath.__combiningSubList !== combiningSubList) {
-        combiningPathSubListAddRemoveWithZr(combiningPath, 'removeSelfFromZr');
-        combiningPath.__combiningSubList = combiningSubList;
-        if (combiningSubList) {
-            for (let i = 0; i < combiningSubList.length; i++) {
-                // Tricky: make `updateTransform` work in `Transformable`. The parent can only be Group.
-                combiningSubList[i].parent = combiningPath as unknown as Group;
+    saveAndModifyMethod(toPath, 'addSelfToZr', {
+        after(zr) {
+            addToSubPathListToZr(zr);
+        }
+    });
+    saveAndModifyMethod(toPath, 'removeSelfFromZr', {
+        after(zr) {
+            for (let i = 0; i < toSubPathList.length; i++) {
+                toSubPathList[i].removeSelfFromZr(zr);
             }
         }
-        combiningPathSubListAddRemoveWithZr(combiningPath, 'addSelfToZr');
+    });
+
+    function restoreToPath() {
+        (toPath as CombineMorphingPath).__isCombineMorphing = false;
+        // Mark as not in morphing
+        (toPath as MorphingPath).__morphT = -1;
+        (toPath as CombineMorphingPath).childrenRef = null;
+
+        restoreMethod(toPath, 'addSelfToZr');
+        restoreMethod(toPath, 'removeSelfFromZr');
     }
-}
 
-function combiningAddSelfToZr(this: CombiningPath, zr: ZRenderType): void {
-    this.__oldAddSelfToZr(zr);
-    combiningPathSubListAddRemoveWithZr(this, 'addSelfToZr');
-}
+    const toLen = toSubPathList.length;
 
-function combiningPathSubListAddRemoveWithZr(
-    path: CombiningPath,
-    method: 'addSelfToZr' | 'removeSelfFromZr'
-): void {
-    const combiningSubList = path.__combiningSubList;
-    const zr = path.__zr;
-    if (combiningSubList && zr) {
-        for (let i = 0; i < combiningSubList.length; i++) {
-            const child = combiningSubList[i];
-            child[method](zr);
+    if (individualDelay) {
+        let animating = toLen;
+        const eachDone = () => {
+            animating--;
+            if (animating === 0) {
+                restoreToPath();
+                oldDone && oldDone();
+            }
+        }
+        // Animate each element individually.
+        for (let i = 0; i < toLen; i++) {
+            // TODO only call during once?
+            const indivdualAnimationOpts = individualDelay ? defaults({
+                delay: (animationOpts.delay || 0) + individualDelay(i, toLen, fromPathList[i], toSubPathList[i]),
+                done: eachDone
+            } as ElementAnimateConfig, animationOpts) : animationOpts;
+            morphPath(fromPathList[i], toSubPathList[i], indivdualAnimationOpts);
         }
     }
-}
-
-function combiningRemoveSelfFromZr(this: CombiningPath, zr: ZRenderType): void {
-    this.__oldRemoveSelfFromZr(zr);
-    const combiningSubList = this.__combiningSubList;
-    for (let i = 0; i < combiningSubList.length; i++) {
-        const child = combiningSubList[i];
-        child.removeSelfFromZr(zr);
+    else {
+        (toPath as MorphingPath).__morphT = 0;
+        toPath.animateTo({
+            __morphT: 1
+        } as any, defaults({
+            during(p) {
+                for (let i = 0; i < toLen; i++) {
+                    const child = toSubPathList[i] as MorphingPath;
+                    child.__morphT = (toPath as MorphingPath).__morphT;
+                    child.dirtyShape();
+                }
+                oldDuring && oldDuring(p);
+            },
+            done() {
+                restoreToPath();
+                for (let i = 0; i < fromList.length; i++) {
+                    restoreMethod(fromList[i], 'updateTransform');
+                }
+                oldDone && oldDone();
+            }
+        } as ElementAnimateConfig, animationOpts));
     }
-}
 
-function combiningChildrenRef(this: CombiningPath): Path[] {
-    return this.__combiningSubList;
-}
+    if (toPath.__zr) {
+        addToSubPathListToZr(toPath.__zr);
+    }
 
+    return {
+        fromIndividuals: fromPathList,
+        toIndividuals: toSubPathList,
+        count: toLen
+    };
+}
+export interface SeparateConfig extends ElementAnimateConfig {
+    dividePath?: DividePath
+    individualDelay?: IndividualDelay
+    /**
+     * If sort splitted paths so the movement between them can be more natural
+     */
+    // sort?: boolean
+    // // If the from path of separate animation is doing combine animation.
+    // // And the paths number is not same with toPathList. We need to do enter/leave animation
+    // // on the missing/spare paths.
+    // enter?: (el: Path) => void
+    // leave?: (el: Path) => void
+}
 
 /**
  * Make separate morphing from one path to many paths.
  * Make the MorphingKind of `toPath` become `'ONE_ONE'`.
  */
-export function separate(
+export function separateMorph(
     fromPath: Path,
     toPathList: Path[],
-    animationOpts: CombineSeparateConfig,
-    copyPropsIfDivided?: (srcPath: Path, tarPath: Path, needClone: boolean) => void
-): CombineSeparateResult {
-    const toPathListLen = toPathList.length;
-    let fromPathList: Path[];
-    const dividingMethod = animationOpts ? animationOpts.dividingMethod : null;
-    let copyProps = false;
+    animationOpts: SeparateConfig
+) {
+    const toLen = toPathList.length;
+    let fromPathList: Path[] = [];
 
+    const dividePath = animationOpts.dividePath || defaultDividePath;
+
+    function addFromPath(fromList: Element[]) {
+        for (let i = 0; i < fromList.length; i++) {
+            const from = fromList[i];
+            if (isCombineMorphing(from)) {
+                addFromPath((from as GroupLike).childrenRef());
+            }
+            else if (from instanceof Path) {
+                fromPathList.push(from);
+            }
+        }
+    }
     // This case most happen when a combining path is called to reverse the animation
     // to its original separated state.
-    if (isCombiningPath(fromPath)) {
-        // [CATEAT]:
-        // do not `restoreCombiningPath`, because it will cause the sub paths been removed
-        // from its host, so that the original "global transform" can not be gotten any more.
+    if (isCombineMorphing(fromPath)) {
+        addFromPath(fromPath.childrenRef());
 
-        const fromCombiningSubList = fromPath.__combiningSubList;
-        if (fromCombiningSubList.length === toPathListLen) {
-            fromPathList = fromCombiningSubList;
+        const fromLen = fromPathList.length;
+        if (fromLen < toLen) {
+            let k = 0;
+            for (let i = fromLen; i < toLen; i++) {
+                // Create a clone
+                fromPathList.push(clonePath(fromPathList[k++ % fromLen]));
+            }
         }
-        // The fromPath is a `CombiningPath` and its combiningSubCount is different from toPathList.length
-        // At present we do not make "continuous" animation for this case. It's might bring complicated logic.
-        else {
-            fromPathList = divideShape(fromPath, toPathListLen, dividingMethod);
-            copyProps = true;
-        }
+        // Else simply remove if fromLen > toLen
+        fromPathList.length = toLen;
     }
     else {
-        fromPathList = divideShape(fromPath, toPathListLen, dividingMethod);
-        copyProps = true;
+        fromPathList = dividePath({ path: fromPath, count: toLen });
+        const fromPathTransform = fromPath.getComputedTransform();
+        for (let i = 0; i < fromPathList.length; i++) {
+            // Force use transform of source path.
+            fromPathList[i].setLocalTransform(fromPathTransform);
+        }
+        if (fromPathList.length !== toLen) {
+            console.error('Invalid morphing: unmatched splitted path');
+            return createEmptyReturn();
+        }
     }
 
-    assert(fromPathList.length === toPathListLen);
-    for (let i = 0; i < toPathListLen; i++) {
-        if (copyProps && copyPropsIfDivided) {
-            copyPropsIfDivided(fromPath, fromPathList[i], false);
-        }
-        morphPath(fromPathList[i], toPathList[i], animationOpts);
+    fromPathList = sortPaths(fromPathList);
+    toPathList = sortPaths(toPathList);
+
+    const individualDelay = animationOpts.individualDelay;
+    for (let i = 0; i < toLen; i++) {
+        const indivdualAnimationOpts = individualDelay ? defaults({
+            delay: (animationOpts.delay || 0) + individualDelay(i, toLen, fromPathList[i], toPathList[i])
+        } as ElementAnimateConfig, animationOpts) : animationOpts;
+        morphPath(fromPathList[i], toPathList[i], indivdualAnimationOpts);
     }
 
     return {
         fromIndividuals: fromPathList,
         toIndividuals: toPathList,
-        count: toPathListLen
+        count: toPathList.length
     };
 }
 
-
-/**
- * TODO: triangulate separate
- *
- * @return Never be null/undefined, may empty [].
- */
-function divideShape(
-    path: Path,
-    separateCount: number,
-    // By default 'split'.
-    dividingMethod?: MorphDividingMethod
-): Path[] {
-    return dividingMethod === 'duplicate'
-        ? duplicateShape(path, separateCount)
-        : splitShape(path, separateCount);
-}
-
-/**
- * @return Never be null/undefined, may empty [].
- */
-function splitShape(
-    path: Path,
-    separateCount: number
-): Path[] {
-    const resultPaths: Path[] = [];
-    if (separateCount <= 0) {
-        return resultPaths;
-    }
-    if (separateCount === 1) {
-        return duplicateShape(path, separateCount);
-    }
-
-    if (path instanceof Rect) {
-        const toPathShape = path.shape;
-        const splitPropIdx = toPathShape.height > toPathShape.width ? 1 : 0;
-        const propWH = PROP_WH[splitPropIdx];
-        const propXY = PROP_XY[splitPropIdx];
-        const subWH = toPathShape[propWH] / separateCount;
-        let xyCurr = toPathShape[propXY];
-
-        for (let i = 0; i < separateCount; i++, xyCurr += subWH) {
-            const subShape = {
-                x: toPathShape.x,
-                y: toPathShape.y,
-                width: toPathShape.width,
-                height: toPathShape.height
-            };
-            subShape[propXY] = xyCurr;
-            subShape[propWH] = i < separateCount - 1
-                ? subWH
-                : toPathShape[propXY] + toPathShape[propWH] - xyCurr;
-            const splitted = new Rect({ shape: subShape });
-            resultPaths.push(splitted);
-        }
-    }
-    else if (path instanceof Sector) {
-        const toPathShape = path.shape;
-        const clockwise = toPathShape.clockwise;
-        const startAngle = toPathShape.startAngle;
-        const endAngle = toPathShape.endAngle;
-        const endAngleNormalized = normalizeRadian(startAngle, toPathShape.endAngle, clockwise);
-        const step = (endAngleNormalized - startAngle) / separateCount;
-        let angleCurr = startAngle;
-        for (let i = 0; i < separateCount; i++, angleCurr += step) {
-            const splitted = new Sector({
-                shape: {
-                    cx: toPathShape.cx,
-                    cy: toPathShape.cy,
-                    r: toPathShape.r,
-                    r0: toPathShape.r0,
-                    clockwise: clockwise,
-                    startAngle: angleCurr,
-                    endAngle: i === separateCount - 1 ? endAngle : angleCurr + step
-                }
-            });
-            resultPaths.push(splitted);
-        }
-    }
-    // TODO: triangulate path and split.
-    // And should consider path is morphing.
-    else {
-        return duplicateShape(path, separateCount);
-    }
-
-    return resultPaths;
-}
-
-/**
- * @return Never be null/undefined, may empty [].
- */
-function duplicateShape(
-    path: Path,
-    separateCount: number
-): Path[] {
-    const resultPaths: Path[] = [];
-    if (separateCount <= 0) {
-        return resultPaths;
-    }
-    const ctor = path.constructor;
-    for (let i = 0; i < separateCount; i++) {
-        const sub = new (ctor as any)({
-            shape: clone(path.shape)
-        });
-        resultPaths.push(sub);
-    }
-    return resultPaths;
-}
-
-/**
- * If `clockwise`, normalize the `end` to the interval `[start, start + 2 * PI)` and return.
- * else, normalize the `end` to the interval `(start - 2 * PI, start]` and return.
- */
-function normalizeRadian(start: number, end: number, clockwise: boolean): number {
-    return end + PI2 * (
-        Math[clockwise ? 'ceil' : 'floor']((start - end) / PI2)
-    );
-}
+export { split as defaultDividePath }

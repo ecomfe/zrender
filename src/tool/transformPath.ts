@@ -9,6 +9,10 @@ const mathSqrt = Math.sqrt;
 const mathAtan2 = Math.atan2;
 
 export default function transformPath(path: PathProxy, m: MatrixArray) {
+    if (!m) {
+        return;
+    }
+
     let data = path.data;
     const len = path.len();
     let cmd;
