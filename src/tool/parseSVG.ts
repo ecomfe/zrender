@@ -479,7 +479,7 @@ class SVGParser {
                 parseAttributes(xmlNode, img, this._defsUsePending, false, false);
 
                 img.setStyle({
-                    image: xmlNode.getAttribute('xlink:href'),
+                    image: xmlNode.getAttribute('xlink:href') || xmlNode.getAttribute('href'),
                     x: +xmlNode.getAttribute('x'),
                     y: +xmlNode.getAttribute('y'),
                     width: +xmlNode.getAttribute('width'),
