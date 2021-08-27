@@ -30,7 +30,7 @@ class Sector extends Path<SectorProps> {
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: SectorShape) {
-        roundSectorHelper.buildPath(ctx, shape)
+        roundSectorHelper.buildPath(ctx, shape);
     }
 
     isZeroArea() {

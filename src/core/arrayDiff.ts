@@ -185,6 +185,6 @@ function clonePath(path: DiffPath) {
     return { newPos: path.newPos, components: path.components.slice(0) };
 }
 
-export default function arrayDiff<T> (oldArr: T[], newArr: T[], equal?: EqualFunc<T>): DiffComponent[] {
+export default function arrayDiff<T>(oldArr: T[], newArr: T[], equal?: EqualFunc<T>): DiffComponent[] {
     return diff(oldArr, newArr, equal);
 }

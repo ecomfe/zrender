@@ -1,7 +1,7 @@
 import { fromPoints } from '../core/bbox';
 import BoundingRect from '../core/BoundingRect';
 import Point from '../core/Point';
-import { each, map } from '../core/util';
+import { map } from '../core/util';
 import Path from '../graphic/Path';
 import Polygon from '../graphic/shape/Polygon';
 import Rect from '../graphic/shape/Rect';

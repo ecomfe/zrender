@@ -430,8 +430,8 @@ class Track {
             for (let i = 0; i < kfsLen; i++) {
                 if (arrDim === 0) {
                     if (this.isValueColor) {
-                        kfs[i].additiveValue
-                            = add1DArray([], kfs[i].value as NumberArray, startValue as NumberArray, -1);
+                        kfs[i].additiveValue =
+                            add1DArray([], kfs[i].value as NumberArray, startValue as NumberArray, -1);
                     }
                     else {
                         kfs[i].additiveValue = kfs[i].value as number - (startValue as number);

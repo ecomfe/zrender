@@ -293,6 +293,7 @@ export type ElementCalculateTextPosition = (
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 let tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Element<Props extends ElementProps = ElementProps> extends Transformable,
     Eventful<{
         [key in ElementEventName]: (e: ElementEvent) => void | boolean
