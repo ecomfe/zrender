@@ -4,10 +4,10 @@ import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
 import { Dictionary } from './core/types';
 
-interface PainterOption {
-    width?: number | string  // Can be 10 / 10px / auto
-    height?: number | string
-}
+// interface PainterOption {
+//     width?: number | string  // Can be 10 / 10px / auto
+//     height?: number | string
+// }
 
 export interface PainterBase {
 

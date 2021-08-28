@@ -21,7 +21,7 @@ type ondestroyCallback = () => void
 type onrestartCallback = () => void
 
 export type DeferredEventTypes = 'destroy' | 'restart'
-type DeferredEventKeys = 'ondestroy' | 'onrestart'
+// type DeferredEventKeys = 'ondestroy' | 'onrestart'
 
 export interface ClipProps {
     life?: number

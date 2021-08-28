@@ -444,13 +444,11 @@ class SVGPainter implements PainterBase {
     dispose() {
         this.root.innerHTML = '';
 
-        this._svgRoot
-            = this._backgroundRoot
-            = this._svgDom
-            = this._backgroundNode
-            = this._viewport
-            = this.storage
-            = null;
+        this._svgRoot =
+            this._backgroundRoot =
+            this._svgDom =
+            this._backgroundNode =
+            this._viewport = this.storage = null;
     }
 
     clear() {

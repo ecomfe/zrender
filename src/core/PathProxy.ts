@@ -1059,8 +1059,8 @@ export default class PathProxy {
                     const psi = d[i++];
                     const anticlockwise = !d[i++];
                     const r = (rx > ry) ? rx : ry;
-                    const scaleX = (rx > ry) ? 1 : rx / ry;
-                    const scaleY = (rx > ry) ? ry / rx : 1;
+                    // const scaleX = (rx > ry) ? 1 : rx / ry;
+                    // const scaleY = (rx > ry) ? ry / rx : 1;
                     const isEllipse = mathAbs(rx - ry) > 1e-3;
                     let endAngle = startAngle + delta;
                     let breakBuild = false;
@@ -1174,6 +1174,7 @@ export interface PathRebuilder {
     bezierCurveTo(x: number, y: number, x2: number, y2: number, x3: number, y3: number): void
     quadraticCurveTo(x: number, y: number, x2: number, y2: number): void
     arc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise: boolean): void
+    // eslint-disable-next-line max-len
     ellipse(cx: number, cy: number, radiusX: number, radiusY: number, rotation: number, startAngle: number, endAngle: number, anticlockwise: boolean): void
     rect(x: number, y: number, width: number, height: number): void
     closePath(): void
