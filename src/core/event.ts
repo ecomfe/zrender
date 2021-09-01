@@ -67,6 +67,7 @@ export function clientToLocal(
     // <https://bugs.jquery.com/ticket/8523#comment:14>
     // BTW3, In ff, offsetX/offsetY is always 0.
     else if (env.browser.firefox
+        && env.browser.version < '39'
         && (e as FirefoxMouseEvent).layerX != null
         && (e as FirefoxMouseEvent).layerX !== (e as MouseEvent).offsetX
     ) {
