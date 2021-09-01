@@ -87,7 +87,7 @@ function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan |
 
     // only set opacity. stroke and fill cannot be applied to svg image
     if (el instanceof ZRImage) {
-        svgEl.style.opacity = opacity + '';
+        attr(svgEl, 'opacity', opacity + '');
         return;
     }
 
@@ -137,7 +137,7 @@ function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan |
             attr(svgEl, 'stroke-dashoffset', (lineDashOffset || 0) + '');
         }
         else {
-            attr(svgEl, 'stroke-dasharray', '');
+            attr(svgEl, 'stroke-dasharray', NONE);
         }
 
         // PENDING
