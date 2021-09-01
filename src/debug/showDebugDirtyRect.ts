@@ -17,7 +17,7 @@ class DebugRect {
         extend(style, {
             backgroundColor: 'rgba(0, 0, 255, 0.2)',
             border: '1px solid #00f'
-        })
+        });
         dom.style.cssText = `
 position: absolute;
 opacity: 0;

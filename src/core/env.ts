@@ -74,7 +74,7 @@ function detect(ua: string, env: Env) {
     if (edge) {
         browser.edge = true;
         browser.version = edge[1];
-        browser.newEdge = +edge[1].split('.')[0] > 18; 
+        browser.newEdge = +edge[1].split('.')[0] > 18;
     }
 
     // It is difficult to detect WeChat in Win Phone precisely, because ua can
@@ -108,7 +108,7 @@ function detect(ua: string, env: Env) {
 
     // except IE 6-8 and very old firefox 2-3 & opera 10.1
     // other browsers all support `transform`
-    env.transformSupported = env.transform3dSupported 
+    env.transformSupported = env.transform3dSupported
         // transform 2D is supported in IE9
         || (browser.ie && +browser.version >= 9);
 

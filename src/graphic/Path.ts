@@ -107,6 +107,7 @@ export interface PathProps extends DisplayableProps {
 type PathKey = keyof PathProps
 type PathPropertyType = PropType<PathProps, PathKey>
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Path<Props extends PathProps = PathProps> {
     animate(key?: '', loop?: boolean): Animator<this>
     animate(key: 'style', loop?: boolean): Animator<this['style']>

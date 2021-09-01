@@ -1,6 +1,6 @@
 {
   "name": "zrender",
-  "version": "5.1.1",
+  "version": "5.2.0",
   "description": "A lightweight canvas library.",
   "keywords": [
     "canvas",
@@ -19,7 +19,8 @@
     "build:lib": "npx tsc -m ES2015 --outDir lib",
     "watch:bundle": "node build/build.js --watch",
     "watch:lib": "npx tsc -w -m ES2015 --outDir lib",
-    "test": "npx jest --config test/ut/jest.config.js"
+    "test": "npx jest --config test/ut/jest.config.js",
+    "lint": "npx eslint src/**/*.ts"
   },
   "license": "BSD-3-Clause",
   "types": "index.d.ts",

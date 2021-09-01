@@ -79,6 +79,7 @@ export type DisplayableState = Pick<DisplayableProps, DisplayableStatePropNames>
 const PRIMARY_STATES_KEYS = ['z', 'z2', 'invisible'] as const;
 const PRIMARY_STATES_KEYS_IN_HOVER_LAYER = ['invisible'] as const;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Displayable<Props extends DisplayableProps = DisplayableProps> {
     animate(key?: '', loop?: boolean): Animator<this>
     animate(key: 'style', loop?: boolean): Animator<this['style']>

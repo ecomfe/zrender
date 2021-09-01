@@ -15,7 +15,7 @@ import Storage from './Storage';
 import {PainterBase} from './PainterBase';
 import Animation from './animation/Animation';
 import HandlerProxy from './dom/HandlerProxy';
-import Element, {ElementEventCallback, ElementEvent} from './Element';
+import Element, { ElementEventCallback } from './Element';
 import { Dictionary, ElementEventName, RenderedEvent, WithThisType } from './core/types';
 import { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
@@ -407,6 +407,7 @@ class ZRender {
     }
 
     on<Ctx>(eventName: ElementEventName, eventHandler: ElementEventCallback<Ctx, ZRenderType>, context?: Ctx): this
+    // eslint-disable-next-line max-len
     on<Ctx>(eventName: string, eventHandler: WithThisType<EventCallback<any[]>, unknown extends Ctx ? ZRenderType : Ctx>, context?: Ctx): this
     // eslint-disable-next-line max-len
     on<Ctx>(eventName: string, eventHandler: (...args: any) => any, context?: Ctx): this {
@@ -520,7 +521,7 @@ export function registerPainter(name: string, Ctor: PainterBaseCtor) {
 /**
  * @type {string}
  */
-export const version = '5.1.1';
+export const version = '5.2.0';
 
 
 export interface ZRenderType extends ZRender {};
