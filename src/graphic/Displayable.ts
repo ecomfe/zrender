@@ -8,7 +8,7 @@ import { PropType, Dictionary, MapToType } from '../core/types';
 import Path from './Path';
 import { keys, extend, createObject } from '../core/util';
 import Animator from '../animation/Animator';
-import { REDARAW_BIT, STYLE_CHANGED_BIT } from './constants';
+import { REDRAW_BIT, STYLE_CHANGED_BIT } from './constants';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
@@ -598,7 +598,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         dispProto._rect = null;
         dispProto.dirtyRectTolerance = 0;
 
-        dispProto.__dirty = REDARAW_BIT | STYLE_CHANGED_BIT;
+        dispProto.__dirty = REDRAW_BIT | STYLE_CHANGED_BIT;
     })()
 }
 

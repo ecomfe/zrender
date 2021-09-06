@@ -10,7 +10,7 @@ import { getCanvasGradient } from './helper';
 import { createCanvasPattern } from './graphic';
 import Displayable from '../graphic/Displayable';
 import BoundingRect from '../core/BoundingRect';
-import { REDARAW_BIT } from '../graphic/constants';
+import { REDRAW_BIT } from '../graphic/constants';
 
 function returnFalse() {
     return false;
@@ -281,7 +281,7 @@ export default class Layer extends Eventful {
                  * or not painted this frame.
                  */
                 const shouldPaint = el.shouldBePainted(viewWidth, viewHeight, true, true);
-                const prevRect = el.__isRendered && ((el.__dirty & REDARAW_BIT) || !shouldPaint)
+                const prevRect = el.__isRendered && ((el.__dirty & REDRAW_BIT) || !shouldPaint)
                     ? el.getPrevPaintRect()
                     : null;
                 if (prevRect) {
@@ -293,7 +293,7 @@ export default class Layer extends Eventful {
                  * if the element should be brushed this frame and either being
                  * dirty or not rendered before.
                  */
-                const curRect = shouldPaint && ((el.__dirty & REDARAW_BIT) || !el.__isRendered)
+                const curRect = shouldPaint && ((el.__dirty & REDRAW_BIT) || !el.__isRendered)
                     ? el.getPaintRect()
                     : null;
                 if (curRect) {
