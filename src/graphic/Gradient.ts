@@ -7,7 +7,7 @@ export interface GradientObject {
 
     colorStops: GradientColorStop[]
 
-    global: boolean
+    global?: boolean
 }
 
 export interface InnerGradientObject extends GradientObject {
