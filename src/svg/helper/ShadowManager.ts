@@ -36,6 +36,7 @@ export default class ShadowManager extends Definable {
         if (!shadowDom) {
             shadowDom = this.createElement('filter') as SVGFilterElement;
             shadowDom.setAttribute('id', 'zr' + this._zrId + '-shadow-' + this.nextId++);
+            shadowDom.setAttribute('filterUnits', 'userSpaceOnUse');
             const domChild = this.createElement('feDropShadow');
             shadowDom.appendChild(domChild);
             this.addDom(shadowDom);
