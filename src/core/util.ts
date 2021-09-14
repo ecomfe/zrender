@@ -29,6 +29,7 @@ const TYPED_ARRAY: {[key: string]: boolean} = {
 };
 
 const objToString = Object.prototype.toString;
+const objHasOwnProperty = Object.prototype.hasOwnProperty
 
 const arrayProto = Array.prototype;
 const nativeForEach = arrayProto.forEach;
@@ -106,7 +107,7 @@ export function clone<T extends any>(source: T): T {
     else if (!BUILTIN_OBJECT[typeStr] && !isPrimitive(source) && !isDom(source)) {
         result = {} as any;
         for (let key in source) {
-            if (source.hasOwnProperty(key)) {
+            if (hasOwn(source as object, key)) {
                 result[key] = clone(source[key]);
             }
         }
@@ -131,7 +132,7 @@ export function merge(target: any, source: any, overwrite?: boolean): any {
     }
 
     for (let key in source) {
-        if (source.hasOwnProperty(key)) {
+        if (hasOwn(source, key)) {
             const targetProp = target[key];
             const sourceProp = source[key];
 
@@ -184,7 +185,7 @@ export function extend<
     }
     else {
         for (let key in source) {
-            if (source.hasOwnProperty(key)) {
+            if (hasOwn(source, key)) {
                 (target as S & T)[key] = (source as T & S)[key];
             }
         }
@@ -244,7 +245,7 @@ export function inherits(clazz: Function, baseClazz: Function) {
     clazz.prototype = new (F as any)();
 
     for (let prop in clazzPrototype) {
-        if (clazzPrototype.hasOwnProperty(prop)) {
+        if (hasOwn(clazzPrototype, prop)) {
             clazz.prototype[prop] = clazzPrototype[prop];
         }
     }
@@ -318,7 +319,7 @@ export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayL
     }
     else {
         for (let key in arr) {
-            if (arr.hasOwnProperty(key)) {
+            if (hasOwn(arr, key)) {
                 cb.call(context, (arr as Dictionary<any>)[key], key as any, arr);
             }
         }
@@ -439,7 +440,7 @@ export function keys<T extends object>(obj: T): (KeyOfDistributive<T> & string)[
     }
     let keyList: TKeys[] = [];
     for (let key in obj) {
-        if (obj.hasOwnProperty(key)) {
+        if (hasOwn(obj, key)) {
             keyList.push(key as any);
         }
     }
@@ -682,7 +683,7 @@ export class HashMap<T, KEY extends string | number = string | number> {
     // (We usually treat `null` and `undefined` as the same, different
     // from ES6 Map).
     get(key: KEY): T {
-        return this.data.hasOwnProperty(key) ? this.data[key] : null;
+        return hasOwn(this.data, key) ? this.data[key] : null;
     }
     set(key: KEY, value: T): T {
         // Comparing with invocation chaining, `return value` is more commonly
@@ -696,7 +697,7 @@ export class HashMap<T, KEY extends string | number = string | number> {
         context?: Context
     ) {
         for (let key in this.data) {
-            if (this.data.hasOwnProperty(key)) {
+            if (hasOwn(this.data, key)) {
                 cb.call(context, this.data[key], key);
             }
         }
@@ -747,8 +748,11 @@ export function createObject<T>(proto?: object, properties?: T): T {
     return obj;
 }
 
-export function hasOwn(own: object, prop: string): boolean {
-    return own.hasOwnProperty(prop);
+export function hasOwn(own: object, prop: PropertyKey): boolean {
+    if (own.hasOwnProperty) {
+        return own.hasOwnProperty(prop)
+    }
+    return objHasOwnProperty.call(own, prop)
 }
 
 export function noop() {}
