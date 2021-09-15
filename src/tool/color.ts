@@ -443,6 +443,15 @@ type LerpFullOutput = {
 export function lerp(
     normalizedValue: number,
     colors: string[],
+    fullOutput: boolean
+): LerpFullOutput
+export function lerp(
+    normalizedValue: number,
+    colors: string[]
+): string
+export function lerp(
+    normalizedValue: number,
+    colors: string[],
     fullOutput?: boolean
 ): string | LerpFullOutput {
     if (!(colors && colors.length)
