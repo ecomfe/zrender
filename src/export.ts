@@ -23,6 +23,7 @@ export {
     ElementProps
 } from './Element';
 
+export {default as Displayable, DisplayableProps} from './graphic/Displayable';
 export {default as Group, GroupProps} from './graphic/Group';
 export {default as Path, PathStyleProps, PathProps, PathStatePropNames, PathState} from './graphic/Path';
 export {default as Image, ImageStyleProps, ImageProps, ImageState} from './graphic/Image';

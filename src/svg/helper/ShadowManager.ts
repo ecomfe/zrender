@@ -73,7 +73,7 @@ export default class ShadowManager extends Definable {
     remove(svgElement: SVGElement, displayable: Displayable) {
         if ((displayable as DisplayableExtended)._shadowDom != null) {
             (displayable as DisplayableExtended)._shadowDom = null;
-            svgElement.style.filter = '';
+            svgElement.removeAttribute('filter');
         }
     }
 
@@ -124,7 +124,7 @@ export default class ShadowManager extends Definable {
         (displayable as DisplayableExtended)._shadowDom = shadowDom;
 
         const id = shadowDom.getAttribute('id');
-        svgElement.style.filter = 'url(#' + id + ')';
+        svgElement.setAttribute('filter', 'url(#' + id + ')');
     }
 
     removeUnused() {

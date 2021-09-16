@@ -67,13 +67,16 @@ export function clientToLocal(
     // <https://bugs.jquery.com/ticket/8523#comment:14>
     // BTW3, In ff, offsetX/offsetY is always 0.
     else if (env.browser.firefox
+        // use offsetX/offsetY for Firefox >= 39
+        // PENDING: consider Firefox for Android and Firefox OS? >= 43
+        && env.browser.version < '39'
         && (e as FirefoxMouseEvent).layerX != null
         && (e as FirefoxMouseEvent).layerX !== (e as MouseEvent).offsetX
     ) {
         out.zrX = (e as FirefoxMouseEvent).layerX;
         out.zrY = (e as FirefoxMouseEvent).layerY;
     }
-    // For IE6+, chrome, safari, opera. (When will ff support offsetX?)
+    // For IE6+, chrome, safari, opera, firefox >= 39
     else if ((e as MouseEvent).offsetX != null) {
         out.zrX = (e as MouseEvent).offsetX;
         out.zrY = (e as MouseEvent).offsetY;
