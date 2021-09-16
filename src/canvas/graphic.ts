@@ -15,7 +15,7 @@ import { MatrixArray } from '../core/matrix';
 import { map } from '../core/util';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
 import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
-import { REDARAW_BIT, SHAPE_CHANGED_BIT } from '../graphic/constants';
+import { REDRAW_BIT, SHAPE_CHANGED_BIT } from '../graphic/constants';
 
 const pathProxyForDraw = new PathProxy(true);
 
@@ -648,7 +648,7 @@ export function brush(
         // Or this element will always been rendered in progressive rendering.
         // But other dirty bit should not be cleared, otherwise it cause the shape
         // can not be updated in this case.
-        el.__dirty &= ~REDARAW_BIT;
+        el.__dirty &= ~REDRAW_BIT;
         el.__isRendered = false;
         return;
     }

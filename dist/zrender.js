@@ -987,13 +987,16 @@
             return this;
         };
         Eventful.prototype.triggerWithContext = function (type) {
+            var args = [];
+            for (var _i = 1; _i < arguments.length; _i++) {
+                args[_i - 1] = arguments[_i];
+            }
             if (!this._$handlers) {
                 return this;
             }
             var _h = this._$handlers[type];
             var eventProcessor = this._$eventProcessor;
             if (_h) {
-                var args = arguments;
                 var argLen = args.length;
                 var ctx = args[argLen - 1];
                 var len = _h.length;
@@ -3244,7 +3247,10 @@
             }
         };
         Track.prototype.needsAnimate = function () {
-            return !this._isAllValueEqual && this.keyframes.length >= 2 && this.interpolable;
+            return !this._isAllValueEqual
+                && this.keyframes.length >= 2
+                && this.interpolable
+                && this.maxTime > 0;
         };
         Track.prototype.getAdditiveTrack = function () {
             return this._additiveTrack;
@@ -3350,8 +3356,8 @@
                 for (var i = 0; i < kfsLen; i++) {
                     if (arrDim === 0) {
                         if (this.isValueColor) {
-                            kfs[i].additiveValue
-                                = add1DArray([], kfs[i].value, startValue, -1);
+                            kfs[i].additiveValue =
+                                add1DArray([], kfs[i].value, startValue, -1);
                         }
                         else {
                             kfs[i].additiveValue = kfs[i].value - startValue;
@@ -3577,7 +3583,7 @@
         Animator.prototype._doneCallback = function () {
             this._setTracksFinished();
             this._clip = null;
-            var doneList = this._doneList;
+            var doneList = this._doneCbs;
             if (doneList) {
                 var len = doneList.length;
                 for (var i = 0; i < len; i++) {
@@ -3588,7 +3594,7 @@
         Animator.prototype._abortedCallback = function () {
             this._setTracksFinished();
             var animation = this.animation;
-            var abortedList = this._abortedList;
+            var abortedList = this._abortedCbs;
             if (animation) {
                 animation.removeClip(this._clip);
             }
@@ -3665,7 +3671,7 @@
                         for (var i = 0; i < tracks.length; i++) {
                             tracks[i].step(self._target, percent);
                         }
-                        var onframeList = self._onframeList;
+                        var onframeList = self._onframeCbs;
                         if (onframeList) {
                             for (var i = 0; i < onframeList.length; i++) {
                                 onframeList[i](self._target, percent);
@@ -3705,28 +3711,28 @@
         };
         Animator.prototype.during = function (cb) {
             if (cb) {
-                if (!this._onframeList) {
-                    this._onframeList = [];
+                if (!this._onframeCbs) {
+                    this._onframeCbs = [];
                 }
-                this._onframeList.push(cb);
+                this._onframeCbs.push(cb);
             }
             return this;
         };
         Animator.prototype.done = function (cb) {
             if (cb) {
-                if (!this._doneList) {
-                    this._doneList = [];
+                if (!this._doneCbs) {
+                    this._doneCbs = [];
                 }
-                this._doneList.push(cb);
+                this._doneCbs.push(cb);
             }
             return this;
         };
         Animator.prototype.aborted = function (cb) {
             if (cb) {
-                if (!this._abortedList) {
-                    this._abortedList = [];
+                if (!this._abortedCbs) {
+                    this._abortedCbs = [];
                 }
-                this._abortedList.push(cb);
+                this._abortedCbs.push(cb);
             }
             return this;
         };
@@ -4373,6 +4379,9 @@
     var Transformable = (function () {
         function Transformable() {
         }
+        Transformable.prototype.getLocalTransform = function (m) {
+            return Transformable.getLocalTransform(this, m);
+        };
         Transformable.prototype.setPosition = function (arr) {
             this.x = arr[0];
             this.y = arr[1];
@@ -4397,11 +4406,10 @@
                 || isNotAroundZero(this.scaleY - 1);
         };
         Transformable.prototype.updateTransform = function () {
-            var parent = this.parent;
-            var parentHasTransform = parent && parent.transform;
+            var parentTransform = this.parent && this.parent.transform;
             var needLocalTransform = this.needLocalTransform();
             var m = this.transform;
-            if (!(needLocalTransform || parentHasTransform)) {
+            if (!(needLocalTransform || parentTransform)) {
                 m && mIdentity(m);
                 return;
             }
@@ -4412,12 +4420,12 @@
             else {
                 mIdentity(m);
             }
-            if (parentHasTransform) {
+            if (parentTransform) {
                 if (needLocalTransform) {
-                    mul$1(m, parent.transform, m);
+                    mul$1(m, parentTransform, m);
                 }
                 else {
-                    copy$1(m, parent.transform);
+                    copy$1(m, parentTransform);
                 }
             }
             this.transform = m;
@@ -4438,9 +4446,6 @@
             }
             this.invTransform = this.invTransform || create$1();
             invert(this.invTransform, m);
-        };
-        Transformable.prototype.getLocalTransform = function (m) {
-            return Transformable.getLocalTransform(this, m);
         };
         Transformable.prototype.getComputedTransform = function () {
             var transformNode = this;
@@ -4536,6 +4541,13 @@
                 ? Math.sqrt(abs(m[0] * m[3] - m[2] * m[1]))
                 : 1;
         };
+        Transformable.prototype.copyTransform = function (source) {
+            var target = this;
+            for (var i = 0; i < TRANSFORMABLE_PROPS.length; i++) {
+                var propName = TRANSFORMABLE_PROPS[i];
+                target[propName] = source[propName];
+            }
+        };
         Transformable.getLocalTransform = function (target, m) {
             m = m || [];
             var ox = target.originX || 0;
@@ -4578,6 +4590,9 @@
         })();
         return Transformable;
     }());
+    var TRANSFORMABLE_PROPS = [
+        'x', 'y', 'originX', 'originY', 'rotation', 'scaleX', 'scaleY', 'skewX', 'skewY'
+    ];
 
     var Point = (function () {
         function Point(x, y) {
@@ -5160,24 +5175,13 @@
                 }
                 var textConfig = this.textConfig;
                 var isLocal = textConfig.local;
-                var attachedTransform = textEl.attachedTransform;
+                var innerTransformable = textEl.innerTransformable;
                 var textAlign = void 0;
                 var textVerticalAlign = void 0;
                 var textStyleChanged = false;
-                if (isLocal) {
-                    attachedTransform.parent = this;
-                }
-                else {
-                    attachedTransform.parent = null;
-                }
+                innerTransformable.parent = isLocal ? this : null;
                 var innerOrigin = false;
-                attachedTransform.x = textEl.x;
-                attachedTransform.y = textEl.y;
-                attachedTransform.originX = textEl.originX;
-                attachedTransform.originY = textEl.originY;
-                attachedTransform.rotation = textEl.rotation;
-                attachedTransform.scaleX = textEl.scaleX;
-                attachedTransform.scaleY = textEl.scaleY;
+                innerTransformable.copyTransform(textEl);
                 if (textConfig.position != null) {
                     var layoutRect = tmpBoundingRect;
                     if (textConfig.layoutRect) {
@@ -5195,8 +5199,8 @@
                     else {
                         calculateTextPosition(tmpTextPosCalcRes, textConfig, layoutRect);
                     }
-                    attachedTransform.x = tmpTextPosCalcRes.x;
-                    attachedTransform.y = tmpTextPosCalcRes.y;
+                    innerTransformable.x = tmpTextPosCalcRes.x;
+                    innerTransformable.y = tmpTextPosCalcRes.y;
                     textAlign = tmpTextPosCalcRes.align;
                     textVerticalAlign = tmpTextPosCalcRes.verticalAlign;
                     var textOrigin = textConfig.origin;
@@ -5212,20 +5216,20 @@
                             relOriginY = parsePercent(textOrigin[1], layoutRect.height);
                         }
                         innerOrigin = true;
-                        attachedTransform.originX = -attachedTransform.x + relOriginX + (isLocal ? 0 : layoutRect.x);
-                        attachedTransform.originY = -attachedTransform.y + relOriginY + (isLocal ? 0 : layoutRect.y);
+                        innerTransformable.originX = -innerTransformable.x + relOriginX + (isLocal ? 0 : layoutRect.x);
+                        innerTransformable.originY = -innerTransformable.y + relOriginY + (isLocal ? 0 : layoutRect.y);
                     }
                 }
                 if (textConfig.rotation != null) {
-                    attachedTransform.rotation = textConfig.rotation;
+                    innerTransformable.rotation = textConfig.rotation;
                 }
                 var textOffset = textConfig.offset;
                 if (textOffset) {
-                    attachedTransform.x += textOffset[0];
-                    attachedTransform.y += textOffset[1];
+                    innerTransformable.x += textOffset[0];
+                    innerTransformable.y += textOffset[1];
                     if (!innerOrigin) {
-                        attachedTransform.originX = -textOffset[0];
-                        attachedTransform.originY = -textOffset[1];
+                        innerTransformable.originX = -textOffset[0];
+                        innerTransformable.originY = -textOffset[1];
                     }
                 }
                 var isInside = textConfig.inside == null
@@ -5672,7 +5676,7 @@
             if (textEl.__zr && !textEl.__hostTarget) {
                 throw new Error('Text element has been added to zrender.');
             }
-            textEl.attachedTransform = new Transformable();
+            textEl.innerTransformable = new Transformable();
             this._attachComponent(textEl);
             this._textContent = textEl;
             this.markRedraw();
@@ -5691,7 +5695,7 @@
         Element.prototype.removeTextContent = function () {
             var textEl = this._textContent;
             if (textEl) {
-                textEl.attachedTransform = null;
+                textEl.innerTransformable = null;
                 this._detachComponent(textEl);
                 this._textContent = null;
                 this._innerTextDefaultStyle = null;
@@ -5747,6 +5751,9 @@
             }
         };
         Element.prototype.addSelfToZr = function (zr) {
+            if (this.__zr === zr) {
+                return;
+            }
             this.__zr = zr;
             var animators = this.animators;
             if (animators) {
@@ -5765,6 +5772,9 @@
             }
         };
         Element.prototype.removeSelfFromZr = function (zr) {
+            if (!this.__zr) {
+                return;
+            }
             this.__zr = null;
             var animators = this.animators;
             if (animators) {
@@ -6157,6 +6167,13 @@
             }
             return this;
         };
+        Group.prototype.replace = function (oldChild, newChild) {
+            var idx = indexOf(this._children, oldChild);
+            if (idx >= 0) {
+                this.replaceAt(newChild, idx);
+            }
+            return this;
+        };
         Group.prototype.replaceAt = function (child, index) {
             var children = this._children;
             var old = children[index];
@@ -6525,7 +6542,7 @@
     function registerPainter(name, Ctor) {
         painterCtors[name] = Ctor;
     }
-    var version = '5.1.1';
+    var version = '5.2.0';
 
     var STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
     var DEFAULT_COMMON_STYLE = {
@@ -7199,6 +7216,27 @@
     var start = create();
     var end = create();
     var extremity = create();
+    function fromPoints(points, min, max) {
+        if (points.length === 0) {
+            return;
+        }
+        var p = points[0];
+        var left = p[0];
+        var right = p[0];
+        var top = p[1];
+        var bottom = p[1];
+        for (var i = 1; i < points.length; i++) {
+            p = points[i];
+            left = mathMin$1(left, p[0]);
+            right = mathMax$1(right, p[0]);
+            top = mathMin$1(top, p[1]);
+            bottom = mathMax$1(bottom, p[1]);
+        }
+        min[0] = left;
+        min[1] = top;
+        max[0] = right;
+        max[1] = bottom;
+    }
     function fromLine(x0, y0, x1, y1, min, max) {
         min[0] = mathMin$1(x0, x1);
         min[1] = mathMin$1(y0, y1);
@@ -7436,6 +7474,7 @@
             return this;
         };
         PathProxy.prototype.bezierCurveTo = function (x1, y1, x2, y2, x3, y3) {
+            this._drawPendingPt();
             this.addData(CMD.C, x1, y1, x2, y2, x3, y3);
             if (this._ctx) {
                 this._needsDash ? this._dashedBezierTo(x1, y1, x2, y2, x3, y3)
@@ -7446,6 +7485,7 @@
             return this;
         };
         PathProxy.prototype.quadraticCurveTo = function (x1, y1, x2, y2) {
+            this._drawPendingPt();
             this.addData(CMD.Q, x1, y1, x2, y2);
             if (this._ctx) {
                 this._needsDash ? this._dashedQuadraticTo(x1, y1, x2, y2)
@@ -7456,6 +7496,7 @@
             return this;
         };
         PathProxy.prototype.arc = function (cx, cy, r, startAngle, endAngle, anticlockwise) {
+            this._drawPendingPt();
             tmpAngles[0] = startAngle;
             tmpAngles[1] = endAngle;
             normalizeArcAngles(tmpAngles, anticlockwise);
@@ -7469,12 +7510,14 @@
             return this;
         };
         PathProxy.prototype.arcTo = function (x1, y1, x2, y2, radius) {
+            this._drawPendingPt();
             if (this._ctx) {
                 this._ctx.arcTo(x1, y1, x2, y2, radius);
             }
             return this;
         };
         PathProxy.prototype.rect = function (x, y, w, h) {
+            this._drawPendingPt();
             this._ctx && this._ctx.rect(x, y, w, h);
             this.addData(CMD.R, x, y, w, h);
             return this;
@@ -7918,12 +7961,12 @@
                     x0 = xi;
                     y0 = yi;
                 }
+                if (cmd !== CMD.L && pendingPtDist > 0) {
+                    ctx.lineTo(pendingPtX, pendingPtY);
+                    pendingPtDist = 0;
+                }
                 switch (cmd) {
                     case CMD.M:
-                        if (pendingPtDist > 0) {
-                            ctx.lineTo(pendingPtX, pendingPtY);
-                            pendingPtDist = 0;
-                        }
                         x0 = xi = d[i++];
                         y0 = yi = d[i++];
                         ctx.moveTo(xi, yi);
@@ -8071,10 +8114,6 @@
                         ctx.rect(x, y, width, height);
                         break;
                     case CMD.Z:
-                        if (pendingPtDist > 0) {
-                            ctx.lineTo(pendingPtX, pendingPtY);
-                            pendingPtDist = 0;
-                        }
                         if (drawPart) {
                             var l = pathSegLen[segCount++];
                             if (accumLength + l > displayedLength) {
@@ -8089,6 +8128,14 @@
                         yi = y0;
                 }
             }
+        };
+        PathProxy.prototype.clone = function () {
+            var newProxy = new PathProxy();
+            var data = this.data;
+            newProxy.data = data.slice ? data.slice()
+                : Array.prototype.slice.call(data);
+            newProxy._len = this._len;
+            return newProxy;
         };
         PathProxy.CMD = CMD;
         PathProxy.initDefaultProps = (function () {
@@ -8658,9 +8705,15 @@
                 }
             }
         };
-        Path.prototype.buildPath = function (ctx, shapeCfg, inBundle) { };
+        Path.prototype.buildPath = function (ctx, shapeCfg, inBatch) { };
         Path.prototype.pathUpdated = function () {
             this.__dirty &= ~SHAPE_CHANGED_BIT;
+        };
+        Path.prototype.getUpdatedPathProxy = function (inBatch) {
+            !this.path && this.createPathProxy();
+            this.path.beginPath();
+            this.buildPath(this.path, this.shape, inBatch);
+            return this.path;
         };
         Path.prototype.createPathProxy = function () {
             this.path = new PathProxy(false);
@@ -8911,6 +8964,9 @@
     var mathSqrt$2 = Math.sqrt;
     var mathAtan2 = Math.atan2;
     function transformPath(path, m) {
+        if (!m) {
+            return;
+        }
         var data = path.data;
         var len = path.len();
         var cmd;
@@ -9307,13 +9363,7 @@
         var len = pathEls.length;
         for (var i = 0; i < len; i++) {
             var pathEl = pathEls[i];
-            if (!pathEl.path) {
-                pathEl.createPathProxy();
-            }
-            if (pathEl.shapeChanged()) {
-                pathEl.buildPath(pathEl.path, pathEl.shape, true);
-            }
-            pathList.push(pathEl.path);
+            pathList.push(pathEl.getUpdatedPathProxy(true));
         }
         var pathBundle = new Path(opts);
         pathBundle.createPathProxy();
@@ -9328,12 +9378,38 @@
         };
         return pathBundle;
     }
+    function clonePath(sourcePath, opts) {
+        opts = opts || {};
+        var path = new Path();
+        if (sourcePath.shape) {
+            path.setShape(sourcePath.shape);
+        }
+        path.setStyle(sourcePath.style);
+        if (opts.bakeTransform) {
+            transformPath(path.path, sourcePath.getComputedTransform());
+        }
+        else {
+            if (opts.toLocal) {
+                path.setLocalTransform(sourcePath.getComputedTransform());
+            }
+            else {
+                path.copyTransform(sourcePath);
+            }
+        }
+        path.buildPath = sourcePath.buildPath;
+        path.applyTransform = path.applyTransform;
+        path.z = sourcePath.z;
+        path.z2 = sourcePath.z2;
+        path.zlevel = sourcePath.zlevel;
+        return path;
+    }
 
     var path = /*#__PURE__*/Object.freeze({
         __proto__: null,
         createFromString: createFromString,
         extendFromString: extendFromString,
-        mergePath: mergePath
+        mergePath: mergePath,
+        clonePath: clonePath
     });
 
     var DEFAULT_IMAGE_STYLE = defaults({
@@ -10852,14 +10928,13 @@
     Sector.prototype.type = 'sector';
 
     var CMD$3 = PathProxy.CMD;
-    var tmpArr = [];
     function aroundEqual(a, b) {
         return Math.abs(a - b) < 1e-5;
     }
     function pathToBezierCurves(path) {
         var data = path.data;
         var len = path.len();
-        var bezierArray = [];
+        var bezierArrayGroups = [];
         var currentSubpath;
         var xi = 0;
         var yi = 0;
@@ -10867,7 +10942,7 @@
         var y0 = 0;
         function createNewSubpath(x, y) {
             if (currentSubpath && currentSubpath.length > 2) {
-                bezierArray.push(currentSubpath);
+                bezierArrayGroups.push(currentSubpath);
             }
             currentSubpath = [x, y];
         }
@@ -10980,16 +11055,385 @@
             }
         }
         if (currentSubpath && currentSubpath.length > 2) {
-            bezierArray.push(currentSubpath);
+            bezierArrayGroups.push(currentSubpath);
         }
-        return bezierArray;
+        return bezierArrayGroups;
     }
+    function adpativeBezier(x0, y0, x1, y1, x2, y2, x3, y3, out, scale) {
+        if (aroundEqual(x0, x1) && aroundEqual(y0, y1) && aroundEqual(x2, x3) && aroundEqual(y2, y3)) {
+            out.push(x3, y3);
+            return;
+        }
+        var PIXEL_DISTANCE = 2 / scale;
+        var PIXEL_DISTANCE_SQR = PIXEL_DISTANCE * PIXEL_DISTANCE;
+        var dx = x3 - x0;
+        var dy = y3 - y0;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        dx /= d;
+        dy /= d;
+        var dx1 = x1 - x0;
+        var dy1 = y1 - y0;
+        var dx2 = x2 - x3;
+        var dy2 = y2 - y3;
+        var cp1LenSqr = dx1 * dx1 + dy1 * dy1;
+        var cp2LenSqr = dx2 * dx2 + dy2 * dy2;
+        if (cp1LenSqr < PIXEL_DISTANCE_SQR && cp2LenSqr < PIXEL_DISTANCE_SQR) {
+            out.push(x3, y3);
+            return;
+        }
+        var projLen1 = dx * dx1 + dy * dy1;
+        var projLen2 = -dx * dx2 - dy * dy2;
+        var d1Sqr = cp1LenSqr - projLen1 * projLen1;
+        var d2Sqr = cp2LenSqr - projLen2 * projLen2;
+        if (d1Sqr < PIXEL_DISTANCE_SQR && projLen1 >= 0
+            && d2Sqr < PIXEL_DISTANCE_SQR && projLen2 >= 0) {
+            out.push(x3, y3);
+            return;
+        }
+        var tmpSegX = [];
+        var tmpSegY = [];
+        cubicSubdivide(x0, x1, x2, x3, 0.5, tmpSegX);
+        cubicSubdivide(y0, y1, y2, y3, 0.5, tmpSegY);
+        adpativeBezier(tmpSegX[0], tmpSegY[0], tmpSegX[1], tmpSegY[1], tmpSegX[2], tmpSegY[2], tmpSegX[3], tmpSegY[3], out, scale);
+        adpativeBezier(tmpSegX[4], tmpSegY[4], tmpSegX[5], tmpSegY[5], tmpSegX[6], tmpSegY[6], tmpSegX[7], tmpSegY[7], out, scale);
+    }
+    function pathToPolygons(path, scale) {
+        var bezierArrayGroups = pathToBezierCurves(path);
+        var polygons = [];
+        scale = scale || 1;
+        for (var i = 0; i < bezierArrayGroups.length; i++) {
+            var beziers = bezierArrayGroups[i];
+            var polygon = [];
+            var x0 = beziers[0];
+            var y0 = beziers[1];
+            polygon.push(x0, y0);
+            for (var k = 2; k < beziers.length;) {
+                var x1 = beziers[k++];
+                var y1 = beziers[k++];
+                var x2 = beziers[k++];
+                var y2 = beziers[k++];
+                var x3 = beziers[k++];
+                var y3 = beziers[k++];
+                adpativeBezier(x0, y0, x1, y1, x2, y2, x3, y3, polygon, scale);
+                x0 = x3;
+                y0 = y3;
+            }
+            polygons.push(polygon);
+        }
+        return polygons;
+    }
+
+    function getDividingGrids(dimSize, rowDim, count) {
+        var rowSize = dimSize[rowDim];
+        var columnSize = dimSize[1 - rowDim];
+        var ratio = Math.abs(rowSize / columnSize);
+        var rowCount = Math.ceil(Math.sqrt(ratio * count));
+        var columnCount = Math.floor(count / rowCount);
+        if (columnCount === 0) {
+            columnCount = 1;
+            rowCount = count;
+        }
+        var grids = [];
+        for (var i = 0; i < rowCount; i++) {
+            grids.push(columnCount);
+        }
+        var currentCount = rowCount * columnCount;
+        var remained = count - currentCount;
+        if (remained > 0) {
+            for (var i = 0; i < remained; i++) {
+                grids[i % rowCount] += 1;
+            }
+        }
+        return grids;
+    }
+    function divideSector(sectorShape, count, outShapes) {
+        var r0 = sectorShape.r0;
+        var r = sectorShape.r;
+        var startAngle = sectorShape.startAngle;
+        var endAngle = sectorShape.endAngle;
+        var angle = Math.abs(endAngle - startAngle);
+        var arcLen = angle * r;
+        var deltaR = r - r0;
+        var isAngleRow = arcLen > Math.abs(deltaR);
+        var grids = getDividingGrids([arcLen, deltaR], isAngleRow ? 0 : 1, count);
+        var rowSize = (isAngleRow ? angle : deltaR) / grids.length;
+        for (var row = 0; row < grids.length; row++) {
+            var columnSize = (isAngleRow ? deltaR : angle) / grids[row];
+            for (var column = 0; column < grids[row]; column++) {
+                var newShape = {};
+                if (isAngleRow) {
+                    newShape.startAngle = startAngle + rowSize * row;
+                    newShape.endAngle = startAngle + rowSize * (row + 1);
+                    newShape.r0 = r0 + columnSize * column;
+                    newShape.r = r0 + columnSize * (column + 1);
+                }
+                else {
+                    newShape.startAngle = startAngle + columnSize * column;
+                    newShape.endAngle = startAngle + columnSize * (column + 1);
+                    newShape.r0 = r0 + rowSize * row;
+                    newShape.r = r0 + rowSize * (row + 1);
+                }
+                newShape.clockwise = sectorShape.clockwise;
+                newShape.cx = sectorShape.cx;
+                newShape.cy = sectorShape.cy;
+                outShapes.push(newShape);
+            }
+        }
+    }
+    function divideRect(rectShape, count, outShapes) {
+        var width = rectShape.width;
+        var height = rectShape.height;
+        var isHorizontalRow = width > height;
+        var grids = getDividingGrids([width, height], isHorizontalRow ? 0 : 1, count);
+        var rowSizeDim = isHorizontalRow ? 'width' : 'height';
+        var columnSizeDim = isHorizontalRow ? 'height' : 'width';
+        var rowDim = isHorizontalRow ? 'x' : 'y';
+        var columnDim = isHorizontalRow ? 'y' : 'x';
+        var rowSize = rectShape[rowSizeDim] / grids.length;
+        for (var row = 0; row < grids.length; row++) {
+            var columnSize = rectShape[columnSizeDim] / grids[row];
+            for (var column = 0; column < grids[row]; column++) {
+                var newShape = {};
+                newShape[rowDim] = row * rowSize;
+                newShape[columnDim] = column * columnSize;
+                newShape[rowSizeDim] = rowSize;
+                newShape[columnSizeDim] = columnSize;
+                newShape.x += rectShape.x;
+                newShape.y += rectShape.y;
+                outShapes.push(newShape);
+            }
+        }
+    }
+    function crossProduct2d(x1, y1, x2, y2) {
+        return x1 * y2 - x2 * y1;
+    }
+    function lineLineIntersect(a1x, a1y, a2x, a2y, b1x, b1y, b2x, b2y) {
+        var mx = a2x - a1x;
+        var my = a2y - a1y;
+        var nx = b2x - b1x;
+        var ny = b2y - b1y;
+        var nmCrossProduct = crossProduct2d(nx, ny, mx, my);
+        if (Math.abs(nmCrossProduct) < 1e-6) {
+            return null;
+        }
+        var b1a1x = a1x - b1x;
+        var b1a1y = a1y - b1y;
+        var p = crossProduct2d(b1a1x, b1a1y, nx, ny) / nmCrossProduct;
+        if (p < 0 || p > 1) {
+            return null;
+        }
+        return new Point(p * mx + a1x, p * my + a1y);
+    }
+    function projPtOnLine(pt, lineA, lineB) {
+        var dir = new Point();
+        Point.sub(dir, lineB, lineA);
+        dir.normalize();
+        var dir2 = new Point();
+        Point.sub(dir2, pt, lineA);
+        var len = dir2.dot(dir);
+        return len;
+    }
+    function addToPoly(poly, pt) {
+        var last = poly[poly.length - 1];
+        if (last && last[0] === pt[0] && last[1] === pt[1]) {
+            return;
+        }
+        poly.push(pt);
+    }
+    function splitPolygonByLine(points, lineA, lineB) {
+        var len = points.length;
+        var intersections = [];
+        for (var i = 0; i < len; i++) {
+            var p0 = points[i];
+            var p1 = points[(i + 1) % len];
+            var intersectionPt = lineLineIntersect(p0[0], p0[1], p1[0], p1[1], lineA.x, lineA.y, lineB.x, lineB.y);
+            if (intersectionPt) {
+                intersections.push({
+                    projPt: projPtOnLine(intersectionPt, lineA, lineB),
+                    pt: intersectionPt,
+                    idx: i
+                });
+            }
+        }
+        if (intersections.length < 2) {
+            return [{ points: points }, { points: points }];
+        }
+        intersections.sort(function (a, b) {
+            return a.projPt - b.projPt;
+        });
+        var splitPt0 = intersections[0];
+        var splitPt1 = intersections[intersections.length - 1];
+        if (splitPt1.idx < splitPt0.idx) {
+            var tmp = splitPt0;
+            splitPt0 = splitPt1;
+            splitPt1 = tmp;
+        }
+        var splitPt0Arr = [splitPt0.pt.x, splitPt0.pt.y];
+        var splitPt1Arr = [splitPt1.pt.x, splitPt1.pt.y];
+        var newPolyA = [splitPt0Arr];
+        var newPolyB = [splitPt1Arr];
+        for (var i = splitPt0.idx + 1; i <= splitPt1.idx; i++) {
+            addToPoly(newPolyA, points[i].slice());
+        }
+        addToPoly(newPolyA, splitPt1Arr);
+        addToPoly(newPolyA, splitPt0Arr);
+        for (var i = splitPt1.idx + 1; i <= splitPt0.idx + len; i++) {
+            addToPoly(newPolyB, points[i % len].slice());
+        }
+        addToPoly(newPolyB, splitPt0Arr);
+        addToPoly(newPolyB, splitPt1Arr);
+        return [{
+                points: newPolyA
+            }, {
+                points: newPolyB
+            }];
+    }
+    function binaryDividePolygon(polygonShape) {
+        var points = polygonShape.points;
+        var min = [];
+        var max = [];
+        fromPoints(points, min, max);
+        var boundingRect = new BoundingRect(min[0], min[1], max[0] - min[0], max[1] - min[1]);
+        var width = boundingRect.width;
+        var height = boundingRect.height;
+        var x = boundingRect.x;
+        var y = boundingRect.y;
+        var pt0 = new Point();
+        var pt1 = new Point();
+        if (width > height) {
+            pt0.x = pt1.x = x + width / 2;
+            pt0.y = y;
+            pt1.y = y + height;
+        }
+        else {
+            pt0.y = pt1.y = y + height / 2;
+            pt0.x = x;
+            pt1.x = x + width;
+        }
+        return splitPolygonByLine(points, pt0, pt1);
+    }
+    function binaryDivideRecursive(divider, shape, count, out) {
+        if (count === 1) {
+            out.push(shape);
+        }
+        else {
+            var mid = Math.floor(count / 2);
+            var sub = divider(shape);
+            binaryDivideRecursive(divider, sub[0], mid, out);
+            binaryDivideRecursive(divider, sub[1], count - mid, out);
+        }
+        return out;
+    }
+    function clone$3(path, count) {
+        var paths = [];
+        for (var i = 0; i < count; i++) {
+            paths.push(clonePath(path));
+        }
+        return paths;
+    }
+    function copyPathProps(source, target) {
+        target.setStyle(source.style);
+        target.z = source.z;
+        target.z2 = source.z2;
+        target.zlevel = source.zlevel;
+    }
+    function polygonConvert(points) {
+        var out = [];
+        for (var i = 0; i < points.length;) {
+            out.push([points[i++], points[i++]]);
+        }
+        return out;
+    }
+    function split(path, count) {
+        var outShapes = [];
+        var shape = path.shape;
+        var OutShapeCtor;
+        switch (path.type) {
+            case 'rect':
+                divideRect(shape, count, outShapes);
+                OutShapeCtor = Rect;
+                break;
+            case 'sector':
+                divideSector(shape, count, outShapes);
+                OutShapeCtor = Sector;
+                break;
+            case 'circle':
+                divideSector({
+                    r0: 0, r: shape.r, startAngle: 0, endAngle: Math.PI * 2,
+                    cx: shape.cx, cy: shape.cy
+                }, count, outShapes);
+                OutShapeCtor = Sector;
+                break;
+            default:
+                var m = path.getComputedTransform();
+                var scale = m ? Math.sqrt(Math.max(m[0] * m[0] + m[1] * m[1], m[2] * m[2] + m[3] * m[3])) : 1;
+                var polygons = map(pathToPolygons(path.getUpdatedPathProxy(), scale), function (poly) { return polygonConvert(poly); });
+                var polygonCount = polygons.length;
+                if (polygonCount === 0) {
+                    binaryDivideRecursive(binaryDividePolygon, {
+                        points: polygons[0]
+                    }, count, outShapes);
+                }
+                else if (polygonCount === count) {
+                    for (var i = 0; i < polygonCount; i++) {
+                        outShapes.push({
+                            points: polygons[i]
+                        });
+                    }
+                }
+                else {
+                    var totalArea_1 = 0;
+                    var items = map(polygons, function (poly) {
+                        var min = [];
+                        var max = [];
+                        fromPoints(poly, min, max);
+                        var area = (max[1] - min[1]) * (max[0] - min[0]);
+                        totalArea_1 += area;
+                        return { poly: poly, area: area };
+                    });
+                    items.sort(function (a, b) { return b.area - a.area; });
+                    var left = count;
+                    for (var i = 0; i < polygonCount; i++) {
+                        var item = items[i];
+                        if (left <= 0) {
+                            break;
+                        }
+                        var selfCount = i === polygonCount - 1
+                            ? left
+                            : Math.ceil(item.area / totalArea_1 * count);
+                        if (selfCount < 0) {
+                            continue;
+                        }
+                        binaryDivideRecursive(binaryDividePolygon, {
+                            points: item.poly
+                        }, selfCount, outShapes);
+                        left -= selfCount;
+                    }
+                }
+                OutShapeCtor = Polygon;
+                break;
+        }
+        if (!OutShapeCtor) {
+            return clone$3(path, count);
+        }
+        var out = [];
+        for (var i = 0; i < outShapes.length; i++) {
+            var subPath = new OutShapeCtor();
+            subPath.setShape(outShapes[i]);
+            copyPathProps(path, subPath);
+            out.push(subPath);
+        }
+        return out;
+    }
+
     function alignSubpath(subpath1, subpath2) {
         var len1 = subpath1.length;
         var len2 = subpath2.length;
         if (len1 === len2) {
             return [subpath1, subpath2];
         }
+        var tmpSegX = [];
+        var tmpSegY = [];
         var shorterPath = len1 < len2 ? subpath1 : subpath2;
         var shorterLen = Math.min(len1, len2);
         var diff = Math.abs(len2 - len1) / 6;
@@ -10997,8 +11441,6 @@
         var eachCurveSubDivCount = Math.ceil(diff / shorterBezierCount) + 1;
         var newSubpath = [shorterPath[0], shorterPath[1]];
         var remained = diff;
-        var tmpSegX = [];
-        var tmpSegY = [];
         for (var i = 2; i < shorterLen;) {
             var x0 = shorterPath[i - 2];
             var y0 = shorterPath[i - 1];
@@ -11139,7 +11581,7 @@
             var newToSubpathBezier = [];
             var bestAngle = 0;
             var bestScore = Infinity;
-            var tmpArr_1 = [];
+            var tmpArr = [];
             var len = fromSubpathBezier.length;
             if (fromNeedsReverse) {
                 fromSubpathBezier = reverse(fromSubpathBezier);
@@ -11166,8 +11608,8 @@
                         var y1 = toSubpathBezier[k + 1] - toCp[1];
                         var newX1 = x1 * ca - y1 * sa;
                         var newY1 = x1 * sa + y1 * ca;
-                        tmpArr_1[k] = newX1;
-                        tmpArr_1[k + 1] = newY1;
+                        tmpArr[k] = newX1;
+                        tmpArr[k + 1] = newY1;
                         var dx = newX1 - x0;
                         var dy = newY1 - y0;
                         score += dx * dx + dy * dy;
@@ -11175,8 +11617,8 @@
                     if (score < bestScore) {
                         bestScore = score;
                         bestAngle = angle;
-                        for (var m = 0; m < tmpArr_1.length; m++) {
-                            newToSubpathBezier[m] = tmpArr_1[m];
+                        for (var m = 0; m < tmpArr.length; m++) {
+                            newToSubpathBezier[m] = tmpArr[m];
                         }
                     }
                 }
@@ -11197,32 +11639,130 @@
         }
         return result;
     }
+    function isCombineMorphing(path) {
+        return path.__isCombineMorphing;
+    }
+    function isMorphing(el) {
+        return el.__morphT >= 0;
+    }
+    var SAVED_METHOD_PREFIX = '__mOriginal_';
+    function saveAndModifyMethod(obj, methodName, modifiers) {
+        var savedMethodName = SAVED_METHOD_PREFIX + methodName;
+        var originalMethod = obj[savedMethodName] || obj[methodName];
+        if (!obj[savedMethodName]) {
+            obj[savedMethodName] = obj[methodName];
+        }
+        var replace = modifiers.replace;
+        var after = modifiers.after;
+        var before = modifiers.before;
+        obj[methodName] = function () {
+            var args = arguments;
+            var res;
+            before && before.apply(this, args);
+            if (replace) {
+                res = replace.apply(this, args);
+            }
+            else {
+                res = originalMethod.apply(this, args);
+            }
+            after && after.apply(this, args);
+            return res;
+        };
+    }
+    function restoreMethod(obj, methodName) {
+        var savedMethodName = SAVED_METHOD_PREFIX + methodName;
+        if (obj[savedMethodName]) {
+            obj[methodName] = obj[savedMethodName];
+            obj[savedMethodName] = null;
+        }
+    }
+    function applyTransformOnBeziers(bezierCurves, mm) {
+        for (var i = 0; i < bezierCurves.length; i++) {
+            var subBeziers = bezierCurves[i];
+            for (var k = 0; k < subBeziers.length;) {
+                var x = subBeziers[k];
+                var y = subBeziers[k + 1];
+                subBeziers[k++] = mm[0] * x + mm[2] * y + mm[4];
+                subBeziers[k++] = mm[1] * x + mm[3] * y + mm[5];
+            }
+        }
+    }
+    function prepareMorphPath(fromPath, toPath) {
+        var fromPathProxy = fromPath.getUpdatedPathProxy();
+        var toPathProxy = toPath.getUpdatedPathProxy();
+        var _a = alignBezierCurves(pathToBezierCurves(fromPathProxy), pathToBezierCurves(toPathProxy)), fromBezierCurves = _a[0], toBezierCurves = _a[1];
+        var fromPathTransform = fromPath.getComputedTransform();
+        var toPathTransform = toPath.getComputedTransform();
+        function updateIdentityTransform() {
+            this.transform = null;
+        }
+        fromPathTransform && applyTransformOnBeziers(fromBezierCurves, fromPathTransform);
+        toPathTransform && applyTransformOnBeziers(toBezierCurves, toPathTransform);
+        saveAndModifyMethod(toPath, 'updateTransform', { replace: updateIdentityTransform });
+        toPath.transform = null;
+        var morphingData = findBestMorphingRotation(fromBezierCurves, toBezierCurves, 10, Math.PI);
+        var tmpArr = [];
+        saveAndModifyMethod(toPath, 'buildPath', { replace: function (path) {
+                var t = toPath.__morphT;
+                var onet = 1 - t;
+                var newCp = [];
+                for (var i = 0; i < morphingData.length; i++) {
+                    var item = morphingData[i];
+                    var from = item.from;
+                    var to = item.to;
+                    var angle = item.rotation * t;
+                    var fromCp = item.fromCp;
+                    var toCp = item.toCp;
+                    var sa = Math.sin(angle);
+                    var ca = Math.cos(angle);
+                    lerp(newCp, fromCp, toCp, t);
+                    for (var m = 0; m < from.length; m += 2) {
+                        var x0_1 = from[m];
+                        var y0_1 = from[m + 1];
+                        var x1 = to[m];
+                        var y1 = to[m + 1];
+                        var x = x0_1 * onet + x1 * t;
+                        var y = y0_1 * onet + y1 * t;
+                        tmpArr[m] = (x * ca - y * sa) + newCp[0];
+                        tmpArr[m + 1] = (x * sa + y * ca) + newCp[1];
+                    }
+                    var x0 = tmpArr[0];
+                    var y0 = tmpArr[1];
+                    path.moveTo(x0, y0);
+                    for (var m = 2; m < from.length;) {
+                        var x1 = tmpArr[m++];
+                        var y1 = tmpArr[m++];
+                        var x2 = tmpArr[m++];
+                        var y2 = tmpArr[m++];
+                        var x3 = tmpArr[m++];
+                        var y3 = tmpArr[m++];
+                        if (x0 === x1 && y0 === y1 && x2 === x3 && y2 === y3) {
+                            path.lineTo(x3, y3);
+                        }
+                        else {
+                            path.bezierCurveTo(x1, y1, x2, y2, x3, y3);
+                        }
+                        x0 = x3;
+                        y0 = y3;
+                    }
+                }
+            } });
+    }
     function morphPath(fromPath, toPath, animationOpts) {
-        var fromPathProxy;
-        var toPathProxy;
         if (!fromPath || !toPath) {
             return toPath;
         }
-        !fromPath.path && fromPath.createPathProxy();
-        fromPathProxy = fromPath.path;
-        fromPathProxy.beginPath();
-        fromPath.buildPath(fromPathProxy, fromPath.shape);
-        !toPath.path && toPath.createPathProxy();
-        toPathProxy = toPath.path;
-        toPathProxy === fromPathProxy && (toPathProxy = new PathProxy(false));
-        toPathProxy.beginPath();
-        if (isIndividualMorphingPath(toPath)) {
-            toPath.__oldBuildPath(toPathProxy, toPath.shape);
+        var oldDone = animationOpts.done;
+        var oldDuring = animationOpts.during;
+        prepareMorphPath(fromPath, toPath);
+        toPath.__morphT = 0;
+        function restoreToPath() {
+            restoreMethod(toPath, 'buildPath');
+            restoreMethod(toPath, 'updateTransform');
+            toPath.__morphT = -1;
+            toPath.createPathProxy();
+            toPath.dirtyShape();
         }
-        else {
-            toPath.buildPath(toPathProxy, toPath.shape);
-        }
-        var _a = alignBezierCurves(pathToBezierCurves(fromPathProxy), pathToBezierCurves(toPathProxy)), fromBezierCurves = _a[0], toBezierCurves = _a[1];
-        var morphingData = findBestMorphingRotation(fromBezierCurves, toBezierCurves, 10, Math.PI);
-        becomeIndividualMorphingPath(toPath, morphingData, 0);
-        var oldDone = animationOpts && animationOpts.done;
-        var oldAborted = animationOpts && animationOpts.aborted;
-        var oldDuring = animationOpts && animationOpts.during;
         toPath.animateTo({
             __morphT: 1
         }, defaults({
@@ -11231,73 +11771,257 @@
                 oldDuring && oldDuring(p);
             },
             done: function () {
-                restoreIndividualMorphingPath(toPath);
-                toPath.createPathProxy();
-                toPath.dirtyShape();
+                restoreToPath();
                 oldDone && oldDone();
-            },
-            aborted: function () {
-                oldAborted && oldAborted();
             }
         }, animationOpts));
         return toPath;
     }
-    function morphingPathBuildPath(path) {
-        var morphingData = this.__morphingData;
-        var t = this.__morphT;
-        var onet = 1 - t;
-        var newCp = [];
-        for (var i = 0; i < morphingData.length; i++) {
-            var item = morphingData[i];
-            var from = item.from;
-            var to = item.to;
-            var angle = item.rotation * t;
-            var fromCp = item.fromCp;
-            var toCp = item.toCp;
-            var sa = Math.sin(angle);
-            var ca = Math.cos(angle);
-            lerp(newCp, fromCp, toCp, t);
-            for (var m = 0; m < from.length; m += 2) {
-                var x0 = from[m];
-                var y0 = from[m + 1];
-                var x1 = to[m];
-                var y1 = to[m + 1];
-                var x = x0 * onet + x1 * t;
-                var y = y0 * onet + y1 * t;
-                tmpArr[m] = (x * ca - y * sa) + newCp[0];
-                tmpArr[m + 1] = (x * sa + y * ca) + newCp[1];
+    function hilbert(x, y, minX, minY, maxX, maxY) {
+        var bits = 16;
+        x = (maxX === minX) ? 0 : Math.round(32767 * (x - minX) / (maxX - minX));
+        y = (maxY === minY) ? 0 : Math.round(32767 * (y - minY) / (maxY - minY));
+        var d = 0;
+        var tmp;
+        for (var s = (1 << bits) / 2; s > 0; s /= 2) {
+            var rx = 0;
+            var ry = 0;
+            if ((x & s) > 0) {
+                rx = 1;
             }
-            for (var m = 0; m < from.length;) {
-                if (m === 0) {
-                    path.moveTo(tmpArr[m++], tmpArr[m++]);
+            if ((y & s) > 0) {
+                ry = 1;
+            }
+            d += s * s * ((3 * rx) ^ ry);
+            if (ry === 0) {
+                if (rx === 1) {
+                    x = s - 1 - x;
+                    y = s - 1 - y;
                 }
-                path.bezierCurveTo(tmpArr[m++], tmpArr[m++], tmpArr[m++], tmpArr[m++], tmpArr[m++], tmpArr[m++]);
+                tmp = x;
+                x = y;
+                y = tmp;
             }
         }
+        return d;
     }
-    function becomeIndividualMorphingPath(path, morphingData, morphT) {
-        if (isIndividualMorphingPath(path)) {
-            updateIndividualMorphingPath(path, morphingData, morphT);
-            return;
+    function sortPaths(pathList) {
+        var xMin = Infinity;
+        var yMin = Infinity;
+        var xMax = -Infinity;
+        var yMax = -Infinity;
+        var cps = map(pathList, function (path) {
+            var rect = path.getBoundingRect();
+            var m = path.getComputedTransform();
+            var x = rect.x + rect.width / 2 + (m ? m[4] : 0);
+            var y = rect.y + rect.height / 2 + (m ? m[5] : 0);
+            xMin = Math.min(x, xMin);
+            yMin = Math.min(y, yMin);
+            xMax = Math.max(x, xMax);
+            yMax = Math.max(y, yMax);
+            return [x, y];
+        });
+        var items = map(cps, function (cp, idx) {
+            return {
+                cp: cp,
+                z: hilbert(cp[0], cp[1], xMin, yMin, xMax, yMax),
+                path: pathList[idx]
+            };
+        });
+        return items.sort(function (a, b) { return a.z - b.z; }).map(function (item) { return item.path; });
+    }
+    function defaultDividePath(param) {
+        return split(param.path, param.count);
+    }
+    function createEmptyReturn() {
+        return {
+            fromIndividuals: [],
+            toIndividuals: [],
+            count: 0
+        };
+    }
+    function combineMorph(fromList, toPath, animationOpts) {
+        var fromPathList = [];
+        function addFromPath(fromList) {
+            for (var i = 0; i < fromList.length; i++) {
+                var from = fromList[i];
+                if (isCombineMorphing(from)) {
+                    addFromPath(from.childrenRef());
+                }
+                else if (from instanceof Path) {
+                    fromPathList.push(from);
+                }
+            }
         }
-        var morphingPath = path;
-        morphingPath.__oldBuildPath = morphingPath.buildPath;
-        morphingPath.buildPath = morphingPathBuildPath;
-        updateIndividualMorphingPath(morphingPath, morphingData, morphT);
-    }
-    function updateIndividualMorphingPath(morphingPath, morphingData, morphT) {
-        morphingPath.__morphingData = morphingData;
-        morphingPath.__morphT = morphT;
-    }
-    function restoreIndividualMorphingPath(path) {
-        if (isIndividualMorphingPath(path)) {
-            path.buildPath = path.__oldBuildPath;
-            path.__oldBuildPath = path.__morphingData = null;
+        addFromPath(fromList);
+        var separateCount = fromPathList.length;
+        if (!separateCount) {
+            return createEmptyReturn();
         }
+        var dividePath = animationOpts.dividePath || defaultDividePath;
+        var toSubPathList = dividePath({
+            path: toPath, count: separateCount
+        });
+        if (toSubPathList.length !== separateCount) {
+            console.error('Invalid morphing: unmatched splitted path');
+            return createEmptyReturn();
+        }
+        fromPathList = sortPaths(fromPathList);
+        toSubPathList = sortPaths(toSubPathList);
+        var oldDone = animationOpts.done;
+        var oldDuring = animationOpts.during;
+        var individualDelay = animationOpts.individualDelay;
+        var identityTransform = new Transformable();
+        for (var i = 0; i < separateCount; i++) {
+            var from = fromPathList[i];
+            var to = toSubPathList[i];
+            to.parent = toPath;
+            to.copyTransform(identityTransform);
+            if (!individualDelay) {
+                prepareMorphPath(from, to);
+            }
+        }
+        toPath.__isCombineMorphing = true;
+        toPath.childrenRef = function () {
+            return toSubPathList;
+        };
+        function addToSubPathListToZr(zr) {
+            for (var i = 0; i < toSubPathList.length; i++) {
+                toSubPathList[i].addSelfToZr(zr);
+            }
+        }
+        saveAndModifyMethod(toPath, 'addSelfToZr', {
+            after: function (zr) {
+                addToSubPathListToZr(zr);
+            }
+        });
+        saveAndModifyMethod(toPath, 'removeSelfFromZr', {
+            after: function (zr) {
+                for (var i = 0; i < toSubPathList.length; i++) {
+                    toSubPathList[i].removeSelfFromZr(zr);
+                }
+            }
+        });
+        function restoreToPath() {
+            toPath.__isCombineMorphing = false;
+            toPath.__morphT = -1;
+            toPath.childrenRef = null;
+            restoreMethod(toPath, 'addSelfToZr');
+            restoreMethod(toPath, 'removeSelfFromZr');
+        }
+        var toLen = toSubPathList.length;
+        if (individualDelay) {
+            var animating_1 = toLen;
+            var eachDone = function () {
+                animating_1--;
+                if (animating_1 === 0) {
+                    restoreToPath();
+                    oldDone && oldDone();
+                }
+            };
+            for (var i = 0; i < toLen; i++) {
+                var indivdualAnimationOpts = individualDelay ? defaults({
+                    delay: (animationOpts.delay || 0) + individualDelay(i, toLen, fromPathList[i], toSubPathList[i]),
+                    done: eachDone
+                }, animationOpts) : animationOpts;
+                morphPath(fromPathList[i], toSubPathList[i], indivdualAnimationOpts);
+            }
+        }
+        else {
+            toPath.__morphT = 0;
+            toPath.animateTo({
+                __morphT: 1
+            }, defaults({
+                during: function (p) {
+                    for (var i = 0; i < toLen; i++) {
+                        var child = toSubPathList[i];
+                        child.__morphT = toPath.__morphT;
+                        child.dirtyShape();
+                    }
+                    oldDuring && oldDuring(p);
+                },
+                done: function () {
+                    restoreToPath();
+                    for (var i = 0; i < fromList.length; i++) {
+                        restoreMethod(fromList[i], 'updateTransform');
+                    }
+                    oldDone && oldDone();
+                }
+            }, animationOpts));
+        }
+        if (toPath.__zr) {
+            addToSubPathListToZr(toPath.__zr);
+        }
+        return {
+            fromIndividuals: fromPathList,
+            toIndividuals: toSubPathList,
+            count: toLen
+        };
     }
-    function isIndividualMorphingPath(path) {
-        return path.__oldBuildPath != null;
+    function separateMorph(fromPath, toPathList, animationOpts) {
+        var toLen = toPathList.length;
+        var fromPathList = [];
+        var dividePath = animationOpts.dividePath || defaultDividePath;
+        function addFromPath(fromList) {
+            for (var i = 0; i < fromList.length; i++) {
+                var from = fromList[i];
+                if (isCombineMorphing(from)) {
+                    addFromPath(from.childrenRef());
+                }
+                else if (from instanceof Path) {
+                    fromPathList.push(from);
+                }
+            }
+        }
+        if (isCombineMorphing(fromPath)) {
+            addFromPath(fromPath.childrenRef());
+            var fromLen = fromPathList.length;
+            if (fromLen < toLen) {
+                var k = 0;
+                for (var i = fromLen; i < toLen; i++) {
+                    fromPathList.push(clonePath(fromPathList[k++ % fromLen]));
+                }
+            }
+            fromPathList.length = toLen;
+        }
+        else {
+            fromPathList = dividePath({ path: fromPath, count: toLen });
+            var fromPathTransform = fromPath.getComputedTransform();
+            for (var i = 0; i < fromPathList.length; i++) {
+                fromPathList[i].setLocalTransform(fromPathTransform);
+            }
+            if (fromPathList.length !== toLen) {
+                console.error('Invalid morphing: unmatched splitted path');
+                return createEmptyReturn();
+            }
+        }
+        fromPathList = sortPaths(fromPathList);
+        toPathList = sortPaths(toPathList);
+        var individualDelay = animationOpts.individualDelay;
+        for (var i = 0; i < toLen; i++) {
+            var indivdualAnimationOpts = individualDelay ? defaults({
+                delay: (animationOpts.delay || 0) + individualDelay(i, toLen, fromPathList[i], toPathList[i])
+            }, animationOpts) : animationOpts;
+            morphPath(fromPathList[i], toPathList[i], indivdualAnimationOpts);
+        }
+        return {
+            fromIndividuals: fromPathList,
+            toIndividuals: toPathList,
+            count: toPathList.length
+        };
     }
+
+    var morphPath$1 = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        alignBezierCurves: alignBezierCurves,
+        centroid: centroid,
+        isCombineMorphing: isCombineMorphing,
+        isMorphing: isMorphing,
+        morphPath: morphPath,
+        combineMorph: combineMorph,
+        separateMorph: separateMorph,
+        defaultDividePath: split
+    });
 
     var CompoundPath = (function (_super) {
         __extends(CompoundPath, _super);
@@ -12008,6 +12732,7 @@
             return this._children;
         };
         ZRText.prototype.update = function () {
+            _super.prototype.update.call(this);
             if (this.styleChanged()) {
                 this._updateSubTexts();
             }
@@ -12020,29 +12745,31 @@
                 child.cursor = this.cursor;
                 child.invisible = this.invisible;
             }
-            var attachedTransform = this.attachedTransform;
-            if (attachedTransform) {
-                attachedTransform.updateTransform();
-                var m = attachedTransform.transform;
-                if (m) {
-                    this.transform = this.transform || [];
-                    copy$1(this.transform, m);
-                }
-                else {
-                    this.transform = null;
+        };
+        ZRText.prototype.updateTransform = function () {
+            var innerTransformable = this.innerTransformable;
+            if (innerTransformable) {
+                innerTransformable.updateTransform();
+                if (innerTransformable.transform) {
+                    this.transform = innerTransformable.transform;
                 }
             }
             else {
-                _super.prototype.update.call(this);
+                _super.prototype.updateTransform.call(this);
             }
+        };
+        ZRText.prototype.getLocalTransform = function (m) {
+            var innerTransformable = this.innerTransformable;
+            return innerTransformable
+                ? innerTransformable.getLocalTransform(m)
+                : _super.prototype.getLocalTransform.call(this, m);
         };
         ZRText.prototype.getComputedTransform = function () {
             if (this.__hostTarget) {
                 this.__hostTarget.getComputedTransform();
                 this.__hostTarget.updateInnerText(true);
             }
-            return this.attachedTransform ? this.attachedTransform.getComputedTransform()
-                : _super.prototype.getComputedTransform.call(this);
+            return _super.prototype.getComputedTransform.call(this);
         };
         ZRText.prototype._updateSubTexts = function () {
             this._childCursor = 0;
@@ -12311,7 +13038,7 @@
             var defaultStyle = this._defaultStyle;
             var useDefaultFill = false;
             var defaultLineWidth = 0;
-            var textFill = getStroke('fill' in tokenStyle ? tokenStyle.fill
+            var textFill = getFill('fill' in tokenStyle ? tokenStyle.fill
                 : 'fill' in style ? style.fill
                     : (useDefaultFill = true, defaultStyle.fill));
             var textStroke = getStroke('stroke' in tokenStyle ? tokenStyle.stroke
@@ -12358,7 +13085,7 @@
             var self = this;
             var rectEl;
             var imgEl;
-            if (isPlainOrGradientBg || (textBorderWidth && textBorderColor)) {
+            if (isPlainOrGradientBg || style.lineHeight || (textBorderWidth && textBorderColor)) {
                 rectEl = this._getOrCreateChild(Rect);
                 rectEl.useStyle(rectEl.createStyle());
                 rectEl.style.fill = null;
@@ -12484,6 +13211,7 @@
     }
     function needDrawBackground(style) {
         return !!(style.backgroundColor
+            || style.lineHeight
             || (style.borderWidth && style.borderColor));
     }
 
@@ -13220,6 +13948,9 @@
         var stroke = style.stroke;
         return !(stroke == null || stroke === 'none' || !(style.lineWidth > 0));
     }
+    function isValidStrokeFillStyle(strokeOrFill) {
+        return typeof strokeOrFill === 'string' && strokeOrFill !== 'none';
+    }
     function styleHasFill(style) {
         var fill = style.fill;
         return fill != null && fill !== 'none';
@@ -13537,14 +14268,14 @@
                 flushPathDrawn(ctx, scope);
                 styleChanged = true;
             }
-            ctx.fillStyle = style.fill;
+            isValidStrokeFillStyle(style.fill) && (ctx.fillStyle = style.fill);
         }
         if (forceSetAll || style.stroke !== prevStyle.stroke) {
             if (!styleChanged) {
                 flushPathDrawn(ctx, scope);
                 styleChanged = true;
             }
-            ctx.strokeStyle = style.stroke;
+            isValidStrokeFillStyle(style.stroke) && (ctx.strokeStyle = style.stroke);
         }
         if (forceSetAll || style.opacity !== prevStyle.opacity) {
             if (!styleChanged) {
@@ -14770,6 +15501,23 @@
     function createElement(name) {
         return document.createElementNS('http://www.w3.org/2000/svg', name);
     }
+    function normalizeColor(color) {
+        var opacity;
+        if (!color || color === 'transparent') {
+            color = 'none';
+        }
+        else if (typeof color === 'string' && color.indexOf('rgba') > -1) {
+            var arr = parse(color);
+            if (arr) {
+                color = 'rgb(' + arr[0] + ',' + arr[1] + ',' + arr[2] + ')';
+                opacity = arr[3];
+            }
+        }
+        return {
+            color: color,
+            opacity: opacity == null ? 1 : opacity
+        };
+    }
 
     function diff(oldArr, newArr, equals) {
         if (!equals) {
@@ -14813,7 +15561,7 @@
                     continue;
                 }
                 if (!canAdd || (canRemove && addPath.newPos < removePath.newPos)) {
-                    basePath = clonePath(removePath);
+                    basePath = clonePath$1(removePath);
                     pushComponent(basePath.components, false, true);
                 }
                 else {
@@ -14906,7 +15654,7 @@
         }
         return components;
     }
-    function clonePath(path) {
+    function clonePath$1(path) {
         return { newPos: path.newPos, components: path.components.slice(0) };
     }
     function arrayDiff(oldArr, newArr, equal) {
@@ -14968,25 +15716,27 @@
             return;
         }
         if (pathHasFill(style)) {
-            var fill = style.fill;
-            fill = fill === 'transparent' ? NONE : fill;
-            attr(svgEl, 'fill', fill);
-            attr(svgEl, 'fill-opacity', (style.fillOpacity != null ? style.fillOpacity * opacity : opacity) + '');
+            var fill = normalizeColor(style.fill);
+            attr(svgEl, 'fill', fill.color);
+            attr(svgEl, 'fill-opacity', (style.fillOpacity != null
+                ? style.fillOpacity * fill.opacity * opacity
+                : fill.opacity * opacity) + '');
         }
         else {
             attr(svgEl, 'fill', NONE);
         }
         if (pathHasStroke(style)) {
-            var stroke = style.stroke;
-            stroke = stroke === 'transparent' ? NONE : stroke;
-            attr(svgEl, 'stroke', stroke);
+            var stroke = normalizeColor(style.stroke);
+            attr(svgEl, 'stroke', stroke.color);
             var strokeWidth = style.lineWidth;
             var strokeScale_1 = style.strokeNoScale
                 ? el.getLineScale()
                 : 1;
             attr(svgEl, 'stroke-width', (strokeScale_1 ? strokeWidth / strokeScale_1 : 0) + '');
             attr(svgEl, 'paint-order', style.strokeFirst ? 'stroke' : 'fill');
-            attr(svgEl, 'stroke-opacity', (style.strokeOpacity != null ? style.strokeOpacity * opacity : opacity) + '');
+            attr(svgEl, 'stroke-opacity', (style.strokeOpacity != null
+                ? style.strokeOpacity * stroke.opacity * opacity
+                : stroke.opacity * opacity) + '');
             var lineDash = style.lineDash && strokeWidth > 0 && normalizeLineDash(style.lineDash, strokeWidth);
             if (lineDash) {
                 var lineDashOffset = style.lineDashOffset;
@@ -15080,6 +15830,7 @@
             this._add('L', x + w, y + h);
             this._add('L', x, y + h);
             this._add('L', x, y);
+            this._add('Z');
         };
         SVGPathRebuilder.prototype.closePath = function () {
             if (this._d.length > 0) {
@@ -15499,6 +16250,7 @@
     }(Definable));
 
     var wmUniqueIndex = Math.round(Math.random() * 9);
+    var supportDefineProperty = typeof Object.defineProperty === 'function';
     var WeakMap = (function () {
         function WeakMap() {
             this._id = '__ec_inner_' + wmUniqueIndex++;
@@ -15508,7 +16260,7 @@
         };
         WeakMap.prototype.set = function (key, value) {
             var target = this._guard(key);
-            if (typeof Object.defineProperty === 'function') {
+            if (supportDefineProperty) {
                 Object.defineProperty(target, this._id, {
                     value: value,
                     enumerable: false,
@@ -15698,8 +16450,11 @@
         }
         ClippathManager.prototype.markAllUnused = function () {
             _super.prototype.markAllUnused.call(this);
-            for (var key in this._refGroups) {
-                this.markDomUnused(this._refGroups[key]);
+            var refGroups = this._refGroups;
+            for (var key in refGroups) {
+                if (refGroups.hasOwnProperty(key)) {
+                    this.markDomUnused(refGroups[key]);
+                }
             }
             this._keyDuplicateCount = {};
         };
@@ -15776,13 +16531,16 @@
         ClippathManager.prototype.removeUnused = function () {
             _super.prototype.removeUnused.call(this);
             var newRefGroupsMap = {};
-            for (var key in this._refGroups) {
-                var group = this._refGroups[key];
-                if (!this.isDomUnused(group)) {
-                    newRefGroupsMap[key] = group;
-                }
-                else if (group.parentNode) {
-                    group.parentNode.removeChild(group);
+            var refGroups = this._refGroups;
+            for (var key in refGroups) {
+                if (refGroups.hasOwnProperty(key)) {
+                    var group = refGroups[key];
+                    if (!this.isDomUnused(group)) {
+                        newRefGroupsMap[key] = group;
+                    }
+                    else if (group.parentNode) {
+                        group.parentNode.removeChild(group);
+                    }
                 }
             }
             this._refGroups = newRefGroupsMap;
@@ -15842,10 +16600,11 @@
             var offsetX = style.shadowOffsetX || 0;
             var offsetY = style.shadowOffsetY || 0;
             var blur = style.shadowBlur;
-            var color = style.shadowColor;
+            var normalizedColor = normalizeColor(style.shadowColor);
             domChild.setAttribute('dx', offsetX / scaleX + '');
             domChild.setAttribute('dy', offsetY / scaleY + '');
-            domChild.setAttribute('flood-color', color);
+            domChild.setAttribute('flood-color', normalizedColor.color);
+            domChild.setAttribute('flood-opacity', normalizedColor.opacity + '');
             var stdDx = blur / 2 / scaleX;
             var stdDy = blur / 2 / scaleY;
             var stdDeviation = stdDx + ' ' + stdDy;
@@ -15864,9 +16623,11 @@
                 return;
             }
             var shadowDomsPool = this._shadowDomPool;
-            for (var key in this._shadowDomMap) {
-                var dom = this._shadowDomMap[key];
-                shadowDomsPool.push(dom);
+            var shadowDomMap = this._shadowDomMap;
+            for (var key in shadowDomMap) {
+                if (shadowDomMap.hasOwnProperty(key)) {
+                    shadowDomsPool.push(shadowDomMap[key]);
+                }
             }
             this._shadowDomMap = {};
         };
@@ -16005,7 +16766,9 @@
             bgNode.setAttribute('x', 0);
             bgNode.setAttribute('y', 0);
             bgNode.setAttribute('id', 0);
-            bgNode.style.fill = backgroundColor;
+            var _a = normalizeColor(backgroundColor), color = _a.color, opacity = _a.opacity;
+            bgNode.setAttribute('fill', color);
+            bgNode.setAttribute('fill-opacity', opacity);
             this._backgroundRoot.appendChild(bgNode);
             this._backgroundNode = bgNode;
         };
@@ -16155,13 +16918,11 @@
         };
         SVGPainter.prototype.dispose = function () {
             this.root.innerHTML = '';
-            this._svgRoot
-                = this._backgroundRoot
-                    = this._svgDom
-                        = this._backgroundNode
-                            = this._viewport
-                                = this.storage
-                                    = null;
+            this._svgRoot =
+                this._backgroundRoot =
+                    this._svgDom =
+                        this._backgroundNode =
+                            this._viewport = this.storage = null;
         };
         SVGPainter.prototype.clear = function () {
             var viewportNode = this._viewport;
@@ -16240,7 +17001,7 @@
     exports.getInstance = getInstance;
     exports.init = init;
     exports.matrix = matrix;
-    exports.morphPath = morphPath;
+    exports.morph = morphPath$1;
     exports.parseSVG = parseSVG;
     exports.path = path;
     exports.registerPainter = registerPainter;

@@ -28,7 +28,7 @@ import Point from './core/Point';
 import { LIGHT_LABEL_COLOR, DARK_LABEL_COLOR } from './config';
 import { parse, stringify } from './tool/color';
 import env from './core/env';
-import { REDARAW_BIT } from './graphic/constants';
+import { REDRAW_BIT } from './graphic/constants';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -293,6 +293,7 @@ export type ElementCalculateTextPosition = (
 let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
 let tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Element<Props extends ElementProps = ElementProps> extends Transformable,
     Eventful<{
         [key in ElementEventName]: (e: ElementEvent) => void | boolean
@@ -654,7 +655,7 @@ class Element<Props extends ElementProps = ElementProps> {
 
             // Mark textEl to update transform.
             // DON'T use markRedraw. It will cause Element itself to dirty again.
-            textEl.__dirty |= REDARAW_BIT;
+            textEl.__dirty |= REDRAW_BIT;
 
             if (textStyleChanged) {
                 // Only mark style dirty if necessary. Update ZRText is costly.
@@ -936,7 +937,7 @@ class Element<Props extends ElementProps = ElementProps> {
             this._toggleHoverLayerFlag(false);
             // NOTE: avoid unexpected refresh when moving out from hover layer!!
             // Only clear from hover layer.
-            this.__dirty &= ~REDARAW_BIT;
+            this.__dirty &= ~REDRAW_BIT;
         }
 
         // Return used state.
@@ -1023,7 +1024,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 this._toggleHoverLayerFlag(false);
                 // NOTE: avoid unexpected refresh when moving out from hover layer!!
                 // Only clear from hover layer.
-                this.__dirty &= ~REDARAW_BIT;
+                this.__dirty &= ~REDRAW_BIT;
             }
         }
     }
@@ -1353,7 +1354,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * Mark element needs to be repainted
      */
     markRedraw() {
-        this.__dirty |= REDARAW_BIT;
+        this.__dirty |= REDRAW_BIT;
         const zr = this.__zr;
         if (zr) {
             if (this.__inHover) {
@@ -1622,7 +1623,7 @@ class Element<Props extends ElementProps = ElementProps> {
         elProto.dragging = false;
         elProto.ignoreClip = false;
         elProto.__inHover = false;
-        elProto.__dirty = REDARAW_BIT;
+        elProto.__dirty = REDRAW_BIT;
 
 
         const logs: Dictionary<boolean> = {};

@@ -116,7 +116,7 @@ export function scale(out: MatrixArray, a: MatrixArray, v: VectorArray): MatrixA
 /**
  * 求逆矩阵
  */
-export function invert(out: MatrixArray, a: MatrixArray): MatrixArray {
+export function invert(out: MatrixArray, a: MatrixArray): MatrixArray | null {
 
     const aa = a[0];
     const ac = a[2];

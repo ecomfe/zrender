@@ -36,6 +36,7 @@ export default class ShadowManager extends Definable {
         if (!shadowDom) {
             shadowDom = this.createElement('filter') as SVGFilterElement;
             shadowDom.setAttribute('id', 'zr' + this._zrId + '-shadow-' + this.nextId++);
+            shadowDom.setAttribute('filterUnits', 'userSpaceOnUse');
             const domChild = this.createElement('feDropShadow');
             shadowDom.appendChild(domChild);
             this.addDom(shadowDom);
@@ -73,7 +74,7 @@ export default class ShadowManager extends Definable {
     remove(svgElement: SVGElement, displayable: Displayable) {
         if ((displayable as DisplayableExtended)._shadowDom != null) {
             (displayable as DisplayableExtended)._shadowDom = null;
-            svgElement.style.filter = '';
+            svgElement.removeAttribute('filter');
         }
     }
 
@@ -125,7 +126,7 @@ export default class ShadowManager extends Definable {
         (displayable as DisplayableExtended)._shadowDom = shadowDom;
 
         const id = shadowDom.getAttribute('id');
-        svgElement.style.filter = 'url(#' + id + ')';
+        svgElement.setAttribute('filter', 'url(#' + id + ')');
     }
 
     removeUnused() {

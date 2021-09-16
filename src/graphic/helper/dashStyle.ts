@@ -5,9 +5,9 @@ export function normalizeLineDash(lineType: any, lineWidth?: number): number[] |
         return null;
     }
     lineWidth = lineWidth || 1;
-    return lineType === 'dashed' 
+    return lineType === 'dashed'
         ? [4 * lineWidth, 2 * lineWidth]
-        : lineType === 'dotted' 
+        : lineType === 'dotted'
             ? [lineWidth]
             : isNumber(lineType)
                 ? [lineType] : isArray(lineType) ? lineType : null;

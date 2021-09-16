@@ -3,9 +3,8 @@
  * VML Painter.
  */
 
-import {logError} from '../core/util';
+import {logError, each} from '../core/util';
 import * as vmlCore from './core';
-import {each} from '../core/util';
 
 function parseInt10(val) {
     return parseInt(val, 10);

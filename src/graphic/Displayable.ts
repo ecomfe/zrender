@@ -8,7 +8,7 @@ import { PropType, Dictionary, MapToType } from '../core/types';
 import Path from './Path';
 import { keys, extend, createObject } from '../core/util';
 import Animator from '../animation/Animator';
-import { REDARAW_BIT, STYLE_CHANGED_BIT } from './constants';
+import { REDRAW_BIT, STYLE_CHANGED_BIT } from './constants';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
@@ -79,6 +79,7 @@ export type DisplayableState = Pick<DisplayableProps, DisplayableStatePropNames>
 const PRIMARY_STATES_KEYS = ['z', 'z2', 'invisible'] as const;
 const PRIMARY_STATES_KEYS_IN_HOVER_LAYER = ['invisible'] as const;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Displayable<Props extends DisplayableProps = DisplayableProps> {
     animate(key?: '', loop?: boolean): Animator<this>
     animate(key: 'style', loop?: boolean): Animator<this['style']>
@@ -597,7 +598,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         dispProto._rect = null;
         dispProto.dirtyRectTolerance = 0;
 
-        dispProto.__dirty = REDARAW_BIT | STYLE_CHANGED_BIT;
+        dispProto.__dirty = REDRAW_BIT | STYLE_CHANGED_BIT;
     })()
 }
 

@@ -2,7 +2,7 @@ import PathProxy from '../core/PathProxy';
 import { cubicSubdivide } from '../core/curve';
 import Path from '../graphic/Path';
 import Element, { ElementAnimateConfig } from '../Element';
-import { defaults, extend, map } from '../core/util';
+import { defaults, map } from '../core/util';
 import { lerp } from '../core/vector';
 import Group, { GroupLike } from '../graphic/Group';
 import { clonePath } from './path';
@@ -558,10 +558,15 @@ function hilbert(x: number, y: number, minX: number, minY: number, maxX: number,
     let d = 0;
     let tmp: number;
     for (let s = (1 << bits) / 2; s > 0; s /= 2) {
-        let rx = 0, ry = 0;
+        let rx = 0;
+        let ry = 0;
 
-        if ((x & s) > 0) rx = 1;
-        if ((y & s) > 0) ry = 1;
+        if ((x & s) > 0) {
+            rx = 1;
+        }
+        if ((y & s) > 0) {
+            ry = 1;
+        }
 
         d += s * s * ((3 * rx) ^ ry);
 
@@ -603,7 +608,7 @@ function sortPaths(pathList: Path[]): Path[] {
             cp,
             z: hilbert(cp[0], cp[1], xMin, yMin, xMax, yMax),
             path: pathList[idx]
-        }
+        };
     });
 
     return items.sort((a, b) => a.z - b.z).map(item => item.path);
@@ -645,7 +650,7 @@ function createEmptyReturn() {
         fromIndividuals: [] as Path[],
         toIndividuals: [] as Path[],
         count: 0
-    }
+    };
 }
 /**
  * Make combine morphing from many paths to one.
@@ -756,7 +761,7 @@ export function combineMorph(
                 restoreToPath();
                 oldDone && oldDone();
             }
-        }
+        };
         // Animate each element individually.
         for (let i = 0; i < toLen; i++) {
             // TODO only call during once?
@@ -886,4 +891,4 @@ export function separateMorph(
     };
 }
 
-export { split as defaultDividePath }
+export { split as defaultDividePath };
