@@ -116,6 +116,7 @@
     var nativeMap = arrayProto.map;
     var ctorFunction = function () { }.constructor;
     var protoFunction = ctorFunction ? ctorFunction.prototype : null;
+    var protoKey = '__proto__';
     var methods = {};
     function $override(name, fn) {
         methods[name] = fn;
@@ -164,7 +165,7 @@
         else if (!BUILTIN_OBJECT[typeStr] && !isPrimitive(source) && !isDom(source)) {
             result = {};
             for (var key in source) {
-                if (source.hasOwnProperty(key)) {
+                if (source.hasOwnProperty(key) && key !== protoKey) {
                     result[key] = clone(source[key]);
                 }
             }
@@ -176,7 +177,7 @@
             return overwrite ? clone(source) : target;
         }
         for (var key in source) {
-            if (source.hasOwnProperty(key)) {
+            if (source.hasOwnProperty(key) && key !== protoKey) {
                 var targetProp = target[key];
                 var sourceProp = source[key];
                 if (isObject(sourceProp)
@@ -211,7 +212,7 @@
         }
         else {
             for (var key in source) {
-                if (source.hasOwnProperty(key)) {
+                if (source.hasOwnProperty(key) && key !== protoKey) {
                     target[key] = source[key];
                 }
             }
@@ -1173,6 +1174,7 @@
             calculateZrXY(el, e, out);
         }
         else if (env.browser.firefox
+            && env.browser.version < '39'
             && e.layerX != null
             && e.layerX !== e.offsetX) {
             out.zrX = e.layerX;
@@ -2130,7 +2132,7 @@
         ts.forceMergeRuns();
     }
 
-    var REDARAW_BIT = 1;
+    var REDRAW_BIT = 1;
     var STYLE_CHANGED_BIT = 2;
     var SHAPE_CHANGED_BIT = 4;
 
@@ -2214,7 +2216,7 @@
                 for (var i = 0; i < children.length; i++) {
                     var child = children[i];
                     if (el.__dirty) {
-                        child.__dirty |= REDARAW_BIT;
+                        child.__dirty |= REDRAW_BIT;
                     }
                     this._updateAndAddDisplayable(child, clipPaths, includeIgnore);
                 }
@@ -5275,7 +5277,7 @@
                     innerTextDefaultStyle.verticalAlign = textVerticalAlign;
                     textEl.setDefaultTextStyle(innerTextDefaultStyle);
                 }
-                textEl.__dirty |= REDARAW_BIT;
+                textEl.__dirty |= REDRAW_BIT;
                 if (textStyleChanged) {
                     textEl.dirtyStyle(true);
                 }
@@ -5452,7 +5454,7 @@
             this.markRedraw();
             if (!useHoverLayer && this.__inHover) {
                 this._toggleHoverLayerFlag(false);
-                this.__dirty &= ~REDARAW_BIT;
+                this.__dirty &= ~REDRAW_BIT;
             }
             return state;
         };
@@ -5511,7 +5513,7 @@
                 this.markRedraw();
                 if (!useHoverLayer && this.__inHover) {
                     this._toggleHoverLayerFlag(false);
-                    this.__dirty &= ~REDARAW_BIT;
+                    this.__dirty &= ~REDRAW_BIT;
                 }
             }
         };
@@ -5722,7 +5724,7 @@
             }
         };
         Element.prototype.markRedraw = function () {
-            this.__dirty |= REDARAW_BIT;
+            this.__dirty |= REDRAW_BIT;
             var zr = this.__zr;
             if (zr) {
                 if (this.__inHover) {
@@ -5871,7 +5873,7 @@
             elProto.dragging = false;
             elProto.ignoreClip = false;
             elProto.__inHover = false;
-            elProto.__dirty = REDARAW_BIT;
+            elProto.__dirty = REDRAW_BIT;
             var logs = {};
             function logDeprecatedError(key, xKey, yKey) {
                 if (!logs[key + xKey + yKey]) {
@@ -6542,7 +6544,7 @@
     function registerPainter(name, Ctor) {
         painterCtors[name] = Ctor;
     }
-    var version = '5.2.0';
+    var version = '5.2.1';
 
     var STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
     var DEFAULT_COMMON_STYLE = {
@@ -6847,7 +6849,7 @@
             dispProto.incremental = false;
             dispProto._rect = null;
             dispProto.dirtyRectTolerance = 0;
-            dispProto.__dirty = REDARAW_BIT | STYLE_CHANGED_BIT;
+            dispProto.__dirty = REDRAW_BIT | STYLE_CHANGED_BIT;
         })();
         return Displayable;
     }(Element));
@@ -8628,7 +8630,7 @@
                 for (var i = 0; i < pathCopyParams.length; ++i) {
                     decalEl[pathCopyParams[i]] = this[pathCopyParams[i]];
                 }
-                decalEl.__dirty |= REDARAW_BIT;
+                decalEl.__dirty |= REDRAW_BIT;
             }
             else if (this._decalEl) {
                 this._decalEl = null;
@@ -8954,7 +8956,7 @@
             pathProto.segmentIgnoreThreshold = 0;
             pathProto.subPixelOptimize = false;
             pathProto.autoBatch = false;
-            pathProto.__dirty = REDARAW_BIT | STYLE_CHANGED_BIT | SHAPE_CHANGED_BIT;
+            pathProto.__dirty = REDRAW_BIT | STYLE_CHANGED_BIT | SHAPE_CHANGED_BIT;
         })();
         return Path;
     }(Displayable));
@@ -10379,7 +10381,7 @@
                     inheritStyle(parentGroup, img);
                     parseAttributes(xmlNode, img, this._defsUsePending, false, false);
                     img.setStyle({
-                        image: xmlNode.getAttribute('xlink:href'),
+                        image: xmlNode.getAttribute('xlink:href') || xmlNode.getAttribute('href'),
                         x: +xmlNode.getAttribute('x'),
                         y: +xmlNode.getAttribute('y'),
                         width: +xmlNode.getAttribute('width'),
@@ -14377,7 +14379,7 @@
     function brush(ctx, el, scope, isLast) {
         var m = el.transform;
         if (!el.shouldBePainted(scope.viewWidth, scope.viewHeight, false, false)) {
-            el.__dirty &= ~REDARAW_BIT;
+            el.__dirty &= ~REDRAW_BIT;
             el.__isRendered = false;
             return;
         }
@@ -14663,13 +14665,13 @@
                 var el = displayList[i];
                 if (el) {
                     var shouldPaint = el.shouldBePainted(viewWidth, viewHeight, true, true);
-                    var prevRect = el.__isRendered && ((el.__dirty & REDARAW_BIT) || !shouldPaint)
+                    var prevRect = el.__isRendered && ((el.__dirty & REDRAW_BIT) || !shouldPaint)
                         ? el.getPrevPaintRect()
                         : null;
                     if (prevRect) {
                         addRectToMergePool(prevRect);
                     }
-                    var curRect = shouldPaint && ((el.__dirty & REDARAW_BIT) || !el.__isRendered)
+                    var curRect = shouldPaint && ((el.__dirty & REDRAW_BIT) || !el.__isRendered)
                         ? el.getPaintRect()
                         : null;
                     if (curRect) {
@@ -15277,7 +15279,7 @@
                     updatePrevLayer(i);
                     prevLayer = layer;
                 }
-                if ((el.__dirty & REDARAW_BIT) && !el.__inHover) {
+                if ((el.__dirty & REDRAW_BIT) && !el.__inHover) {
                     layer.__dirty = true;
                     if (layer.incremental && layer.__drawIndex < 0) {
                         layer.__drawIndex = i;
@@ -15712,7 +15714,7 @@
     function bindStyle(svgEl, style, el) {
         var opacity = style.opacity == null ? 1 : style.opacity;
         if (el instanceof ZRImage) {
-            svgEl.style.opacity = opacity + '';
+            attr(svgEl, 'opacity', opacity + '');
             return;
         }
         if (pathHasFill(style)) {
@@ -15753,7 +15755,7 @@
                 attr(svgEl, 'stroke-dashoffset', (lineDashOffset || 0) + '');
             }
             else {
-                attr(svgEl, 'stroke-dasharray', '');
+                attr(svgEl, 'stroke-dasharray', NONE);
             }
             style.lineCap && attr(svgEl, 'stroke-linecap', style.lineCap);
             style.lineJoin && attr(svgEl, 'stroke-linejoin', style.lineJoin);
@@ -16585,7 +16587,7 @@
         ShadowManager.prototype.remove = function (svgElement, displayable) {
             if (displayable._shadowDom != null) {
                 displayable._shadowDom = null;
-                svgElement.style.filter = '';
+                svgElement.removeAttribute('filter');
             }
         };
         ShadowManager.prototype.updateDom = function (svgElement, displayable, shadowDom) {
@@ -16615,7 +16617,7 @@
             shadowDom.setAttribute('height', '300%');
             displayable._shadowDom = shadowDom;
             var id = shadowDom.getAttribute('id');
-            svgElement.style.filter = 'url(#' + id + ')';
+            svgElement.setAttribute('filter', 'url(#' + id + ')');
         };
         ShadowManager.prototype.removeUnused = function () {
             var defs = this.getDefs(false);
@@ -16957,6 +16959,7 @@
     exports.Circle = Circle;
     exports.CircleShape = CircleShape;
     exports.CompoundPath = CompoundPath;
+    exports.Displayable = Displayable;
     exports.Droplet = Droplet;
     exports.DropletShape = DropletShape;
     exports.Element = Element;
