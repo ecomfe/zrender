@@ -1,9 +1,8 @@
 /**
  * SVG Painter
- * @module zrender/svg/Painter
  */
 
-import {createElement, normalizeColor} from './core';
+import {createElement, normalizeColor, SVGNS, XLINKNS, XMLNS} from './core';
 import * as util from '../core/util';
 import Path from '../graphic/Path';
 import ZRImage from '../graphic/Image';
@@ -114,8 +113,8 @@ class SVGPainter implements PainterBase {
         this._opts = opts = util.extend({}, opts || {});
 
         const svgDom = createElement('svg');
-        svgDom.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns', 'http://www.w3.org/2000/svg');
-        svgDom.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xlink', 'http://www.w3.org/1999/xlink');
+        svgDom.setAttributeNS(XMLNS, 'xmlns', SVGNS);
+        svgDom.setAttributeNS(XMLNS, 'xmlns:xlink', XLINKNS);
 
         svgDom.setAttribute('version', '1.1');
         svgDom.setAttribute('baseProfile', 'full');
@@ -253,7 +252,6 @@ class SVGPainter implements PainterBase {
                 if (svgElement) {
                     newVisibleList.push(displayable);
                 }
-
             }
         }
 

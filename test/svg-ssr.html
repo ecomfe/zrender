@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG SSR</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <div id="main"></div>
+
+    <script>
+    var zr = zrender.init(null, {
+        renderer: 'svg-ssr',
+        width: 400,
+        height: 400
+    });
+    var circle = new zrender.Circle({
+        shape: {
+            cx: 100,
+            cy: 100,
+            r: 100
+        },
+        style: {
+            fill: 'red'
+        }
+    });
+    zr.add(circle);
+    document.getElementById('main').innerHTML = zr.renderToString();
+    </script>
+</body>
+</html>

@@ -21,8 +21,6 @@ import { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
 import { EventCallback } from './core/Eventful';
-import TSpan from './graphic/TSpan';
-import ZRImage from './graphic/Image';
 import Displayable from './graphic/Displayable';
 import { lum } from './tool/color';
 import { DARK_MODE_THRESHOLD } from './config';
@@ -68,8 +66,10 @@ function isDarkMode(backgroundColor: string | GradientObject | PatternObject): b
 }
 
 class ZRender {
-
-    dom: HTMLElement
+    /**
+     * Not necessary if using SSR painter like svg-ssr
+     */
+    dom?: HTMLElement
 
     id: number
 
@@ -92,7 +92,7 @@ class ZRender {
 
     private _backgroundColor: string | GradientObject | PatternObject;
 
-    constructor(id: number, dom: HTMLElement, opts?: ZRenderInitOpt) {
+    constructor(id: number, dom?: HTMLElement, opts?: ZRenderInitOpt) {
         opts = opts || {};
 
         /**
@@ -124,21 +124,25 @@ class ZRender {
             : opts.useDirtyRect;
 
         const painter = new painterCtors[rendererType](dom, storage, opts, id);
+        const SSRMode = painter.ssr;
 
         this.storage = storage;
         this.painter = painter;
 
-        const handerProxy = (!env.node && !env.worker)
+        const handerProxy = (!env.node && !env.worker && !SSRMode)
             ? new HandlerProxy(painter.getViewportRoot(), painter.root)
             : null;
         this.handler = new Handler(storage, painter, handerProxy, painter.root);
 
         this.animation = new Animation({
             stage: {
-                update: () => this._flush(true)
+                update: SSRMode ? null : () => this._flush(true)
             }
         });
-        this.animation.start();
+
+        if (!SSRMode) {
+            this.animation.start();
+        }
     }
 
     /**
@@ -220,12 +224,6 @@ class ZRender {
         this.painter.refresh();
         // Avoid trigger zr.refresh in Element#beforeUpdate hook
         this._needsRefresh = false;
-
-        // const end = new Date();
-        // const log = document.getElementById('log');
-        // if (log) {
-        //     log.innerHTML = log.innerHTML + '<br>' + (end - start);
-        // }
     }
 
     /**
@@ -242,6 +240,16 @@ class ZRender {
      */
     flush() {
         this._flush(false);
+    }
+
+    renderToString() {
+        const painter = this.painter;
+        if (!painter.renderToString) {
+            throw 'Can only use renderToString in svg-ssr';
+        }
+        // pending
+        this.animation.update(true);
+        return painter.renderToString();
     }
 
     private _flush(fromInside?: boolean) {
@@ -289,27 +297,6 @@ class ZRender {
         this.animation.start();
         // Reset the frame count.
         this._stillFrameAccum = 0;
-    }
-
-    /**
-     * Add element to hover layer
-     */
-    addHover(el: Displayable) {
-        // deprecated.
-    }
-
-    /**
-     * Add element from hover layer
-     */
-    removeHover(el: Path | TSpan | ZRImage) {
-        // deprecated.
-    }
-
-    /**
-     * Clear all hover elements in hover layer
-     */
-    clearHover() {
-        // deprecated.
     }
 
     /**
@@ -362,18 +349,6 @@ class ZRender {
     getHeight(): number {
         return this.painter.getHeight();
     }
-
-    /**
-     * Export the canvas as Base64 URL
-     * @param {string} type
-     * @param {string} [backgroundColor='#fff']
-     * @return {string} Base64 URL
-     */
-    // toDataURL: function(type, backgroundColor) {
-    //     return this.painter.getRenderedCanvas({
-    //         backgroundColor: backgroundColor
-    //     }).toDataURL(type);
-    // },
 
     /**
      * Converting a path to image.
@@ -481,8 +456,10 @@ export interface ZRenderInitOpt {
 
 /**
  * Initializing a zrender instance
+ *
+ * @param dom Not necessary if using SSR painter like svg-ssr
  */
-export function init(dom: HTMLElement, opts?: ZRenderInitOpt) {
+export function init(dom?: HTMLElement | null, opts?: ZRenderInitOpt) {
     const zr = new ZRender(zrUtil.guid(), dom, opts);
     instances[zr.id] = zr;
     return zr;
