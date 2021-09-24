@@ -151,11 +151,15 @@ function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan |
 }
 
 class SVGPathRebuilder implements PathRebuilder {
-    _d: (string | number)[]
-    _str: string
-    _invalid: boolean
+    private _d: (string | number)[]
+    private _str: string
+    private _invalid: boolean
+
+    // If is start of subpath
+    private _start: boolean;
 
     reset() {
+        this._start = true;
         this._d = [];
         this._str = '';
     }
@@ -182,9 +186,6 @@ class SVGPathRebuilder implements PathRebuilder {
         endAngle: number,
         anticlockwise: boolean
     ) {
-
-        const firstCmd = this._d.length === 0;
-
         let dTheta = endAngle - startAngle;
         const clockwise = !anticlockwise;
 
@@ -221,15 +222,15 @@ class SVGPathRebuilder implements PathRebuilder {
             }
 
             large = true;
+        }
 
-            if (firstCmd) {
-                // Move to (x0, y0) only when CMD.A comes at the
-                // first position of a shape.
-                // For instance, when drawing a ring, CMD.A comes
-                // after CMD.M, so it's unnecessary to move to
-                // (x0, y0).
-                this._d.push('M', x0, y0);
-            }
+        if (this._start) {
+            // Move to (x0, y0) only when CMD.A comes at the
+            // first position of a shape.
+            // For instance, when drawing a ring, CMD.A comes
+            // after CMD.M, so it's unnecessary to move to
+            // (x0, y0).
+            this._add('M', x0, y0);
         }
 
         const x = round4(cx + rx * mathCos(startAngle + dTheta));
@@ -240,7 +241,7 @@ class SVGPathRebuilder implements PathRebuilder {
         }
 
         // FIXME Ellipse
-        this._d.push('A', round4(rx), round4(ry),
+        this._add('A', round4(rx), round4(ry),
             mathRound(psi * degree), +large, +clockwise, x, y);
     }
     rect(x: number, y: number, w: number, h: number) {
@@ -268,6 +269,7 @@ class SVGPathRebuilder implements PathRebuilder {
             }
             this._d.push(round4(val));
         }
+        this._start = cmd === 'Z';
     }
 
     generateStr() {
