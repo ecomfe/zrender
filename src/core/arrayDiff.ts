@@ -14,6 +14,8 @@ type DiffPath = {
     newPos: number
 }
 
+// Using O(ND) algorithm
+// TODO: Optimize when diff is large.
 function diff<T>(oldArr: T[], newArr: T[], equals: EqualFunc<T>): DiffComponent[] {
     if (!equals) {
         equals = function (a, b) {
@@ -32,17 +34,21 @@ function diff<T>(oldArr: T[], newArr: T[], equals: EqualFunc<T>): DiffComponent[
 
     // Seed editLength = 0, i.e. the content starts with the same values
     var oldPos = extractCommon<T>(bestPath[0], newArr, oldArr, 0, equals);
-    if (bestPath[0].newPos + 1 >= newLen && oldPos + 1 >= oldLen) {
+    if (!oldLen // All new created
+        || !newLen // Clear
+        || (bestPath[0].newPos + 1 >= newLen && oldPos + 1 >= oldLen)) {
         var indices = [];
-        for (let i = 0; i < newArr.length; i++) {
+        var allCleared = !newLen && oldLen > 0;
+        var allCreated = !oldLen && newLen > 0;
+        for (let i = 0; i < (allCleared ? oldArr : newArr).length; i++) {
             indices.push(i);
         }
         // Identity per the equality and tokenizer
         return [{
             indices: indices,
-            count: newArr.length,
-            added: false,
-            removed: false
+            count: indices.length,
+            added: allCreated,
+            removed: allCleared
         }];
     }
 
