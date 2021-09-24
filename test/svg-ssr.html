@@ -13,21 +13,36 @@
     <script>
     var zr = zrender.init(null, {
         renderer: 'svg-ssr',
-        width: 400,
-        height: 400
+        width: 800,
+        height: 800
     });
-    var circle = new zrender.Circle({
-        shape: {
-            cx: 100,
-            cy: 100,
-            r: 100
-        },
-        style: {
-            fill: 'red'
+
+    for (let i = 0; i < 100; i++) {
+        for (let k = 0; k < 100; k++) {
+            var circle = new zrender.Circle({
+                shape: {
+                    cx: i * 8 + 4,
+                    cy: k * 8 + 4,
+                    r: 3
+                },
+                style: {
+                    fill: 'red'
+                }
+            });
+            zr.add(circle);
         }
-    });
-    zr.add(circle);
-    document.getElementById('main').innerHTML = zr.renderToString();
+    }
+    console.time('render');
+    const svg = zr.renderToString();
+    document.getElementById('main').innerHTML = svg;
+    console.timeEnd('render');
+
+    // var blob = new Blob([svg], { type: 'image/svg+xml' });
+    // var a = document.createElement('a');
+    // a.download = 'a.svg';
+    // a.href = URL.createObjectURL(blob);
+    // a.style.display = "none";
+    // a.click();
     </script>
 </body>
 </html>

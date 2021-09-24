@@ -1,7 +1,7 @@
 export function createElement(name: string, attrs?: ([string, string] | [string])[]) {
     return createElementOpen(name, attrs) + createElementClose(name);
 }
-export function createElementOpen(name: string, attrs?: ([string, string] | [string])[], selfClose?: boolean) {
+export function createElementOpen(name: string, attrs?: ([string, string] | [string])[]) {
     const attrsStr: string[] = [];
     if (attrs) {
         for (let i = 0; i < attrs.length; i++) {
@@ -12,7 +12,7 @@ export function createElementOpen(name: string, attrs?: ([string, string] | [str
             attrsStr.push(part);
         }
     }
-    return `<${name} ${attrsStr.join(' ')} ${selfClose ? '/>' : '>'}`;
+    return `<${name} ${attrsStr.join(' ')}>`;
 }
 
 export function createElementClose(name: string) {
