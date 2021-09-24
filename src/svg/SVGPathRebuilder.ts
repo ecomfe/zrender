@@ -9,11 +9,15 @@ const degree = 180 / PI;
 
 
 export default class SVGPathRebuilder implements PathRebuilder {
-    _d: (string | number)[]
-    _str: string
-    _invalid: boolean
+    private _d: (string | number)[]
+    private _str: string
+    private _invalid: boolean
+
+    // If is start of subpath
+    private _start: boolean;
 
     reset() {
+        this._start = true;
         this._d = [];
         this._str = '';
     }
@@ -40,9 +44,6 @@ export default class SVGPathRebuilder implements PathRebuilder {
         endAngle: number,
         anticlockwise: boolean
     ) {
-
-        const firstCmd = this._d.length === 0;
-
         let dTheta = endAngle - startAngle;
         const clockwise = !anticlockwise;
 
@@ -79,15 +80,15 @@ export default class SVGPathRebuilder implements PathRebuilder {
             }
 
             large = true;
+        }
 
-            if (firstCmd) {
-                // Move to (x0, y0) only when CMD.A comes at the
-                // first position of a shape.
-                // For instance, when drawing a ring, CMD.A comes
-                // after CMD.M, so it's unnecessary to move to
-                // (x0, y0).
-                this._add('M', x0, y0);
-            }
+        if (this._start) {
+            // Move to (x0, y0) only when CMD.A comes at the
+            // first position of a shape.
+            // For instance, when drawing a ring, CMD.A comes
+            // after CMD.M, so it's unnecessary to move to
+            // (x0, y0).
+            this._add('M', x0, y0);
         }
 
         const x = round4(cx + rx * mathCos(startAngle + dTheta));
@@ -98,7 +99,8 @@ export default class SVGPathRebuilder implements PathRebuilder {
         }
 
         // FIXME Ellipse
-        this._add('A', round4(rx), round4(ry), Math.round(psi * degree), +large, +clockwise, x, y);
+        this._add('A', round4(rx), round4(ry),
+            Math.round(psi * degree), +large, +clockwise, x, y);
     }
     rect(x: number, y: number, w: number, h: number) {
         this._add('M', x, y);
@@ -116,20 +118,20 @@ export default class SVGPathRebuilder implements PathRebuilder {
     }
 
     _add(cmd: string, a?: number, b?: number, c?: number, d?: number, e?: number, f?: number, g?: number, h?: number) {
-        const vals = [];
+        this._d.push(cmd);
         for (let i = 1; i < arguments.length; i++) {
             const val = arguments[i];
             if (isNaN(val)) {
                 this._invalid = true;
                 return;
             }
-            vals.push(round4(val));
+            this._d.push(round4(val));
         }
-        this._d.push(cmd + vals.join(' '));
+        this._start = cmd === 'Z';
     }
 
     generateStr() {
-        this._str = this._invalid ? '' : this._d.join('');
+        this._str = this._invalid ? '' : this._d.join(' ');
         this._d = [];
     }
     getStr() {
