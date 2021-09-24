@@ -3,39 +3,19 @@
  */
 
 import * as util from '../core/util';
-import Path from '../graphic/Path';
-import ZRImage from '../graphic/Image';
-import TSpan from '../graphic/TSpan';
 import {
-    path as svgPath,
-    image as svgImage,
-    text as svgText,
-    SVGProxy
+    brush
 } from './graphic';
 import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
 import { PainterBase } from '../PainterBase';
 import { createElement, createElementClose, createElementOpen } from './helper';
-import { normalizeColor, SVGNS, XLINKNS } from '../svg/core';
+import { SVGNS, XLINKNS } from '../svg/core';
+import { normalizeColor } from '../svg/shared';
 
  function parseInt10(val: string) {
      return parseInt(val, 10);
  }
-
-function getSvgProxy(el: Displayable) {
-    if (el instanceof Path) {
-        return svgPath;
-    }
-    else if (el instanceof ZRImage) {
-        return svgImage;
-    }
-    else if (el instanceof TSpan) {
-        return svgText;
-    }
-    else {
-        return svgPath;
-    }
-}
 
 interface SVGPainterOption {
     width?: number
@@ -129,10 +109,9 @@ class SVGPainter implements PainterBase {
 
         for (let i = 0; i < listLen; i++) {
             const displayable = list[i];
-            const svgProxy = getSvgProxy(displayable);
-            if (!displayable.invisible && svgProxy) {
-                const str = (svgProxy as SVGProxy<Displayable>).brush(displayable);
-                elStrs.push(str);
+            if (!displayable.invisible) {
+                const str = brush(displayable);
+                str && elStrs.push(str);
             }
         }
 

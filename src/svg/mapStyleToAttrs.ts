@@ -4,7 +4,7 @@ import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
 import { map } from '../core/util';
-import { normalizeColor } from './core';
+import { normalizeColor } from './shared';
 
 type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;
 
@@ -24,7 +24,12 @@ function pathHasStroke(style: AllStyleOption): style is PathStyleProps {
 export default function mapStyleToAttrs(
     updateAttr: (key: string, val: string) => void,
     style: AllStyleOption,
-    el?: Path | TSpan | ZRImage
+    el: Path | TSpan | ZRImage,
+    /**
+     * Will try not to set the attribute if it's using default value if not using forceUpdate.
+     * Mainly for reduce the generated size in svg-ssr mode.
+     */
+    forceUpdate: boolean
 ): void {
     const opacity = style.opacity == null ? 1 : style.opacity;
 
@@ -37,13 +42,12 @@ export default function mapStyleToAttrs(
     if (pathHasFill(style)) {
         const fill = normalizeColor(style.fill as string);
         updateAttr('fill', fill.color);
-        updateAttr(
-            'fill-opacity',
-            (style.fillOpacity != null
-                ? style.fillOpacity * fill.opacity * opacity
-                : fill.opacity * opacity
-            ) + ''
-        );
+        const fillOpacity = style.fillOpacity != null
+            ? style.fillOpacity * fill.opacity * opacity
+            : fill.opacity * opacity;
+        if (forceUpdate || fillOpacity < 1) {
+            updateAttr('fill-opacity', fillOpacity + '');
+        }
     }
     else {
         updateAttr('fill', NONE);
@@ -52,18 +56,26 @@ export default function mapStyleToAttrs(
     if (pathHasStroke(style)) {
         const stroke = normalizeColor(style.stroke as string);
         updateAttr('stroke', stroke.color);
-        const strokeWidth = style.lineWidth;
         const strokeScale = style.strokeNoScale
             ? (el as Path).getLineScale()
             : 1;
-        updateAttr('stroke-width', (strokeScale ? strokeWidth / strokeScale : 0) + '');
+        const strokeWidth =  (strokeScale ? (style.lineWidth || 0) / strokeScale : 0);
+        const strokeOpacity = style.strokeOpacity != null
+            ? style.strokeOpacity * stroke.opacity * opacity
+            : stroke.opacity * opacity;
+        const strokeFirst = style.strokeFirst;
+
+        if (forceUpdate || strokeWidth !== 1) {
+            updateAttr('stroke-width', strokeWidth + '');
+        }
         // stroke then fill for text; fill then stroke for others
-        updateAttr('paint-order', style.strokeFirst ? 'stroke' : 'fill');
-        updateAttr('stroke-opacity', (
-            style.strokeOpacity != null
-                ? style.strokeOpacity * stroke.opacity * opacity
-                : stroke.opacity * opacity
-        ) + '');
+        if (forceUpdate || strokeFirst) {
+            updateAttr('paint-order', strokeFirst ? 'stroke' : 'fill');
+        }
+        if (forceUpdate || strokeOpacity < 1) {
+            updateAttr('stroke-opacity', strokeOpacity + '');
+        }
+
         let lineDash = style.lineDash && strokeWidth > 0 && normalizeLineDash(style.lineDash, strokeWidth);
         if (lineDash) {
             let lineDashOffset = style.lineDashOffset;
@@ -77,18 +89,21 @@ export default function mapStyleToAttrs(
                 }
             }
             updateAttr('stroke-dasharray', lineDash.join(','));
-            updateAttr('stroke-dashoffset', (lineDashOffset || 0) + '');
+            if (lineDashOffset || forceUpdate) {
+                updateAttr('stroke-dashoffset', (lineDashOffset || 0) + '');
+            }
         }
-        else {
+        else if (forceUpdate) {
+            // Reset if force update.
             updateAttr('stroke-dasharray', NONE);
         }
 
-        // PENDING
+        // PENDING reset
         style.lineCap && updateAttr('stroke-linecap', style.lineCap);
         style.lineJoin && updateAttr('stroke-linejoin', style.lineJoin);
         style.miterLimit && updateAttr('stroke-miterlimit', style.miterLimit + '');
     }
-    else {
+    else if (forceUpdate) {
         updateAttr('stroke', NONE);
     }
 }

@@ -5,9 +5,8 @@
 
 import Definable from './Definable';
 import Displayable from '../../graphic/Displayable';
-import { PathStyleProps } from '../../graphic/Path';
 import { Dictionary } from '../../core/types';
-import { normalizeColor } from '../core';
+import { getShadowKey, hasShadow, normalizeColor } from '../shared';
 
 type DisplayableExtended = Displayable & {
     _shadowDom: SVGElement
@@ -147,24 +146,4 @@ export default class ShadowManager extends Definable {
         // Reset the map.
         this._shadowDomMap = {};
     }
-}
-
-
-function hasShadow(style: PathStyleProps) {
-    // TODO: textBoxShadowBlur is not supported yet
-    return style
-        && (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY);
-}
-
-function getShadowKey(displayable: Displayable) {
-    const style = displayable.style;
-    const globalScale = displayable.getGlobalScale();
-    return [
-        style.shadowColor,
-        (style.shadowBlur || 0).toFixed(2), // Reduce the precision
-        (style.shadowOffsetX || 0).toFixed(2),
-        (style.shadowOffsetY || 0).toFixed(2),
-        globalScale[0],
-        globalScale[1]
-    ].join(',');
 }

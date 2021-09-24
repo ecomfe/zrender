@@ -1,5 +1,5 @@
 import { PathRebuilder } from '../core/PathProxy';
-import { isAroundZero, round4 } from './core';
+import { isAroundZero, round4 } from './shared';
 
 const mathSin = Math.sin;
 const mathCos = Math.cos;
@@ -86,7 +86,7 @@ export default class SVGPathRebuilder implements PathRebuilder {
                 // For instance, when drawing a ring, CMD.A comes
                 // after CMD.M, so it's unnecessary to move to
                 // (x0, y0).
-                this._d.push('M', x0, y0);
+                this._add('M', x0, y0);
             }
         }
 
@@ -98,8 +98,7 @@ export default class SVGPathRebuilder implements PathRebuilder {
         }
 
         // FIXME Ellipse
-        this._d.push('A', round4(rx), round4(ry),
-            Math.round(psi * degree), +large, +clockwise, x, y);
+        this._add('A', round4(rx), round4(ry), Math.round(psi * degree), +large, +clockwise, x, y);
     }
     rect(x: number, y: number, w: number, h: number) {
         this._add('M', x, y);
@@ -117,19 +116,20 @@ export default class SVGPathRebuilder implements PathRebuilder {
     }
 
     _add(cmd: string, a?: number, b?: number, c?: number, d?: number, e?: number, f?: number, g?: number, h?: number) {
-        this._d.push(cmd);
+        const vals = [];
         for (let i = 1; i < arguments.length; i++) {
             const val = arguments[i];
             if (isNaN(val)) {
                 this._invalid = true;
                 return;
             }
-            this._d.push(round4(val));
+            vals.push(round4(val));
         }
+        this._d.push(cmd + vals.join(' '));
     }
 
     generateStr() {
-        this._str = this._invalid ? '' : this._d.join(' ');
+        this._str = this._invalid ? '' : this._d.join('');
         this._d = [];
     }
     getStr() {

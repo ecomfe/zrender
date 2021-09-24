@@ -2,7 +2,8 @@
 // 1. shadow
 // 2. Image: sx, sy, sw, sh
 
-import {createElement, getMatrixStr, XLINKNS, XMLNS} from './core';
+import {createElement, XLINKNS } from './core';
+import { getMatrixStr, TEXT_ALIGN_TO_ANCHOR, adjustTextY } from './shared';
 import * as matrix from '../core/matrix';
 import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
@@ -42,7 +43,7 @@ function bindStyle(svgEl: SVGElement, style: PathStyleProps, el?: Path): void
 function bindStyle(svgEl: SVGElement, style: TSpanStyleProps, el?: TSpan): void
 function bindStyle(svgEl: SVGElement, style: ImageStyleProps, el?: ZRImage): void
 function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan | ZRImage) {
-    mapStyleToAttrs((key, val) => attr(svgEl, key, val), style, el);
+    mapStyleToAttrs((key, val) => attr(svgEl, key, val), style, el, true);
 }
 
 interface PathWithSVGBuildPath extends Path {
@@ -145,23 +146,7 @@ export {svgImage as image};
 /***************************************************
  * TEXT
  **************************************************/
-const TEXT_ALIGN_TO_ANCHOR = {
-    left: 'start',
-    right: 'end',
-    center: 'middle',
-    middle: 'middle'
-};
 
-function adjustTextY(y: number, lineHeight: number, textBaseline: CanvasTextBaseline): number {
-    // TODO Other values.
-    if (textBaseline === 'top') {
-        y += lineHeight / 2;
-    }
-    else if (textBaseline === 'bottom') {
-        y -= lineHeight / 2;
-    }
-    return y;
-}
 
 const svgText: SVGProxy<TSpan> = {
     brush(el: TSpan) {

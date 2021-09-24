@@ -9,10 +9,7 @@ import Displayable from '../../graphic/Displayable';
 import {PatternObject, ImagePatternObject, SVGPatternObject} from '../../graphic/Pattern';
 import {createOrUpdateImage} from '../../graphic/helper/image';
 import WeakMap from '../../core/WeakMap';
-
-function isPattern(value: PatternObject | string): value is PatternObject {
-    return value && (!!(value as ImagePatternObject).image || !!(value as SVGPatternObject).svgElement);
-}
+import { isPattern } from '../shared';
 
 const patternDomMap = new WeakMap<PatternObject, SVGElement>();
 

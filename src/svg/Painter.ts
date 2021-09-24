@@ -2,7 +2,8 @@
  * SVG Painter
  */
 
-import {createElement, normalizeColor, SVGNS, XLINKNS, XMLNS} from './core';
+import {createElement, SVGNS, XLINKNS, XMLNS} from './core';
+import { normalizeColor } from './shared';
 import * as util from '../core/util';
 import Path from '../graphic/Path';
 import ZRImage from '../graphic/Image';

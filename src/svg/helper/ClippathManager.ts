@@ -10,20 +10,10 @@ import Path from '../../graphic/Path';
 import {SVGProxy} from '../graphic';
 import { Dictionary } from '../../core/types';
 import { isClipPathChanged } from '../../canvas/helper';
+import { getClipPathsKey } from '../shared';
 
 type PathExtended = Path & {
     _dom: SVGElement
-}
-
-function generateClipPathsKey(clipPaths: Path[]) {
-    let key: number[] = [];
-    if (clipPaths) {
-        for (let i = 0; i < clipPaths.length; i++) {
-            const clipPath = clipPaths[i];
-            key.push(clipPath.id);
-        }
-    }
-    return key.join(',');
 }
 
 export function hasClipPath(displayable: Displayable) {
@@ -61,7 +51,7 @@ export default class ClippathManager extends Definable {
         const clipPaths = displayable.__clipPaths;
 
         const keyDuplicateCount = this._keyDuplicateCount;
-        let clipPathKey = generateClipPathsKey(clipPaths);
+        let clipPathKey = getClipPathsKey(clipPaths);
         if (isClipPathChanged(clipPaths, prevDisplayable && prevDisplayable.__clipPaths)) {
             keyDuplicateCount[clipPathKey] = keyDuplicateCount[clipPathKey] || 0;
             keyDuplicateCount[clipPathKey] && (clipPathKey += '-' + keyDuplicateCount[clipPathKey]);
