@@ -51,9 +51,6 @@ export default class Definable {
         }
     }
 
-    createElement = createElement
-
-
     /**
      * Get the <defs> tag for svgRoot; optionally creates one if not exists.
      *
@@ -68,7 +65,7 @@ export default class Definable {
             // Not exist
             if (isForceCreating) {
                 let defs = svgRoot.insertBefore(
-                    this.createElement('defs'), // Create new tag
+                    createElement('defs'), // Create new tag
                     svgRoot.firstChild // Insert in the front of svg
                 ) as SVGDefsElement;
                 if (!defs.contains) {

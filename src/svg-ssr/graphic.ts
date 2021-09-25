@@ -4,10 +4,15 @@
 
 import {
     adjustTextY,
+    getIdURL,
     getMatrixStr,
     getShadowKey,
     hasShadow,
     isAroundZero,
+    isGradient,
+    isLinearGradient,
+    isRadialGradient,
+    normalizeColor,
     round4,
     TEXT_ALIGN_TO_ANCHOR
 } from '../svg/shared';
@@ -17,18 +22,23 @@ import { DEFAULT_FONT, getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import SVGPathRebuilder from '../svg/SVGPathRebuilder';
 import mapStyleToAttrs from '../svg/mapStyleToAttrs';
-import { createElementClose, createElementOpen } from './helper';
+import { SVGAttrs, createElement } from './helper';
 import { MatrixArray } from '../core/matrix';
 import Displayable from '../graphic/Displayable';
-import { LinearGradientObject } from '../graphic/LinearGradient';
-import { RadialGradientObject } from '../graphic/RadialGradient';
 import { PatternObject } from '../graphic/Pattern';
 import Rect from '../graphic/shape/Rect';
-import { isArray, map } from '../core/util';
+import { isArray, logError, map, retrieve2 } from '../core/util';
 import Polyline from '../graphic/shape/Polyline';
 import Polygon from '../graphic/shape/Polygon';
+import { GradientObject } from '../graphic/Gradient';
 
-type Attrs = [string, string][]
+export interface BrushScope {
+    shadowCache: Record<string, string>
+    gradientCache: Record<string, string>
+    patternCache: Record<string, string>
+    clipPathCache: Record<string, string>
+    defs: Record<string, string>
+}
 
 export interface SVGProxy<T> {
     brush(el: T): string
@@ -37,13 +47,19 @@ export interface SVGProxy<T> {
 
 type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;
 
-function setStyleAttrs(attrs: Attrs, style: AllStyleOption, el: Path | TSpan | ZRImage) {
+function setStyleAttrs(attrs: SVGAttrs, style: AllStyleOption, el: Path | TSpan | ZRImage, scope: BrushScope) {
+    const {defs, gradientCache} = scope;
+
     mapStyleToAttrs((key, val) => {
-        // TODO gradient
-        if (!val || (val as any).type !== 'linear' && (val as any).type !== 'radial') {
+        if ((key === 'fill' || key === 'stroke') && isGradient(val)) {
+            setGradient(style, attrs, key, defs, gradientCache);
+        }
+        else {
             attrs.push([key, val]);
         }
     }, style, el, false);
+
+    setShadow(el, attrs, defs, scope.shadowCache);
 }
 
 function noRotateScale(m: MatrixArray) {
@@ -57,7 +73,7 @@ function noTranslate(m: MatrixArray) {
     return isAroundZero(m[4]) && isAroundZero(m[5]);
 }
 
-function setTransform(attrs: Attrs, m: MatrixArray) {
+function setTransform(attrs: SVGAttrs, m: MatrixArray) {
     if (m && !(noTranslate(m) && noRotateScale(m))) {
         attrs.push([
             'transform',
@@ -68,10 +84,10 @@ function setTransform(attrs: Attrs, m: MatrixArray) {
 }
 
 type ShapeMapDesc = (string | [string, string] | [string, string[]])[];
-type ConvertShapeToAttr = (shape: any, attrs: Attrs) => void;
+type ConvertShapeToAttr = (shape: any, attrs: SVGAttrs) => void;
 type ShapeValidator = (shape: any) => boolean;
 
-function converPolyShape(shape: Polygon['shape'], attrs: Attrs) {
+function convertPolyShape(shape: Polygon['shape'], attrs: SVGAttrs) {
     const points = shape.points;
     const strArr = [];
     for (let i = 0; i < points.length; i++) {
@@ -99,7 +115,7 @@ function createAttrsConvert(desc: ShapeMapDesc): ConvertShapeToAttr {
             const val = shape[item[0]];
             if (val != null) {
                 for (let k = 0; k < item[1].length; k++) {
-                    attrs.push([item[1][k], round4(val) + '']);
+                    attrs.push([item[1][k], round4(val)]);
                 }
             }
         }
@@ -115,16 +131,17 @@ const buitinShapesDef: Record<string, [ConvertShapeToAttr, ShapeValidator?]> = {
         return !isArray(r);
     }],
     circle: [createAttrsConvert(['cx', 'cy', 'r'])],
-    polyline: [converPolyShape, validatePolyShape],
-    polygon: [converPolyShape, validatePolyShape]
+    polyline: [convertPolyShape, validatePolyShape],
+    polygon: [convertPolyShape, validatePolyShape]
+    // Ignore line because it will be larger.
 };
 
 
-export function brushSVGPath(el: Path) {
+export function brushSVGPath(el: Path, scope: BrushScope) {
     const style = el.style;
     const shape = el.shape;
     const builtinShpDef = buitinShapesDef[el.type];
-    const attrs: Attrs = [];
+    const attrs: SVGAttrs = [];
     let svgElType = 'path';
     // Using SVG builtin shapes if possible
     if (builtinShpDef && !(builtinShpDef[1] && !builtinShpDef[1](shape))) {
@@ -150,16 +167,15 @@ export function brushSVGPath(el: Path) {
 
         attrs.push(['d', svgPathBuilder.getStr()]);
     }
-    setTransform(attrs, el.transform);
-    setStyleAttrs(attrs, style, el);
 
-    return [
-        createElementOpen(svgElType, attrs),
-        createElementClose(svgElType)
-    ].join('\n');
+
+    setTransform(attrs, el.transform);
+    setStyleAttrs(attrs, style, el, scope);
+
+    return createElement(svgElType, attrs);
 }
 
-export function brushSVGImage(el: ZRImage) {
+export function brushSVGImage(el: ZRImage, scope: BrushScope) {
     const style = el.style;
     let image = style.image;
 
@@ -174,28 +190,25 @@ export function brushSVGImage(el: ZRImage) {
     const dw = style.width;
     const dh = style.height;
 
-    const attrs: Attrs = [
+    const attrs: SVGAttrs = [
         ['href', image as string],
-        ['width', dw + ''],
-        ['height', dh + '']
+        ['width', dw],
+        ['height', dh]
     ];
     if (x) {
-        attrs.push(['x', x + '']);
+        attrs.push(['x', x]);
     }
     if (y) {
-        attrs.push(['y', y + '']);
+        attrs.push(['y', y]);
     }
 
     setTransform(attrs, el.transform);
-    setStyleAttrs(attrs, style, el);
+    setStyleAttrs(attrs, style, el, scope);
 
-    return [
-        createElementOpen('image', attrs),
-        createElementClose('image')
-    ].join('\n');
+    return createElement('image', attrs);
 };
 
-export function brushSVGTSpan(el: TSpan) {
+export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     const style = el.style;
 
     let text = style.text;
@@ -215,7 +228,7 @@ export function brushSVGTSpan(el: TSpan) {
     const textAlign = TEXT_ALIGN_TO_ANCHOR[style.textAlign as keyof typeof TEXT_ALIGN_TO_ANCHOR]
         || style.textAlign;
 
-    const attrs: Attrs = [
+    const attrs: SVGAttrs = [
         ['style', `font:${font}`],
         ['dominant-baseline', 'central'],
         ['text-anchor', textAlign]
@@ -224,61 +237,159 @@ export function brushSVGTSpan(el: TSpan) {
         attrs.push(['xml:space', 'preserve']);
     }
     if (x) {
-        attrs.push(['x', x + '']);
+        attrs.push(['x', x]);
     }
     if (y) {
-        attrs.push(['y', y + '']);
+        attrs.push(['y', y]);
     }
     setTransform(attrs, el.transform);
-    setStyleAttrs(attrs, style, el);
+    setStyleAttrs(attrs, style, el, scope);
 
-    return [
-        createElementOpen('image', attrs),
-        text,
-        createElementClose('image')
-    ].join('\n');
+    return createElement('text', attrs, text);
 }
 
-export function brush(el: Displayable) {
+export function brush(el: Displayable, scope: BrushScope) {
     if (el instanceof Path) {
-        return brushSVGPath(el);
+        return brushSVGPath(el, scope);
     }
     else if (el instanceof ZRImage) {
-        return brushSVGImage(el);
+        return brushSVGImage(el, scope);
     }
     else if (el instanceof TSpan) {
-        return brushSVGTSpan(el);
+        return brushSVGTSpan(el, scope);
     }
 }
 
-let shadowId = 0;
-let gradientId = 0;
-let patternId = 0;
-let clipPathId = 0;
-export function createShadow(
+let shadowIdx = 0;
+let gradientIdx = 0;
+let patternIdx = 0;
+let clipPathIdx = 0;
+function setShadow(
     el: Displayable,
+    attrs: SVGAttrs,
     defs: Record<string, string>,
     shadowCache: Record<string, string>
 ) {
     const style = el.style;
     if (hasShadow(style)) {
         const shadowKey = getShadowKey(el);
-        if (shadowCache[shadowKey]) {
-            return shadowCache[shadowKey];
+        let shadowId = shadowCache[shadowKey];
+        if (!shadowId) {
+            const globalScale = el.getGlobalScale();
+            const scaleX = globalScale[0];
+            const scaleY = globalScale[1];
+
+            const offsetX = style.shadowOffsetX || 0;
+            const offsetY = style.shadowOffsetY || 0;
+            const blur = style.shadowBlur;
+            const {opacity, color} = normalizeColor(style.shadowColor);
+            const stdDx = blur / 2 / scaleX;
+            const stdDy = blur / 2 / scaleY;
+            const stdDeviation = stdDx + ' ' + stdDy;
+            // Use a simple prefix to reduce the size
+            shadowId = 's' + shadowIdx++;
+            defs[shadowId] = createElement(
+                'filter', [
+                    ['id', shadowId],
+                    ['x', '-100%'],
+                    ['y', '-100%'],
+                    ['width', '300%'],
+                    ['height', '300%']
+                ],
+                createElement('feDropShadow', [
+                    ['dx', offsetX / scaleX],
+                    ['dy', offsetY / scaleY],
+                    ['stdDeviation', stdDeviation],
+                    ['flood-color', color],
+                    ['flood-opacity', opacity]
+                ])
+            );
+            shadowCache[shadowKey] = shadowId;
         }
-        // const shadowStr =
+        attrs.push(['filter', getIdURL(shadowId)]);
     }
 }
 
-export function createGradient(
-    gradient: LinearGradientObject | RadialGradientObject,
+function setGradient(
+    style: PathStyleProps,
+    attrs: SVGAttrs,
+    target: 'fill' | 'stroke',
     defs: Record<string, string>,
     gradientCache: Record<string, string>
 ) {
+    const val = style[target] as GradientObject;
+    let gradientTag;
+    let gradientAttrs: SVGAttrs = [
+        [
+            'gradientUnits', val.global
+                ? 'userSpaceOnUse' // x1, x2, y1, y2 in range of 0 to canvas width or height
+                : 'objectBoundingBox' // x1, x2, y1, y2 in range of 0 to 1]
+        ]
+    ];
+    if (isLinearGradient(val)) {
+        gradientTag = 'linearGradient';
+        gradientAttrs.push(
+            ['x1', val.x],
+            ['y1', val.y],
+            ['x2', val.x2],
+            ['y2', val.y2]
+        );
+    }
+    else if (isRadialGradient(val)) {
+        gradientTag = 'radialGradient';
+        gradientAttrs.push(
+            ['cx', retrieve2(val.x, 0.5)],
+            ['cy', retrieve2(val.y, 0.5)],
+            ['r', retrieve2(val.r, 0.5)]
+        );
+    }
+    else {
+        logError('Illegal gradient type.');
+        return;
+    }
 
+    const colors = val.colorStops;
+
+    const colorStops = [];
+    for (let i = 0, len = colors.length; i < len; ++i) {
+        const offset = round4(colors[i].offset) * 100 + '%';
+
+        const stopColor = colors[i].color;
+        // Fix Safari bug that stop-color not recognizing alpha #9014
+        const {color, opacity} = normalizeColor(stopColor);
+
+        const stopsAttrs: SVGAttrs = [['offset', offset]];
+        // stop-color cannot be color, since:
+        // The opacity value used for the gradient calculation is the
+        // *product* of the value of stop-opacity and the opacity of the
+        // value of stop-color.
+        // See https://www.w3.org/TR/SVG2/pservers.html#StopOpacityProperty
+        stopsAttrs.push(['stop-color', color]);
+        if (opacity < 1) {
+            stopsAttrs.push(['stop-opacity', opacity]);
+        }
+        colorStops.push(
+            createElement('stop', stopsAttrs)
+        );
+    }
+
+    // Use the whole html as cache key.
+    const gradientKey = createElement(gradientTag, gradientAttrs, colorStops.join(''));
+    let gradientId = gradientCache[gradientKey];
+    if (!gradientId) {
+        gradientId = 'g' + gradientIdx++;
+        gradientCache[gradientKey] = gradientId;
+
+        gradientAttrs.push(['id', gradientId]);
+        defs[gradientId] = createElement(gradientTag, gradientAttrs, colorStops.join('\n'));
+    }
+
+    attrs.push(
+        [target, getIdURL(gradientId)]
+    );
 }
 
-export function createPattern(
+function createPattern(
     pattern: PatternObject,
     defs: Record<string, string>,
     patternCache: Record<string, string>
@@ -286,7 +397,7 @@ export function createPattern(
 
 }
 
-export function createAnimation() {
+function createAnimation() {
 
 }
 

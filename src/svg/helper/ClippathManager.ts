@@ -10,7 +10,8 @@ import Path from '../../graphic/Path';
 import {SVGProxy} from '../graphic';
 import { Dictionary } from '../../core/types';
 import { isClipPathChanged } from '../../canvas/helper';
-import { getClipPathsKey } from '../shared';
+import { getClipPathsKey, getIdURL } from '../shared';
+import { createElement } from '../core';
 
 type PathExtended = Path & {
     _dom: SVGElement
@@ -59,7 +60,7 @@ export default class ClippathManager extends Definable {
         }
 
         return this._refGroups[clipPathKey]
-            || (this._refGroups[clipPathKey] = this.createElement('g'));
+            || (this._refGroups[clipPathKey] = createElement('g'));
     }
 
     /**
@@ -105,7 +106,7 @@ export default class ClippathManager extends Definable {
                 // New <clipPath>
                 id = 'zr' + this._zrId + '-clip-' + this.nextId;
                 ++this.nextId;
-                clipPathEl = this.createElement('clipPath');
+                clipPathEl = createElement('clipPath');
                 clipPathEl.setAttribute('id', id);
                 defs.appendChild(clipPathEl);
 
@@ -121,7 +122,7 @@ export default class ClippathManager extends Definable {
             clipPathEl.innerHTML = '';
             clipPathEl.appendChild(pathEl);
 
-            parentEl.setAttribute('clip-path', 'url(#' + id + ')');
+            parentEl.setAttribute('clip-path', getIdURL(id));
 
             if (clipPaths.length > 1) {
                 // Make the other clipPaths recursively

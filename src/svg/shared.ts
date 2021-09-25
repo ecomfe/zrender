@@ -2,8 +2,11 @@
 
 import { MatrixArray } from '../core/matrix';
 import Displayable from '../graphic/Displayable';
+import { GradientObject } from '../graphic/Gradient';
+import { LinearGradientObject } from '../graphic/LinearGradient';
 import Path from '../graphic/Path';
 import { ImagePatternObject, PatternObject, SVGPatternObject } from '../graphic/Pattern';
+import { RadialGradientObject } from '../graphic/RadialGradient';
 import { parse } from '../tool/color';
 import { mathRound } from './core';
 
@@ -15,6 +18,7 @@ export function normalizeColor(color: string): { color: string; opacity: number;
     else if (typeof color === 'string' && color.indexOf('rgba') > -1) {
         const arr = parse(color);
         if (arr) {
+            // TODO use hex?
             color = 'rgb(' + arr[0] + ',' + arr[1] + ',' + arr[2] + ')';
             opacity = arr[3];
         }
@@ -100,4 +104,23 @@ export function getClipPathsKey(clipPaths: Path[]) {
 
 export function isPattern(value: PatternObject | string): value is PatternObject {
     return value && (!!(value as ImagePatternObject).image || !!(value as SVGPatternObject).svgElement);
+}
+
+export function isLinearGradient(value: GradientObject): value is LinearGradientObject {
+    return value.type === 'linear';
+}
+
+export function isRadialGradient(value: GradientObject): value is RadialGradientObject {
+    return value.type === 'radial';
+}
+
+export function isGradient(value: any): value is GradientObject {
+    return value && (
+        (value as GradientObject).type === 'linear'
+        || (value as GradientObject).type === 'radial'
+    );
+}
+
+export function getIdURL(id: string) {
+    return `url(#${id})`;
 }

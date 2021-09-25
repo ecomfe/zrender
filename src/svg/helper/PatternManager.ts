@@ -9,7 +9,8 @@ import Displayable from '../../graphic/Displayable';
 import {PatternObject, ImagePatternObject, SVGPatternObject} from '../../graphic/Pattern';
 import {createOrUpdateImage} from '../../graphic/helper/image';
 import WeakMap from '../../core/WeakMap';
-import { isPattern } from '../shared';
+import { getIdURL, isPattern } from '../shared';
+import { createElement } from '../core';
 
 const patternDomMap = new WeakMap<PatternObject, SVGElement>();
 
@@ -60,8 +61,7 @@ export default class PatternManager extends Definable {
 
                     that.markUsed(displayable);
 
-                    const id = dom.getAttribute('id');
-                    svgElement.setAttribute(fillOrStroke, 'url(#' + id + ')');
+                    svgElement.setAttribute(fillOrStroke, getIdURL(dom.getAttribute('id')));
                 }
             });
         }
@@ -78,7 +78,7 @@ export default class PatternManager extends Definable {
             return;
         }
 
-        let dom = this.createElement('pattern');
+        let dom = createElement('pattern');
 
         pattern.id = pattern.id == null ? this.nextId++ : pattern.id;
         dom.setAttribute('id', 'zr' + this._zrId
@@ -147,7 +147,7 @@ export default class PatternManager extends Definable {
             }
             else if ((pattern as ImagePatternObject).image) {
                 // Create
-                img = this.createElement('image');
+                img = createElement('image');
             }
 
             if (img) {

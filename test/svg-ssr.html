@@ -17,16 +17,32 @@
         height: 800
     });
 
-    for (let i = 0; i < 100; i++) {
-        for (let k = 0; k < 100; k++) {
+    for (let i = 0; i < 10; i++) {
+        for (let k = 0; k < 10; k++) {
             var circle = new zrender.Circle({
                 shape: {
-                    cx: i * 8 + 4,
-                    cy: k * 8 + 4,
-                    r: 3
+                    cx: i * 80 + 40,
+                    cy: k * 80 + 40,
+                    r: 30
                 },
                 style: {
-                    fill: 'red'
+                    fill: {
+                        type: 'radial',
+                        x: 0.5,
+                        y: 0.5,
+                        r: 0.5,
+                        colorStops: [{
+                            offset: 0,
+                            color: 'red'
+                        }, {
+                            offset: 1,
+                            color: 'blue'
+                        }]
+                    },
+                    stroke: 'blue',
+                    lineWidth: 2,
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(0, 0, 0, 0.5)'
                 }
             });
             zr.add(circle);

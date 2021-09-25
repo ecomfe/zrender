@@ -6,7 +6,8 @@
 import Definable from './Definable';
 import Displayable from '../../graphic/Displayable';
 import { Dictionary } from '../../core/types';
-import { getShadowKey, hasShadow, normalizeColor } from '../shared';
+import { getIdURL, getShadowKey, hasShadow, normalizeColor } from '../shared';
+import { createElement } from '../core';
 
 type DisplayableExtended = Displayable & {
     _shadowDom: SVGElement
@@ -33,9 +34,9 @@ export default class ShadowManager extends Definable {
     private _getFromPool(): SVGFilterElement {
         let shadowDom = this._shadowDomPool.pop();    // Try to get one from trash.
         if (!shadowDom) {
-            shadowDom = this.createElement('filter') as SVGFilterElement;
+            shadowDom = createElement('filter') as SVGFilterElement;
             shadowDom.setAttribute('id', 'zr' + this._zrId + '-shadow-' + this.nextId++);
-            const domChild = this.createElement('feDropShadow');
+            const domChild = createElement('feDropShadow');
             shadowDom.appendChild(domChild);
             this.addDom(shadowDom);
         }
@@ -95,9 +96,9 @@ export default class ShadowManager extends Definable {
         }
 
         // TODO: textBoxShadowBlur is not supported yet
-        let offsetX = style.shadowOffsetX || 0;
-        let offsetY = style.shadowOffsetY || 0;
-        let blur = style.shadowBlur;
+        const offsetX = style.shadowOffsetX || 0;
+        const offsetY = style.shadowOffsetY || 0;
+        const blur = style.shadowBlur;
         const normalizedColor = normalizeColor(style.shadowColor);
 
         domChild.setAttribute('dx', offsetX / scaleX + '');
@@ -122,8 +123,7 @@ export default class ShadowManager extends Definable {
         // dom instances for the same shadow element
         (displayable as DisplayableExtended)._shadowDom = shadowDom;
 
-        const id = shadowDom.getAttribute('id');
-        svgElement.setAttribute('filter', 'url(#' + id + ')');
+        svgElement.setAttribute('filter', getIdURL(shadowDom.getAttribute('id')));
     }
 
     removeUnused() {

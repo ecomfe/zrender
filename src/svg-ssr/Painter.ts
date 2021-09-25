@@ -2,9 +2,8 @@
  * SVG Painter
  */
 
-import * as util from '../core/util';
 import {
-    brush
+    brush, BrushScope
 } from './graphic';
 import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
@@ -12,6 +11,7 @@ import { PainterBase } from '../PainterBase';
 import { createElement, createElementClose, createElementOpen } from './helper';
 import { SVGNS, XLINKNS } from '../svg/core';
 import { normalizeColor } from '../svg/shared';
+import { extend, keys, logError, map } from '../core/util';
 
  function parseInt10(val: string) {
      return parseInt(val, 10);
@@ -39,7 +39,7 @@ class SVGPainter implements PainterBase {
 
     constructor(root: HTMLElement, storage: Storage, opts: SVGPainterOption, zrId: number) {
         this.storage = storage;
-        this._opts = opts = util.extend({}, opts);
+        this._opts = opts = extend({}, opts);
 
         this.resize(opts.width, opts.height);
     }
@@ -57,6 +57,14 @@ class SVGPainter implements PainterBase {
         const bgColor = this._backgroundColor;
         const width = this._width + '';
         const height = this._height + '';
+
+        const scope: BrushScope = {
+            shadowCache: {},
+            patternCache: {},
+            gradientCache: {},
+            clipPathCache: {},
+            defs: {}
+        };
 
         let backgroundRect;
         if (bgColor && bgColor !== 'none') {
@@ -90,7 +98,10 @@ class SVGPainter implements PainterBase {
             backgroundRect,
 
             // Elements
-            this._paintList(list),
+            this._paintList(list, scope),
+
+            // After paint list
+            createElement('defs', [], map(keys(scope.defs), (id) => scope.defs[id]).join('\n')),
 
             createElementClose('svg')
         ];
@@ -102,7 +113,7 @@ class SVGPainter implements PainterBase {
         this._backgroundColor = backgroundColor;
     }
 
-    _paintList(list: Displayable[]) {
+    _paintList(list: Displayable[], scope: BrushScope) {
         const listLen = list.length;
 
         const elStrs: string[] = [];
@@ -110,7 +121,7 @@ class SVGPainter implements PainterBase {
         for (let i = 0; i < listLen; i++) {
             const displayable = list[i];
             if (!displayable.invisible) {
-                const str = brush(displayable);
+                const str = brush(displayable, scope);
                 str && elStrs.push(str);
             }
         }
@@ -153,7 +164,7 @@ class SVGPainter implements PainterBase {
 // Not supported methods
 function createMethodNotSupport(method: string): any {
     return function () {
-        util.logError('In SVG mode painter not support method "' + method + '"');
+        logError('In SVG mode painter not support method "' + method + '"');
     };
 }
 

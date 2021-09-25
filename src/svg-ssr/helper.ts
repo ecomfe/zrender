@@ -1,7 +1,12 @@
-export function createElement(name: string, attrs?: ([string, string] | [string])[]) {
-    return createElementOpen(name, attrs) + createElementClose(name);
+
+export type SVGAttrs = [string, string | number | undefined][];
+
+export function createElement(name: string, attrs?: SVGAttrs, children?: string) {
+    return createElementOpen(name, attrs)
+        + (children ? `\n${children}\n` : '')
+        + createElementClose(name);
 }
-export function createElementOpen(name: string, attrs?: ([string, string] | [string])[]) {
+export function createElementOpen(name: string, attrs?: SVGAttrs) {
     const attrsStr: string[] = [];
     if (attrs) {
         for (let i = 0; i < attrs.length; i++) {

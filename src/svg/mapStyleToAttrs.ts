@@ -1,5 +1,5 @@
 
-import Path, { PathStyleProps } from '../graphic/Path';
+import Path, { DEFAULT_PATH_STYLE, PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
@@ -21,8 +21,11 @@ function pathHasStroke(style: AllStyleOption): style is PathStyleProps {
     return stroke != null && stroke !== NONE;
 }
 
+const strokeProps = ['lineCap', 'miterLimit', 'lineJoin'] as const;
+const svgStrokeProps = map(strokeProps, prop => `stroke-${prop.toLowerCase()}`);
+
 export default function mapStyleToAttrs(
-    updateAttr: (key: string, val: string) => void,
+    updateAttr: (key: string, val: string | number) => void,
     style: AllStyleOption,
     el: Path | TSpan | ZRImage,
     /**
@@ -59,7 +62,7 @@ export default function mapStyleToAttrs(
         const strokeScale = style.strokeNoScale
             ? (el as Path).getLineScale()
             : 1;
-        const strokeWidth =  (strokeScale ? (style.lineWidth || 0) / strokeScale : 0);
+        const strokeWidth = (strokeScale ? (style.lineWidth || 0) / strokeScale : 0);
         const strokeOpacity = style.strokeOpacity != null
             ? style.strokeOpacity * stroke.opacity * opacity
             : stroke.opacity * opacity;
@@ -99,9 +102,14 @@ export default function mapStyleToAttrs(
         }
 
         // PENDING reset
-        style.lineCap && updateAttr('stroke-linecap', style.lineCap);
-        style.lineJoin && updateAttr('stroke-linejoin', style.lineJoin);
-        style.miterLimit && updateAttr('stroke-miterlimit', style.miterLimit + '');
+        for (let i = 0; i < strokeProps.length; i++) {
+            const propName = strokeProps[i];
+            if (forceUpdate || style[propName] !== DEFAULT_PATH_STYLE[propName]) {
+                const val = style[propName] || DEFAULT_PATH_STYLE[propName];
+                // TODO reset
+                val && updateAttr(svgStrokeProps[i], val);
+            }
+        }
     }
     else if (forceUpdate) {
         updateAttr('stroke', NONE);
