@@ -141,11 +141,8 @@ export default class CanvasPainter implements PainterBase {
         const rootStyle = root.style;
 
         if (rootStyle) {
-            rootStyle.webkitTapHighlightColor = 'transparent';
-            rootStyle.webkitUserSelect = 'none';
-            rootStyle.userSelect = 'none';
-            (rootStyle as any)['-webkit-touch-callout'] = 'none';
-
+            // @ts-ignore
+            util.disableUserSelect(root);
             root.innerHTML = '';
         }
 

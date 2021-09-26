@@ -11,7 +11,7 @@ export function createElementOpen(name: string, attrs?: SVGAttrs) {
     if (attrs) {
         for (let i = 0; i < attrs.length; i++) {
             let part = attrs[i][0];
-            if (attrs[i][1]) {
+            if (attrs[i][1] != null) {
                 part += `="${attrs[i][1]}"`;
             }
             attrsStr.push(part);

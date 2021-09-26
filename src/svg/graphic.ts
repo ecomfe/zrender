@@ -24,10 +24,10 @@ function setTransform(svgEl: SVGElement, m: matrix.MatrixArray) {
     }
 }
 
-function attr(el: SVGElement, key: string, val: string) {
+function attr(el: SVGElement, key: string, val: string | number) {
     if (!val || (val as any).type !== 'linear' && (val as any).type !== 'radial') {
         // Don't set attribute for gradient, since it need new dom nodes
-        el.setAttribute(key, val);
+        el.setAttribute(key, val as any);
     }
 }
 

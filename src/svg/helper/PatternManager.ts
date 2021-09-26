@@ -9,7 +9,7 @@ import Displayable from '../../graphic/Displayable';
 import {PatternObject, ImagePatternObject, SVGPatternObject} from '../../graphic/Pattern';
 import {createOrUpdateImage} from '../../graphic/helper/image';
 import WeakMap from '../../core/WeakMap';
-import { getIdURL, isPattern } from '../shared';
+import { getIdURL, isPattern, isSVGPattern } from '../shared';
 import { createElement } from '../core';
 
 const patternDomMap = new WeakMap<PatternObject, SVGElement>();
@@ -84,8 +84,6 @@ export default class PatternManager extends Definable {
         dom.setAttribute('id', 'zr' + this._zrId
             + '-pattern-' + pattern.id);
 
-        dom.setAttribute('x', '0');
-        dom.setAttribute('y', '0');
         dom.setAttribute('patternUnits', 'userSpaceOnUse');
 
         this.updateDom(pattern, dom);
@@ -120,22 +118,27 @@ export default class PatternManager extends Definable {
      * @param patternDom DOM to update
      */
     updateDom(pattern: PatternObject, patternDom: SVGElement) {
-        const svgElement = (pattern as SVGPatternObject).svgElement;
+        if (isSVGPattern(pattern)) {
+            const svgElement = pattern.svgElement;
+            const isStringSVG = typeof svgElement === 'string';
+            if (isStringSVG || svgElement.parentNode !== patternDom) {
+                if (isStringSVG) {
+                    patternDom.innerHTML = svgElement;
+                }
+                else {
+                    patternDom.innerHTML = '';
+                    patternDom.appendChild(svgElement);
+                }
 
-        if (svgElement instanceof SVGElement) {
-            if (svgElement.parentNode !== patternDom) {
-                patternDom.innerHTML = '';
-                patternDom.appendChild(svgElement);
-
-                patternDom.setAttribute('width', (pattern as SVGPatternObject).svgWidth + '');
-                patternDom.setAttribute('height', (pattern as SVGPatternObject).svgHeight + '');
+                patternDom.setAttribute('width', pattern.svgWidth as any);
+                patternDom.setAttribute('height', pattern.svgHeight as any);
             }
         }
         else {
             let img: SVGElement;
             const prevImage = patternDom.getElementsByTagName('image');
             if (prevImage.length) {
-                if ((pattern as ImagePatternObject).image) {
+                if (pattern.image) {
                     // Update
                     img = prevImage[0];
                 }
@@ -145,14 +148,14 @@ export default class PatternManager extends Definable {
                     return;
                 }
             }
-            else if ((pattern as ImagePatternObject).image) {
+            else if (pattern.image) {
                 // Create
                 img = createElement('image');
             }
 
             if (img) {
                 let imageSrc;
-                const patternImage = (pattern as ImagePatternObject).image;
+                const patternImage = pattern.image;
                 if (typeof patternImage === 'string') {
                     imageSrc = patternImage;
                 }
@@ -165,21 +168,20 @@ export default class PatternManager extends Definable {
 
                 if (imageSrc) {
                     img.setAttribute('href', imageSrc);
-                    img.setAttribute('x', '0');
-                    img.setAttribute('y', '0');
 
                     // No need to re-render so dirty is empty
                     const hostEl = {
                         dirty: () => {}
                     };
-                    const createdImage = createOrUpdateImage(imageSrc, img as any, hostEl, img => {
-                        patternDom.setAttribute('width', img.width + '');
-                        patternDom.setAttribute('height', img.height + '');
-                    });
+                    const updateSize = (img: HTMLImageElement) => {
+                        patternDom.setAttribute('width', img.width as any);
+                        patternDom.setAttribute('height', img.height as any);
+                    };
+
+                    const createdImage = createOrUpdateImage(imageSrc, img as any, hostEl, updateSize);
                     if (createdImage && createdImage.width && createdImage.height) {
                         // Loaded before
-                        patternDom.setAttribute('width', createdImage.width + '');
-                        patternDom.setAttribute('height', createdImage.height + '');
+                        updateSize(createdImage as HTMLImageElement);
                     }
 
                     patternDom.appendChild(img);

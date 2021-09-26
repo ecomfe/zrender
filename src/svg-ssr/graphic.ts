@@ -10,7 +10,9 @@ import {
     hasShadow,
     isAroundZero,
     isGradient,
+    isImagePattern,
     isLinearGradient,
+    isPattern,
     isRadialGradient,
     normalizeColor,
     round4,
@@ -25,12 +27,12 @@ import mapStyleToAttrs from '../svg/mapStyleToAttrs';
 import { SVGAttrs, createElement } from './helper';
 import { MatrixArray } from '../core/matrix';
 import Displayable from '../graphic/Displayable';
-import { PatternObject } from '../graphic/Pattern';
 import Rect from '../graphic/shape/Rect';
-import { isArray, logError, map, retrieve2 } from '../core/util';
+import { assert, isArray, logError, map, retrieve2 } from '../core/util';
 import Polyline from '../graphic/shape/Polyline';
 import Polygon from '../graphic/shape/Polygon';
 import { GradientObject } from '../graphic/Gradient';
+import { ImagePatternObject, SVGPatternObject } from '../export';
 
 export interface BrushScope {
     shadowCache: Record<string, string>
@@ -48,11 +50,15 @@ export interface SVGProxy<T> {
 type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;
 
 function setStyleAttrs(attrs: SVGAttrs, style: AllStyleOption, el: Path | TSpan | ZRImage, scope: BrushScope) {
-    const {defs, gradientCache} = scope;
+    const {defs} = scope;
 
     mapStyleToAttrs((key, val) => {
-        if ((key === 'fill' || key === 'stroke') && isGradient(val)) {
-            setGradient(style, attrs, key, defs, gradientCache);
+        const isFillStroke = key === 'fill' || key === 'stroke';
+        if (isFillStroke && isGradient(val)) {
+            setGradient(style, attrs, key, defs, scope.gradientCache);
+        }
+        else if (isFillStroke && isPattern(val)) {
+            setPattern(style, attrs, key, defs, scope.patternCache);
         }
         else {
             attrs.push([key, val]);
@@ -374,27 +380,74 @@ function setGradient(
     }
 
     // Use the whole html as cache key.
-    const gradientKey = createElement(gradientTag, gradientAttrs, colorStops.join(''));
+    const colorStopsStr = colorStops.join('\n');
+    const gradientKey = createElement(gradientTag, gradientAttrs, colorStopsStr);
     let gradientId = gradientCache[gradientKey];
     if (!gradientId) {
         gradientId = 'g' + gradientIdx++;
         gradientCache[gradientKey] = gradientId;
 
         gradientAttrs.push(['id', gradientId]);
-        defs[gradientId] = createElement(gradientTag, gradientAttrs, colorStops.join('\n'));
+        defs[gradientId] = createElement(gradientTag, gradientAttrs, colorStopsStr);
     }
 
-    attrs.push(
-        [target, getIdURL(gradientId)]
-    );
+    attrs.push([target, getIdURL(gradientId)]);
 }
 
-function createPattern(
-    pattern: PatternObject,
+function setPattern(
+    style: PathStyleProps,
+    attrs: SVGAttrs,
+    target: 'fill' | 'stroke',
     defs: Record<string, string>,
     patternCache: Record<string, string>
 ) {
+    const val = style[target] as ImagePatternObject | SVGPatternObject;
+    const patternAttrs: SVGAttrs = [
+        ['patternUnits', 'userSpaceOnUse']
+    ];
+    let children: string;
+    if (isImagePattern(val)) {
+        const errMsg = 'Image width/height must been given explictly in svg-ssr renderer.';
+        const imageWidth = val.imageWidth;
+        const imageHeight = val.imageHeight;
+        assert(imageWidth, errMsg);
+        assert(imageHeight, errMsg);
 
+        // TODO Only support string url
+        children = createElement('image', [
+            ['href', val.image as string],
+            ['width', imageWidth],
+            ['height', imageHeight]
+        ]);
+        patternAttrs.push(
+            ['width', imageWidth],
+            ['height', imageHeight]
+        );
+    }
+    else if (typeof val.svgElement === 'string') {  // Only string supported in SSR.
+        // image can only be string
+        children = val.svgElement;
+        patternAttrs.push(
+            ['width', val.svgWidth],
+            ['height', val.svgHeight]
+        );
+    }
+    if (!children) {
+        return;
+    }
+
+    // Use the whole html as cache key.
+    const patternTag = 'pattern';
+    const patternKey = createElement(patternTag, patternAttrs, children);
+    let patternId = patternCache[patternKey];
+    if (!patternId) {
+        patternId = 'p' + patternIdx++;
+        patternCache[patternKey] = patternId;
+        patternAttrs.push(['id', patternId]);
+        defs[patternId] = createElement(patternTag, patternAttrs, children);
+    }
+
+    attrs.push([target, getIdURL(patternId)]);
 }
 
 function createAnimation() {

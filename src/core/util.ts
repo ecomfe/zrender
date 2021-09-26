@@ -753,6 +753,16 @@ export function createObject<T>(proto?: object, properties?: T): T {
     return obj;
 }
 
+
+export function disableUserSelect(dom: HTMLElement) {
+    const domStyle = dom.style;
+    domStyle.webkitUserSelect = 'none';
+    domStyle.userSelect = 'none';
+    // @ts-ignore
+    domStyle.webkitTapHighlightColor = 'rgba(0,0,0,0)';
+    (domStyle as any)['-webkit-touch-callout'] = 'none';
+}
+
 export function hasOwn(own: object, prop: string): boolean {
     return own.hasOwnProperty(prop);
 }

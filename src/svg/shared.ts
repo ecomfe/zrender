@@ -102,8 +102,14 @@ export function getClipPathsKey(clipPaths: Path[]) {
     return key.join(',');
 }
 
-export function isPattern(value: PatternObject | string): value is PatternObject {
-    return value && (!!(value as ImagePatternObject).image || !!(value as SVGPatternObject).svgElement);
+export function isImagePattern(value: any): value is ImagePatternObject {
+    return value && (!!(value as ImagePatternObject).image);
+}
+export function isSVGPattern(value: any): value is SVGPatternObject {
+    return value && (!!(value as SVGPatternObject).svgElement);
+}
+export function isPattern(value: any): value is PatternObject {
+    return isImagePattern(value) || isSVGPattern(value);
 }
 
 export function isLinearGradient(value: GradientObject): value is LinearGradientObject {

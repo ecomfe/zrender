@@ -118,20 +118,21 @@ export default class SVGPathRebuilder implements PathRebuilder {
     }
 
     _add(cmd: string, a?: number, b?: number, c?: number, d?: number, e?: number, f?: number, g?: number, h?: number) {
-        this._d.push(cmd);
+        const vals = [];
         for (let i = 1; i < arguments.length; i++) {
             const val = arguments[i];
             if (isNaN(val)) {
                 this._invalid = true;
                 return;
             }
-            this._d.push(round4(val));
+            vals.push(round4(val));
         }
+        this._d.push(cmd + vals.join(' '));
         this._start = cmd === 'Z';
     }
 
     generateStr() {
-        this._str = this._invalid ? '' : this._d.join(' ');
+        this._str = this._invalid ? '' : this._d.join('');
         this._d = [];
     }
     getStr() {

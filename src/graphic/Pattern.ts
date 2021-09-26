@@ -17,6 +17,15 @@ export interface PatternObjectBase {
 export interface ImagePatternObject extends PatternObjectBase {
     image: ImageLike | string
     repeat?: ImagePatternRepeat
+
+    /**
+     * Width and height of image.
+     * `imageWidth` and `imageHeight` are only used in svg-ssr renderer.
+     * Because we can't get the size of image in svg-ssr renderer.
+     * They need to be give explictly.
+     */
+    imageWidth?: number
+    imageHeight?: number
 }
 
 export interface InnerImagePatternObject extends ImagePatternObject {
@@ -28,8 +37,10 @@ export interface SVGPatternObject extends PatternObjectBase {
     /**
      * svg element can only be used in svg renderer currently.
      * svgWidth, svgHeight defines width and height used for pattern.
+     *
+     * Will be string if using SSR rendering.
      */
-    svgElement?: SVGElement
+    svgElement?: SVGElement | string
     svgWidth?: number
     svgHeight?: number
 }
@@ -43,8 +54,10 @@ class Pattern {
     image: ImageLike | string
     /**
      * svg element can only be used in svg renderer currently.
+     *
+     * Will be string if using SSR rendering.
      */
-    svgElement: SVGElement
+    svgElement: SVGElement | string
 
     repeat: ImagePatternRepeat
 
