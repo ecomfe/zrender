@@ -88,7 +88,9 @@ class Transformable {
             || isNotAroundZero(this.x)
             || isNotAroundZero(this.y)
             || isNotAroundZero(this.scaleX - 1)
-            || isNotAroundZero(this.scaleY - 1);
+            || isNotAroundZero(this.scaleY - 1)
+            || isNotAroundZero(this.skewX)
+            || isNotAroundZero(this.skewY);
     }
 
     /**

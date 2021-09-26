@@ -105,6 +105,68 @@
         zr.add(circle);
     }
 
+    // Polygon with transform
+    for (let i = 0; i < 10; i++) {
+        const points = [];
+        for (let k = 0; k < 10; k++) {
+            points.push([
+                Math.cos(k / 10 * Math.PI * 2) * elSize / 2,
+                Math.sin(k / 10 * Math.PI * 2) * elSize / 2
+            ]);
+        }
+        var circle = new zrender.Polygon({
+            shape: {
+                points
+            },
+            x: i * cellSize + cellSize / 2,
+            y: cellSize * 4 + cellSize / 2,
+            rotation: i * 0.2,
+            style: {
+                fill: 'red',
+                stroke: '#000',
+                lineWidth: 2,
+                shadowBlur: 10,
+                shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+        });
+        zr.add(circle);
+    }
+
+
+    // Image with cliPath
+    for (let k = 0; k < 2; k++) {
+        const group = new zrender.Group();
+        for (let i = 0; i < 10; i++) {
+            var circle = new zrender.Image({
+                x: i * cellSize + (cellSize - elSize) / 2,
+                y: cellSize * (5 + k),
+                style: {
+                    image: 'asset/test.png',
+                    width: elSize,
+                    height: elSize
+                }
+            });
+            circle.setClipPath(new zrender.Circle({
+                shape: {
+                    cx: elSize / 2,
+                    cy: elSize / 2,
+                    r: elSize / 2 + 3
+                }
+            }));
+            group.add(circle);
+        }
+        group.setClipPath(new zrender.Rect({
+            x: cellSize + cellSize * 3 * k,
+            y: cellSize * (5 + k),
+            skewX: 40,
+            shape: {
+                width: cellSize * 7,
+                height: cellSize
+            }
+        }))
+        zr.add(group);
+    }
+
 
     console.time('render');
     const svg = zr.renderToString();

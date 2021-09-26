@@ -454,9 +454,24 @@ function createAnimation() {
 
 }
 
-export function createClipPath(
-    el: Displayable,
-    defs: Record<string, string>
+export function setClipPath(
+    clipPath: Path,
+    attrs: SVGAttrs,
+    scope: BrushScope
 ) {
+    const {clipPathCache, defs} = scope;
+    let clipPathId = clipPathCache[clipPath.id];
+    if (!clipPathId) {
+        clipPathId = 'c' + clipPathIdx++;
+        const clipPathAttrs: SVGAttrs = [
+            ['id', clipPathId]
+        ];
 
+        clipPathCache[clipPath.id] = clipPathId;
+        defs[clipPathId] = createElement(
+            'clipPath', clipPathAttrs,
+            brushSVGPath(clipPath, scope)
+        );
+    }
+    attrs.push(['clip-path', getIdURL(clipPathId)]);
 }

@@ -6,14 +6,6 @@
 
 import {createElement} from '../core';
 import * as zrUtil from '../../core/util';
-import Path from '../../graphic/Path';
-import ZRImage from '../../graphic/Image';
-import TSpan from '../../graphic/TSpan';
-import {
-    path as svgPath,
-    image as svgImage,
-    text as svgText
-} from '../graphic';
 import Displayable from '../../graphic/Displayable';
 
 
@@ -229,29 +221,6 @@ export default class Definable {
             }
         });
     }
-
-
-    /**
-     * Get SVG proxy.
-     *
-     * @param displayable displayable element
-     * @return svg proxy of given element
-     */
-    getSvgProxy(displayable: Displayable) {
-        if (displayable instanceof Path) {
-            return svgPath;
-        }
-        else if (displayable instanceof ZRImage) {
-            return svgImage;
-        }
-        else if (displayable instanceof TSpan) {
-            return svgText;
-        }
-        else {
-            return svgPath;
-        }
-    }
-
 
     /**
      * Get SVG element.

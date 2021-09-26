@@ -3,15 +3,16 @@
  */
 
 import {
-    brush, BrushScope
+    brush, BrushScope, setClipPath
 } from './graphic';
 import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
 import { PainterBase } from '../PainterBase';
-import { createElement, createElementClose, createElementOpen } from './helper';
+import { createElement, createElementClose, createElementOpen, SVGAttrs } from './helper';
 import { SVGNS, XLINKNS } from '../svg/core';
 import { normalizeColor } from '../svg/shared';
 import { extend, keys, logError, map } from '../core/util';
+import Path from '../graphic/Path';
 
  function parseInt10(val: string) {
      return parseInt(val, 10);
@@ -118,11 +119,48 @@ class SVGPainter implements PainterBase {
 
         const elStrs: string[] = [];
 
+        const closeGroup = '</g>';
+        let prevClipPaths: Path[];
         for (let i = 0; i < listLen; i++) {
             const displayable = list[i];
             if (!displayable.invisible) {
+                const clipPaths = displayable.__clipPaths;
+                const len = clipPaths && clipPaths.length || 0;
+                const prevLen = prevClipPaths && prevClipPaths.length || 0;
+                let lca;
+                // Find the lowest common ancestor
+                for (lca = Math.max(len - 1, prevLen - 1); lca >= 0; lca--) {
+                    if (clipPaths && prevClipPaths
+                        && clipPaths[lca] === prevClipPaths[lca]
+                    ) {
+                        break;
+                    }
+                }
+                // pop the stack
+                for (let i = prevLen - 1; i > lca; i--) {
+                    elStrs.push(closeGroup);
+                }
+                // Pop clip path group for clipPaths not match the previous.
+                for (let i = lca + 1; i < len; i++) {
+                    const groupAttrs: SVGAttrs = [];
+                    setClipPath(
+                        clipPaths[i],
+                        groupAttrs,
+                        scope
+                    );
+                    elStrs.push(createElementOpen('g', groupAttrs));
+                }
+                prevClipPaths = clipPaths;
+
+
                 const str = brush(displayable, scope);
                 str && elStrs.push(str);
+            }
+        }
+
+        if (prevClipPaths) {
+            for (let i = 0; i < prevClipPaths.length; i++) {
+                elStrs.push(closeGroup);
             }
         }
 

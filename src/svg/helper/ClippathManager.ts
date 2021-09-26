@@ -7,7 +7,7 @@ import Definable from './Definable';
 import * as zrUtil from '../../core/util';
 import Displayable from '../../graphic/Displayable';
 import Path from '../../graphic/Path';
-import {SVGProxy} from '../graphic';
+import {path} from '../graphic';
 import { Dictionary } from '../../core/types';
 import { isClipPathChanged } from '../../canvas/helper';
 import { getClipPathsKey, getIdURL } from '../shared';
@@ -114,8 +114,7 @@ export default class ClippathManager extends Definable {
             }
 
             // Build path and add to <clipPath>
-            const svgProxy = this.getSvgProxy(clipPath);
-            (svgProxy as SVGProxy<Path>).brush(clipPath);
+            path.brush(clipPath);
 
             const pathEl = this.getSvgElement(clipPath);
 
