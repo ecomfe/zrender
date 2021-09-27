@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG SSR</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <div id="main"></div>
+
+    <script>
+    var zr = zrender.init(null, {
+        renderer: 'svg-ssr',
+        width: 1600,
+        height: 1600
+    });
+
+    const cellSize = 8;
+    const elSize = 6;
+
+    // Basic circle.
+    for (let i = 0; i < 100; i++) {
+        for (let k = 0; k < 100; k++) {
+            var circle = new zrender.Circle({
+                shape: {
+                    cx: i * cellSize + cellSize / 2,
+                    cy: k * cellSize + cellSize / 2,
+                    r: elSize / 2
+                },
+                style: {
+                    fill: 'red'
+                }
+            });
+            zr.add(circle);
+        };
+    }
+
+    console.time('render');
+    const svg = zr.renderToString();
+    document.getElementById('main').innerHTML = svg;
+    console.timeEnd('render');
+
+    // var blob = new Blob([svg], { type: 'image/svg+xml' });
+    // var a = document.createElement('a');
+    // a.download = 'aaa.svg';
+    // a.href = URL.createObjectURL(blob);
+    // a.style.display = "none";
+    // a.click();
+    </script>
+</body>
+</html>

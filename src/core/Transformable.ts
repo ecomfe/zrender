@@ -351,4 +351,6 @@ export const TRANSFORMABLE_PROPS = [
     'x', 'y', 'originX', 'originY', 'rotation', 'scaleX', 'scaleY', 'skewX', 'skewY'
 ] as const;
 
+export type TransformProp = (typeof TRANSFORMABLE_PROPS)[number]
+
 export default Transformable;

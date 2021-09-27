@@ -710,6 +710,16 @@ export default class Animator<T> {
         this._additiveAnimators = additiveTo;
     }
 
+    getMaxTime() {
+        return this._maxTime;
+    }
+    getDelay() {
+        return this._delay;
+    }
+    getLoop() {
+        return this._loop;
+    }
+
     getTarget() {
         return this._target;
     }

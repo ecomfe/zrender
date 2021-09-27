@@ -24,32 +24,28 @@ import { DEFAULT_FONT, getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import SVGPathRebuilder from '../svg/SVGPathRebuilder';
 import mapStyleToAttrs from '../svg/mapStyleToAttrs';
-import { SVGAttrs, createElement } from './helper';
+import { SVGElAttrsDef, createElement, SVGElDef, elDefToString } from './core';
 import { MatrixArray } from '../core/matrix';
 import Displayable from '../graphic/Displayable';
-import Rect from '../graphic/shape/Rect';
-import { assert, isArray, logError, map, retrieve2 } from '../core/util';
+import { assert, isArray, logError, map, reduce, retrieve2 } from '../core/util';
 import Polyline from '../graphic/shape/Polyline';
 import Polygon from '../graphic/shape/Polygon';
 import { GradientObject } from '../graphic/Gradient';
-import { ImagePatternObject, SVGPatternObject } from '../export';
+import { ImagePatternObject, SVGPatternObject } from '../graphic/Pattern';
+import { createAnimates } from './animation';
 
 export interface BrushScope {
     shadowCache: Record<string, string>
     gradientCache: Record<string, string>
     patternCache: Record<string, string>
     clipPathCache: Record<string, string>
-    defs: Record<string, string>
-}
-
-export interface SVGProxy<T> {
-    brush(el: T): string
+    defs: Record<string, SVGElDef>
 }
 
 
 type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;
 
-function setStyleAttrs(attrs: SVGAttrs, style: AllStyleOption, el: Path | TSpan | ZRImage, scope: BrushScope) {
+function setStyleAttrs(attrs: SVGElAttrsDef, style: AllStyleOption, el: Path | TSpan | ZRImage, scope: BrushScope) {
     const {defs} = scope;
 
     mapStyleToAttrs((key, val) => {
@@ -79,7 +75,7 @@ function noTranslate(m: MatrixArray) {
     return isAroundZero(m[4]) && isAroundZero(m[5]);
 }
 
-function setTransform(attrs: SVGAttrs, m: MatrixArray) {
+function setTransform(attrs: SVGElAttrsDef, m: MatrixArray) {
     if (m && !(noTranslate(m) && noRotateScale(m))) {
         attrs.push([
             'transform',
@@ -89,11 +85,11 @@ function setTransform(attrs: SVGAttrs, m: MatrixArray) {
     }
 }
 
-type ShapeMapDesc = (string | [string, string] | [string, string[]])[];
-type ConvertShapeToAttr = (shape: any, attrs: SVGAttrs) => void;
+type ShapeMapDesc = (string | [string, string])[];
+type ConvertShapeToAttr = (shape: any, attrs: SVGElAttrsDef) => void;
 type ShapeValidator = (shape: any) => boolean;
 
-function convertPolyShape(shape: Polygon['shape'], attrs: SVGAttrs) {
+function convertPolyShape(shape: Polygon['shape'], attrs: SVGElAttrsDef) {
     const points = shape.points;
     const strArr = [];
     for (let i = 0; i < points.length; i++) {
@@ -108,11 +104,8 @@ function validatePolyShape(shape: Polyline['shape']) {
 }
 
 function createAttrsConvert(desc: ShapeMapDesc): ConvertShapeToAttr {
-    const normalizedDesc: [string, string[]][] = map(desc, (item) =>
-        (typeof item === 'string'
-            ? [item, [item]]
-            : typeof item[1] === 'string'
-                ? [item[0], [item[1]]] : item as [string, string[]])
+    const normalizedDesc: [string, string][] = map(desc, (item) =>
+        (typeof item === 'string' ? [item, item] : item)
     );
 
     return function (shape, attrs) {
@@ -120,22 +113,13 @@ function createAttrsConvert(desc: ShapeMapDesc): ConvertShapeToAttr {
             const item = normalizedDesc[i];
             const val = shape[item[0]];
             if (val != null) {
-                for (let k = 0; k < item[1].length; k++) {
-                    attrs.push([item[1][k], round4(val)]);
-                }
+                attrs.push([item[1], round4(val)]);
             }
         }
     };
 }
 
 const buitinShapesDef: Record<string, [ConvertShapeToAttr, ShapeValidator?]> = {
-    rect: [createAttrsConvert(
-        ['x', 'y', 'width', 'height', ['r', ['rx', 'ry']]]
-    ), (shape: Rect['shape']) => {
-        const r = shape.r;
-        // TODO all r same.
-        return !isArray(r);
-    }],
     circle: [createAttrsConvert(['cx', 'cy', 'r'])],
     polyline: [convertPolyShape, validatePolyShape],
     polygon: [convertPolyShape, validatePolyShape]
@@ -147,7 +131,7 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
     const style = el.style;
     const shape = el.shape;
     const builtinShpDef = buitinShapesDef[el.type];
-    const attrs: SVGAttrs = [];
+    const attrs: SVGElAttrsDef = [];
     let svgElType = 'path';
     // Using SVG builtin shapes if possible
     if (builtinShpDef && !(builtinShpDef[1] && !builtinShpDef[1](shape))) {
@@ -178,7 +162,7 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    return createElement(svgElType, attrs);
+    return createElement(svgElType, attrs, createAnimates(el, scope.defs));
 }
 
 export function brushSVGImage(el: ZRImage, scope: BrushScope) {
@@ -196,7 +180,7 @@ export function brushSVGImage(el: ZRImage, scope: BrushScope) {
     const dw = style.width;
     const dh = style.height;
 
-    const attrs: SVGAttrs = [
+    const attrs: SVGElAttrsDef = [
         ['href', image as string],
         ['width', dw],
         ['height', dh]
@@ -211,7 +195,7 @@ export function brushSVGImage(el: ZRImage, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    return createElement('image', attrs);
+    return createElement('image', attrs, createAnimates(el, scope.defs));
 };
 
 export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
@@ -234,7 +218,7 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     const textAlign = TEXT_ALIGN_TO_ANCHOR[style.textAlign as keyof typeof TEXT_ALIGN_TO_ANCHOR]
         || style.textAlign;
 
-    const attrs: SVGAttrs = [
+    const attrs: SVGElAttrsDef = [
         ['style', `font:${font}`],
         ['dominant-baseline', 'central'],
         ['text-anchor', textAlign]
@@ -251,7 +235,7 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    return createElement('text', attrs, text);
+    return createElement('text', attrs, createAnimates(el, scope.defs), text);
 }
 
 export function brush(el: Displayable, scope: BrushScope) {
@@ -272,8 +256,8 @@ let patternIdx = 0;
 let clipPathIdx = 0;
 function setShadow(
     el: Displayable,
-    attrs: SVGAttrs,
-    defs: Record<string, string>,
+    attrs: SVGElAttrsDef,
+    defs: BrushScope['defs'],
     shadowCache: Record<string, string>
 ) {
     const style = el.style;
@@ -302,13 +286,13 @@ function setShadow(
                     ['width', '300%'],
                     ['height', '300%']
                 ],
-                createElement('feDropShadow', [
+                [createElement('feDropShadow', [
                     ['dx', offsetX / scaleX],
                     ['dy', offsetY / scaleY],
                     ['stdDeviation', stdDeviation],
                     ['flood-color', color],
                     ['flood-opacity', opacity]
-                ])
+                ])]
             );
             shadowCache[shadowKey] = shadowId;
         }
@@ -318,14 +302,14 @@ function setShadow(
 
 function setGradient(
     style: PathStyleProps,
-    attrs: SVGAttrs,
+    attrs: SVGElAttrsDef,
     target: 'fill' | 'stroke',
-    defs: Record<string, string>,
+    defs: BrushScope['defs'],
     gradientCache: Record<string, string>
 ) {
     const val = style[target] as GradientObject;
     let gradientTag;
-    let gradientAttrs: SVGAttrs = [
+    let gradientAttrs: SVGElAttrsDef = [
         [
             'gradientUnits', val.global
                 ? 'userSpaceOnUse' // x1, x2, y1, y2 in range of 0 to canvas width or height
@@ -364,7 +348,7 @@ function setGradient(
         // Fix Safari bug that stop-color not recognizing alpha #9014
         const {color, opacity} = normalizeColor(stopColor);
 
-        const stopsAttrs: SVGAttrs = [['offset', offset]];
+        const stopsAttrs: SVGElAttrsDef = [['offset', offset]];
         // stop-color cannot be color, since:
         // The opacity value used for the gradient calculation is the
         // *product* of the value of stop-opacity and the opacity of the
@@ -380,15 +364,15 @@ function setGradient(
     }
 
     // Use the whole html as cache key.
-    const colorStopsStr = colorStops.join('\n');
-    const gradientKey = createElement(gradientTag, gradientAttrs, colorStopsStr);
+    const el = createElement(gradientTag, gradientAttrs, colorStops);
+    const gradientKey = elDefToString(el);
     let gradientId = gradientCache[gradientKey];
     if (!gradientId) {
         gradientId = 'g' + gradientIdx++;
         gradientCache[gradientKey] = gradientId;
 
-        gradientAttrs.push(['id', gradientId]);
-        defs[gradientId] = createElement(gradientTag, gradientAttrs, colorStopsStr);
+        el.attrs.push(['id', gradientId]);
+        defs[gradientId] = el;
     }
 
     attrs.push([target, getIdURL(gradientId)]);
@@ -396,17 +380,19 @@ function setGradient(
 
 function setPattern(
     style: PathStyleProps,
-    attrs: SVGAttrs,
+    attrs: SVGElAttrsDef,
     target: 'fill' | 'stroke',
-    defs: Record<string, string>,
+    defs: BrushScope['defs'],
     patternCache: Record<string, string>
 ) {
     const val = style[target] as ImagePatternObject | SVGPatternObject;
-    const patternAttrs: SVGAttrs = [
+    const patternAttrs: SVGElAttrsDef = [
         ['patternUnits', 'userSpaceOnUse']
     ];
-    let children: string;
+    let child: SVGElDef;
+    let contentStr: string;
     if (isImagePattern(val)) {
+        // image can only be string
         const errMsg = 'Image width/height must been given explictly in svg-ssr renderer.';
         const imageWidth = val.imageWidth;
         const imageHeight = val.imageHeight;
@@ -414,7 +400,7 @@ function setPattern(
         assert(imageHeight, errMsg);
 
         // TODO Only support string url
-        children = createElement('image', [
+        child = createElement('image', [
             ['href', val.image as string],
             ['width', imageWidth],
             ['height', imageHeight]
@@ -425,52 +411,48 @@ function setPattern(
         );
     }
     else if (typeof val.svgElement === 'string') {  // Only string supported in SSR.
-        // image can only be string
-        children = val.svgElement;
+        // TODO it's not so good to use textContent as innerHTML
+        contentStr = val.svgElement;
         patternAttrs.push(
             ['width', val.svgWidth],
             ['height', val.svgHeight]
         );
     }
-    if (!children) {
+    if (!child && !contentStr) {
         return;
     }
 
     // Use the whole html as cache key.
-    const patternTag = 'pattern';
-    const patternKey = createElement(patternTag, patternAttrs, children);
+    const patternEl = createElement('pattern', patternAttrs, [child], contentStr);
+    const patternKey = elDefToString(patternEl);
     let patternId = patternCache[patternKey];
     if (!patternId) {
         patternId = 'p' + patternIdx++;
         patternCache[patternKey] = patternId;
-        patternAttrs.push(['id', patternId]);
-        defs[patternId] = createElement(patternTag, patternAttrs, children);
+        patternEl.attrs.push(['id', patternId]);
+        defs[patternId] = patternEl;
     }
 
     attrs.push([target, getIdURL(patternId)]);
 }
 
-function createAnimation() {
-
-}
-
 export function setClipPath(
     clipPath: Path,
-    attrs: SVGAttrs,
+    attrs: SVGElAttrsDef,
     scope: BrushScope
 ) {
     const {clipPathCache, defs} = scope;
     let clipPathId = clipPathCache[clipPath.id];
     if (!clipPathId) {
         clipPathId = 'c' + clipPathIdx++;
-        const clipPathAttrs: SVGAttrs = [
+        const clipPathAttrs: SVGElAttrsDef = [
             ['id', clipPathId]
         ];
 
         clipPathCache[clipPath.id] = clipPathId;
         defs[clipPathId] = createElement(
             'clipPath', clipPathAttrs,
-            brushSVGPath(clipPath, scope)
+            [brushSVGPath(clipPath, scope)]
         );
     }
     attrs.push(['clip-path', getIdURL(clipPathId)]);

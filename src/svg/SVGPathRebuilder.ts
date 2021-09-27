@@ -104,10 +104,11 @@ export default class SVGPathRebuilder implements PathRebuilder {
     }
     rect(x: number, y: number, w: number, h: number) {
         this._add('M', x, y);
-        this._add('L', x + w, y);
-        this._add('L', x + w, y + h);
-        this._add('L', x, y + h);
-        this._add('L', x, y);
+        // Use relative coordinates to reduce the size.
+        this._add('l', w, 0);
+        this._add('l', 0, h);
+        this._add('l', -w, 0);
+        // this._add('L', x, y);
         this._add('Z');
     }
     closePath() {

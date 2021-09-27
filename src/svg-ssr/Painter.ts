@@ -8,15 +8,11 @@ import {
 import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
 import { PainterBase } from '../PainterBase';
-import { createElement, createElementClose, createElementOpen, SVGAttrs } from './helper';
+import { createElement, elDefToString, SVGElAttrsDef, SVGElDef } from './core';
 import { SVGNS, XLINKNS } from '../svg/core';
 import { normalizeColor } from '../svg/shared';
 import { extend, keys, logError, map } from '../core/util';
 import Path from '../graphic/Path';
-
- function parseInt10(val: string) {
-     return parseInt(val, 10);
- }
 
 interface SVGPainterOption {
     width?: number
@@ -53,7 +49,7 @@ class SVGPainter implements PainterBase {
         throw 'refresh is not supported in SSR mode';
     }
 
-    renderToString() {
+    _renderToDef() {
         const list = this.storage.getDisplayList(true);
         const bgColor = this._backgroundColor;
         const width = this._width + '';
@@ -67,10 +63,22 @@ class SVGPainter implements PainterBase {
             defs: {}
         };
 
-        let backgroundRect;
+        const svgEl = createElement('svg',
+            [
+                ['width', width],
+                ['height', height],
+                ['xmlns', SVGNS],
+                ['xmlns:xlink', XLINKNS],
+                ['version', '1.1'],
+                ['baseProfile', 'full']
+            ],
+            []
+        );
+        const children = svgEl.children;
+
         if (bgColor && bgColor !== 'none') {
             const { color, opacity } = normalizeColor(bgColor);
-            backgroundRect = createElement(
+            svgEl.children.push(createElement(
                 'rect',
                 [
                     ['width', width],
@@ -81,45 +89,32 @@ class SVGPainter implements PainterBase {
                     ['fill', color],
                     ['fillOpacity', opacity + '']
                 ]
-            );
+            ));
         }
 
-        const svgElsArr = [
-            createElementOpen('svg',
-                [
-                    ['width', width],
-                    ['height', height],
-                    ['xmlns', SVGNS],
-                    ['xmlns:xlink', XLINKNS],
-                    ['version', '1.1'],
-                    ['baseProfile', 'full']
-                ]
-            ),
-            // Background
-            backgroundRect,
+        this._paintList(list, scope, children);
 
-            // Elements
-            this._paintList(list, scope),
+        children.push(
+            createElement('defs', [], map(keys(scope.defs), (id) => scope.defs[id]))
+        );
 
-            // After paint list
-            createElement('defs', [], map(keys(scope.defs), (id) => scope.defs[id]).join('\n')),
+        return svgEl;
+    }
 
-            createElementClose('svg')
-        ];
-
-        return svgElsArr.join('\n');
+    renderToString() {
+        return elDefToString(this._renderToDef());
     }
 
     setBackgroundColor(backgroundColor: string) {
         this._backgroundColor = backgroundColor;
     }
 
-    _paintList(list: Displayable[], scope: BrushScope) {
+    _paintList(list: Displayable[], scope: BrushScope, out?: SVGElDef[]) {
         const listLen = list.length;
 
-        const elStrs: string[] = [];
-
-        const closeGroup = '</g>';
+        const clipPathsGroupsStack: SVGElDef[] = [];
+        let clipPathsGroupsStackDepth = 0;
+        let currentClipPathGroup;
         let prevClipPaths: Path[];
         for (let i = 0; i < listLen; i++) {
             const displayable = list[i];
@@ -138,33 +133,31 @@ class SVGPainter implements PainterBase {
                 }
                 // pop the stack
                 for (let i = prevLen - 1; i > lca; i--) {
-                    elStrs.push(closeGroup);
+                    clipPathsGroupsStackDepth--;
+                    // svgEls.push(closeGroup);
+                    currentClipPathGroup = clipPathsGroupsStack[clipPathsGroupsStackDepth - 1];
                 }
                 // Pop clip path group for clipPaths not match the previous.
                 for (let i = lca + 1; i < len; i++) {
-                    const groupAttrs: SVGAttrs = [];
+                    const groupAttrs: SVGElAttrsDef = [];
                     setClipPath(
                         clipPaths[i],
                         groupAttrs,
                         scope
                     );
-                    elStrs.push(createElementOpen('g', groupAttrs));
+                    const g = createElement('g', groupAttrs, []);
+                    (currentClipPathGroup ? currentClipPathGroup.children : out).push(g);
+                    clipPathsGroupsStack[clipPathsGroupsStackDepth++] = g;
+                    currentClipPathGroup = g;
                 }
                 prevClipPaths = clipPaths;
 
-
-                const str = brush(displayable, scope);
-                str && elStrs.push(str);
+                const ret = brush(displayable, scope);
+                if (ret) {
+                    (currentClipPathGroup ? currentClipPathGroup.children : out).push(ret);
+                }
             }
         }
-
-        if (prevClipPaths) {
-            for (let i = 0; i < prevClipPaths.length; i++) {
-                elStrs.push(closeGroup);
-            }
-        }
-
-        return elStrs.join('\n');
     }
 
     resize(width: number, height: number) {
