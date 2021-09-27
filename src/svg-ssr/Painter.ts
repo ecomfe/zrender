@@ -8,7 +8,7 @@ import {
 import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
 import { PainterBase } from '../PainterBase';
-import { createElement, elDefToString, SVGElAttrsDef, SVGElDef } from './core';
+import { createElement, vNodeToString, SVGVNodeAttrs, SVGVNode } from './core';
 import { SVGNS, XLINKNS } from '../svg/core';
 import { normalizeColor } from '../svg/shared';
 import { extend, keys, logError, map } from '../core/util';
@@ -49,7 +49,7 @@ class SVGPainter implements PainterBase {
         throw 'refresh is not supported in SSR mode';
     }
 
-    _renderToDef() {
+    renderToVNode() {
         const list = this.storage.getDisplayList(true);
         const bgColor = this._backgroundColor;
         const width = this._width + '';
@@ -63,7 +63,7 @@ class SVGPainter implements PainterBase {
             defs: {}
         };
 
-        const svgEl = createElement('svg',
+        const svgVNode = createElement('svg',
             [
                 ['width', width],
                 ['height', height],
@@ -74,11 +74,11 @@ class SVGPainter implements PainterBase {
             ],
             []
         );
-        const children = svgEl.children;
+        const children = svgVNode.children;
 
         if (bgColor && bgColor !== 'none') {
             const { color, opacity } = normalizeColor(bgColor);
-            svgEl.children.push(createElement(
+            svgVNode.children.push(createElement(
                 'rect',
                 [
                     ['width', width],
@@ -98,21 +98,21 @@ class SVGPainter implements PainterBase {
             createElement('defs', [], map(keys(scope.defs), (id) => scope.defs[id]))
         );
 
-        return svgEl;
+        return svgVNode;
     }
 
     renderToString() {
-        return elDefToString(this._renderToDef());
+        return vNodeToString(this.renderToVNode());
     }
 
     setBackgroundColor(backgroundColor: string) {
         this._backgroundColor = backgroundColor;
     }
 
-    _paintList(list: Displayable[], scope: BrushScope, out?: SVGElDef[]) {
+    _paintList(list: Displayable[], scope: BrushScope, out?: SVGVNode[]) {
         const listLen = list.length;
 
-        const clipPathsGroupsStack: SVGElDef[] = [];
+        const clipPathsGroupsStack: SVGVNode[] = [];
         let clipPathsGroupsStackDepth = 0;
         let currentClipPathGroup;
         let prevClipPaths: Path[];
@@ -139,7 +139,7 @@ class SVGPainter implements PainterBase {
                 }
                 // Pop clip path group for clipPaths not match the previous.
                 for (let i = lca + 1; i < len; i++) {
-                    const groupAttrs: SVGElAttrsDef = [];
+                    const groupAttrs: SVGVNodeAttrs = [];
                     setClipPath(
                         clipPaths[i],
                         groupAttrs,

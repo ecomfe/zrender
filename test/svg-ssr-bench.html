@@ -5,12 +5,14 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SVG SSR</title>
+    <script src="lib/stats.js"></script>
     <script src="../dist/zrender.js"></script>
 </head>
 <body>
     <div id="main"></div>
 
     <script>
+    var container = document.getElementById('main');
     var zr = zrender.init(null, {
         renderer: 'svg-ssr',
         width: 1600,
@@ -37,10 +39,29 @@
         };
     }
 
-    console.time('render');
-    const svg = zr.renderToString();
-    document.getElementById('main').innerHTML = svg;
-    console.timeEnd('render');
+    // console.time('render');
+    // const svg = zr.renderToString();
+    // document.getElementById('main').innerHTML = svg;
+    // console.timeEnd('render');
+
+    const stats = new Stats();
+    document.body.appendChild(stats.dom);
+
+    function patch(elDef) {
+
+        function mapToVitualDOM(elDef) {
+
+        }
+    }
+    function update() {
+        stats.begin();
+        const defs = zr.painter._renderToDef();
+
+        stats.end();
+        requestAnimationFrame(update);
+    }
+
+    update();
 
     // var blob = new Blob([svg], { type: 'image/svg+xml' });
     // var a = document.createElement('a');

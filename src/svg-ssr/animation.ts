@@ -1,4 +1,4 @@
-import { createElement, SVGElDef } from './core';
+import { createElement, SVGVNode } from './core';
 import Displayable from '../graphic/Displayable';
 import {TransformProp} from '../core/Transformable';
 import Animator from '../animation/Animator';
@@ -33,7 +33,7 @@ function getTransformAnimateValues(
 
 type SVGTransformType = 'translate' | 'scale' | 'rotate';
 
-function createTransformAnimateDef(defs: Record<string, SVGElDef>, transformType: SVGTransformType) {
+function createTransformAnimateDef(defs: Record<string, SVGVNode>, transformType: SVGTransformType) {
     const id = transformType.substr(0, 3);
     if (defs[id]) {
         return id;
@@ -62,7 +62,7 @@ const transformMaps: [SVGTransformType, TransformProp[]][] = [
     ['scale', ['scaleX', 'scaleY']]
 ];
 
-export function createAnimates(el: Displayable, defs: Record<string, SVGElDef>): SVGElDef[] {
+export function createAnimates(el: Displayable, defs: Record<string, SVGVNode>): SVGVNode[] {
     const animators = el.animators;
     let animatesEls = [];
 

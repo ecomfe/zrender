@@ -1,19 +1,19 @@
 import { map } from '../core/util';
 
-export type SVGElAttrsDef = [string, string | number | undefined][];
-export type SVGElDef = {
+export type SVGVNodeAttrs = [string, string | number | undefined][];
+export type SVGVNode = {
     tag: string,
-    attrs: SVGElAttrsDef,
-    children?: SVGElDef[],
+    attrs: SVGVNodeAttrs,
+    children?: SVGVNode[],
     textContent?: string
 };
 
 export function createElement(
     tag: string,
-    attrs?: SVGElAttrsDef,
-    children?: SVGElDef[],
+    attrs?: SVGVNodeAttrs,
+    children?: SVGVNode[],
     textContent?: string
-): SVGElDef {
+): SVGVNode {
     return {
         tag,
         attrs,
@@ -21,7 +21,7 @@ export function createElement(
         textContent
     };
 }
-function createElementOpen(name: string, attrs?: SVGElAttrsDef) {
+function createElementOpen(name: string, attrs?: SVGVNodeAttrs) {
     const attrsStr: string[] = [];
     if (attrs) {
         for (let i = 0; i < attrs.length; i++) {
@@ -39,12 +39,12 @@ function createElementClose(name: string) {
     return `</${name}>`;
 }
 
-export function elDefToString(el: SVGElDef, opts?: {
+export function vNodeToString(el: SVGVNode, opts?: {
     newline?: boolean
 }) {
     opts = opts || {};
     const S = opts.newline ? '\n' : '';
-    function convertElToString(el: SVGElDef): string {
+    function convertElToString(el: SVGVNode): string {
         const {children, tag, attrs} = el;
         return createElementOpen(tag, attrs)
             + (el.textContent || '')
