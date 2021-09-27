@@ -7,14 +7,15 @@
     <title>SVG SSR</title>
     <script src="lib/stats.js"></script>
     <script src="../dist/zrender.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/preact@10.5.14/dist/preact.min.js"></script>
 </head>
 <body>
     <div id="main"></div>
 
     <script>
     var container = document.getElementById('main');
-    var zr = zrender.init(null, {
-        renderer: 'svg-ssr',
+    var zr = zrender.init(container, {
+        renderer: 'svg',
         width: 1600,
         height: 1600
     });
@@ -22,6 +23,7 @@
     const cellSize = 8;
     const elSize = 6;
 
+    const circles = [];
     // Basic circle.
     for (let i = 0; i < 100; i++) {
         for (let k = 0; k < 100; k++) {
@@ -35,40 +37,38 @@
                     fill: 'red'
                 }
             });
+            circles.push(circle);
             zr.add(circle);
         };
     }
-
-    // console.time('render');
-    // const svg = zr.renderToString();
-    // document.getElementById('main').innerHTML = svg;
-    // console.timeEnd('render');
-
     const stats = new Stats();
     document.body.appendChild(stats.dom);
 
-    function patch(elDef) {
-
-        function mapToVitualDOM(elDef) {
-
+    function patch(vnode) {
+        function mapToVitualDOM(vnode) {
+            return preact.h(
+                vnode.tag,
+                (vnode.attrs || []).reduce((attrs, val) => {
+                    attrs[val[0]] = val[1];
+                    return attrs;
+                }, {}),
+                vnode.children && vnode.children.map(child => mapToVitualDOM(child))
+            );
         }
+        preact.render(mapToVitualDOM(vnode), container);
     }
     function update() {
         stats.begin();
-        const defs = zr.painter._renderToDef();
-
+        for (let i = 0; i < circles.length; i++) {
+            circles[i].setStyle('fill', zrender.color.random());
+        }
+        // const vnode = zr.painter.renderToVNode();
+        // patch(vnode);
         stats.end();
         requestAnimationFrame(update);
     }
 
     update();
-
-    // var blob = new Blob([svg], { type: 'image/svg+xml' });
-    // var a = document.createElement('a');
-    // a.download = 'aaa.svg';
-    // a.href = URL.createObjectURL(blob);
-    // a.style.display = "none";
-    // a.click();
     </script>
 </body>
 </html>
