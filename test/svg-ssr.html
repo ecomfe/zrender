@@ -170,7 +170,7 @@
 
 
     console.time('render');
-    const svg = zr.renderToString();
+    const svg = zr.painter.renderToString();
     document.getElementById('main').innerHTML = svg;
     console.timeEnd('render');
 

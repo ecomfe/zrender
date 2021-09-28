@@ -1,11 +1,11 @@
 import { map } from '../core/util';
 
-export type SVGVNodeAttrs = [string, string | number | undefined | boolean][];
+// export type SVGVNodeAttrs = [string, string | number | undefined | boolean][];
 
-type SVGVNodeAttrsMap = Record<string, string | number | undefined | boolean>
+export type SVGVNodeAttrs = Record<string, string | number | undefined | boolean>
 export interface SVGVNode {
     tag: string,
-    attrs: SVGVNodeAttrsMap,
+    attrs: SVGVNodeAttrs,
     children?: SVGVNode[],
     text?: string
 
@@ -20,22 +20,22 @@ export function createVNode(
     children?: SVGVNode[],
     text?: string
 ): SVGVNode {
-    const attrsMap: SVGVNodeAttrsMap = {};
-    if (attrs) {
-        for (let i = 0; i < attrs.length; i++) {
-            attrsMap[attrs[i][0]] = attrs[i][1];
-        }
-    }
+    // const attrsMap: SVGVNodeAttrs = {};
+    // if (attrs) {
+    //     for (let i = 0; i < attrs.length; i++) {
+    //         attrsMap[attrs[i][0]] = attrs[i][1];
+    //     }
+    // }
     return {
         tag,
-        attrs: attrsMap,
+        attrs: attrs || {},
         children,
         text,
         key
     };
 }
 
-function createElementOpen(name: string, attrs?: SVGVNodeAttrsMap) {
+function createElementOpen(name: string, attrs?: SVGVNodeAttrs) {
     const attrsStr: string[] = [];
     if (attrs) {
         // eslint-disable-next-line

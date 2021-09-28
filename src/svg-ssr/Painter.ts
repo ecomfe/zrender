@@ -108,15 +108,15 @@ class SVGPainter implements PainterBase {
             children.push(createVNode(
                 'rect',
                 'bg',
-                [
-                    ['width', width],
-                    ['height', height],
-                    ['x', '0'],
-                    ['y', '0'],
-                    ['id', '0'],
-                    ['fill', color],
-                    ['fillOpacity', opacity + '']
-                ]
+                {
+                    width: width,
+                    height: height,
+                    x: '0',
+                    y: '0',
+                    id: '0',
+                    fill: color,
+                    fillOpacity: opacity
+                }
             ));
         }
 
@@ -126,7 +126,7 @@ class SVGPainter implements PainterBase {
             createVNode(
                 'defs',
                 'defs',
-                [],
+                {},
                 map(keys(scope.defs), (id) => scope.defs[id])
             )
         );
@@ -134,14 +134,14 @@ class SVGPainter implements PainterBase {
         return createVNode(
             'svg',
             'root',
-            [
-                ['width', width],
-                ['height', height],
-                ['xmlns', SVGNS],
-                ['xmlns:xlink', XLINKNS],
-                ['version', '1.1'],
-                ['baseProfile', 'full']
-            ],
+            {
+                'width': width,
+                'height': height,
+                'xmlns': SVGNS,
+                'xmlns:xlink': XLINKNS,
+                'version': '1.1',
+                'baseProfile': 'full'
+            },
             children
         );
     }
@@ -186,7 +186,7 @@ class SVGPainter implements PainterBase {
                 }
                 // Pop clip path group for clipPaths not match the previous.
                 for (let i = lca + 1; i < len; i++) {
-                    const groupAttrs: SVGVNodeAttrs = [];
+                    const groupAttrs: SVGVNodeAttrs = {};
                     setClipPath(
                         clipPaths[i],
                         groupAttrs,

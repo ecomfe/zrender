@@ -50,10 +50,7 @@
     //     function mapToVitualDOM(vnode) {
     //         return preact.h(
     //             vnode.tag,
-    //             (vnode.attrs || []).reduce((attrs, val) => {
-    //                 attrs[val[0]] = val[1];
-    //                 return attrs;
-    //             }, {}),
+    //             vnode.attrs,
     //             vnode.children && vnode.children.map(child => mapToVitualDOM(child))
     //         );
     //     }
@@ -64,7 +61,7 @@
         stats.begin();
         for (let i = 0; i < circles.length; i++) {
             // circles[i].ignore = Math.random() < 0.1;
-            circles[i].setStyle('fill', zrender.color.random());
+            circles[i].setStyle('fill', Math.random() < 1.1 ? zrender.color.random() : 'red');
         }
         stats.end();
         requestAnimationFrame(update);

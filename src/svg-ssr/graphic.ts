@@ -59,7 +59,7 @@ function setStyleAttrs(attrs: SVGVNodeAttrs, style: AllStyleOption, el: Path | T
             setPattern(el, attrs, key, defs, scope.patternCache);
         }
         else {
-            attrs.push([key, val]);
+            attrs[key] = val;
         }
     }, style, el, false);
 
@@ -79,11 +79,9 @@ function noTranslate(m: MatrixArray) {
 
 function setTransform(attrs: SVGVNodeAttrs, m: MatrixArray) {
     if (m && !(noTranslate(m) && noRotateScale(m))) {
-        attrs.push([
-            'transform',
-            // Use translate possible to reduce the size a bit.
-            noRotateScale(m) ? `translate(${round4(m[4])} ${round4(m[5])})` : getMatrixStr(m)
-        ]);
+        // Use translate possible to reduce the size a bit.
+        attrs.transform = noRotateScale(m)
+            ? `translate(${round4(m[4])} ${round4(m[5])})` : getMatrixStr(m);
     }
 }
 
@@ -98,7 +96,7 @@ function convertPolyShape(shape: Polygon['shape'], attrs: SVGVNodeAttrs) {
         strArr.push(round4(points[i][0]));
         strArr.push(round4(points[i][1]));
     }
-    attrs.push(['points', strArr.join(' ')]);
+    attrs.points = strArr.join(' ');
 }
 
 function validatePolyShape(shape: Polyline['shape']) {
@@ -115,7 +113,7 @@ function createAttrsConvert(desc: ShapeMapDesc): ConvertShapeToAttr {
             const item = normalizedDesc[i];
             const val = shape[item[0]];
             if (val != null) {
-                attrs.push([item[1], round4(val)]);
+                attrs[item[1]] = round4(val);
             }
         }
     };
@@ -133,7 +131,7 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
     const style = el.style;
     const shape = el.shape;
     const builtinShpDef = buitinShapesDef[el.type];
-    const attrs: SVGVNodeAttrs = [];
+    const attrs: SVGVNodeAttrs = {};
     let svgElType = 'path';
     // Using SVG builtin shapes if possible
     if (builtinShpDef && !(builtinShpDef[1] && !builtinShpDef[1](shape))) {
@@ -155,7 +153,7 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
         path.rebuildPath(svgPathBuilder, 1);
         svgPathBuilder.generateStr();
 
-        attrs.push(['d', svgPathBuilder.getStr()]);
+        attrs.d = svgPathBuilder.getStr();
     }
 
 
@@ -180,16 +178,16 @@ export function brushSVGImage(el: ZRImage, scope: BrushScope) {
     const dw = style.width;
     const dh = style.height;
 
-    const attrs: SVGVNodeAttrs = [
-        ['href', image as string],
-        ['width', dw],
-        ['height', dh]
-    ];
+    const attrs: SVGVNodeAttrs = {
+        href: image as string,
+        width: dw,
+        height: dh
+    };
     if (x) {
-        attrs.push(['x', x]);
+        attrs.x = x;
     }
     if (y) {
-        attrs.push(['y', y]);
+        attrs.y = y;
     }
 
     setTransform(attrs, el.transform);
@@ -218,19 +216,19 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     const textAlign = TEXT_ALIGN_TO_ANCHOR[style.textAlign as keyof typeof TEXT_ALIGN_TO_ANCHOR]
         || style.textAlign;
 
-    const attrs: SVGVNodeAttrs = [
-        ['style', `font:${font}`],
-        ['dominant-baseline', 'central'],
-        ['text-anchor', textAlign]
-    ];
+    const attrs: SVGVNodeAttrs = {
+        'style': `font:${font}`,
+        'dominant-baseline': 'central',
+        'text-anchor': textAlign
+    };
     if (text.match(/\s\s/)) {
-        attrs.push(['xml:space', 'preserve']);
+        attrs['xml:space'] = 'preserve';
     }
     if (x) {
-        attrs.push(['x', x]);
+        attrs.x = x;
     }
     if (y) {
-        attrs.push(['y', y]);
+        attrs.y = y;
     }
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
@@ -280,26 +278,26 @@ function setShadow(
             shadowId = 's' + shadowIdx++;
             defs[shadowId] = createVNode(
                 'filter', shadowId,
+                {
+                    'id': shadowId,
+                    'x': '-100%',
+                    'y': '-100%',
+                    'width': '300%',
+                    'height': '300%'
+                },
                 [
-                    ['id', shadowId],
-                    ['x', '-100%'],
-                    ['y', '-100%'],
-                    ['width', '300%'],
-                    ['height', '300%']
-                ],
-                [
-                    createVNode('feDropShadow', '', [
-                        ['dx', offsetX / scaleX],
-                        ['dy', offsetY / scaleY],
-                        ['stdDeviation', stdDeviation],
-                        ['flood-color', color],
-                        ['flood-opacity', opacity]
-                    ])
+                    createVNode('feDropShadow', '', {
+                        'dx': offsetX / scaleX,
+                        'dy': offsetY / scaleY,
+                        'stdDeviation': stdDeviation,
+                        'flood-color': color,
+                        'flood-opacity': opacity
+                    })
                 ]
             );
             shadowCache[shadowKey] = shadowId;
         }
-        attrs.push(['filter', getIdURL(shadowId)]);
+        attrs.filter = getIdURL(shadowId);
     }
 }
 
@@ -312,29 +310,23 @@ function setGradient(
 ) {
     const val = style[target] as GradientObject;
     let gradientTag;
-    let gradientAttrs: SVGVNodeAttrs = [
-        [
-            'gradientUnits', val.global
-                ? 'userSpaceOnUse' // x1, x2, y1, y2 in range of 0 to canvas width or height
-                : 'objectBoundingBox' // x1, x2, y1, y2 in range of 0 to 1]
-        ]
-    ];
+    let gradientAttrs: SVGVNodeAttrs = {
+        'gradientUnits': val.global
+            ? 'userSpaceOnUse' // x1, x2, y1, y2 in range of 0 to canvas width or height
+            : 'objectBoundingBox' // x1, x2, y1, y2 in range of 0 to 1]
+    };
     if (isLinearGradient(val)) {
         gradientTag = 'linearGradient';
-        gradientAttrs.push(
-            ['x1', val.x],
-            ['y1', val.y],
-            ['x2', val.x2],
-            ['y2', val.y2]
-        );
+        gradientAttrs.x1 = val.x;
+        gradientAttrs.y1 = val.y;
+        gradientAttrs.x2 = val.x2;
+        gradientAttrs.y2 = val.y2;
     }
     else if (isRadialGradient(val)) {
         gradientTag = 'radialGradient';
-        gradientAttrs.push(
-            ['cx', retrieve2(val.x, 0.5)],
-            ['cy', retrieve2(val.y, 0.5)],
-            ['r', retrieve2(val.r, 0.5)]
-        );
+        gradientAttrs.cx = retrieve2(val.x, 0.5);
+        gradientAttrs.cy = retrieve2(val.y, 0.5);
+        gradientAttrs.r = retrieve2(val.r, 0.5);
     }
     else {
         logError('Illegal gradient type.');
@@ -351,15 +343,18 @@ function setGradient(
         // Fix Safari bug that stop-color not recognizing alpha #9014
         const {color, opacity} = normalizeColor(stopColor);
 
-        const stopsAttrs: SVGVNodeAttrs = [['offset', offset]];
+        const stopsAttrs: SVGVNodeAttrs = {
+            'offset': offset
+        };
         // stop-color cannot be color, since:
         // The opacity value used for the gradient calculation is the
         // *product* of the value of stop-opacity and the opacity of the
         // value of stop-color.
         // See https://www.w3.org/TR/SVG2/pservers.html#StopOpacityProperty
-        stopsAttrs.push(['stop-color', color]);
+
+        stopsAttrs['stop-color'] = color;
         if (opacity < 1) {
-            stopsAttrs.push(['stop-opacity', opacity]);
+            stopsAttrs['stop-opacity'] = opacity;
         }
         colorStops.push(
             createVNode('stop', i + '', stopsAttrs)
@@ -374,13 +369,13 @@ function setGradient(
         gradientId = 'g' + gradientIdx++;
         gradientCache[gradientKey] = gradientId;
 
-        gradientAttrs.push(['id', gradientId]);
+        gradientAttrs.id = gradientId;
         defs[gradientId] = createVNode(
             gradientTag, gradientId, gradientAttrs, colorStops
         );
     }
 
-    attrs.push([target, getIdURL(gradientId)]);
+    attrs[target] = getIdURL(gradientId);
 }
 
 function setPattern(
@@ -391,14 +386,14 @@ function setPattern(
     patternCache: Record<string, string>
 ) {
     const val = el.style[target] as ImagePatternObject | SVGPatternObject;
-    const patternAttrs: SVGVNodeAttrs = [
-        ['patternUnits', 'userSpaceOnUse']
-    ];
+    const patternAttrs: SVGVNodeAttrs = {
+        'patternUnits': 'userSpaceOnUse'
+    };
     let child: SVGVNode;
     let contentStr: string;
     if (isImagePattern(val)) {
-        let imageWidth;
-        let imageHeight;
+        let imageWidth = val.imageWidth;
+        let imageHeight = val.imageHeight;
         let imageSrc;
         const patternImage = val.image;
         if (typeof patternImage === 'string') {
@@ -413,18 +408,16 @@ function setPattern(
 
         if (typeof Image === 'undefined') {
             const errMsg = 'Image width/height must been given explictly in svg-ssr renderer.';
-            const imageWidth = val.imageWidth;
-            const imageHeight = val.imageHeight;
             assert(imageWidth, errMsg);
             assert(imageHeight, errMsg);
         }
-        else {
+        else if (imageWidth == null || imageHeight == null) {
             // TODO
             const setSizeToVNode = (vNode: SVGVNode, img: ImageLike) => {
                 if (vNode) {
                     const svgEl = vNode.elm as SVGElement;
-                    const width = (vNode.attrs.width = img.width);
-                    const height = (vNode.attrs.height = img.height);
+                    const width = (vNode.attrs.width = imageWidth || img.width);
+                    const height = (vNode.attrs.height = imageHeight || img.height);
                     if (svgEl) {
                         svgEl.setAttribute('width', width as any);
                         svgEl.setAttribute('height', height as any);
@@ -439,8 +432,8 @@ function setPattern(
             );
             if (createdImage && createdImage.width && createdImage.height) {
                 // Loaded before
-                imageWidth = createdImage.width;
-                imageHeight = createdImage.height;
+                imageWidth = imageWidth || createdImage.width;
+                imageHeight = imageHeight || createdImage.height;
             }
         }
 
@@ -448,24 +441,20 @@ function setPattern(
         child = createVNode(
             'image',
             'img',
-            [
-                ['href', val.image as string],
-                ['width', imageWidth],
-                ['height', imageHeight]
-            ]
+            {
+                href: val.image as string,
+                width: imageWidth,
+                height: imageHeight
+            }
         );
-        patternAttrs.push(
-            ['width', imageWidth],
-            ['height', imageHeight]
-        );
+        patternAttrs.width = imageWidth;
+        patternAttrs.height = imageHeight;
     }
     else if (typeof val.svgElement === 'string') {  // Only string supported in SSR.
         // TODO it's not so good to use textContent as innerHTML
         contentStr = val.svgElement;
-        patternAttrs.push(
-            ['width', val.svgWidth],
-            ['height', val.svgHeight]
-        );
+        patternAttrs.width = val.svgWidth;
+        patternAttrs.height = val.svgHeight;
     }
     if (!child && !contentStr) {
         return;
@@ -484,7 +473,7 @@ function setPattern(
     if (!patternId) {
         patternId = 'p' + patternIdx++;
         patternCache[patternKey] = patternId;
-        patternAttrs.push(['id', patternId]);
+        patternAttrs.id = patternId;
         defs[patternId] = createVNode(
             'pattern',
             patternId,
@@ -494,7 +483,7 @@ function setPattern(
         );
     }
 
-    attrs.push([target, getIdURL(patternId)]);
+    attrs[target] = getIdURL(patternId);
 }
 
 export function setClipPath(
@@ -506,9 +495,9 @@ export function setClipPath(
     let clipPathId = clipPathCache[clipPath.id];
     if (!clipPathId) {
         clipPathId = 'c' + clipPathIdx++;
-        const clipPathAttrs: SVGVNodeAttrs = [
-            ['id', clipPathId]
-        ];
+        const clipPathAttrs: SVGVNodeAttrs = {
+            id: clipPathId
+        };
 
         clipPathCache[clipPath.id] = clipPathId;
         defs[clipPathId] = createVNode(
@@ -516,5 +505,5 @@ export function setClipPath(
             [brushSVGPath(clipPath, scope)]
         );
     }
-    attrs.push(['clip-path', getIdURL(clipPathId)]);
+    attrs['clip-path'] = getIdURL(clipPathId);
 }

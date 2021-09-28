@@ -50,7 +50,7 @@
     var renderMode = hasParam('svg') ? 'svg' : 'canvas';
 
 var zr = zrender.init(document.getElementById('main'), {
-    renderer: renderMode
+    renderer: 'svg-ssr'
 });
 
 var stats = new Stats();

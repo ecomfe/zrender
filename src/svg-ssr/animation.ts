@@ -39,7 +39,7 @@ function createTransformAnimateDef(defs: Record<string, SVGVNode>, transformType
         return id;
     }
 
-    const el = createVNode('animateTransform', [
+    const el = createVNode('animateTransform', '', [
         ['attributeName', 'transform'],
         ['attributeType', 'XML'],
         ['type', transformType],
@@ -50,7 +50,7 @@ function createTransformAnimateDef(defs: Record<string, SVGVNode>, transformType
 }
 
 function createAnimateEl(useId: string, values: string) {
-    return createVNode('use', [
+    return createVNode('use', '', [
         ['xlink:href', useId],
         ['values', values]
     ]);
