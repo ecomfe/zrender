@@ -6,10 +6,10 @@
 import Definable from './Definable';
 import * as zrUtil from '../../core/util';
 import Displayable from '../../graphic/Displayable';
-import {PatternObject, ImagePatternObject, SVGPatternObject} from '../../graphic/Pattern';
+import {PatternObject} from '../../graphic/Pattern';
 import {createOrUpdateImage} from '../../graphic/helper/image';
 import WeakMap from '../../core/WeakMap';
-import { getIdURL, isPattern, isSVGPattern } from '../shared';
+import { getIdURL, isPattern, isSVGPattern } from '../../svg-ssr/shared';
 import { createElement } from '../core';
 
 const patternDomMap = new WeakMap<PatternObject, SVGElement>();

@@ -10,7 +10,7 @@ import Path from '../../graphic/Path';
 import {path} from '../graphic';
 import { Dictionary } from '../../core/types';
 import { isClipPathChanged } from '../../canvas/helper';
-import { getClipPathsKey, getIdURL } from '../shared';
+import { getClipPathsKey, getIdURL } from '../../svg-ssr/shared';
 import { createElement } from '../core';
 
 type PathExtended = Path & {

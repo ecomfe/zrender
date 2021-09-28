@@ -15,9 +15,9 @@
     <script>
     var container = document.getElementById('main');
     var zr = zrender.init(container, {
-        renderer: 'svg',
-        width: 1600,
-        height: 1600
+        renderer: 'svg-ssr',
+        width: 800,
+        height: 800
     });
 
     const cellSize = 8;
@@ -31,6 +31,8 @@
                 shape: {
                     cx: i * cellSize + cellSize / 2,
                     cy: k * cellSize + cellSize / 2,
+                    // width: elSize,
+                    // height: elSize,
                     r: elSize / 2
                 },
                 style: {
@@ -44,26 +46,26 @@
     const stats = new Stats();
     document.body.appendChild(stats.dom);
 
-    function patch(vnode) {
-        function mapToVitualDOM(vnode) {
-            return preact.h(
-                vnode.tag,
-                (vnode.attrs || []).reduce((attrs, val) => {
-                    attrs[val[0]] = val[1];
-                    return attrs;
-                }, {}),
-                vnode.children && vnode.children.map(child => mapToVitualDOM(child))
-            );
-        }
-        preact.render(mapToVitualDOM(vnode), container);
-    }
+    // function patch(vnode) {
+    //     function mapToVitualDOM(vnode) {
+    //         return preact.h(
+    //             vnode.tag,
+    //             (vnode.attrs || []).reduce((attrs, val) => {
+    //                 attrs[val[0]] = val[1];
+    //                 return attrs;
+    //             }, {}),
+    //             vnode.children && vnode.children.map(child => mapToVitualDOM(child))
+    //         );
+    //     }
+    //     // console.log(mapToVitualDOM(vnode));
+    //     preact.render(mapToVitualDOM(vnode), container);
+    // }
     function update() {
         stats.begin();
         for (let i = 0; i < circles.length; i++) {
+            // circles[i].ignore = Math.random() < 0.1;
             circles[i].setStyle('fill', zrender.color.random());
         }
-        // const vnode = zr.painter.renderToVNode();
-        // patch(vnode);
         stats.end();
         requestAnimationFrame(update);
     }

@@ -15,6 +15,7 @@ import BoundingRect from '../core/BoundingRect';
 import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 import Path from '../graphic/Path';
 import { REDRAW_BIT } from '../graphic/constants';
+import { getSize } from './helper';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 const CANVAS_ZLEVEL = 314159;
@@ -22,9 +23,6 @@ const CANVAS_ZLEVEL = 314159;
 const EL_AFTER_INCREMENTAL_INC = 0.01;
 const INCREMENTAL_INC = 0.001;
 
-function parseInt10(val: string) {
-    return parseInt(val, 10);
-}
 
 function isLayerValid(layer: Layer) {
     if (!layer) {
@@ -158,8 +156,8 @@ export default class CanvasPainter implements PainterBase {
         const layers = this._layers;
 
         if (!singleCanvas) {
-            this._width = this._getSize(0);
-            this._height = this._getSize(1);
+            this._width = getSize(root, 0, opts);
+            this._height = getSize(root, 1, opts);
 
             const domRoot = this._domRoot = createRoot(
                 this._width, this._height
@@ -857,11 +855,12 @@ export default class CanvasPainter implements PainterBase {
 
             // Save input w/h
             const opts = this._opts;
+            const root = this.root;
             width != null && (opts.width = width);
             height != null && (opts.height = height);
 
-            width = this._getSize(0);
-            height = this._getSize(1);
+            width = getSize(root, 0, opts);
+            height = getSize(root, 1, opts);
 
             domRoot.style.display = '';
 
@@ -972,28 +971,6 @@ export default class CanvasPainter implements PainterBase {
      */
     getHeight() {
         return this._height;
-    }
-
-    _getSize(whIdx: number) {
-        const opts = this._opts;
-        const wh = ['width', 'height'][whIdx] as 'width' | 'height';
-        const cwh = ['clientWidth', 'clientHeight'][whIdx] as 'clientWidth' | 'clientHeight';
-        const plt = ['paddingLeft', 'paddingTop'][whIdx] as 'paddingLeft' | 'paddingTop';
-        const prb = ['paddingRight', 'paddingBottom'][whIdx] as 'paddingRight' | 'paddingBottom';
-
-        if (opts[wh] != null && opts[wh] !== 'auto') {
-            return parseFloat(opts[wh] as string);
-        }
-
-        const root = this.root;
-        // IE8 does not support getComputedStyle, but it use VML.
-        const stl = document.defaultView.getComputedStyle(root);
-
-        return (
-            (root[cwh] || parseInt10(stl[wh]) || parseInt10(root.style[wh]))
-            - (parseInt10(stl[plt]) || 0)
-            - (parseInt10(stl[prb]) || 0)
-        ) | 0;
     }
 
     pathToImage(path: Path, dpr?: number): ZRImage {

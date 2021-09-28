@@ -8,26 +8,34 @@ import {
 import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
 import { PainterBase } from '../PainterBase';
-import { createElement, vNodeToString, SVGVNodeAttrs, SVGVNode } from './core';
-import { SVGNS, XLINKNS } from '../svg/core';
-import { normalizeColor } from '../svg/shared';
+import { createVNode, vNodeToString, SVGVNodeAttrs, SVGVNode } from './core';
+import { createElement, SVGNS, XLINKNS } from '../svg/core';
+import { normalizeColor } from './shared';
 import { extend, keys, logError, map } from '../core/util';
 import Path from '../graphic/Path';
+import patch from './patch';
+import { getSize } from '../canvas/helper';
 
 interface SVGPainterOption {
     width?: number
     height?: number
+    ssr?: boolean
 }
 
 class SVGPainter implements PainterBase {
 
     type = 'svg-ssr'
 
-    ssr = true
-
     storage: Storage
 
+    root: HTMLElement
+
+    private _svgDom: SVGElement
+    private _viewport: HTMLElement
+
     private _opts: SVGPainterOption
+
+    private _oldVNode: SVGVNode
 
     private _width: number
     private _height: number
@@ -38,6 +46,17 @@ class SVGPainter implements PainterBase {
         this.storage = storage;
         this._opts = opts = extend({}, opts);
 
+        this.root = root;
+
+        if (root && !opts.ssr) {
+            const viewport = this._viewport = document.createElement('div');
+            viewport.style.cssText = 'overflow:hidden;position:relative';
+            const svgDom = this._svgDom = createElement('svg');
+            root.appendChild(viewport);
+            viewport.appendChild(svgDom);
+
+        }
+
         this.resize(opts.width, opts.height);
     }
 
@@ -45,8 +64,27 @@ class SVGPainter implements PainterBase {
         return this.type;
     }
 
+    getViewportRoot() {
+        return this._viewport;
+    }
+    getViewportRootOffset() {
+        const viewportRoot = this.getViewportRoot();
+        if (viewportRoot) {
+            return {
+                offsetLeft: viewportRoot.offsetLeft || 0,
+                offsetTop: viewportRoot.offsetTop || 0
+            };
+        }
+    }
+
+    getSvgDom() {
+        return this._svgDom;
+    }
+
     refresh() {
-        throw 'refresh is not supported in SSR mode';
+        const vnode = this.renderToVNode();
+        patch(this._oldVNode || this._svgDom, vnode);
+        this._oldVNode = vnode;
     }
 
     renderToVNode() {
@@ -63,23 +101,13 @@ class SVGPainter implements PainterBase {
             defs: {}
         };
 
-        const svgVNode = createElement('svg',
-            [
-                ['width', width],
-                ['height', height],
-                ['xmlns', SVGNS],
-                ['xmlns:xlink', XLINKNS],
-                ['version', '1.1'],
-                ['baseProfile', 'full']
-            ],
-            []
-        );
-        const children = svgVNode.children;
+        const children: SVGVNode[] = [];
 
         if (bgColor && bgColor !== 'none') {
             const { color, opacity } = normalizeColor(bgColor);
-            svgVNode.children.push(createElement(
+            children.push(createVNode(
                 'rect',
+                'bg',
                 [
                     ['width', width],
                     ['height', height],
@@ -95,10 +123,27 @@ class SVGPainter implements PainterBase {
         this._paintList(list, scope, children);
 
         children.push(
-            createElement('defs', [], map(keys(scope.defs), (id) => scope.defs[id]))
+            createVNode(
+                'defs',
+                'defs',
+                [],
+                map(keys(scope.defs), (id) => scope.defs[id])
+            )
         );
 
-        return svgVNode;
+        return createVNode(
+            'svg',
+            'root',
+            [
+                ['width', width],
+                ['height', height],
+                ['xmlns', SVGNS],
+                ['xmlns:xlink', XLINKNS],
+                ['version', '1.1'],
+                ['baseProfile', 'full']
+            ],
+            children
+        );
     }
 
     renderToString() {
@@ -107,6 +152,8 @@ class SVGPainter implements PainterBase {
 
     setBackgroundColor(backgroundColor: string) {
         this._backgroundColor = backgroundColor;
+        // TOOD optimize for change bg only.
+        this.renderToVNode();
     }
 
     _paintList(list: Displayable[], scope: BrushScope, out?: SVGVNode[]) {
@@ -145,7 +192,12 @@ class SVGPainter implements PainterBase {
                         groupAttrs,
                         scope
                     );
-                    const g = createElement('g', groupAttrs, []);
+                    const g = createVNode(
+                        'g',
+                        'clip-g-' + clipPaths[i].id,
+                        groupAttrs,
+                        []
+                    );
                     (currentClipPathGroup ? currentClipPathGroup.children : out).push(g);
                     clipPathsGroupsStack[clipPathsGroupsStackDepth++] = g;
                     currentClipPathGroup = g;
@@ -161,8 +213,40 @@ class SVGPainter implements PainterBase {
     }
 
     resize(width: number, height: number) {
-        this._width = width;
-        this._height = height;
+        // Save input w/h
+        const opts = this._opts;
+        const root = this.root;
+        const viewport = this._viewport;
+        width != null && (opts.width = width);
+        height != null && (opts.height = height);
+
+        if (root && viewport) {
+            // FIXME Why ?
+            viewport.style.display = 'none';
+
+            width = getSize(root, 0, opts);
+            height = getSize(root, 1, opts);
+
+            viewport.style.display = '';
+        }
+
+        if (this._width !== width || this._height !== height) {
+            this._width = width;
+            this._height = height;
+
+            if (viewport) {
+                const viewportStyle = viewport.style;
+                viewportStyle.width = width + 'px';
+                viewportStyle.height = height + 'px';
+            }
+
+            const svgDom = this._svgDom;
+            if (svgDom) {
+                // Set width by 'svgRoot.width = width' is invalid
+                svgDom.setAttribute('width', width as any);
+                svgDom.setAttribute('height', height as any);
+            }
+        }
     }
 
     /**
@@ -179,12 +263,23 @@ class SVGPainter implements PainterBase {
         return this._height;
     }
 
-    dispose() {}
-    clear() {}
-    toDataURL() {}
+    dispose() {
+        this.root.innerHTML = '';
 
-    getViewportRoot = createMethodNotSupport('getViewportRoot') as PainterBase['getViewportRoot']
-    getViewportRootOffset = createMethodNotSupport('getViewportRootOffset') as PainterBase['getViewportRootOffset']
+        this._svgDom =
+        this._viewport =
+        this.storage =
+        this._oldVNode = null;
+    }
+    clear() {
+        this._svgDom.innerHTML = null;
+        this._oldVNode = null;
+    }
+    toDataURL() {
+        const str = this.renderToString();
+        const html = encodeURIComponent(str);
+        return 'data:image/svg+xml;charset=UTF-8,' + html;
+    }
 
     refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];
     pathToImage = createMethodNotSupport('pathToImage') as PainterBase['pathToImage'];

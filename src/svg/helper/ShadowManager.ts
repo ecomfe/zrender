@@ -6,7 +6,7 @@
 import Definable from './Definable';
 import Displayable from '../../graphic/Displayable';
 import { Dictionary } from '../../core/types';
-import { getIdURL, getShadowKey, hasShadow, normalizeColor } from '../shared';
+import { getIdURL, getShadowKey, hasShadow, normalizeColor } from '../../svg-ssr/shared';
 import { createElement } from '../core';
 
 type DisplayableExtended = Displayable & {

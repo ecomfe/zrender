@@ -8,7 +8,7 @@ import Path from '../graphic/Path';
 import { ImagePatternObject, PatternObject, SVGPatternObject } from '../graphic/Pattern';
 import { RadialGradientObject } from '../graphic/RadialGradient';
 import { parse } from '../tool/color';
-import { mathRound } from './core';
+import { mathRound } from '../svg/core';
 
 export function normalizeColor(color: string): { color: string; opacity: number; } {
     let opacity;

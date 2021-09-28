@@ -1,4 +1,4 @@
-import { createElement, SVGVNode } from './core';
+import { createVNode, SVGVNode } from './core';
 import Displayable from '../graphic/Displayable';
 import {TransformProp} from '../core/Transformable';
 import Animator from '../animation/Animator';
@@ -39,7 +39,7 @@ function createTransformAnimateDef(defs: Record<string, SVGVNode>, transformType
         return id;
     }
 
-    const el = createElement('animateTransform', [
+    const el = createVNode('animateTransform', [
         ['attributeName', 'transform'],
         ['attributeType', 'XML'],
         ['type', transformType],
@@ -50,7 +50,7 @@ function createTransformAnimateDef(defs: Record<string, SVGVNode>, transformType
 }
 
 function createAnimateEl(useId: string, values: string) {
-    return createElement('use', [
+    return createVNode('use', [
         ['xlink:href', useId],
         ['values', values]
     ]);
@@ -93,5 +93,5 @@ export function createAnimates(el: Displayable, defs: Record<string, SVGVNode>):
 
         }
     }
-    return;
+    return animatesEls;
 }

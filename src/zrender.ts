@@ -124,23 +124,23 @@ class ZRender {
             : opts.useDirtyRect;
 
         const painter = new painterCtors[rendererType](dom, storage, opts, id);
-        const SSRMode = painter.ssr;
+        const ssrMode = opts.ssr || painter.ssrOnly;
 
         this.storage = storage;
         this.painter = painter;
 
-        const handerProxy = (!env.node && !env.worker && !SSRMode)
+        const handerProxy = (!env.node && !env.worker && !ssrMode)
             ? new HandlerProxy(painter.getViewportRoot(), painter.root)
             : null;
         this.handler = new Handler(storage, painter, handerProxy, painter.root);
 
         this.animation = new Animation({
             stage: {
-                update: SSRMode ? null : () => this._flush(true)
+                update: ssrMode ? null : () => this._flush(true)
             }
         });
 
-        if (!SSRMode) {
+        if (!ssrMode) {
             this.animation.start();
         }
     }
@@ -240,16 +240,6 @@ class ZRender {
      */
     flush() {
         this._flush(false);
-    }
-
-    renderToString() {
-        const painter = this.painter;
-        if (!painter.renderToString) {
-            throw 'Can only use renderToString in svg-ssr';
-        }
-        // pending
-        this.animation.update(true);
-        return painter.renderToString();
     }
 
     private _flush(fromInside?: boolean) {
@@ -452,6 +442,7 @@ export interface ZRenderInitOpt {
     width?: number | string // 10, 10px, 'auto'
     height?: number | string
     useDirtyRect?: boolean
+    ssr?: boolean   // If enable ssr mode.
 }
 
 /**

@@ -4,7 +4,7 @@ import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
 import { map } from '../core/util';
-import { normalizeColor } from './shared';
+import { normalizeColor } from '../svg-ssr/shared';
 
 type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;
 

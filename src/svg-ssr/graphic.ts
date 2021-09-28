@@ -17,22 +17,24 @@ import {
     normalizeColor,
     round4,
     TEXT_ALIGN_TO_ANCHOR
-} from '../svg/shared';
+} from './shared';
 import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import { DEFAULT_FONT, getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import SVGPathRebuilder from '../svg/SVGPathRebuilder';
 import mapStyleToAttrs from '../svg/mapStyleToAttrs';
-import { SVGVNodeAttrs, createElement, SVGVNode, vNodeToString } from './core';
+import { SVGVNodeAttrs, createVNode, SVGVNode, vNodeToString } from './core';
 import { MatrixArray } from '../core/matrix';
 import Displayable from '../graphic/Displayable';
-import { assert, isArray, logError, map, reduce, retrieve2 } from '../core/util';
+import { assert, logError, map, retrieve2 } from '../core/util';
 import Polyline from '../graphic/shape/Polyline';
 import Polygon from '../graphic/shape/Polygon';
 import { GradientObject } from '../graphic/Gradient';
 import { ImagePatternObject, SVGPatternObject } from '../graphic/Pattern';
 import { createAnimates } from './animation';
+import { createOrUpdateImage } from '../graphic/helper/image';
+import { ImageLike } from '../core/types';
 
 export interface BrushScope {
     shadowCache: Record<string, string>
@@ -54,7 +56,7 @@ function setStyleAttrs(attrs: SVGVNodeAttrs, style: AllStyleOption, el: Path | T
             setGradient(style, attrs, key, defs, scope.gradientCache);
         }
         else if (isFillStroke && isPattern(val)) {
-            setPattern(style, attrs, key, defs, scope.patternCache);
+            setPattern(el, attrs, key, defs, scope.patternCache);
         }
         else {
             attrs.push([key, val]);
@@ -144,11 +146,9 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
         }
         const path = el.path;
 
-        if (el.shapeChanged()) {
-            path.beginPath();
-            el.buildPath(path, el.shape);
-            el.pathUpdated();
-        }
+        path.beginPath();
+        el.buildPath(path, el.shape);
+        el.pathUpdated();
         // Because SSR renderer only render once. So always create new to simplify the case.
         const svgPathBuilder = new SVGPathRebuilder();
         svgPathBuilder.reset();
@@ -162,7 +162,7 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    return createElement(svgElType, attrs, createAnimates(el, scope.defs));
+    return createVNode(svgElType, el.id + '', attrs, createAnimates(el, scope.defs));
 }
 
 export function brushSVGImage(el: ZRImage, scope: BrushScope) {
@@ -195,7 +195,7 @@ export function brushSVGImage(el: ZRImage, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    return createElement('image', attrs, createAnimates(el, scope.defs));
+    return createVNode('image', el.id + '', attrs, createAnimates(el, scope.defs));
 };
 
 export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
@@ -235,7 +235,7 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    return createElement('text', attrs, createAnimates(el, scope.defs), text);
+    return createVNode('text', el.id + '', attrs, createAnimates(el, scope.defs), text);
 }
 
 export function brush(el: Displayable, scope: BrushScope) {
@@ -278,21 +278,24 @@ function setShadow(
             const stdDeviation = stdDx + ' ' + stdDy;
             // Use a simple prefix to reduce the size
             shadowId = 's' + shadowIdx++;
-            defs[shadowId] = createElement(
-                'filter', [
+            defs[shadowId] = createVNode(
+                'filter', shadowId,
+                [
                     ['id', shadowId],
                     ['x', '-100%'],
                     ['y', '-100%'],
                     ['width', '300%'],
                     ['height', '300%']
                 ],
-                [createElement('feDropShadow', [
-                    ['dx', offsetX / scaleX],
-                    ['dy', offsetY / scaleY],
-                    ['stdDeviation', stdDeviation],
-                    ['flood-color', color],
-                    ['flood-opacity', opacity]
-                ])]
+                [
+                    createVNode('feDropShadow', '', [
+                        ['dx', offsetX / scaleX],
+                        ['dy', offsetY / scaleY],
+                        ['stdDeviation', stdDeviation],
+                        ['flood-color', color],
+                        ['flood-opacity', opacity]
+                    ])
+                ]
             );
             shadowCache[shadowKey] = shadowId;
         }
@@ -359,52 +362,98 @@ function setGradient(
             stopsAttrs.push(['stop-opacity', opacity]);
         }
         colorStops.push(
-            createElement('stop', stopsAttrs)
+            createVNode('stop', i + '', stopsAttrs)
         );
     }
 
     // Use the whole html as cache key.
-    const gradientVNode = createElement(gradientTag, gradientAttrs, colorStops);
+    const gradientVNode = createVNode(gradientTag, '', gradientAttrs, colorStops);
     const gradientKey = vNodeToString(gradientVNode);
     let gradientId = gradientCache[gradientKey];
     if (!gradientId) {
         gradientId = 'g' + gradientIdx++;
         gradientCache[gradientKey] = gradientId;
 
-        gradientVNode.attrs.push(['id', gradientId]);
-        defs[gradientId] = gradientVNode;
+        gradientAttrs.push(['id', gradientId]);
+        defs[gradientId] = createVNode(
+            gradientTag, gradientId, gradientAttrs, colorStops
+        );
     }
 
     attrs.push([target, getIdURL(gradientId)]);
 }
 
 function setPattern(
-    style: PathStyleProps,
+    el: Displayable,
     attrs: SVGVNodeAttrs,
     target: 'fill' | 'stroke',
     defs: BrushScope['defs'],
     patternCache: Record<string, string>
 ) {
-    const val = style[target] as ImagePatternObject | SVGPatternObject;
+    const val = el.style[target] as ImagePatternObject | SVGPatternObject;
     const patternAttrs: SVGVNodeAttrs = [
         ['patternUnits', 'userSpaceOnUse']
     ];
     let child: SVGVNode;
     let contentStr: string;
     if (isImagePattern(val)) {
-        // image can only be string
-        const errMsg = 'Image width/height must been given explictly in svg-ssr renderer.';
-        const imageWidth = val.imageWidth;
-        const imageHeight = val.imageHeight;
-        assert(imageWidth, errMsg);
-        assert(imageHeight, errMsg);
+        let imageWidth;
+        let imageHeight;
+        let imageSrc;
+        const patternImage = val.image;
+        if (typeof patternImage === 'string') {
+            imageSrc = patternImage;
+        }
+        else if (patternImage instanceof HTMLImageElement) {
+            imageSrc = patternImage.src;
+        }
+        else if (patternImage instanceof HTMLCanvasElement) {
+            imageSrc = patternImage.toDataURL();
+        }
+
+        if (typeof Image === 'undefined') {
+            const errMsg = 'Image width/height must been given explictly in svg-ssr renderer.';
+            const imageWidth = val.imageWidth;
+            const imageHeight = val.imageHeight;
+            assert(imageWidth, errMsg);
+            assert(imageHeight, errMsg);
+        }
+        else {
+            // TODO
+            const setSizeToVNode = (vNode: SVGVNode, img: ImageLike) => {
+                if (vNode) {
+                    const svgEl = vNode.elm as SVGElement;
+                    const width = (vNode.attrs.width = img.width);
+                    const height = (vNode.attrs.height = img.height);
+                    if (svgEl) {
+                        svgEl.setAttribute('width', width as any);
+                        svgEl.setAttribute('height', height as any);
+                    }
+                }
+            };
+            const createdImage = createOrUpdateImage(
+                imageSrc, null, el, (img) => {
+                    setSizeToVNode(patternVNode, img);
+                    setSizeToVNode(child, img);
+                }
+            );
+            if (createdImage && createdImage.width && createdImage.height) {
+                // Loaded before
+                imageWidth = createdImage.width;
+                imageHeight = createdImage.height;
+            }
+        }
 
         // TODO Only support string url
-        child = createElement('image', [
-            ['href', val.image as string],
-            ['width', imageWidth],
-            ['height', imageHeight]
-        ]);
+        child = createVNode(
+            'image',
+            'img',
+            [
+                ['href', val.image as string],
+                ['width', imageWidth],
+                ['height', imageHeight]
+            ]
+        );
         patternAttrs.push(
             ['width', imageWidth],
             ['height', imageHeight]
@@ -423,14 +472,26 @@ function setPattern(
     }
 
     // Use the whole html as cache key.
-    const patternVNode = createElement('pattern', patternAttrs, [child], contentStr);
+    const patternVNode = createVNode(
+        'pattern',
+        '',
+        patternAttrs,
+        [child],
+        contentStr
+    );
     const patternKey = vNodeToString(patternVNode);
     let patternId = patternCache[patternKey];
     if (!patternId) {
         patternId = 'p' + patternIdx++;
         patternCache[patternKey] = patternId;
-        patternVNode.attrs.push(['id', patternId]);
-        defs[patternId] = patternVNode;
+        patternAttrs.push(['id', patternId]);
+        defs[patternId] = createVNode(
+            'pattern',
+            patternId,
+            patternAttrs,
+            [child],
+            contentStr
+        );
     }
 
     attrs.push([target, getIdURL(patternId)]);
@@ -450,8 +511,8 @@ export function setClipPath(
         ];
 
         clipPathCache[clipPath.id] = clipPathId;
-        defs[clipPathId] = createElement(
-            'clipPath', clipPathAttrs,
+        defs[clipPathId] = createVNode(
+            'clipPath', clipPathId, clipPathAttrs,
             [brushSVGPath(clipPath, scope)]
         );
     }

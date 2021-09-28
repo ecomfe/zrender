@@ -16,7 +16,8 @@ export interface PainterBase {
     // root will be undefined if ssr is true
     root?: HTMLElement
 
-    ssr?: boolean
+    // If ssr only
+    ssrOnly?: boolean
 
     // constructor(dom: HTMLElement, storage: Storage, opts: PainterOption, id: number): void
 

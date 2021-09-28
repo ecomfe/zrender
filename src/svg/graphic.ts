@@ -3,7 +3,7 @@
 // 2. Image: sx, sy, sw, sh
 
 import {createElement, XLINKNS } from './core';
-import { getMatrixStr, TEXT_ALIGN_TO_ANCHOR, adjustTextY } from './shared';
+import { getMatrixStr, TEXT_ALIGN_TO_ANCHOR, adjustTextY } from '../svg-ssr/shared';
 import * as matrix from '../core/matrix';
 import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
