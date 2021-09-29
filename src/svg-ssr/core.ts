@@ -1,7 +1,5 @@
 import { map } from '../core/util';
 
-// export type SVGVNodeAttrs = [string, string | number | undefined | boolean][];
-
 export type SVGVNodeAttrs = Record<string, string | number | undefined | boolean>
 export interface SVGVNode {
     tag: string,
@@ -20,12 +18,6 @@ export function createVNode(
     children?: SVGVNode[],
     text?: string
 ): SVGVNode {
-    // const attrsMap: SVGVNodeAttrs = {};
-    // if (attrs) {
-    //     for (let i = 0; i < attrs.length; i++) {
-    //         attrsMap[attrs[i][0]] = attrs[i][1];
-    //     }
-    // }
     return {
         tag,
         attrs: attrs || {},

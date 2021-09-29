@@ -27,13 +27,13 @@
     // Basic circle.
     for (let i = 0; i < 100; i++) {
         for (let k = 0; k < 100; k++) {
-            var circle = new zrender.Circle({
+            var circle = new zrender.Rect({
                 shape: {
-                    cx: i * cellSize + cellSize / 2,
-                    cy: k * cellSize + cellSize / 2,
-                    // width: elSize,
-                    // height: elSize,
-                    r: elSize / 2
+                    x: i * cellSize + cellSize / 2,
+                    y: k * cellSize + cellSize / 2,
+                    width: elSize,
+                    height: elSize,
+                    // r: elSize / 2
                 },
                 style: {
                     fill: 'red'
@@ -61,6 +61,7 @@
         stats.begin();
         for (let i = 0; i < circles.length; i++) {
             // circles[i].ignore = Math.random() < 0.1;
+            // circles[i].z = Math.random() < 0.001 ? 1 : 0;
             circles[i].setStyle('fill', Math.random() < 1.1 ? zrender.color.random() : 'red');
         }
         stats.end();

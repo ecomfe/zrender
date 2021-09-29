@@ -39,21 +39,21 @@ function createTransformAnimateDef(defs: Record<string, SVGVNode>, transformType
         return id;
     }
 
-    const el = createVNode('animateTransform', '', [
-        ['attributeName', 'transform'],
-        ['attributeType', 'XML'],
-        ['type', transformType],
-        ['additive', 'sum']
-    ]);
+    const el = createVNode('animateTransform', '', {
+        attributeName: 'transform',
+        attributeType: 'XML',
+        type: transformType,
+        additive: 'sum'
+    });
     defs[id] = el;
     return id;
 }
 
 function createAnimateEl(useId: string, values: string) {
-    return createVNode('use', '', [
-        ['xlink:href', useId],
-        ['values', values]
-    ]);
+    return createVNode('use', '', {
+        'xlink:href': useId,
+        'values': values
+    });
 }
 
 const transformMaps: [SVGTransformType, TransformProp[]][] = [
@@ -61,6 +61,16 @@ const transformMaps: [SVGTransformType, TransformProp[]][] = [
     ['rotate', ['rotation', 'originX', 'originY']],
     ['scale', ['scaleX', 'scaleY']]
 ];
+
+export function hasShapeAnimation(el: Displayable) {
+    const animators = el.animators;
+    for (let i = 0; i < animators.length; i++) {
+        if (animators[i].targetName === 'shape') {
+            return true;
+        }
+    }
+    return false;
+}
 
 export function createAnimates(el: Displayable, defs: Record<string, SVGVNode>): SVGVNode[] {
     const animators = el.animators;

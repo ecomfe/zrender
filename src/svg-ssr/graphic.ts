@@ -42,6 +42,12 @@ export interface BrushScope {
     patternCache: Record<string, string>
     clipPathCache: Record<string, string>
     defs: Record<string, SVGVNode>
+
+    // configs
+    /**
+     * If create animates nodes.
+     */
+    animation?: boolean
 }
 
 
@@ -126,6 +132,10 @@ const buitinShapesDef: Record<string, [ConvertShapeToAttr, ShapeValidator?]> = {
     // Ignore line because it will be larger.
 };
 
+interface PathWithSVGBuildPath extends Path {
+    __svgPathVersion: number
+    __svgPathBuilder: SVGPathRebuilder
+}
 
 export function brushSVGPath(el: Path, scope: BrushScope) {
     const style = el.style;
@@ -144,23 +154,33 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
         }
         const path = el.path;
 
-        path.beginPath();
-        el.buildPath(path, el.shape);
-        el.pathUpdated();
-        // Because SSR renderer only render once. So always create new to simplify the case.
-        const svgPathBuilder = new SVGPathRebuilder();
-        svgPathBuilder.reset();
-        path.rebuildPath(svgPathBuilder, 1);
-        svgPathBuilder.generateStr();
+        if (el.shapeChanged()) {
+            path.beginPath();
+            el.buildPath(path, el.shape);
+            el.pathUpdated();
+        }
+        const pathVersion = path.getVersion();
+        const elExt = el as PathWithSVGBuildPath;
+        const strokePercent = el.style.strokePercent;
+
+        let svgPathBuilder = elExt.__svgPathBuilder;
+        if (elExt.__svgPathVersion !== pathVersion || !svgPathBuilder || strokePercent < 1) {
+            if (!svgPathBuilder) {
+                svgPathBuilder = elExt.__svgPathBuilder = new SVGPathRebuilder();
+            }
+            svgPathBuilder.reset();
+            path.rebuildPath(svgPathBuilder, strokePercent);
+            svgPathBuilder.generateStr();
+            elExt.__svgPathVersion = pathVersion;
+        }
 
         attrs.d = svgPathBuilder.getStr();
     }
 
-
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    return createVNode(svgElType, el.id + '', attrs, createAnimates(el, scope.defs));
+    return createVNode(svgElType, el.id + '', attrs, scope.animation && createAnimates(el, scope.defs));
 }
 
 export function brushSVGImage(el: ZRImage, scope: BrushScope) {
@@ -193,7 +213,7 @@ export function brushSVGImage(el: ZRImage, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    return createVNode('image', el.id + '', attrs, createAnimates(el, scope.defs));
+    return createVNode('image', el.id + '', attrs, scope.animation && createAnimates(el, scope.defs));
 };
 
 export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
@@ -233,7 +253,7 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    return createVNode('text', el.id + '', attrs, createAnimates(el, scope.defs), text);
+    return createVNode('text', el.id + '', attrs, scope.animation && createAnimates(el, scope.defs), text);
 }
 
 export function brush(el: Displayable, scope: BrushScope) {

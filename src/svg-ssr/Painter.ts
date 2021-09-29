@@ -87,7 +87,12 @@ class SVGPainter implements PainterBase {
         this._oldVNode = vnode;
     }
 
-    renderToVNode() {
+    renderToVNode(opts?: {
+        animation?: boolean
+    }) {
+
+        opts = opts || {};
+
         const list = this.storage.getDisplayList(true);
         const bgColor = this._backgroundColor;
         const width = this._width + '';
@@ -98,7 +103,8 @@ class SVGPainter implements PainterBase {
             patternCache: {},
             gradientCache: {},
             clipPathCache: {},
-            defs: {}
+            defs: {},
+            animation: opts.animation
         };
 
         const children: SVGVNode[] = [];
@@ -147,7 +153,9 @@ class SVGPainter implements PainterBase {
     }
 
     renderToString() {
-        return vNodeToString(this.renderToVNode());
+        return vNodeToString(this.renderToVNode({
+            animation: true
+        }));
     }
 
     setBackgroundColor(backgroundColor: string) {

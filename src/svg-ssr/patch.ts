@@ -69,7 +69,7 @@ function emptyNodeAt(elm: Element): SVGVNode {
     const classes = elm.getAttribute('class');
 
     const c = classes ? '.' + classes.split(' ').join('.') : '';
-    const vnode = createVNode(api.tagName(elm).toLowerCase() + id + c, '', []) as SVGVNode;
+    const vnode = createVNode(api.tagName(elm).toLowerCase() + id + c, '') as SVGVNode;
     vnode.elm = elm;
     return vnode;
 }
@@ -78,13 +78,14 @@ function createElm(vnode: SVGVNode, insertedVnodeQueue: VNodeQueue): Node {
     let i: any;
     const children = vnode.children;
     const tag = vnode.tag;
-    if (tag === '!') {
-        if (isUndef(vnode.text)) {
-            vnode.text = '';
-        }
-        vnode.elm = api.createComment(vnode.text!);
-    }
-    else if (tag !== undefined) {
+    // if (tag === '!') {
+    //     if (isUndef(vnode.text)) {
+    //         vnode.text = '';
+    //     }
+    //     vnode.elm = api.createComment(vnode.text!);
+    // }
+    // else
+    if (tag !== undefined) {
         const elm = (vnode.elm = createElement(tag));
 
         updateAttrs(emptyNode, vnode);
