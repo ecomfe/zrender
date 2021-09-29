@@ -235,6 +235,28 @@
         zr.add(el);
     }
 
+    // Easing animation
+    for (let i = 0; i < 10; i++) {
+        const el = new zrender.Circle({
+            x: i * cellSize + cellSize / 2,
+            y: cellSize * 10 + cellSize / 2,
+            shape: {
+                cx: 0,
+                cy: 0,
+                r: elSize / 2
+            },
+            style: {
+                fill: 'red'
+            }
+        });
+        el.animate(null, true)
+            .when(1000, {
+                x: i * cellSize + cellSize
+            })
+            .start('circularInOut');
+        zr.add(el);
+    }
+
 
     console.time('render');
     const svg = zr.painter.renderToString();

@@ -34,7 +34,11 @@ function createElementOpen(name: string, attrs?: SVGVNodeAttrs) {
         for (let key in attrs) {
             const val = attrs[key];
             let part = key;
-            if (val != null) {
+            // Same with the logic in patch.
+            if (val === false) {
+                continue;
+            }
+            else if (val !== true && val != null) {
                 part += `="${val}"`;
             }
             attrsStr.push(part);

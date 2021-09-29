@@ -5,7 +5,7 @@ import Animator, { AnimatorTrack } from '../animation/Animator';
 import Path from '../graphic/Path';
 import SVGPathRebuilder from '../svg/SVGPathRebuilder';
 import PathProxy from '../core/PathProxy';
-import { extend } from '../core/util';
+import { extend, isString } from '../core/util';
 
 function col2str(rgba: number[]): string {
     rgba[0] = Math.floor(rgba[0]);
@@ -50,7 +50,6 @@ function createAnimateTransformVNode(transformType: SVGTransformType, values: st
         attributeName: 'transform',
         attributeType: 'XML',
         type: transformType,
-        additive: 'sum',
         'values': values
     });
 }
@@ -97,13 +96,44 @@ function createAnimateVNodeFromTrack(track: AnimatorTrack) {
     }
 }
 
+const easingMap: Record<string, string> = {
+    // From https://easings.net/
+    cubicIn: '0.32,0,0.67,0',
+    cubicOut: '0.33,1,0.68,1',
+    cubicInOut: '0.65,0,0.35,1',
+    quadraticIn: '0.11,0,0.5,0',
+    quadraticOut: '0.5,1,0.89,1',
+    quadraticInOut: '0.45,0,0.55,1',
+    quarticIn: '0.5,0,0.75,0',
+    quarticOut: '0.25,1,0.5,1',
+    quarticInOut: '0.76,0,0.24,1',
+    quinticIn: '0.64,0,0.78,0',
+    quinticOut: '0.22,1,0.36,1',
+    quinticInOut: '0.83,0,0.17,1',
+    sinusoidalIn: '0.12,0,0.39,0',
+    sinusoidalOut: '0.61,1,0.88,1',
+    sinusoidalInOut: '0.37,0,0.63,1',
+    exponentialIn: '0.7,0,0.84,0',
+    exponentialOut: '0.16,1,0.3,1',
+    exponentialInOut: '0.87,0,0.13,1',
+    circularIn: '0.55,0,1,0.45',
+    circularOut: '0,0.55,0.45,1',
+    circularInOut: '0.85,0,0.15,1'
+    // TODO elastic, bounce
+};
+
 function applyCommonAttrs(animateVNode: SVGVNode, animator: Animator<any>) {
     const attrs = animateVNode.attrs;
     if (animator.getLoop()) {
         attrs.repeatCount = 'indefinite';
     }
     attrs.dur = animator.getMaxTime() / 1000 + 's';
-    // TODO easing
+    const easing = animator.getClip().easing;
+
+    if (isString(easing) && easingMap[easing]) {
+        attrs.calcMode = 'spline';
+        attrs.keySplines = easingMap[easing];
+    }
 }
 
 export function createAnimates(el: Displayable, defs: Record<string, SVGVNode>): SVGVNode[] {
@@ -116,13 +146,19 @@ export function createAnimates(el: Displayable, defs: Record<string, SVGVNode>):
         if (!targetProp) {
             // transformable props.
             // TODO origin, parent, skew
+            let isFirstTransformAnime = true;
+            // TODO parents transform animations.
             for (let k = 0; k < transformMaps.length; k++) {
                 const map = transformMaps[k];
                 const transformType = map[0];
                 const val = getTransformAnimateValues(el, animator, map[1], transformType);
                 if (val) {
-                    const animateVNode = createAnimateTransformVNode(transformType, val );
+                    const animateVNode = createAnimateTransformVNode(transformType, val);
                     if (animateVNode) {
+                        if (!isFirstTransformAnime) {
+                            animateVNode.attrs.additive = 'sum';
+                        }
+                        isFirstTransformAnime = false;
                         applyCommonAttrs(animateVNode, animator);
                         animateVNodes.push(animateVNode);
                     }
