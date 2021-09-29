@@ -46,7 +46,7 @@ export default class Draggable {
         let draggingTarget = e.target;
         // Find if there is draggable in the ancestor
         while (draggingTarget && !draggingTarget.draggable) {
-            draggingTarget = draggingTarget.parent;
+            draggingTarget = draggingTarget.parent || draggingTarget.__hostTarget;
         }
         if (draggingTarget) {
             this._draggingTarget = draggingTarget;
