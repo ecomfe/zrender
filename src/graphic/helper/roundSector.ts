@@ -46,47 +46,47 @@ function computeCornerTangents(
     radius: number, cr: number,
     clockwise: boolean
 ): CornerTangents {
-  const x01 = x0 - x1;
-  const y01 = y0 - y1;
-  const lo = (clockwise ? cr : -cr) / mathSqrt(x01 * x01 + y01 * y01);
-  const ox = lo * y01;
-  const oy = -lo * x01;
-  const x11 = x0 + ox;
-  const y11 = y0 + oy;
-  const x10 = x1 + ox;
-  const y10 = y1 + oy;
-  const x00 = (x11 + x10) / 2;
-  const y00 = (y11 + y10) / 2;
-  const dx = x10 - x11;
-  const dy = y10 - y11;
-  const d2 = dx * dx + dy * dy;
-  const r = radius - cr;
-  const s = x11 * y10 - x10 * y11;
-  const d = (dy < 0 ? -1 : 1) * mathSqrt(mathMax(0, r * r * d2 - s * s));
-  let cx0 = (s * dy - dx * d) / d2;
-  let cy0 = (-s * dx - dy * d) / d2;
-  const cx1 = (s * dy + dx * d) / d2;
-  const cy1 = (-s * dx + dy * d) / d2;
-  const dx0 = cx0 - x00;
-  const dy0 = cy0 - y00;
-  const dx1 = cx1 - x00;
-  const dy1 = cy1 - y00;
+    const x01 = x0 - x1;
+    const y01 = y0 - y1;
+    const lo = (clockwise ? cr : -cr) / mathSqrt(x01 * x01 + y01 * y01);
+    const ox = lo * y01;
+    const oy = -lo * x01;
+    const x11 = x0 + ox;
+    const y11 = y0 + oy;
+    const x10 = x1 + ox;
+    const y10 = y1 + oy;
+    const x00 = (x11 + x10) / 2;
+    const y00 = (y11 + y10) / 2;
+    const dx = x10 - x11;
+    const dy = y10 - y11;
+    const d2 = dx * dx + dy * dy;
+    const r = radius - cr;
+    const s = x11 * y10 - x10 * y11;
+    const d = (dy < 0 ? -1 : 1) * mathSqrt(mathMax(0, r * r * d2 - s * s));
+    let cx0 = (s * dy - dx * d) / d2;
+    let cy0 = (-s * dx - dy * d) / d2;
+    const cx1 = (s * dy + dx * d) / d2;
+    const cy1 = (-s * dx + dy * d) / d2;
+    const dx0 = cx0 - x00;
+    const dy0 = cy0 - y00;
+    const dx1 = cx1 - x00;
+    const dy1 = cy1 - y00;
 
-  // Pick the closer of the two intersection points
-  // TODO: Is there a faster way to determine which intersection to use?
-  if (dx0 * dx0 + dy0 * dy0 > dx1 * dx1 + dy1 * dy1) {
-      cx0 = cx1;
-      cy0 = cy1;
-  }
+    // Pick the closer of the two intersection points
+    // TODO: Is there a faster way to determine which intersection to use?
+    if (dx0 * dx0 + dy0 * dy0 > dx1 * dx1 + dy1 * dy1) {
+        cx0 = cx1;
+        cy0 = cy1;
+    }
 
-  return {
-    cx: cx0,
-    cy: cy0,
-    x01: -ox,
-    y01: -oy,
-    x11: cx0 * (radius / r - 1),
-    y11: cy0 * (radius / r - 1)
-  };
+    return {
+        cx: cx0,
+        cy: cy0,
+        x01: -ox,
+        y01: -oy,
+        x11: cx0 * (radius / r - 1),
+        y11: cy0 * (radius / r - 1)
+    };
 }
 
 export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {

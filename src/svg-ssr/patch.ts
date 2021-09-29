@@ -46,9 +46,6 @@ function createKeyToOldIdx(
 }
 
 function sameVnode(vnode1: SVGVNode, vnode2: SVGVNode): boolean {
-    if (vnode1 === vnode2) {
-        return true;
-    }
     const isSameKey = vnode1.key === vnode2.key;
     const isSameTag = vnode1.tag === vnode2.tag;
 

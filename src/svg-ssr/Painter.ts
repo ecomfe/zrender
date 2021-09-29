@@ -82,9 +82,11 @@ class SVGPainter implements PainterBase {
     }
 
     refresh() {
-        const vnode = this.renderToVNode();
-        patch(this._oldVNode || this._svgDom, vnode);
-        this._oldVNode = vnode;
+        if (this.root) {
+            const vnode = this.renderToVNode();
+            patch(this._oldVNode || this._svgDom, vnode);
+            this._oldVNode = vnode;
+        }
     }
 
     renderToVNode(opts?: {
@@ -272,7 +274,9 @@ class SVGPainter implements PainterBase {
     }
 
     dispose() {
-        this.root.innerHTML = '';
+        if (this.root) {
+            this.root.innerHTML = '';
+        }
 
         this._svgDom =
         this._viewport =
@@ -280,7 +284,9 @@ class SVGPainter implements PainterBase {
         this._oldVNode = null;
     }
     clear() {
-        this._svgDom.innerHTML = null;
+        if (this._svgDom) {
+            this._svgDom.innerHTML = null;
+        }
         this._oldVNode = null;
     }
     toDataURL() {

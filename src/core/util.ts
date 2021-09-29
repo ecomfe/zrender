@@ -217,7 +217,8 @@ export const createCanvas = function (): HTMLCanvasElement {
 };
 
 methods.createCanvas = function (): HTMLCanvasElement {
-    return document.createElement('canvas');
+    return typeof document !== 'undefined'
+        && document.createElement('canvas');
 };
 
 /**

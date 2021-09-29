@@ -24,10 +24,6 @@ import Storage from '../Storage';
 import { PainterBase } from '../PainterBase';
 import { getSize } from '../canvas/helper';
 
-function parseInt10(val: string) {
-    return parseInt(val, 10);
-}
-
 function getSvgProxy(el: Displayable) {
     if (el instanceof Path) {
         return svgPath;

@@ -12,12 +12,21 @@ let _cachedFont: string;
 
 function defaultMeasureText(text: string, font?: string): { width: number } {
     if (!_ctx) {
-        _ctx = createCanvas().getContext('2d');
+        const canvas = createCanvas();
+        _ctx = canvas && canvas.getContext('2d');
     }
-    if (_cachedFont !== font) {
-        _cachedFont = _ctx.font = font || DEFAULT_FONT;
+    if (_ctx) {
+        if (_cachedFont !== font) {
+            _cachedFont = _ctx.font = font || DEFAULT_FONT;
+        }
+        return _ctx.measureText(text);
     }
-    return _ctx.measureText(text);
+    else {
+        // Use font size if there is no other method can be used.
+        const res = /^([0-9]*?)px$/.exec(font);
+        const fontSize = +(res && res[1]) || 12;
+        return { width: fontSize * text.length };
+    }
 }
 
 let methods: {
