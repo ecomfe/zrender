@@ -50,7 +50,7 @@ function createAnimateTransformVNode(transformType: SVGTransformType, values: st
         attributeName: 'transform',
         attributeType: 'XML',
         type: transformType,
-        'values': values
+        values: values
     });
 }
 
@@ -78,6 +78,7 @@ const ANIMATE_STYLE_MAP: Record<string, string> = {
     opacity: 'opacity',
     lineWidth: 'stroke-width',
     lineDashOffset: 'stroke-dashoffset'
+    // TODO shadow is not supported.
 };
 
 function createAnimateVNodeFromTrack(track: AnimatorTrack) {
@@ -124,16 +125,23 @@ const easingMap: Record<string, string> = {
 
 function applyCommonAttrs(animateVNode: SVGVNode, animator: Animator<any>) {
     const attrs = animateVNode.attrs;
+    const easing = animator.getClip().easing;
+    const delay = animator.getDelay();
+
     if (animator.getLoop()) {
         attrs.repeatCount = 'indefinite';
     }
     attrs.dur = animator.getMaxTime() / 1000 + 's';
-    const easing = animator.getClip().easing;
 
+    if (delay > 0) {
+        attrs.begin = delay / 1000 + 's';
+    }
     if (isString(easing) && easingMap[easing]) {
         attrs.calcMode = 'spline';
         attrs.keySplines = easingMap[easing];
     }
+
+    attrs.fill = 'freeze';
 }
 
 export function createAnimates(el: Displayable, defs: Record<string, SVGVNode>): SVGVNode[] {
@@ -173,8 +181,7 @@ export function createAnimates(el: Displayable, defs: Record<string, SVGVNode>):
 
             const animateVNode = createVNode('animate', '', {
                 attributeName: 'd',
-                from: buildPathString(el as Path, startShape),
-                to: buildPathString(el as Path, endShape)
+                values: buildPathString(el as Path, startShape) + ';' + buildPathString(el as Path, endShape)
             });
 
             applyCommonAttrs(animateVNode, animator);
