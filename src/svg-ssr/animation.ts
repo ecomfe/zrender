@@ -1,7 +1,19 @@
 import { createVNode, SVGVNode } from './core';
 import Displayable from '../graphic/Displayable';
 import {TransformProp} from '../core/Transformable';
-import Animator from '../animation/Animator';
+import Animator, { AnimatorTrack } from '../animation/Animator';
+import Path from '../graphic/Path';
+import SVGPathRebuilder from '../svg/SVGPathRebuilder';
+import PathProxy from '../core/PathProxy';
+import { extend } from '../core/util';
+
+function col2str(rgba: number[]): string {
+    rgba[0] = Math.floor(rgba[0]);
+    rgba[1] = Math.floor(rgba[1]);
+    rgba[2] = Math.floor(rgba[2]);
+
+    return 'rgba(' + rgba.join(',') + ')';
+}
 
 function getTransformAnimateValues(
     el: Displayable,
@@ -27,31 +39,18 @@ function getTransformAnimateValues(
             from[i] = to[i] = el[props[i]];
         }
     }
-    return hasTrack ? `${from}.join(' ');${to}.join(' ')` : '';
+    return hasTrack ? `${from.join(' ')};${to.join(' ')}` : '';
 }
 
 
 type SVGTransformType = 'translate' | 'scale' | 'rotate';
 
-function createTransformAnimateDef(defs: Record<string, SVGVNode>, transformType: SVGTransformType) {
-    const id = transformType.substr(0, 3);
-    if (defs[id]) {
-        return id;
-    }
-
-    const el = createVNode('animateTransform', '', {
+function createAnimateTransformVNode(transformType: SVGTransformType, values: string) {
+    return createVNode('animateTransform', '', {
         attributeName: 'transform',
         attributeType: 'XML',
         type: transformType,
-        additive: 'sum'
-    });
-    defs[id] = el;
-    return id;
-}
-
-function createAnimateEl(useId: string, values: string) {
-    return createVNode('use', '', {
-        'xlink:href': useId,
+        additive: 'sum',
         'values': values
     });
 }
@@ -62,19 +61,54 @@ const transformMaps: [SVGTransformType, TransformProp[]][] = [
     ['scale', ['scaleX', 'scaleY']]
 ];
 
-export function hasShapeAnimation(el: Displayable) {
-    const animators = el.animators;
-    for (let i = 0; i < animators.length; i++) {
-        if (animators[i].targetName === 'shape') {
-            return true;
-        }
+function buildPathString(el: Path, kfShape: Path['shape']) {
+    const shape = extend({}, el.shape);
+    extend(shape, kfShape);
+
+    const path = new PathProxy();
+    el.buildPath(path, shape);
+    const svgPathBuilder = new SVGPathRebuilder();
+    svgPathBuilder.reset();
+    path.rebuildPath(svgPathBuilder, 1);
+    svgPathBuilder.generateStr();
+    return svgPathBuilder.getStr();
+}
+
+const ANIMATE_STYLE_MAP: Record<string, string> = {
+    fill: 'fill',
+    opacity: 'opacity',
+    lineWidth: 'stroke-width',
+    lineDashOffset: 'stroke-dashoffset'
+};
+
+function createAnimateVNodeFromTrack(track: AnimatorTrack) {
+    const propName = track.propName;
+    const attrName = ANIMATE_STYLE_MAP[propName];
+    if (attrName && track.needsAnimate()) {
+        const kfs = track.keyframes;
+        let val0 = kfs[0].value;
+        let valn = kfs[kfs.length - 1].value;
+        const isColor = track.isValueColor;
+
+        return createVNode('animate', '', {
+            attributeName: attrName,
+            values: `${isColor ? col2str(val0 as number[]) : val0};${isColor ? col2str(valn as number[]) : valn}`
+        });
     }
-    return false;
+}
+
+function applyCommonAttrs(animateVNode: SVGVNode, animator: Animator<any>) {
+    const attrs = animateVNode.attrs;
+    if (animator.getLoop()) {
+        attrs.repeatCount = 'indefinite';
+    }
+    attrs.dur = animator.getMaxTime() / 1000 + 's';
+    // TODO easing
 }
 
 export function createAnimates(el: Displayable, defs: Record<string, SVGVNode>): SVGVNode[] {
     const animators = el.animators;
-    let animatesEls = [];
+    let animateVNodes = [];
 
     for (let i = 0; i < animators.length; i++) {
         const animator = animators[i];
@@ -87,21 +121,50 @@ export function createAnimates(el: Displayable, defs: Record<string, SVGVNode>):
                 const transformType = map[0];
                 const val = getTransformAnimateValues(el, animator, map[1], transformType);
                 if (val) {
-                    animatesEls.push(
-                        createAnimateEl(
-                            createTransformAnimateDef(defs, 'translate'),
-                            val
-                        )
-                    );
+                    const animateVNode = createAnimateTransformVNode(transformType, val );
+                    if (animateVNode) {
+                        applyCommonAttrs(animateVNode, animator);
+                        animateVNodes.push(animateVNode);
+                    }
                 }
             }
         }
         else if (targetProp === 'shape') {
+            const startShape = {};
+            const endShape = {};
+            animator.saveToTarget(startShape, null, true);
+            animator.saveToTarget(endShape, null, false);
 
+            const animateVNode = createVNode('animate', '', {
+                attributeName: 'd',
+                from: buildPathString(el as Path, startShape),
+                to: buildPathString(el as Path, endShape)
+            });
+
+            applyCommonAttrs(animateVNode, animator);
+            animateVNodes.push(animateVNode);
         }
         else if (targetProp === 'style') {
-
+            const tracks = animator.getTracks();
+            for (let k = 0; k < tracks.length; k++) {
+                const track = tracks[k];
+                const animateVNode = createAnimateVNodeFromTrack(track);
+                if (animateVNode) {
+                    applyCommonAttrs(animateVNode, animator);
+                    animateVNodes.push(animateVNode);
+                }
+            }
         }
     }
-    return animatesEls;
+    return animateVNodes;
+}
+
+export function hasShapeAnimation(el: Displayable) {
+    const animators = el.animators;
+    for (let i = 0; i < animators.length; i++) {
+        if (animators[i].targetName === 'shape') {
+            return true;
+        }
+    }
+    return false;
 }

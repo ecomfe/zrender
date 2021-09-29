@@ -775,7 +775,7 @@ class Element<Props extends ElementProps = ElementProps> {
             const target = targetName
                 ? (normalState as any)[targetName] : normalState;
             // Only save keys that are changed by the states.
-            animator.saveFinalToTarget(target);
+            animator.saveToTarget(target);
         }
     }
 
@@ -1474,6 +1474,7 @@ class Element<Props extends ElementProps = ElementProps> {
         }
 
         const animator = new Animator(target, loop);
+        key && (animator.targetName = key);
         this.addAnimator(animator, key);
         return animator;
     }

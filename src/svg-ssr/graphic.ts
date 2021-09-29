@@ -32,7 +32,7 @@ import Polyline from '../graphic/shape/Polyline';
 import Polygon from '../graphic/shape/Polygon';
 import { GradientObject } from '../graphic/Gradient';
 import { ImagePatternObject, SVGPatternObject } from '../graphic/Pattern';
-import { createAnimates } from './animation';
+import { createAnimates, hasShapeAnimation } from './animation';
 import { createOrUpdateImage } from '../graphic/helper/image';
 import { ImageLike } from '../core/types';
 
@@ -142,9 +142,14 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
     const shape = el.shape;
     const builtinShpDef = buitinShapesDef[el.type];
     const attrs: SVGVNodeAttrs = {};
+    const needsAnimate = scope.animation;
     let svgElType = 'path';
     // Using SVG builtin shapes if possible
-    if (builtinShpDef && !(builtinShpDef[1] && !builtinShpDef[1](shape))) {
+    if (builtinShpDef
+        && !(builtinShpDef[1] && !builtinShpDef[1](shape))
+        // use `path` to simplify the animate element creation logic.
+        && !(needsAnimate && hasShapeAnimation(el))
+    ) {
         svgElType = el.type;
         builtinShpDef[0](shape, attrs);
     }
@@ -180,7 +185,7 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    return createVNode(svgElType, el.id + '', attrs, scope.animation && createAnimates(el, scope.defs));
+    return createVNode(svgElType, el.id + '', attrs, needsAnimate && createAnimates(el, scope.defs));
 }
 
 export function brushSVGImage(el: ZRImage, scope: BrushScope) {
