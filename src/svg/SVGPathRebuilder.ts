@@ -1,5 +1,5 @@
 import { PathRebuilder } from '../core/PathProxy';
-import { isAroundZero, round4 } from '../svg-ssr/shared';
+import { isAroundZero, round4 } from './helper';
 
 const mathSin = Math.sin;
 const mathCos = Math.cos;

@@ -3,7 +3,7 @@ import Displayable from '../graphic/Displayable';
 import {TransformProp} from '../core/Transformable';
 import Animator, { AnimatorTrack } from '../animation/Animator';
 import Path from '../graphic/Path';
-import SVGPathRebuilder from '../svg/SVGPathRebuilder';
+import SVGPathRebuilder from './SVGPathRebuilder';
 import PathProxy from '../core/PathProxy';
 import { extend, isString } from '../core/util';
 
@@ -50,6 +50,7 @@ function createAnimateTransformVNode(transformType: SVGTransformType, values: st
         attributeName: 'transform',
         attributeType: 'XML',
         type: transformType,
+        additive: 'sum',
         values: values
     });
 }
@@ -154,7 +155,6 @@ export function createAnimates(el: Displayable, defs: Record<string, SVGVNode>):
         if (!targetProp) {
             // transformable props.
             // TODO origin, parent, skew
-            let isFirstTransformAnime = true;
             // TODO parents transform animations.
             for (let k = 0; k < transformMaps.length; k++) {
                 const map = transformMaps[k];
@@ -163,10 +163,6 @@ export function createAnimates(el: Displayable, defs: Record<string, SVGVNode>):
                 if (val) {
                     const animateVNode = createAnimateTransformVNode(transformType, val);
                     if (animateVNode) {
-                        if (!isFirstTransformAnime) {
-                            animateVNode.attrs.additive = 'sum';
-                        }
-                        isFirstTransformAnime = false;
                         applyCommonAttrs(animateVNode, animator);
                         animateVNodes.push(animateVNode);
                     }

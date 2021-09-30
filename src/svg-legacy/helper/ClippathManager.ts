@@ -10,8 +10,8 @@ import Path from '../../graphic/Path';
 import {path} from '../graphic';
 import { Dictionary } from '../../core/types';
 import { isClipPathChanged } from '../../canvas/helper';
-import { getClipPathsKey, getIdURL } from '../../svg-ssr/shared';
-import { createElement } from '../core';
+import { getClipPathsKey, getIdURL } from '../../svg/helper';
+import { createElement } from '../../svg/core';
 
 type PathExtended = Path & {
     _dom: SVGElement

@@ -7,8 +7,8 @@ import Definable from './Definable';
 import * as zrUtil from '../../core/util';
 import Displayable from '../../graphic/Displayable';
 import { GradientObject } from '../../graphic/Gradient';
-import { getIdURL, isGradient, isLinearGradient, isRadialGradient, normalizeColor, round4 } from '../../svg-ssr/shared';
-import { createElement } from '../core';
+import { getIdURL, isGradient, isLinearGradient, isRadialGradient, normalizeColor, round4 } from '../../svg/helper';
+import { createElement } from '../../svg/core';
 
 
 type GradientObjectExtended = GradientObject & {

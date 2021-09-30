@@ -4,7 +4,7 @@
  * @author Zhang Wenli
  */
 
-import {createElement} from '../core';
+import {createElement} from '../../svg/core';
 import * as zrUtil from '../../core/util';
 import Displayable from '../../graphic/Displayable';
 

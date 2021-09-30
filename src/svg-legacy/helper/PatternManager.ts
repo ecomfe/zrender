@@ -9,8 +9,8 @@ import Displayable from '../../graphic/Displayable';
 import {PatternObject} from '../../graphic/Pattern';
 import {createOrUpdateImage} from '../../graphic/helper/image';
 import WeakMap from '../../core/WeakMap';
-import { getIdURL, isPattern, isSVGPattern } from '../../svg-ssr/shared';
-import { createElement } from '../core';
+import { getIdURL, isPattern, isSVGPattern } from '../../svg/helper';
+import { createElement } from '../../svg/core';
 
 const patternDomMap = new WeakMap<PatternObject, SVGElement>();
 

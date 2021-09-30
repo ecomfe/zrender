@@ -6,8 +6,8 @@
 import Definable from './Definable';
 import Displayable from '../../graphic/Displayable';
 import { Dictionary } from '../../core/types';
-import { getIdURL, getShadowKey, hasShadow, normalizeColor } from '../../svg-ssr/shared';
-import { createElement } from '../core';
+import { getIdURL, getShadowKey, hasShadow, normalizeColor } from '../../svg/helper';
+import { createElement } from '../../svg/core';
 
 type DisplayableExtended = Displayable & {
     _shadowDom: SVGElement

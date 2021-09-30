@@ -9,8 +9,7 @@
  */
 
 import { isArray, isObject } from '../core/util';
-import { createElement } from '../svg/core';
-import { createVNode, SVGVNode } from './core';
+import { createElement, createVNode, SVGVNode } from './core';
 import * as api from './domapi';
 
 const xlinkNS = 'http://www.w3.org/1999/xlink';
