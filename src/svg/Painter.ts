@@ -21,7 +21,12 @@ function createBrushScope() {
         patternCache: {},
         gradientCache: {},
         clipPathCache: {},
-        defs: {}
+        defs: {},
+
+        shadowIdx: 0,
+        gradientIdx: 0,
+        patternIdx: 0,
+        clipPathIdx: 0
     };
     return scope;
 }

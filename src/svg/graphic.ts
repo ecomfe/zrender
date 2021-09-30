@@ -43,6 +43,10 @@ export interface BrushScope {
     clipPathCache: Record<string, string>
     defs: Record<string, SVGVNode>
 
+    shadowIdx: number,
+    gradientIdx: number,
+    patternIdx: number,
+    clipPathIdx: number
     // configs
     /**
      * If create animates nodes.
@@ -54,22 +58,20 @@ export interface BrushScope {
 type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;
 
 function setStyleAttrs(attrs: SVGVNodeAttrs, style: AllStyleOption, el: Path | TSpan | ZRImage, scope: BrushScope) {
-    const {defs} = scope;
-
     mapStyleToAttrs((key, val) => {
         const isFillStroke = key === 'fill' || key === 'stroke';
         if (isFillStroke && isGradient(val)) {
-            setGradient(style, attrs, key, defs, scope.gradientCache);
+            setGradient(style, attrs, key, scope);
         }
         else if (isFillStroke && isPattern(val)) {
-            setPattern(el, attrs, key, defs, scope.patternCache);
+            setPattern(el, attrs, key, scope);
         }
         else {
             attrs[key] = val;
         }
     }, style, el, false);
 
-    setShadow(el, attrs, defs, scope.shadowCache);
+    setShadow(el, attrs, scope);
 }
 
 function noRotateScale(m: MatrixArray) {
@@ -144,11 +146,13 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
     const attrs: SVGVNodeAttrs = {};
     const needsAnimate = scope.animation;
     let svgElType = 'path';
+    const strokePercent = el.style.strokePercent;
     // Using SVG builtin shapes if possible
     if (builtinShpDef
         && !(builtinShpDef[1] && !builtinShpDef[1](shape))
         // use `path` to simplify the animate element creation logic.
         && !(needsAnimate && hasShapeAnimation(el))
+        && !(strokePercent < 1)
     ) {
         svgElType = el.type;
         builtinShpDef[0](shape, attrs);
@@ -166,7 +170,6 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
         }
         const pathVersion = path.getVersion();
         const elExt = el as PathWithSVGBuildPath;
-        const strokePercent = el.style.strokePercent;
 
         let svgPathBuilder = elExt.__svgPathBuilder;
         if (elExt.__svgPathVersion !== pathVersion || !svgPathBuilder || strokePercent < 1) {
@@ -276,19 +279,15 @@ export function brush(el: Displayable, scope: BrushScope): SVGVNode {
     }
 }
 
-let shadowIdx = 0;
-let gradientIdx = 0;
-let patternIdx = 0;
-let clipPathIdx = 0;
 function setShadow(
     el: Displayable,
     attrs: SVGVNodeAttrs,
-    defs: BrushScope['defs'],
-    shadowCache: Record<string, string>
+    scope: BrushScope
 ) {
     const style = el.style;
     if (hasShadow(style)) {
         const shadowKey = getShadowKey(el);
+        const shadowCache = scope.shadowCache;
         let shadowId = shadowCache[shadowKey];
         if (!shadowId) {
             const globalScale = el.getGlobalScale();
@@ -303,8 +302,8 @@ function setShadow(
             const stdDy = blur / 2 / scaleY;
             const stdDeviation = stdDx + ' ' + stdDy;
             // Use a simple prefix to reduce the size
-            shadowId = 's' + shadowIdx++;
-            defs[shadowId] = createVNode(
+            shadowId = 's' + scope.shadowIdx++;
+            scope.defs[shadowId] = createVNode(
                 'filter', shadowId,
                 {
                     'id': shadowId,
@@ -333,8 +332,7 @@ function setGradient(
     style: PathStyleProps,
     attrs: SVGVNodeAttrs,
     target: 'fill' | 'stroke',
-    defs: BrushScope['defs'],
-    gradientCache: Record<string, string>
+    scope: BrushScope
 ) {
     const val = style[target] as GradientObject;
     let gradientTag;
@@ -392,13 +390,14 @@ function setGradient(
     // Use the whole html as cache key.
     const gradientVNode = createVNode(gradientTag, '', gradientAttrs, colorStops);
     const gradientKey = vNodeToString(gradientVNode);
+    const gradientCache = scope.gradientCache;
     let gradientId = gradientCache[gradientKey];
     if (!gradientId) {
-        gradientId = 'g' + gradientIdx++;
+        gradientId = 'g' + scope.gradientIdx++;
         gradientCache[gradientKey] = gradientId;
 
         gradientAttrs.id = gradientId;
-        defs[gradientId] = createVNode(
+        scope.defs[gradientId] = createVNode(
             gradientTag, gradientId, gradientAttrs, colorStops
         );
     }
@@ -410,8 +409,7 @@ function setPattern(
     el: Displayable,
     attrs: SVGVNodeAttrs,
     target: 'fill' | 'stroke',
-    defs: BrushScope['defs'],
-    patternCache: Record<string, string>
+    scope: BrushScope
 ) {
     const val = el.style[target] as ImagePatternObject | SVGPatternObject;
     const patternAttrs: SVGVNodeAttrs = {
@@ -502,12 +500,13 @@ function setPattern(
         [child]
     );
     const patternKey = vNodeToString(patternVNode);
+    const patternCache = scope.patternCache;
     let patternId = patternCache[patternKey];
     if (!patternId) {
-        patternId = 'p' + patternIdx++;
+        patternId = 'p' + scope.patternIdx++;
         patternCache[patternKey] = patternId;
         patternAttrs.id = patternId;
-        defs[patternId] = createVNode(
+        scope.defs[patternId] = createVNode(
             'pattern',
             patternId,
             patternAttrs,
@@ -526,7 +525,7 @@ export function setClipPath(
     const {clipPathCache, defs} = scope;
     let clipPathId = clipPathCache[clipPath.id];
     if (!clipPathId) {
-        clipPathId = 'c' + clipPathIdx++;
+        clipPathId = 'c' + scope.clipPathIdx++;
         const clipPathAttrs: SVGVNodeAttrs = {
             id: clipPathId
         };
