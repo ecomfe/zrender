@@ -98,7 +98,9 @@ class SVGPainter implements PainterBase {
 
     refresh() {
         if (this.root) {
-            const vnode = this.renderToVNode();
+            const vnode = this.renderToVNode({
+                willUpdate: true
+            });
             patch(this._oldVNode || this._svgDom, vnode);
             this._oldVNode = vnode;
         }
@@ -110,6 +112,7 @@ class SVGPainter implements PainterBase {
 
     renderToVNode(opts?: {
         animation?: boolean
+        willUpdate?: boolean
     }) {
 
         opts = opts || {};
@@ -121,6 +124,7 @@ class SVGPainter implements PainterBase {
 
         const scope = createBrushScope();
         scope.animation = opts.animation;
+        scope.willUpdate = opts.willUpdate;
 
         const children: SVGVNode[] = [];
 
@@ -169,7 +173,8 @@ class SVGPainter implements PainterBase {
 
     renderToString() {
         return vNodeToString(this.renderToVNode({
-            animation: true
+            animation: true,
+            willUpdate: false
         }));
     }
 

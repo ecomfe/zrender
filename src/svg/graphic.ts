@@ -51,7 +51,12 @@ export interface BrushScope {
     /**
      * If create animates nodes.
      */
-    animation?: boolean
+    animation?: boolean,
+
+    /**
+     * If will update. Some optimization for string generation can't be applied.
+     */
+    willUpdate?: boolean
 }
 
 
@@ -149,6 +154,9 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
     const strokePercent = el.style.strokePercent;
     // Using SVG builtin shapes if possible
     if (builtinShpDef
+        // Force to use path if it will update later.
+        // To avoid some animation(like morph) fail
+        && !scope.willUpdate
         && !(builtinShpDef[1] && !builtinShpDef[1](shape))
         // use `path` to simplify the animate element creation logic.
         && !(needsAnimate && hasShapeAnimation(el))
