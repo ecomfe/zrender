@@ -81,7 +81,7 @@ function createElm(vnode: SVGVNode, insertedVnodeQueue: VNodeQueue): Node {
     //     vnode.elm = api.createComment(vnode.text!);
     // }
     // else
-    if (tag !== undefined) {
+    if (isDef(tag)) {
         const elm = (vnode.elm = createElement(tag));
 
         updateAttrs(emptyNode, vnode);
@@ -94,7 +94,7 @@ function createElm(vnode: SVGVNode, insertedVnodeQueue: VNodeQueue): Node {
                 }
             }
         }
-        else if (!isObject(vnode.text)) {
+        else if (isDef(vnode.text) && !isObject(vnode.text)) {
             api.appendChild(elm, api.createTextNode(vnode.text));
         }
     }

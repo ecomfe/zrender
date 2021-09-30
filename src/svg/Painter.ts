@@ -15,6 +15,17 @@ import Path from '../graphic/Path';
 import patch from './patch';
 import { getSize } from '../canvas/helper';
 
+function createBrushScope() {
+    const scope: BrushScope = {
+        shadowCache: {},
+        patternCache: {},
+        gradientCache: {},
+        clipPathCache: {},
+        defs: {}
+    };
+    return scope;
+}
+
 interface SVGPainterOption {
     width?: number
     height?: number
@@ -23,7 +34,7 @@ interface SVGPainterOption {
 
 class SVGPainter implements PainterBase {
 
-    type = 'svg-ssr'
+    type = 'svg'
 
     storage: Storage
 
@@ -88,6 +99,10 @@ class SVGPainter implements PainterBase {
         }
     }
 
+    renderOneToVNode(el: Displayable) {
+        return brush(el, createBrushScope());
+    }
+
     renderToVNode(opts?: {
         animation?: boolean
     }) {
@@ -99,14 +114,8 @@ class SVGPainter implements PainterBase {
         const width = this._width + '';
         const height = this._height + '';
 
-        const scope: BrushScope = {
-            shadowCache: {},
-            patternCache: {},
-            gradientCache: {},
-            clipPathCache: {},
-            defs: {},
-            animation: opts.animation
-        };
+        const scope = createBrushScope();
+        scope.animation = opts.animation;
 
         const children: SVGVNode[] = [];
 

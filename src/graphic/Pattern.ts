@@ -1,4 +1,5 @@
 import { ImageLike } from '../core/types';
+import { SVGVNode } from '../svg/core';
 
 type ImagePatternRepeat = 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat'
 
@@ -35,12 +36,10 @@ export interface InnerImagePatternObject extends ImagePatternObject {
 
 export interface SVGPatternObject extends PatternObjectBase {
     /**
-     * svg element can only be used in svg renderer currently.
+     * svg vnode can only be used in svg renderer currently.
      * svgWidth, svgHeight defines width and height used for pattern.
-     *
-     * Will be string if using SSR rendering.
      */
-    svgElement?: SVGElement | string
+    svgElement?: SVGVNode
     svgWidth?: number
     svgHeight?: number
 }

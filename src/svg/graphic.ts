@@ -193,7 +193,7 @@ export function brushSVGImage(el: ZRImage, scope: BrushScope) {
     let image = style.image;
 
     if (!image) {
-        return '';
+        return;
     }
     // Only support string image in ssr renderer.
 
@@ -228,7 +228,7 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     // Convert to string
     text != null && (text += '');
     if (!text || isNaN(style.x) || isNaN(style.y)) {
-        return '';
+        return;
     }
 
     // style.font has been normalized by `normalizeTextStyle`.
@@ -258,10 +258,13 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    return createVNode('text', el.id + '', attrs, scope.animation && createAnimates(el, scope.defs), text);
+    const childNodes = [createVNode(undefined, 'text', {}, [], text)];
+    const animatesNodes = scope.animation && createAnimates(el, scope.defs);
+
+    return createVNode('text', el.id + '', attrs, childNodes.concat(animatesNodes || []));
 }
 
-export function brush(el: Displayable, scope: BrushScope) {
+export function brush(el: Displayable, scope: BrushScope): SVGVNode {
     if (el instanceof Path) {
         return brushSVGPath(el, scope);
     }
@@ -415,7 +418,6 @@ function setPattern(
         'patternUnits': 'userSpaceOnUse'
     };
     let child: SVGVNode;
-    let contentStr: string;
     if (isImagePattern(val)) {
         let imageWidth = val.imageWidth;
         let imageHeight = val.imageHeight;
@@ -475,23 +477,29 @@ function setPattern(
         patternAttrs.width = imageWidth;
         patternAttrs.height = imageHeight;
     }
-    else if (typeof val.svgElement === 'string') {  // Only string supported in SSR.
+    else if (val.svgElement) {  // Only string supported in SSR.
         // TODO it's not so good to use textContent as innerHTML
-        contentStr = val.svgElement;
+        child = val.svgElement;
         patternAttrs.width = val.svgWidth;
         patternAttrs.height = val.svgHeight;
     }
-    if (!child && !contentStr) {
+    if (!child) {
         return;
     }
+
+    const x = val.x || 0;
+    const y = val.y || 0;
+    const rotation = (val.rotation || 0) / Math.PI * 180;
+    const scaleX = val.scaleX || 1;
+    const scaleY = val.scaleY || 1;
+    patternAttrs.patternTransform = `translate(${x},${y}) rotate(${rotation}) scale(${scaleX},${scaleY})`;
 
     // Use the whole html as cache key.
     const patternVNode = createVNode(
         'pattern',
         '',
         patternAttrs,
-        [child],
-        contentStr
+        [child]
     );
     const patternKey = vNodeToString(patternVNode);
     let patternId = patternCache[patternKey];
@@ -503,8 +511,7 @@ function setPattern(
             'pattern',
             patternId,
             patternAttrs,
-            [child],
-            contentStr
+            [child]
         );
     }
 
