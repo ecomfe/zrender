@@ -6,6 +6,7 @@ import Path from '../graphic/Path';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import PathProxy from '../core/PathProxy';
 import { extend, isString } from '../core/util';
+import { getPathPrecision } from './helper';
 
 function col2str(rgba: number[]): string {
     rgba[0] = Math.floor(rgba[0]);
@@ -68,7 +69,7 @@ function buildPathString(el: Path, kfShape: Path['shape']) {
     const path = new PathProxy();
     el.buildPath(path, shape);
     const svgPathBuilder = new SVGPathRebuilder();
-    svgPathBuilder.reset();
+    svgPathBuilder.reset(getPathPrecision(el));
     path.rebuildPath(svgPathBuilder, 1);
     svgPathBuilder.generateStr();
     return svgPathBuilder.getStr();

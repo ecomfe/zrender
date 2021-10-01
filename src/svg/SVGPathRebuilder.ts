@@ -14,12 +14,15 @@ export default class SVGPathRebuilder implements PathRebuilder {
     private _invalid: boolean
 
     // If is start of subpath
-    private _start: boolean;
+    private _start: boolean
+    private _p: number
 
-    reset() {
+    reset(precision?: number) {
         this._start = true;
         this._d = [];
         this._str = '';
+
+        this._p = Math.pow(10, precision || 4);
     }
     moveTo(x: number, y: number) {
         this._add('M', x, y);
@@ -65,22 +68,8 @@ export default class SVGPathRebuilder implements PathRebuilder {
             large = (unifiedTheta >= PI) === !!clockwise;
         }
 
-        const x0 = round4(cx + rx * mathCos(startAngle));
-        const y0 = round4(cy + ry * mathSin(startAngle));
-
-        // It will not draw if start point and end point are exactly the same
-        // We need to shift the end point with a small value
-        // FIXME A better way to draw circle ?
-        if (isCircle) {
-            if (clockwise) {
-                dTheta = PI2 - 1e-4;
-            }
-            else {
-                dTheta = -PI2 + 1e-4;
-            }
-
-            large = true;
-        }
+        const x0 = cx + rx * mathCos(startAngle);
+        const y0 = cy + ry * mathSin(startAngle);
 
         if (this._start) {
             // Move to (x0, y0) only when CMD.A comes at the
@@ -91,16 +80,25 @@ export default class SVGPathRebuilder implements PathRebuilder {
             this._add('M', x0, y0);
         }
 
-        const x = round4(cx + rx * mathCos(startAngle + dTheta));
-        const y = round4(cy + ry * mathSin(startAngle + dTheta));
+        const xRot = Math.round(psi * degree);
+        // It will not draw if start point and end point are exactly the same
+        // We need to add two arcs
+        if (isCircle) {
+            this._add(
+                'A', rx, ry, xRot, +large, +clockwise,
+                cx + rx * mathCos(startAngle + PI),
+                cy + ry * mathSin(startAngle + PI)
+            );
+            this._add('A', rx, ry, xRot, +large, +clockwise, x0, y0);
+        }
+        else {
+            const x = cx + rx * mathCos(endAngle);
+            const y = cy + ry * mathSin(endAngle);
 
-        if (isNaN(x0) || isNaN(y0) || isNaN(rx) || isNaN(ry) || isNaN(psi) || isNaN(degree) || isNaN(x) || isNaN(y)) {
-            return '';
+            // FIXME Ellipse
+            this._add('A', rx, ry, xRot, +large, +clockwise, x, y);
         }
 
-        // FIXME Ellipse
-        this._add('A', round4(rx), round4(ry),
-            Math.round(psi * degree), +large, +clockwise, x, y);
     }
     rect(x: number, y: number, w: number, h: number) {
         this._add('M', x, y);
@@ -120,13 +118,14 @@ export default class SVGPathRebuilder implements PathRebuilder {
 
     _add(cmd: string, a?: number, b?: number, c?: number, d?: number, e?: number, f?: number, g?: number, h?: number) {
         const vals = [];
+        const p = this._p;
         for (let i = 1; i < arguments.length; i++) {
             const val = arguments[i];
             if (isNaN(val)) {
                 this._invalid = true;
                 return;
             }
-            vals.push(round4(val));
+            vals.push(Math.round(val * p) / p);
         }
         this._d.push(cmd + vals.join(' '));
         this._start = cmd === 'Z';

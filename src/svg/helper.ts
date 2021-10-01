@@ -40,6 +40,9 @@ export function round3(val: number) {
 export function round4(val: number) {
     return mathRound(val * 1e4) / 1e4;
 }
+export function round1(val: number) {
+    return mathRound(val * 10) / 10;
+}
 
 export function getMatrixStr(m: MatrixArray) {
     return 'matrix('
@@ -130,4 +133,10 @@ export function isGradient(value: any): value is GradientObject {
 
 export function getIdURL(id: string) {
     return `url(#${id})`;
+}
+
+export function getPathPrecision(el: Path) {
+    const scale = el.getGlobalScale();
+    const size = Math.max(scale[0], scale[1]);
+    return Math.max(Math.ceil(Math.log(size) / Math.log(10)), 1);
 }

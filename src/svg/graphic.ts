@@ -6,6 +6,7 @@ import {
     adjustTextY,
     getIdURL,
     getMatrixStr,
+    getPathPrecision,
     getShadowKey,
     hasShadow,
     isAroundZero,
@@ -36,6 +37,8 @@ import { createAnimates, hasShapeAnimation } from './animation';
 import { createOrUpdateImage } from '../graphic/helper/image';
 import { ImageLike } from '../core/types';
 
+const round = Math.round;
+
 export interface BrushScope {
     shadowCache: Record<string, string>
     gradientCache: Record<string, string>
@@ -57,6 +60,11 @@ export interface BrushScope {
      * If will update. Some optimization for string generation can't be applied.
      */
     willUpdate?: boolean
+
+    /**
+     * If compress the output string.
+     */
+    compress?: boolean
 }
 
 
@@ -90,24 +98,25 @@ function noTranslate(m: MatrixArray) {
     return isAroundZero(m[4]) && isAroundZero(m[5]);
 }
 
-function setTransform(attrs: SVGVNodeAttrs, m: MatrixArray) {
+function setTransform(attrs: SVGVNodeAttrs, m: MatrixArray, compress?: boolean) {
     if (m && !(noTranslate(m) && noRotateScale(m))) {
+        const mul = compress ? 10 : 1e4;
         // Use translate possible to reduce the size a bit.
         attrs.transform = noRotateScale(m)
-            ? `translate(${round4(m[4])} ${round4(m[5])})` : getMatrixStr(m);
+            ? `translate(${round(m[4] * mul) / mul} ${round(m[5] * mul) / mul})` : getMatrixStr(m);
     }
 }
 
 type ShapeMapDesc = (string | [string, string])[];
-type ConvertShapeToAttr = (shape: any, attrs: SVGVNodeAttrs) => void;
+type ConvertShapeToAttr = (shape: any, attrs: SVGVNodeAttrs, mul?: number) => void;
 type ShapeValidator = (shape: any) => boolean;
 
-function convertPolyShape(shape: Polygon['shape'], attrs: SVGVNodeAttrs) {
+function convertPolyShape(shape: Polygon['shape'], attrs: SVGVNodeAttrs, mul: number) {
     const points = shape.points;
     const strArr = [];
     for (let i = 0; i < points.length; i++) {
-        strArr.push(round4(points[i][0]));
-        strArr.push(round4(points[i][1]));
+        strArr.push(round(points[i][0] * mul) / mul);
+        strArr.push(round(points[i][1] * mul) / mul);
     }
     attrs.points = strArr.join(' ');
 }
@@ -121,12 +130,12 @@ function createAttrsConvert(desc: ShapeMapDesc): ConvertShapeToAttr {
         (typeof item === 'string' ? [item, item] : item)
     );
 
-    return function (shape, attrs) {
+    return function (shape, attrs, mul) {
         for (let i = 0; i < normalizedDesc.length; i++) {
             const item = normalizedDesc[i];
             const val = shape[item[0]];
             if (val != null) {
-                attrs[item[1]] = round4(val);
+                attrs[item[1]] = round(val * mul) / mul;
             }
         }
     };
@@ -152,6 +161,7 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
     const needsAnimate = scope.animation;
     let svgElType = 'path';
     const strokePercent = el.style.strokePercent;
+    const precision = scope.compress && getPathPrecision(el) || 4;
     // Using SVG builtin shapes if possible
     if (builtinShpDef
         // Force to use path if it will update later.
@@ -163,7 +173,8 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
         && !(strokePercent < 1)
     ) {
         svgElType = el.type;
-        builtinShpDef[0](shape, attrs);
+        const mul = Math.pow(10, precision);
+        builtinShpDef[0](shape, attrs, mul);
     }
     else {
         if (!el.path) {
@@ -180,11 +191,14 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
         const elExt = el as PathWithSVGBuildPath;
 
         let svgPathBuilder = elExt.__svgPathBuilder;
-        if (elExt.__svgPathVersion !== pathVersion || !svgPathBuilder || strokePercent < 1) {
+        if (elExt.__svgPathVersion !== pathVersion
+            || !svgPathBuilder
+            || strokePercent < 1
+        ) {
             if (!svgPathBuilder) {
                 svgPathBuilder = elExt.__svgPathBuilder = new SVGPathRebuilder();
             }
-            svgPathBuilder.reset();
+            svgPathBuilder.reset(precision);
             path.rebuildPath(svgPathBuilder, strokePercent);
             svgPathBuilder.generateStr();
             elExt.__svgPathVersion = pathVersion;

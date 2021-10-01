@@ -113,6 +113,7 @@ class SVGPainter implements PainterBase {
     renderToVNode(opts?: {
         animation?: boolean
         willUpdate?: boolean
+        compress?: boolean
     }) {
 
         opts = opts || {};
@@ -125,6 +126,7 @@ class SVGPainter implements PainterBase {
         const scope = createBrushScope();
         scope.animation = opts.animation;
         scope.willUpdate = opts.willUpdate;
+        scope.compress = opts.compress;
 
         const children: SVGVNode[] = [];
 
@@ -174,7 +176,8 @@ class SVGPainter implements PainterBase {
     renderToString() {
         return vNodeToString(this.renderToVNode({
             animation: true,
-            willUpdate: false
+            willUpdate: false,
+            compress: true
         }));
     }
 
