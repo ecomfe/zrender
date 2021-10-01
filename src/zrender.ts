@@ -211,7 +211,6 @@ class ZRender {
      */
     refreshImmediately(fromInside?: boolean) {
         // const start = new Date();
-
         if (!fromInside) {
             // Update animation if refreshImmediately is invoked from outside.
             // Not trigger stage update to call flush again. Which may refresh twice

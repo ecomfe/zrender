@@ -51,6 +51,8 @@ class SVGPainter implements PainterBase {
     private _opts: SVGPainterOption
 
     private _oldVNode: SVGVNode
+    private _bgVNode: SVGVNode
+    private _mainVNode: SVGVNode
 
     private _width: number
     private _height: number
@@ -132,7 +134,7 @@ class SVGPainter implements PainterBase {
 
         if (bgColor && bgColor !== 'none') {
             const { color, opacity } = normalizeColor(bgColor);
-            children.push(createVNode(
+            this._bgVNode = createVNode(
                 'rect',
                 'bg',
                 {
@@ -144,19 +146,23 @@ class SVGPainter implements PainterBase {
                     fill: color,
                     fillOpacity: opacity
                 }
-            ));
+            );
+            children.push(this._bgVNode);
+        }
+        else {
+            this._bgVNode = null;
         }
 
-        this._paintList(list, scope, children);
+        const mainVNode = (this._mainVNode = createVNode('g', 'main', {}, []));
 
-        children.push(
-            createVNode(
-                'defs',
-                'defs',
-                {},
-                map(keys(scope.defs), (id) => scope.defs[id])
-            )
-        );
+        this._paintList(list, scope, mainVNode.children);
+
+        children.push(mainVNode);
+
+        const defs = map(keys(scope.defs), (id) => scope.defs[id]);
+        if (defs.length) {
+            children.push(createVNode('defs', 'defs', {}, defs));
+        }
 
         return createVNode(
             'svg',
@@ -183,8 +189,18 @@ class SVGPainter implements PainterBase {
 
     setBackgroundColor(backgroundColor: string) {
         this._backgroundColor = backgroundColor;
-        // TOOD optimize for change bg only.
-        this.renderToVNode();
+        const bgVNode = this._bgVNode;
+        if (bgVNode && bgVNode.elm) {
+            const { color, opacity } = normalizeColor(backgroundColor);
+            (bgVNode.elm as SVGElement).setAttribute('fill', color);
+            if (opacity < 1) {
+                (bgVNode.elm as SVGElement).setAttribute('fill-opacity', opacity as any);
+            }
+        }
+    }
+
+    getSvgRoot() {
+        return this._mainVNode && this._mainVNode.elm;
     }
 
     _paintList(list: Displayable[], scope: BrushScope, out?: SVGVNode[]) {

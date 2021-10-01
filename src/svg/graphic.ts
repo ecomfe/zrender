@@ -161,7 +161,7 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
     const needsAnimate = scope.animation;
     let svgElType = 'path';
     const strokePercent = el.style.strokePercent;
-    const precision = scope.compress && getPathPrecision(el) || 4;
+    const precision = (scope.compress && getPathPrecision(el)) || 4;
     // Using SVG builtin shapes if possible
     if (builtinShpDef
         // Force to use path if it will update later.
