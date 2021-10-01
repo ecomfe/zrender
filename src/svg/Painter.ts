@@ -153,11 +153,11 @@ class SVGPainter implements PainterBase {
             this._bgVNode = null;
         }
 
-        const mainVNode = (this._mainVNode = createVNode('g', 'main', {}, []));
-
-        this._paintList(list, scope, mainVNode.children);
-
-        children.push(mainVNode);
+        // Ignore the root g if wan't the output to be more tight.
+        const mainVNode = !opts.compress
+            ? (this._mainVNode = createVNode('g', 'main', {}, [])) : null;
+        this._paintList(list, scope, mainVNode ? mainVNode.children : children);
+        mainVNode && children.push(mainVNode);
 
         const defs = map(keys(scope.defs), (id) => scope.defs[id]);
         if (defs.length) {
@@ -200,7 +200,7 @@ class SVGPainter implements PainterBase {
     }
 
     getSvgRoot() {
-        return this._mainVNode && this._mainVNode.elm;
+        return this._mainVNode && this._mainVNode.elm as SVGElement;
     }
 
     _paintList(list: Displayable[], scope: BrushScope, out?: SVGVNode[]) {
