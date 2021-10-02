@@ -217,10 +217,17 @@ export function brushSVGImage(el: ZRImage, scope: BrushScope) {
     const style = el.style;
     let image = style.image;
 
+    if (image instanceof HTMLImageElement) {
+        image = image.src;
+    }
+    // heatmap layer in geo may be a canvas
+    else if (image instanceof HTMLCanvasElement) {
+        image = image.toDataURL();
+    }
+
     if (!image) {
         return;
     }
-    // Only support string image in ssr renderer.
 
     const x = style.x || 0;
     const y = style.y || 0;
@@ -484,12 +491,11 @@ function setPattern(
             }
         }
 
-        // TODO Only support string url
         child = createVNode(
             'image',
             'img',
             {
-                href: val.image as string,
+                href: imageSrc,
                 width: imageWidth,
                 height: imageHeight
             }
@@ -515,7 +521,7 @@ function setPattern(
     patternAttrs.patternTransform = `translate(${x},${y}) rotate(${rotation}) scale(${scaleX},${scaleY})`;
 
     // Use the whole html as cache key.
-    const patternVNode = createVNode(
+    let patternVNode = createVNode(
         'pattern',
         '',
         patternAttrs,
@@ -528,7 +534,7 @@ function setPattern(
         patternId = 'p' + scope.patternIdx++;
         patternCache[patternKey] = patternId;
         patternAttrs.id = patternId;
-        scope.defs[patternId] = createVNode(
+        patternVNode = scope.defs[patternId] = createVNode(
             'pattern',
             patternId,
             patternAttrs,
