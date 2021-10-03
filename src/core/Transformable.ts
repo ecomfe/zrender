@@ -282,12 +282,7 @@ class Transformable {
     }
 
     copyTransform(source: Transformable) {
-        const target = this;
-
-        for (let i = 0; i < TRANSFORMABLE_PROPS.length; i++) {
-            const propName = TRANSFORMABLE_PROPS[i];
-            target[propName] = source[propName];
-        }
+        copyTransform(this, source);
     }
 
 
@@ -352,5 +347,15 @@ export const TRANSFORMABLE_PROPS = [
 ] as const;
 
 export type TransformProp = (typeof TRANSFORMABLE_PROPS)[number]
+
+export function copyTransform(
+    target: Partial<Pick<Transformable, TransformProp>>,
+    source: Pick<Transformable, TransformProp>
+) {
+    for (let i = 0; i < TRANSFORMABLE_PROPS.length; i++) {
+        const propName = TRANSFORMABLE_PROPS[i];
+        target[propName] = source[propName];
+    }
+}
 
 export default Transformable;

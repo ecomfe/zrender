@@ -1,6 +1,8 @@
 // Shared methods of svg and svg-ssr
 
 import { MatrixArray } from '../core/matrix';
+import Transformable from '../core/Transformable';
+import { retrieve2 } from '../core/util';
 import Displayable from '../graphic/Displayable';
 import { GradientObject } from '../graphic/Gradient';
 import { LinearGradientObject } from '../graphic/LinearGradient';
@@ -30,18 +32,18 @@ export function normalizeColor(color: string): { color: string; opacity: number;
     };
 }
 const EPSILON = 1e-4;
-export function isAroundZero(val: number) {
-    return val < EPSILON && val > -EPSILON;
+export function isAroundZero(transform: number) {
+    return transform < EPSILON && transform > -EPSILON;
 }
 
-export function round3(val: number) {
-    return mathRound(val * 1e3) / 1e3;
+export function round3(transform: number) {
+    return mathRound(transform * 1e3) / 1e3;
 }
-export function round4(val: number) {
-    return mathRound(val * 1e4) / 1e4;
+export function round4(transform: number) {
+    return mathRound(transform * 1e4) / 1e4;
 }
-export function round1(val: number) {
-    return mathRound(val * 10) / 10;
+export function round1(transform: number) {
+    return mathRound(transform * 10) / 10;
 }
 
 export function getMatrixStr(m: MatrixArray) {
@@ -65,7 +67,7 @@ export const TEXT_ALIGN_TO_ANCHOR = {
 };
 
 export function adjustTextY(y: number, lineHeight: number, textBaseline: CanvasTextBaseline): number {
-    // TODO Other values.
+    // TODO Other transformues.
     if (textBaseline === 'top') {
         y += lineHeight / 2;
     }
@@ -106,28 +108,28 @@ export function getClipPathsKey(clipPaths: Path[]) {
     return key.join(',');
 }
 
-export function isImagePattern(value: any): value is ImagePatternObject {
-    return value && (!!(value as ImagePatternObject).image);
+export function isImagePattern(transformue: any): transformue is ImagePatternObject {
+    return transformue && (!!(transformue as ImagePatternObject).image);
 }
-export function isSVGPattern(value: any): value is SVGPatternObject {
-    return value && (!!(value as SVGPatternObject).svgElement);
+export function isSVGPattern(transformue: any): transformue is SVGPatternObject {
+    return transformue && (!!(transformue as SVGPatternObject).svgElement);
 }
-export function isPattern(value: any): value is PatternObject {
-    return isImagePattern(value) || isSVGPattern(value);
-}
-
-export function isLinearGradient(value: GradientObject): value is LinearGradientObject {
-    return value.type === 'linear';
+export function isPattern(transformue: any): transformue is PatternObject {
+    return isImagePattern(transformue) || isSVGPattern(transformue);
 }
 
-export function isRadialGradient(value: GradientObject): value is RadialGradientObject {
-    return value.type === 'radial';
+export function isLinearGradient(transformue: GradientObject): transformue is LinearGradientObject {
+    return transformue.type === 'linear';
 }
 
-export function isGradient(value: any): value is GradientObject {
-    return value && (
-        (value as GradientObject).type === 'linear'
-        || (value as GradientObject).type === 'radial'
+export function isRadialGradient(transformue: GradientObject): transformue is RadialGradientObject {
+    return transformue.type === 'radial';
+}
+
+export function isGradient(transformue: any): transformue is GradientObject {
+    return transformue && (
+        (transformue as GradientObject).type === 'linear'
+        || (transformue as GradientObject).type === 'radial'
     );
 }
 
@@ -139,4 +141,26 @@ export function getPathPrecision(el: Path) {
     const scale = el.getGlobalScale();
     const size = Math.max(scale[0], scale[1]);
     return Math.max(Math.ceil(Math.log(size) / Math.log(10)), 1);
+}
+
+export function getSRTTransformString(
+    transform: Partial<Pick<Transformable, 'x' | 'y' | 'rotation' | 'scaleX' | 'scaleY'>>
+) {
+    const x = transform.x || 0;
+    const y = transform.y || 0;
+    const rotation = (transform.rotation || 0) / Math.PI * 180;
+    const scaleX = retrieve2(transform.scaleX, 1);
+    const scaleY = retrieve2(transform.scaleY, 1);
+    const res = [];
+    if (x || y) {
+        res.push(`translate(${x}px,${y}px)`);
+    }
+    if (rotation) {
+        res.push(`rotate(${rotation})`);
+    }
+    if (scaleX !== 1 || scaleY !== 1) {
+        res.push(`scale(${scaleX},${scaleY})`);
+    }
+
+    return res.join(' ');
 }

@@ -8,6 +8,7 @@ import {
     getMatrixStr,
     getPathPrecision,
     getShadowKey,
+    getSRTTransformString,
     hasShadow,
     isAroundZero,
     isGradient,
@@ -25,7 +26,7 @@ import { DEFAULT_FONT, getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import mapStyleToAttrs from './mapStyleToAttrs';
-import { SVGVNodeAttrs, createVNode, SVGVNode, vNodeToString } from './core';
+import { SVGVNodeAttrs, createVNode, SVGVNode, vNodeToString, CSSSelectorVNode } from './core';
 import { MatrixArray } from '../core/matrix';
 import Displayable from '../graphic/Displayable';
 import { assert, logError, map, retrieve2 } from '../core/util';
@@ -33,9 +34,9 @@ import Polyline from '../graphic/shape/Polyline';
 import Polygon from '../graphic/shape/Polygon';
 import { GradientObject } from '../graphic/Gradient';
 import { ImagePatternObject, SVGPatternObject } from '../graphic/Pattern';
-import { createAnimates, hasShapeAnimation } from './animation';
 import { createOrUpdateImage } from '../graphic/helper/image';
 import { ImageLike } from '../core/types';
+import { createCSSAnimation } from './cssAnimation';
 
 const round = Math.round;
 
@@ -44,11 +45,18 @@ export interface BrushScope {
     gradientCache: Record<string, string>
     patternCache: Record<string, string>
     clipPathCache: Record<string, string>
+
     defs: Record<string, SVGVNode>
 
-    shadowIdx: number,
-    gradientIdx: number,
-    patternIdx: number,
+    cssNodes: Record<string, CSSSelectorVNode>
+    cssAnims: Record<string, Record<string, Record<string, string>>>
+
+    cssClassIdx: number
+    cssAnimIdx: number
+
+    shadowIdx: number
+    gradientIdx: number
+    patternIdx: number
     clipPathIdx: number
     // configs
     /**
@@ -153,6 +161,16 @@ interface PathWithSVGBuildPath extends Path {
     __svgPathBuilder: SVGPathRebuilder
 }
 
+function hasShapeAnimation(el: Displayable) {
+    const animators = el.animators;
+    for (let i = 0; i < animators.length; i++) {
+        if (animators[i].targetName === 'shape') {
+            return true;
+        }
+    }
+    return false;
+}
+
 export function brushSVGPath(el: Path, scope: BrushScope) {
     const style = el.style;
     const shape = el.shape;
@@ -210,7 +228,9 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    return createVNode(svgElType, el.id + '', attrs, needsAnimate && createAnimates(el, scope.defs));
+    createCSSAnimation(el, attrs, scope);
+
+    return createVNode(svgElType, el.id + '', attrs);
 }
 
 export function brushSVGImage(el: ZRImage, scope: BrushScope) {
@@ -250,7 +270,9 @@ export function brushSVGImage(el: ZRImage, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    return createVNode('image', el.id + '', attrs, scope.animation && createAnimates(el, scope.defs));
+    createCSSAnimation(el, attrs, scope);
+
+    return createVNode('image', el.id + '', attrs);
 };
 
 export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
@@ -290,10 +312,9 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    const childNodes = [createVNode(undefined, 'text', {}, [], text)];
-    const animatesNodes = scope.animation && createAnimates(el, scope.defs);
+    createCSSAnimation(el, attrs, scope);
 
-    return createVNode('text', el.id + '', attrs, childNodes.concat(animatesNodes || []));
+    return createVNode('text', el.id + '', attrs, undefined, text);
 }
 
 export function brush(el: Displayable, scope: BrushScope): SVGVNode {
@@ -513,12 +534,7 @@ function setPattern(
         return;
     }
 
-    const x = val.x || 0;
-    const y = val.y || 0;
-    const rotation = (val.rotation || 0) / Math.PI * 180;
-    const scaleX = val.scaleX || 1;
-    const scaleY = val.scaleY || 1;
-    patternAttrs.patternTransform = `translate(${x},${y}) rotate(${rotation}) scale(${scaleX},${scaleY})`;
+    patternAttrs.patternTransform = getSRTTransformString(val);
 
     // Use the whole html as cache key.
     let patternVNode = createVNode(

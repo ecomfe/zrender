@@ -1,4 +1,7 @@
-import { map } from '../core/util';
+import { keys, map } from '../core/util';
+
+export type CSSSelectorVNode = Record<string, string>
+export type CSSAnimationVNode = Record<string, Record<string, string>>
 
 export const SVGNS = 'http://www.w3.org/2000/svg';
 export const XLINKNS = 'http://www.w3.org/1999/xlink';
@@ -73,4 +76,35 @@ export function vNodeToString(el: SVGVNode, opts?: {
             + createElementClose(tag);
     }
     return convertElToString(el);
+}
+
+export function getCssString(
+    selectorNodes: Record<string, CSSSelectorVNode>,
+    animationNodes: Record<string, CSSAnimationVNode>,
+    opts?: {
+        newline?: boolean
+    }
+) {
+    opts = opts || {};
+    const S = opts.newline ? '\n' : '';
+    const bracketBegin = ` {${S}`;
+    const bracketEnd = `${S}}`;
+    const selectors = map(keys(selectorNodes), className => {
+        return className + bracketBegin + map(keys(selectorNodes[className]), attrName => {
+            return `${attrName}:${selectorNodes[className][attrName]};`;
+        }).join(S) + bracketEnd;
+    }).join(S);
+    const animations = map(keys(animationNodes), (animationName) => {
+        return `@keyframes ${animationName}${bracketBegin}` + map(keys(animationNodes[animationName]), percent => {
+            return percent + bracketBegin + map(keys(animationNodes[animationName][percent]), attrName => {
+                return `${attrName}:${animationNodes[animationName][percent][attrName]};`;
+            }).join(S) + bracketEnd;
+        }).join(S) + bracketEnd;
+    }).join(S);
+
+    if (!selectors && !animations) {
+        return '';
+    }
+
+    return ['<![CDATA[', selectors, animations, ']]>'].join(S);
 }

@@ -1072,7 +1072,7 @@ export default class Animator<T> {
      * @param trackKeys
      * @param firstOrLast If save first frame or last frame
      */
-    saveToTarget(
+    saveTo(
         target: T,
         trackKeys?: readonly string[],
         firstOrLast?: boolean

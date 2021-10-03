@@ -775,7 +775,7 @@ class Element<Props extends ElementProps = ElementProps> {
             const target = targetName
                 ? (normalState as any)[targetName] : normalState;
             // Only save keys that are changed by the states.
-            animator.saveToTarget(target);
+            animator.saveTo(target);
         }
     }
 

@@ -8,7 +8,7 @@ import {
 import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
 import { PainterBase } from '../PainterBase';
-import { createVNode, vNodeToString, SVGVNodeAttrs, SVGVNode, createElement, SVGNS, XLINKNS } from './core';
+import { createVNode, vNodeToString, SVGVNodeAttrs, SVGVNode, createElement, SVGNS, XLINKNS, getCssString } from './core';
 import { normalizeColor } from './helper';
 import { extend, keys, logError, map } from '../core/util';
 import Path from '../graphic/Path';
@@ -22,6 +22,12 @@ function createBrushScope() {
         gradientCache: {},
         clipPathCache: {},
         defs: {},
+
+        cssNodes: {},
+        cssAnims: {},
+
+        cssClassIdx: 0,
+        cssAnimIdx: 0,
 
         shadowIdx: 0,
         gradientIdx: 0,
@@ -164,6 +170,14 @@ class SVGPainter implements PainterBase {
             children.push(createVNode('defs', 'defs', {}, defs));
         }
 
+        if (opts.animation) {
+            const animationCssStr = getCssString(scope.cssNodes, scope.cssAnims, { newline: true });
+            if (animationCssStr) {
+                const styleNode = createVNode('style', 'stl', {}, [], animationCssStr);
+                children.push(styleNode);
+            }
+        }
+
         return createVNode(
             'svg',
             'root',
@@ -184,7 +198,7 @@ class SVGPainter implements PainterBase {
             animation: true,
             willUpdate: false,
             compress: true
-        }));
+        }), { newline: true });
     }
 
     setBackgroundColor(backgroundColor: string) {
