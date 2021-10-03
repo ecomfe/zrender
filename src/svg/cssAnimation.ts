@@ -119,6 +119,7 @@ export function createCSSAnimation(
         const animators = groupAnimator[1];
         const from: Record<string, string> = {};
         const to: Record<string, string> = {};
+        const len = animators.length;
 
         // transformable props.
         let startTransform: Transformable;
