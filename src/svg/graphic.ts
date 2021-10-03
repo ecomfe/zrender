@@ -228,7 +228,7 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    createCSSAnimation(el, attrs, scope);
+    scope.animation && createCSSAnimation(el, attrs, scope);
 
     return createVNode(svgElType, el.id + '', attrs);
 }
@@ -270,7 +270,7 @@ export function brushSVGImage(el: ZRImage, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    createCSSAnimation(el, attrs, scope);
+    scope.animation && createCSSAnimation(el, attrs, scope);
 
     return createVNode('image', el.id + '', attrs);
 };
@@ -312,7 +312,7 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
 
-    createCSSAnimation(el, attrs, scope);
+    scope.animation && createCSSAnimation(el, attrs, scope);
 
     return createVNode('text', el.id + '', attrs, undefined, text);
 }
