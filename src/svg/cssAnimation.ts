@@ -102,6 +102,9 @@ export function createCSSAnimation(
         if (isString(easing) && EASING_MAP[easing]) {
             cfgArr.push(`cubic-bezier(${EASING_MAP[easing]})`);
         }
+        else {
+            cfgArr.push('linear');
+        }
         if (delay) {
             cfgArr.push(delay / 1000 + 's');
         }
@@ -177,7 +180,7 @@ export function createCSSAnimation(
 
         map(keys(shapeKfs), percent => {
             finalKfs[percent] = finalKfs[percent] || {};
-            finalKfs[percent].d = buildPathString(el as Path, transformKfs[percent]);
+            finalKfs[percent].d = buildPathString(el as Path, shapeKfs[percent]);
         });
 
         for (let i = 0; i < len; i++) {
