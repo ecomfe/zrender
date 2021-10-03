@@ -1,4 +1,4 @@
-import { copyTransform, TRANSFORMABLE_PROPS } from '../core/Transformable';
+import Transformable, { copyTransform, TRANSFORMABLE_PROPS } from '../core/Transformable';
 import Displayable from '../graphic/Displayable';
 import { SVGVNodeAttrs } from './core';
 import { BrushScope } from './graphic';
@@ -66,6 +66,13 @@ function col2str(rgba: number[]): string {
     return 'rgba(' + rgba.join(',') + ')';
 }
 
+function setTransformOrigin(target: Record<string, string>, transform: Transformable) {
+    const {originX, originY} = transform;
+    if (originX || originY) {
+        target['transform-origin'] = `${originX}px ${originY}px`;
+    }
+}
+
 export const ANIMATE_STYLE_MAP: Record<string, string> = {
     fill: 'fill',
     opacity: 'opacity',
@@ -114,8 +121,8 @@ export function createCSSAnimation(
         const to: Record<string, string> = {};
 
         // transformable props.
-        let startTransform;
-        let endTransform;
+        let startTransform: Transformable;
+        let endTransform: Transformable;
 
         let startShape;
         let endShape;
@@ -127,8 +134,8 @@ export function createCSSAnimation(
             const targetProp = animator.targetName;
             if (!targetProp) {
                 if (!startTransform) {
-                    startTransform = {};
-                    endTransform = {};
+                    startTransform = {} as Transformable;
+                    endTransform = {} as Transformable;
                     copyTransform(startTransform, el);
                     copyTransform(endTransform, el);
                 }
@@ -149,6 +156,8 @@ export function createCSSAnimation(
             )) {
             from.transform = getSRTTransformString(startTransform);
             to.transform = getSRTTransformString(endTransform);
+            setTransformOrigin(from, startTransform);
+            setTransformOrigin(to, endTransform);
         }
         if (startShape) {
             from.d = buildPathString(el as Path, startShape);

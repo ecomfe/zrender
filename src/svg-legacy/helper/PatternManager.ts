@@ -119,20 +119,20 @@ export default class PatternManager extends Definable {
      */
     updateDom(pattern: PatternObject, patternDom: SVGElement) {
         if (isSVGPattern(pattern)) {
-            const svgElement = pattern.svgElement;
-            const isStringSVG = typeof svgElement === 'string';
-            if (isStringSVG || svgElement.parentNode !== patternDom) {
-                if (isStringSVG) {
-                    patternDom.innerHTML = svgElement;
-                }
-                else {
-                    patternDom.innerHTML = '';
-                    patternDom.appendChild(svgElement);
-                }
+            // const svgElement = pattern.svgElement;
+            // const isStringSVG = typeof svgElement === 'string';
+            // if (isStringSVG || svgElement.parentNode !== patternDom) {
+            //     if (isStringSVG) {
+            //         patternDom.innerHTML = svgElement;
+            //     }
+            //     else {
+            //         patternDom.innerHTML = '';
+            //         patternDom.appendChild(svgElement);
+            //     }
 
-                patternDom.setAttribute('width', pattern.svgWidth as any);
-                patternDom.setAttribute('height', pattern.svgHeight as any);
-            }
+            //     patternDom.setAttribute('width', pattern.svgWidth as any);
+            //     patternDom.setAttribute('height', pattern.svgHeight as any);
+            // }
         }
         else {
             let img: SVGElement;

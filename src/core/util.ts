@@ -769,3 +769,5 @@ export function hasOwn(own: object, prop: string): boolean {
 }
 
 export function noop() {}
+
+export const RADIAN_TO_DEGREE = 180 / Math.PI;

@@ -12,7 +12,7 @@ import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import TSpan, {TSpanStyleProps} from '../graphic/TSpan';
 import { DEFAULT_FONT } from '../contain/text';
 import { MatrixArray } from '../core/matrix';
-import { map } from '../core/util';
+import { map, RADIAN_TO_DEGREE } from '../core/util';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
 import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 import { REDRAW_BIT, SHAPE_CHANGED_BIT } from '../graphic/constants';
@@ -77,7 +77,7 @@ export function createCanvasPattern(
             && canvasPattern.setTransform   // setTransform may not be supported in some old devices.
         ) {
             const matrix = new DOMMatrix();
-            matrix.rotateSelf(0, 0, (pattern.rotation || 0) / Math.PI * 180);
+            matrix.rotateSelf(0, 0, (pattern.rotation || 0) * RADIAN_TO_DEGREE);
             matrix.scaleSelf((pattern.scaleX || 1), (pattern.scaleY || 1));
             matrix.translateSelf((pattern.x || 0), (pattern.y || 0));
             canvasPattern.setTransform(matrix);

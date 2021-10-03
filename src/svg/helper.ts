@@ -1,8 +1,8 @@
 // Shared methods of svg and svg-ssr
 
 import { MatrixArray } from '../core/matrix';
-import Transformable from '../core/Transformable';
-import { retrieve2 } from '../core/util';
+import Transformable, { TransformProp } from '../core/Transformable';
+import { RADIAN_TO_DEGREE, retrieve2 } from '../core/util';
 import Displayable from '../graphic/Displayable';
 import { GradientObject } from '../graphic/Gradient';
 import { LinearGradientObject } from '../graphic/LinearGradient';
@@ -144,15 +144,18 @@ export function getPathPrecision(el: Path) {
 }
 
 export function getSRTTransformString(
-    transform: Partial<Pick<Transformable, 'x' | 'y' | 'rotation' | 'scaleX' | 'scaleY'>>
+    transform: Partial<Pick<Transformable, TransformProp>>
 ) {
     const x = transform.x || 0;
     const y = transform.y || 0;
-    const rotation = (transform.rotation || 0) / Math.PI * 180;
+    const rotation = (transform.rotation || 0) * RADIAN_TO_DEGREE;
     const scaleX = retrieve2(transform.scaleX, 1);
     const scaleY = retrieve2(transform.scaleY, 1);
+    const skewX = transform.skewX || 0;
+    const skewY = transform.skewY || 0;
     const res = [];
     if (x || y) {
+        // TODO not using px unit?
         res.push(`translate(${x}px,${y}px)`);
     }
     if (rotation) {
@@ -160,6 +163,9 @@ export function getSRTTransformString(
     }
     if (scaleX !== 1 || scaleY !== 1) {
         res.push(`scale(${scaleX},${scaleY})`);
+    }
+    if (skewX || skewY) {
+        res.push(`skew(${mathRound(skewX * RADIAN_TO_DEGREE)}deg, ${mathRound(skewY * RADIAN_TO_DEGREE)}deg)`);
     }
 
     return res.join(' ');
