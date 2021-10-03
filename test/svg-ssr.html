@@ -168,7 +168,7 @@
         zr.add(group);
     }
 
-    // Transform animation
+    // Transform animation with multiple keyframe
     for (let i = 0; i < 10; i++) {
         const el = new zrender.Circle({
             x: i * cellSize + cellSize / 2,
@@ -186,6 +186,10 @@
             .when(1000, {
                 scaleX: 1.2,
                 scaleY: 1.2
+            })
+            .when(2000, {
+                scaleX: 1,
+                scaleY: 1
             })
             .start();
         zr.add(el);

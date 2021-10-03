@@ -6,7 +6,7 @@ import Path from '../graphic/Path';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import PathProxy from '../core/PathProxy';
 import { getPathPrecision, getSRTTransformString } from './helper';
-import { extend, isString, keys } from '../core/util';
+import { defaults, extend, isString, keys, map } from '../core/util';
 import Animator from '../animation/Animator';
 
 export const EASING_MAP: Record<string, string> = {
@@ -95,38 +95,62 @@ export function createCSSAnimation(
     const groupAnimators: Record<string, [string, Animator<any>[]]> = {};
     for (let i = 0; i < len; i++) {
         const animator = animators[i];
-        const keyArr: (string | number)[] = [animator.getMaxTime() / 1000 + 's'];
+        const cfgArr: (string | number)[] = [animator.getMaxTime() / 1000 + 's'];
         const easing = animator.getClip().easing;
         const delay = animator.getDelay();
 
         if (isString(easing) && EASING_MAP[easing]) {
-            keyArr.push(`cubic-bezier(${EASING_MAP[easing]})`);
+            cfgArr.push(`cubic-bezier(${EASING_MAP[easing]})`);
         }
         if (delay) {
-            keyArr.push(delay / 1000 + 's');
+            cfgArr.push(delay / 1000 + 's');
         }
         if (animator.getLoop()) {
-            keyArr.push('infinite');
+            cfgArr.push('infinite');
         }
-        const key = keyArr.join(' ');
+        const cfg = cfgArr.join(' ');
 
         // TODO fill mode
-        groupAnimators[key] = groupAnimators[key] || [key, [] as Animator<any>[]];
-        groupAnimators[key][1].push(animator);
+        groupAnimators[cfg] = groupAnimators[cfg] || [cfg, [] as Animator<any>[]];
+        groupAnimators[cfg][1].push(animator);
     }
 
     function createSingleCSSAnimation(groupAnimator: [string, Animator<any>[]]) {
         const animators = groupAnimator[1];
-        const from: Record<string, string> = {};
-        const to: Record<string, string> = {};
+        // const from: Record<string, string> = {};
+        // const to: Record<string, string> = {};
         const len = animators.length;
+        type CssKF = Record<string, any>;
+        const transformKfs: Record<string, CssKF> = {};
+        const shapeKfs: Record<string, CssKF> = {};
 
-        // transformable props.
-        let startTransform: Transformable;
-        let endTransform: Transformable;
+        const finalKfs: Record<string, CssKF> = {};
 
-        let startShape;
-        let endShape;
+        function saveAnimatorTrackToCssKfs(
+            animator: Animator<any>,
+            cssKfs: Record<string, CssKF>,
+            toCssAttrName?: (propName: string) => string
+        ) {
+            const tracks = animator.getTracks();
+            const maxTime = animator.getMaxTime();
+            for (let k = 0; k < tracks.length; k++) {
+                const track = tracks[k];
+                if (track.needsAnimate()) {
+                    const kfs = track.keyframes;
+                    let attrName = track.propName;
+                    toCssAttrName && (attrName = toCssAttrName(attrName));
+                    if (attrName) {
+                        for (let i = 0; i < kfs.length; i++) {
+                            const kf = kfs[i];
+                            const percent = Math.round(kf.time / maxTime * 100) + '%';
+                            cssKfs[percent] = cssKfs[percent] || {};
+                            cssKfs[percent][attrName] =
+                                track.isValueColor ? col2str(kf.value as any) : kf.value;
+                        }
+                    }
+                }
+            }
+        }
 
         // Find all transform animations.
         // TODO origin, parent
@@ -134,62 +158,44 @@ export function createCSSAnimation(
             const animator = animators[i];
             const targetProp = animator.targetName;
             if (!targetProp) {
-                if (!startTransform) {
-                    startTransform = {} as Transformable;
-                    endTransform = {} as Transformable;
-                    copyTransform(startTransform, el);
-                    copyTransform(endTransform, el);
-                }
-                animator.saveTo(startTransform, null, true);
-                animator.saveTo(endTransform, null, false);
+                saveAnimatorTrackToCssKfs(animator, transformKfs);
             }
             else if (targetProp === 'shape') {
-                startShape = startShape || {};
-                endShape = endShape || {};
-                animator.saveTo(startShape, null, true);
-                animator.saveTo(endShape, null, false);
+                saveAnimatorTrackToCssKfs(animator, shapeKfs);
             }
         }
-        if (startTransform
-            && (
-                !sameTransform(startTransform, el)
-                || !sameTransform(endTransform, el)
-            )) {
-            from.transform = getSRTTransformString(startTransform);
-            to.transform = getSRTTransformString(endTransform);
-            setTransformOrigin(from, startTransform);
-            setTransformOrigin(to, endTransform);
-        }
-        if (startShape) {
-            from.d = buildPathString(el as Path, startShape);
-            to.d = buildPathString(el as Path, endShape);
-        }
+
+        map(keys(transformKfs), percent => {
+            const transform = {} as Transformable;
+            copyTransform(transform, el);
+            extend(transform, transformKfs[percent]);
+            finalKfs[percent] = {
+                transform: getSRTTransformString(transform)
+            };
+            setTransformOrigin(finalKfs[percent], transform);
+        });
+
+        map(keys(shapeKfs), percent => {
+            finalKfs[percent] = finalKfs[percent] || {};
+            finalKfs[percent].d = buildPathString(el as Path, transformKfs[percent]);
+        });
 
         for (let i = 0; i < len; i++) {
             const animator = animators[i];
             const targetProp = animator.targetName;
             if (targetProp === 'style') {
-                const tracks = animator.getTracks();
-                for (let k = 0; k < tracks.length; k++) {
-                    const track = tracks[k];
-                    const propName = track.propName;
-                    const attrName = ANIMATE_STYLE_MAP[propName];
-                    if (attrName && track.needsAnimate()) {
-                        const kfs = track.keyframes;
-                        let val0 = kfs[0].value;
-                        let valn = kfs[kfs.length - 1].value;
-                        const isColor = track.isValueColor;
-                        from[attrName] = isColor ? col2str(val0 as number[]) : val0 as string;
-                        to[attrName] = isColor ? col2str(valn as number[]) : val0 as string;
-                    }
-                }
+                saveAnimatorTrackToCssKfs(
+                    animator, finalKfs, (propName) => ANIMATE_STYLE_MAP[propName]
+                );
             }
         }
-        if (keys(from).length) {
+
+        const percents = keys(finalKfs);
+        if (percents.length) {
             const animationName = 'zr-ani-' + scope.cssAnimIdx++;
-            scope.cssAnims[animationName] = { '0%': from, '100%': to};
+            scope.cssAnims[animationName] = finalKfs;
             // eslint-disable-next-line
-            for (let attrName in from) {
+            for (let attrName in finalKfs[percents[0]]) {
                 // Remove the attrs in the element because it will be set by animation.
                 // Reduce the size.
                 attrs[attrName] = false;
