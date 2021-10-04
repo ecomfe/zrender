@@ -3,39 +3,29 @@
  */
 
 import {
-    brush, BrushScope, setClipPath
+    brush, setClipPath
 } from './graphic';
 import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
 import { PainterBase } from '../PainterBase';
-import { createVNode, vNodeToString, SVGVNodeAttrs, SVGVNode, createElement, SVGNS, XLINKNS, getCssString } from './core';
+import {
+    createVNode,
+    vNodeToString,
+    SVGVNodeAttrs,
+    SVGVNode,
+    createElement,
+    SVGNS,
+    XLINKNS,
+    getCssString,
+    BrushScope,
+    createBrushScope
+} from './core';
 import { normalizeColor } from './helper';
 import { extend, keys, logError, map } from '../core/util';
 import Path from '../graphic/Path';
 import patch from './patch';
 import { getSize } from '../canvas/helper';
 
-function createBrushScope() {
-    const scope: BrushScope = {
-        shadowCache: {},
-        patternCache: {},
-        gradientCache: {},
-        clipPathCache: {},
-        defs: {},
-
-        cssNodes: {},
-        cssAnims: {},
-
-        cssClassIdx: 0,
-        cssAnimIdx: 0,
-
-        shadowIdx: 0,
-        gradientIdx: 0,
-        patternIdx: 0,
-        clipPathIdx: 0
-    };
-    return scope;
-}
 
 interface SVGPainterOption {
     width?: number

@@ -453,6 +453,10 @@ export function keys<T extends object>(obj: T): (KeyOfDistributive<T> & string)[
     return keyList;
 }
 
+export function isEmptyObject(val: any): boolean {
+    return !keys(val).length;
+}
+
 
 // Remove this type in returned function. Or it will conflicts wicth callback with given context. Like Eventful.
 // According to lib.es5.d.ts

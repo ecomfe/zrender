@@ -26,7 +26,7 @@ import { DEFAULT_FONT, getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import mapStyleToAttrs from './mapStyleToAttrs';
-import { SVGVNodeAttrs, createVNode, SVGVNode, vNodeToString, CSSSelectorVNode } from './core';
+import { SVGVNodeAttrs, createVNode, SVGVNode, vNodeToString, BrushScope } from './core';
 import { MatrixArray } from '../core/matrix';
 import Displayable from '../graphic/Displayable';
 import { assert, logError, map, retrieve2 } from '../core/util';
@@ -39,41 +39,6 @@ import { ImageLike } from '../core/types';
 import { createCSSAnimation } from './cssAnimation';
 
 const round = Math.round;
-
-export interface BrushScope {
-    shadowCache: Record<string, string>
-    gradientCache: Record<string, string>
-    patternCache: Record<string, string>
-    clipPathCache: Record<string, string>
-
-    defs: Record<string, SVGVNode>
-
-    cssNodes: Record<string, CSSSelectorVNode>
-    cssAnims: Record<string, Record<string, Record<string, string>>>
-
-    cssClassIdx: number
-    cssAnimIdx: number
-
-    shadowIdx: number
-    gradientIdx: number
-    patternIdx: number
-    clipPathIdx: number
-    // configs
-    /**
-     * If create animates nodes.
-     */
-    animation?: boolean,
-
-    /**
-     * If will update. Some optimization for string generation can't be applied.
-     */
-    willUpdate?: boolean
-
-    /**
-     * If compress the output string.
-     */
-    compress?: boolean
-}
 
 
 type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;

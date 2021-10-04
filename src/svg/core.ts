@@ -11,7 +11,6 @@ export function createElement(name: string) {
     return document.createElementNS(SVGNS, name);
 }
 
-
 export type SVGVNodeAttrs = Record<string, string | number | undefined | boolean>
 export interface SVGVNode {
     tag: string,
@@ -97,7 +96,12 @@ export function getCssString(
     const animations = map(keys(animationNodes), (animationName) => {
         return `@keyframes ${animationName}${bracketBegin}` + map(keys(animationNodes[animationName]), percent => {
             return percent + bracketBegin + map(keys(animationNodes[animationName][percent]), attrName => {
-                return `${attrName}:${animationNodes[animationName][percent][attrName]};`;
+                let val = animationNodes[animationName][percent][attrName];
+                // postprocess
+                if (attrName === 'd') {
+                    val = `path("${val}")`;
+                }
+                return `${attrName}:${val};`;
             }).join(S) + bracketEnd;
         }).join(S) + bracketEnd;
     }).join(S);
@@ -107,4 +111,61 @@ export function getCssString(
     }
 
     return ['<![CDATA[', selectors, animations, ']]>'].join(S);
+}
+
+
+export interface BrushScope {
+    shadowCache: Record<string, string>
+    gradientCache: Record<string, string>
+    patternCache: Record<string, string>
+    clipPathCache: Record<string, string>
+
+    defs: Record<string, SVGVNode>
+
+    cssNodes: Record<string, CSSSelectorVNode>
+    cssAnims: Record<string, Record<string, Record<string, string>>>
+
+    cssClassIdx: number
+    cssAnimIdx: number
+
+    shadowIdx: number
+    gradientIdx: number
+    patternIdx: number
+    clipPathIdx: number
+    // configs
+    /**
+     * If create animates nodes.
+     */
+    animation?: boolean,
+
+    /**
+     * If will update. Some optimization for string generation can't be applied.
+     */
+    willUpdate?: boolean
+
+    /**
+     * If compress the output string.
+     */
+    compress?: boolean
+}
+
+export function createBrushScope(): BrushScope {
+    return {
+        shadowCache: {},
+        patternCache: {},
+        gradientCache: {},
+        clipPathCache: {},
+        defs: {},
+
+        cssNodes: {},
+        cssAnims: {},
+
+        cssClassIdx: 0,
+        cssAnimIdx: 0,
+
+        shadowIdx: 0,
+        gradientIdx: 0,
+        patternIdx: 0,
+        clipPathIdx: 0
+    };
 }

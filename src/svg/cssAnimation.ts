@@ -1,13 +1,13 @@
 import Transformable, { copyTransform, TRANSFORMABLE_PROPS } from '../core/Transformable';
 import Displayable from '../graphic/Displayable';
-import { SVGVNodeAttrs } from './core';
-import { BrushScope } from './graphic';
+import { SVGVNodeAttrs, BrushScope, createBrushScope } from './core';
 import Path from '../graphic/Path';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import PathProxy from '../core/PathProxy';
 import { getPathPrecision, getSRTTransformString } from './helper';
-import { defaults, extend, isString, keys, map } from '../core/util';
+import { each, extend, isEmptyObject, isString, keys, map } from '../core/util';
 import Animator from '../animation/Animator';
+import { CompoundPath } from '../export';
 
 export const EASING_MAP: Record<string, string> = {
     // From https://easings.net/
@@ -55,7 +55,8 @@ function buildPathString(el: Path, kfShape: Path['shape']) {
     svgPathBuilder.reset(getPathPrecision(el));
     path.rebuildPath(svgPathBuilder, 1);
     svgPathBuilder.generateStr();
-    return `path("${svgPathBuilder.getStr()}")`;
+    // will add path("") when generated to css string in the final step.
+    return svgPathBuilder.getStr();
 }
 
 function col2str(rgba: number[]): string {
@@ -63,7 +64,7 @@ function col2str(rgba: number[]): string {
     rgba[1] = Math.floor(rgba[1]);
     rgba[2] = Math.floor(rgba[2]);
 
-    return 'rgba(' + rgba.join(',') + ')';
+    return `rgba(${rgba.join(',')})`;
 }
 
 function setTransformOrigin(target: Record<string, string>, transform: Transformable) {
@@ -81,14 +82,85 @@ export const ANIMATE_STYLE_MAP: Record<string, string> = {
     // TODO shadow is not supported.
 };
 
-export function createCSSAnimation(
-    el: Displayable,
+type CssKF = Record<string, any>;
+
+function addAnimation(cssAnim: Record<string, CssKF>, scope: BrushScope) {
+    const animationName = 'zr-ani-' + scope.cssAnimIdx++;
+    scope.cssAnims[animationName] = cssAnim;
+    return animationName;
+}
+
+function createCompoundPathCSSAnimation(
+    el: CompoundPath,
     attrs: SVGVNodeAttrs,
     scope: BrushScope
 ) {
+    const paths = el.shape.paths;
+    const composedAnim: Record<string, CssKF> = {};
+    let cssAnimationCfg: string;
+    let cssAnimationName: string;
+    each(paths, path => {
+        const subScope = createBrushScope();
+        subScope.animation = true;
+        createCSSAnimation(path, {}, subScope, true);
+        const cssAnims = subScope.cssAnims;
+        const cssNodes = subScope.cssNodes;
+        const animNames = keys(cssAnims);
+        const len = animNames.length;
+        if (!len) {
+            return;
+        }
+        cssAnimationName = animNames[len - 1];
+        // Only use last animation because they are conflicted.
+        const lastAnim = cssAnims[cssAnimationName];
+        // eslint-disable-next-line
+        for (let percent in lastAnim) {
+            const kf = lastAnim[percent];
+            composedAnim[percent] = composedAnim[percent] || { d: '' };
+            composedAnim[percent].d += kf.d || '';
+        }
+        // eslint-disable-next-line
+        for (let className in cssNodes) {
+            const val = cssNodes[className].animation;
+            if (val.indexOf(cssAnimationName) >= 0) {
+                // Only pick the animation configuration of last subpath.
+                cssAnimationCfg = val;
+            }
+        }
+    });
+
+    if (!cssAnimationCfg) {
+        return;
+    }
+
+    // Remove the attrs in the element because it will be set by animation.
+    // Reduce the size.
+    attrs.d = false;
+    const animationName = addAnimation(composedAnim, scope);
+    return cssAnimationCfg.replace(cssAnimationName, animationName);
+}
+
+export function createCSSAnimation(
+    el: Displayable,
+    attrs: SVGVNodeAttrs,
+    scope: BrushScope,
+    onlyShape?: boolean
+) {
     const animators = el.animators;
     const len = animators.length;
-    if (!len) {
+
+    const cssAnimations: string[] = [];
+
+    if (el instanceof CompoundPath) {
+        const animationCfg = createCompoundPathCSSAnimation(el, attrs, scope);
+        if (animationCfg) {
+            cssAnimations.push(animationCfg);
+        }
+        else if (!len) {
+            return;
+        }
+    }
+    else if (!len) {
         return;
     }
     // Group animators by it's configuration
@@ -120,10 +192,7 @@ export function createCSSAnimation(
 
     function createSingleCSSAnimation(groupAnimator: [string, Animator<any>[]]) {
         const animators = groupAnimator[1];
-        // const from: Record<string, string> = {};
-        // const to: Record<string, string> = {};
         const len = animators.length;
-        type CssKF = Record<string, any>;
         const transformKfs: Record<string, CssKF> = {};
         const shapeKfs: Record<string, CssKF> = {};
 
@@ -161,7 +230,7 @@ export function createCSSAnimation(
             const animator = animators[i];
             const targetProp = animator.targetName;
             if (!targetProp) {
-                saveAnimatorTrackToCssKfs(animator, transformKfs);
+                !onlyShape && saveAnimatorTrackToCssKfs(animator, transformKfs);
             }
             else if (targetProp === 'shape') {
                 saveAnimatorTrackToCssKfs(animator, shapeKfs);
@@ -183,20 +252,21 @@ export function createCSSAnimation(
             finalKfs[percent].d = buildPathString(el as Path, shapeKfs[percent]);
         });
 
-        for (let i = 0; i < len; i++) {
-            const animator = animators[i];
-            const targetProp = animator.targetName;
-            if (targetProp === 'style') {
-                saveAnimatorTrackToCssKfs(
-                    animator, finalKfs, (propName) => ANIMATE_STYLE_MAP[propName]
-                );
+        if (!onlyShape) {
+            for (let i = 0; i < len; i++) {
+                const animator = animators[i];
+                const targetProp = animator.targetName;
+                if (targetProp === 'style') {
+                    saveAnimatorTrackToCssKfs(
+                        animator, finalKfs, (propName) => ANIMATE_STYLE_MAP[propName]
+                    );
+                }
             }
         }
 
         const percents = keys(finalKfs);
         if (percents.length) {
-            const animationName = 'zr-ani-' + scope.cssAnimIdx++;
-            scope.cssAnims[animationName] = finalKfs;
+            const animationName = addAnimation(finalKfs, scope);
             // eslint-disable-next-line
             for (let attrName in finalKfs[percents[0]]) {
                 // Remove the attrs in the element because it will be set by animation.
@@ -208,7 +278,6 @@ export function createCSSAnimation(
         }
     }
 
-    const cssAnimations: string[] = [];
     // eslint-disable-next-line
     for (let key in groupAnimators) {
         const animationCfg = createSingleCSSAnimation(groupAnimators[key]);
