@@ -1,7 +1,8 @@
 import BoundingRect, { RectLike } from '../core/BoundingRect';
-import { createCanvas } from '../core/util';
+import { createCanvas, retrieve2 } from '../core/util';
 import { Dictionary, PropType, TextAlign, TextVerticalAlign, BuiltinTextPosition } from '../core/types';
 import LRU from '../core/LRU';
+import { DEFAULT_TEXT_WIDTH_MAP } from './textWidthMap';
 
 let textWidthCache: Dictionary<LRU<number>> = {};
 
@@ -22,10 +23,21 @@ function defaultMeasureText(text: string, font?: string): { width: number } {
         return _ctx.measureText(text);
     }
     else {
+        text = text || '';
+        font = font || DEFAULT_FONT;
         // Use font size if there is no other method can be used.
         const res = /^([0-9]*?)px$/.exec(font);
         const fontSize = +(res && res[1]) || 12;
-        return { width: fontSize * text.length };
+        let width = 0;
+        if (font.indexOf('mono') >= 0) {   // is monospace
+            width = fontSize * text.length;
+        }
+        else {
+            for (let i = 0; i < text.length; i++) {
+                width += retrieve2(DEFAULT_TEXT_WIDTH_MAP[text[i]], 1) * fontSize;
+            }
+        }
+        return { width };
     }
 }
 
@@ -55,9 +67,7 @@ export function getWidth(text: string, font: string): number {
     if (width == null) {
         width = methods.measureText(text, font).width;
         cacheOfFont.put(text, width);
-        // cacheMissCount++;
     }
-    // totalCount++;
 
     return width;
 }
