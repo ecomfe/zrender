@@ -19,7 +19,8 @@
             console.log(ratio + 20);
             mapStr += String.fromCharCode(ratio + 20);
         }
-        console.log(mapStr);
+        const a = mapStr.replace(/\\/g, '\\\\');
+        document.write(a);
     </script>
 </body>
 </html>

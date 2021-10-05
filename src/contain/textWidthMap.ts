@@ -12,13 +12,14 @@
 //     const ratio = Math.round(width / 12 * 100);
 //     mapStr += String.fromCharCode(ratio + 20))
 // }
-// mapStr;
+// mapStr.replace(/\\/g, '\\\\');
 
 export const OFFSET = 20;
 export const SCALE = 100;
 export const DEFAULT_FONT_SIZE = 12;
+// TODO other basic fonts?
 // eslint-disable-next-line
-const defaultWidthMapStr = "007LLmW'55;N0500LLLLLLLLLL00NNNLzWW\\WQb\0FWLg\bWb\WQ\WrWWQ000CL5LLFLL0LL**F*gLLLL5F0LF\FFF5.5N";
+const defaultWidthMapStr = `007LLmW'55;N0500LLLLLLLLLL00NNNLzWW\\\\WQb\\0FWLg\\bWb\\WQ\\WrWWQ000CL5LLFLL0LL**F*gLLLL5F0LF\\FFF5.5N`;
 
 function getMap(mapStr: string): Record<string, number> {
     const map: Record<string, number> = {};
