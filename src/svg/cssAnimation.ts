@@ -5,7 +5,7 @@ import Path from '../graphic/Path';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import PathProxy from '../core/PathProxy';
 import { getPathPrecision, getSRTTransformString } from './helper';
-import { each, extend, isEmptyObject, isString, keys } from '../core/util';
+import { each, extend, filter, isEmptyObject, isString, keys } from '../core/util';
 import Animator from '../animation/Animator';
 import { CompoundPath } from '../export';
 
@@ -34,6 +34,8 @@ export const EASING_MAP: Record<string, string> = {
     circularInOut: '0.85,0,0.15,1'
     // TODO elastic, bounce
 };
+
+const transformOriginKey = 'transform-origin';
 
 function sameTransform(a: any, b: any) {
     for (let i = 0; i < TRANSFORMABLE_PROPS.length; i++) {
@@ -69,7 +71,7 @@ function col2str(rgba: number[]): string {
 function setTransformOrigin(target: Record<string, string>, transform: Transformable) {
     const {originX, originY} = transform;
     if (originX || originY) {
-        target['transform-origin'] = `${originX}px ${originY}px`;
+        target[transformOriginKey] = `${originX}px ${originY}px`;
     }
 }
 
@@ -241,9 +243,11 @@ export function createCSSAnimation(
             const transform = {} as Transformable;
             copyTransform(transform, el);
             extend(transform, transformKfs[percent]);
-            finalKfs[percent] = {
-                transform: getSRTTransformString(transform)
-            };
+            const str = getSRTTransformString(transform);
+            finalKfs[percent] = str ? {
+                transform: str
+            } : {};
+            // TODO set transform origin in element?
             setTransformOrigin(finalKfs[percent], transform);
         };
 
@@ -287,10 +291,31 @@ export function createCSSAnimation(
         }
 
         const percents = keys(finalKfs);
-        if (percents.length && !isEmptyObject(finalKfs[percents[0]])) {
+
+        // Set transform origin in attribute to reduce the size.
+        let allTransformOriginSame = true;
+        for (let i = 1; i < percents.length; i++) {
+            const p0 = percents[i - 1];
+            const p1 = percents[i];
+            if (finalKfs[p0][transformOriginKey] && finalKfs[p0][transformOriginKey] !== finalKfs[p1][transformOriginKey]) {
+                allTransformOriginSame = false;
+                break;
+            }
+        }
+        if (allTransformOriginSame) {
+            for (const percent in finalKfs) {
+                if (finalKfs[percent][transformOriginKey]) {
+                    delete finalKfs[percent][transformOriginKey];
+                }
+            }
+        }
+
+        if (filter(
+            percents, (percent) => !isEmptyObject(finalKfs[percent])
+        ).length) {
             const animationName = addAnimation(finalKfs, scope);
             // eslint-disable-next-line
-            for (let attrName in finalKfs[percents[0]]) {
+            for (const attrName in finalKfs[percents[0]]) {
                 // Remove the attrs in the element because it will be set by animation.
                 // Reduce the size.
                 attrs[attrName] = false;
