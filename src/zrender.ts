@@ -28,8 +28,6 @@ import Path from './graphic/Path';
 import Group from './graphic/Group';
 
 
-const useVML = !env.canvasSupported;
-
 type PainterBaseCtor = {
     new(dom: HTMLElement, storage: Storage, ...args: any[]): PainterBase
 }
@@ -105,13 +103,6 @@ class ZRender {
         const storage = new Storage();
 
         let rendererType = opts.renderer || 'canvas';
-
-        // TODO WebGL
-        if (process.env.NODE_ENV !== 'production') {
-            if (useVML) {
-                throw new Error('IE8 support has been dropped since 5.0');
-            }
-        }
 
         if (!painterCtors[rendererType]) {
             // Use the first registered renderer.

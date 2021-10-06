@@ -218,12 +218,6 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         }
         path.reset();
 
-        // Setting line dash before build path
-        if (lineDash && !ctxLineDash) {
-            path.setLineDash(lineDash);
-            path.setLineDashOffset(lineDashOffset);
-        }
-
         el.buildPath(path, el.shape, inBatch);
         path.toStatic();
 
