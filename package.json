@@ -36,6 +36,7 @@
   ],
   "devDependencies": {
     "@microsoft/api-extractor": "^7.7.2",
+    "@rollup/plugin-replace": "^3.0.0",
     "@types/jest": "^25.1.2",
     "@typescript-eslint/eslint-plugin": "^4.9.1",
     "@typescript-eslint/parser": "^4.9.1",

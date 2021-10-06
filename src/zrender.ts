@@ -107,16 +107,20 @@ class ZRender {
         let rendererType = opts.renderer || 'canvas';
 
         // TODO WebGL
-        if (useVML) {
-            throw new Error('IE8 support has been dropped since 5.0');
+        if (process.env.NODE_ENV !== 'production') {
+            if (useVML) {
+                throw new Error('IE8 support has been dropped since 5.0');
+            }
         }
 
         if (!painterCtors[rendererType]) {
             // Use the first registered renderer.
             rendererType = zrUtil.keys(painterCtors)[0];
         }
-        if (!painterCtors[rendererType]) {
-            throw new Error(`Renderer '${rendererType}' is not imported. Please import it first.`);
+        if (process.env.NODE_ENV !== 'production') {
+            if (!painterCtors[rendererType]) {
+                throw new Error(`Renderer '${rendererType}' is not imported. Please import it first.`);
+            }
         }
 
         opts.useDirtyRect = opts.useDirtyRect == null

@@ -370,7 +370,9 @@ function setGradient(
         gradientAttrs.r = retrieve2(val.r, 0.5);
     }
     else {
-        logError('Illegal gradient type.');
+        if (process.env.NODE_ENV !== 'production') {
+            logError('Illegal gradient type.');
+        }
         return;
     }
 

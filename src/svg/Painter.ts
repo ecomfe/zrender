@@ -345,7 +345,9 @@ class SVGPainter implements PainterBase {
 // Not supported methods
 function createMethodNotSupport(method: string): any {
     return function () {
-        logError('In SVG mode painter not support method "' + method + '"');
+        if (process.env.NODE_ENV !== 'production') {
+            logError('In SVG mode painter not support method "' + method + '"');
+        }
     };
 }
 

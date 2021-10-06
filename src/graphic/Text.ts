@@ -412,7 +412,9 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
     }
 
     setTextContent(textContent: never) {
-        throw new Error('Can\'t attach text on another text');
+        if (process.env.NODE_ENV !== 'production') {
+            throw new Error('Can\'t attach text on another text');
+        }
     }
 
     // getDefaultStyleValue<T extends keyof TextStyleProps>(key: T): TextStyleProps[T] {

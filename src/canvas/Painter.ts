@@ -571,12 +571,16 @@ export default class CanvasPainter implements PainterBase {
         let i = -1;
 
         if (layersMap[zlevel]) {
-            util.logError('ZLevel ' + zlevel + ' has been used already');
+            if (process.env.NODE_ENV !== 'production') {
+                util.logError('ZLevel ' + zlevel + ' has been used already');
+            }
             return;
         }
         // Check if is a valid layer
         if (!isLayerValid(layer)) {
-            util.logError('Layer of zlevel ' + zlevel + ' is not valid');
+            if (process.env.NODE_ENV !== 'production') {
+                util.logError('Layer of zlevel ' + zlevel + ' is not valid');
+            }
             return;
         }
 

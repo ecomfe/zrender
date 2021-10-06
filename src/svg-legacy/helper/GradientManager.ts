@@ -85,7 +85,9 @@ export default class GradientManager extends Definable {
             dom = createElement('radialGradient');
         }
         else {
-            zrUtil.logError('Illegal gradient type.');
+            if (process.env.NODE_ENV !== 'production') {
+                zrUtil.logError('Illegal gradient type.');
+            }
             return null;
         }
 
@@ -158,7 +160,9 @@ export default class GradientManager extends Definable {
             dom.setAttribute('r', gradient.r as any);
         }
         else {
-            zrUtil.logError('Illegal gradient type.');
+            if (process.env.NODE_ENV !== 'production') {
+                zrUtil.logError('Illegal gradient type.');
+            }
             return;
         }
 
