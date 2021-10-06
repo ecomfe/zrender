@@ -5,7 +5,7 @@ import Path from '../graphic/Path';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import PathProxy from '../core/PathProxy';
 import { getPathPrecision, getSRTTransformString } from './helper';
-import { each, extend, isEmptyObject, isString, keys, map } from '../core/util';
+import { each, extend, isString, keys } from '../core/util';
 import Animator from '../animation/Animator';
 import { CompoundPath } from '../export';
 
@@ -45,11 +45,10 @@ function sameTransform(a: any, b: any) {
     return true;
 }
 
-function buildPathString(el: Path, kfShape: Path['shape']) {
+function buildPathString(el: Path, kfShape: Path['shape'], path: PathProxy) {
     const shape = extend({}, el.shape);
     extend(shape, kfShape);
 
-    const path = new PathProxy();
     el.buildPath(path, shape);
     const svgPathBuilder = new SVGPathRebuilder();
     svgPathBuilder.reset(getPathPrecision(el));
@@ -237,7 +236,8 @@ export function createCSSAnimation(
             }
         }
 
-        map(keys(transformKfs), percent => {
+        // eslint-disable-next-line
+        for (let percent in transformKfs) {
             const transform = {} as Transformable;
             copyTransform(transform, el);
             extend(transform, transformKfs[percent]);
@@ -245,12 +245,34 @@ export function createCSSAnimation(
                 transform: getSRTTransformString(transform)
             };
             setTransformOrigin(finalKfs[percent], transform);
-        });
+        };
 
-        map(keys(shapeKfs), percent => {
+
+        let path: PathProxy;
+        let canAnimateShape = true;
+        // eslint-disable-next-line
+        for (let percent in shapeKfs) {
             finalKfs[percent] = finalKfs[percent] || {};
-            finalKfs[percent].d = buildPathString(el as Path, shapeKfs[percent]);
-        });
+            const isFirst = !path;
+            if (isFirst) {
+                path = new PathProxy();
+            }
+            let len = path.len();
+            path.reset();
+            finalKfs[percent].d = buildPathString(el as Path, shapeKfs[percent], path);
+            let newLen = path.len();
+            // Path data don't match.
+            if (!isFirst && len !== newLen) {
+                canAnimateShape = false;
+                break;
+            }
+        };
+        if (!canAnimateShape) {
+            // eslint-disable-next-line
+            for (let percent in finalKfs) {
+                delete finalKfs[percent].d;
+            }
+        }
 
         if (!onlyShape) {
             for (let i = 0; i < len; i++) {
