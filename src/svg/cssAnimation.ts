@@ -294,20 +294,23 @@ export function createCSSAnimation(
 
         // Set transform origin in attribute to reduce the size.
         let allTransformOriginSame = true;
+        let transformOrigin;
         for (let i = 1; i < percents.length; i++) {
             const p0 = percents[i - 1];
             const p1 = percents[i];
-            if (finalKfs[p0][transformOriginKey] && finalKfs[p0][transformOriginKey] !== finalKfs[p1][transformOriginKey]) {
+            if (finalKfs[p0][transformOriginKey] !== finalKfs[p1][transformOriginKey]) {
                 allTransformOriginSame = false;
                 break;
             }
+            transformOrigin = finalKfs[p0][transformOriginKey];
         }
-        if (allTransformOriginSame) {
+        if (allTransformOriginSame && transformOrigin) {
             for (const percent in finalKfs) {
                 if (finalKfs[percent][transformOriginKey]) {
                     delete finalKfs[percent][transformOriginKey];
                 }
             }
+            attrs[transformOriginKey] = transformOrigin;
         }
 
         if (filter(
