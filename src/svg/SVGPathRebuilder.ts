@@ -84,8 +84,8 @@ export default class SVGPathRebuilder implements PathRebuilder {
         // It will not draw if start point and end point are exactly the same
         // We need to add two arcs
         if (isCircle) {
-            const p = this._p;
-            const dTheta = (clockwise ? 1 : -1) * (PI2 - 1 / p);
+            const p = 1 / this._p;
+            const dTheta = (clockwise ? 1 : -1) * (PI2 - p);
             this._add(
                 'A', rx, ry, xRot, 1, +clockwise,
                 cx + rx * mathCos(startAngle + dTheta),
