@@ -86,7 +86,7 @@ export const ANIMATE_STYLE_MAP: Record<string, string> = {
 type CssKF = Record<string, any>;
 
 function addAnimation(cssAnim: Record<string, CssKF>, scope: BrushScope) {
-    const animationName = 'zr-ani-' + scope.cssAnimIdx++;
+    const animationName = scope.zrId + '-ani-' + scope.cssAnimIdx++;
     scope.cssAnims[animationName] = cssAnim;
     return animationName;
 }
