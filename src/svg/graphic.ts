@@ -265,7 +265,8 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
         'dominant-baseline': 'central',
         'text-anchor': textAlign
     };
-    if (text.match(/\s\s/)) {
+    if (text.match(/\s/)) {
+        // only enabled when have space in text.
         attrs['xml:space'] = 'preserve';
     }
     if (x) {
