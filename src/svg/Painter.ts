@@ -21,11 +21,12 @@ import {
     createBrushScope
 } from './core';
 import { normalizeColor } from './helper';
-import { extend, keys, logError, map } from '../core/util';
+import { disableUserSelect, extend, keys, logError, map } from '../core/util';
 import Path from '../graphic/Path';
 import patch from './patch';
 import { getSize } from '../canvas/helper';
 
+let svgId = 0;
 
 interface SVGPainterOption {
     width?: number
@@ -55,11 +56,19 @@ class SVGPainter implements PainterBase {
 
     private _backgroundColor: string
 
-    constructor(root: HTMLElement, storage: Storage, opts: SVGPainterOption, zrId: number) {
+    private _id: string
+
+    constructor(root: HTMLElement, storage: Storage, opts: SVGPainterOption) {
         this.storage = storage;
         this._opts = opts = extend({}, opts);
 
         this.root = root;
+        // A unique id for generating svg ids.
+        this._id = 'zr' + svgId++;
+
+        if (root && root.style) {
+            disableUserSelect(root);
+        }
 
         if (root && !opts.ssr) {
             const viewport = this._viewport = document.createElement('div');
@@ -67,7 +76,6 @@ class SVGPainter implements PainterBase {
             const svgDom = this._svgDom = createElement('svg');
             root.appendChild(viewport);
             viewport.appendChild(svgDom);
-
         }
 
         this.resize(opts.width, opts.height);
@@ -105,7 +113,7 @@ class SVGPainter implements PainterBase {
     }
 
     renderOneToVNode(el: Displayable) {
-        return brush(el, createBrushScope());
+        return brush(el, createBrushScope(this._id));
     }
 
     renderToVNode(opts?: {
@@ -121,7 +129,7 @@ class SVGPainter implements PainterBase {
         const width = this._width + '';
         const height = this._height + '';
 
-        const scope = createBrushScope();
+        const scope = createBrushScope(this._id);
         scope.animation = opts.animation;
         scope.willUpdate = opts.willUpdate;
         scope.compress = opts.compress;
@@ -214,6 +222,7 @@ class SVGPainter implements PainterBase {
         let clipPathsGroupsStackDepth = 0;
         let currentClipPathGroup;
         let prevClipPaths: Path[];
+        let clipGroupNodeIdx = 0;
         for (let i = 0; i < listLen; i++) {
             const displayable = list[i];
             if (!displayable.invisible) {
@@ -245,7 +254,7 @@ class SVGPainter implements PainterBase {
                     );
                     const g = createVNode(
                         'g',
-                        'clip-g-' + clipPaths[i].id,
+                        'clip-g-' + clipGroupNodeIdx++,
                         groupAttrs,
                         []
                     );

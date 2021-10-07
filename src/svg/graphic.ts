@@ -317,7 +317,7 @@ function setShadow(
             const stdDy = blur / 2 / scaleY;
             const stdDeviation = stdDx + ' ' + stdDy;
             // Use a simple prefix to reduce the size
-            shadowId = 's' + scope.shadowIdx++;
+            shadowId = scope.zrId + '-s' + scope.shadowIdx++;
             scope.defs[shadowId] = createVNode(
                 'filter', shadowId,
                 {
@@ -410,7 +410,7 @@ function setGradient(
     const gradientCache = scope.gradientCache;
     let gradientId = gradientCache[gradientKey];
     if (!gradientId) {
-        gradientId = 'g' + scope.gradientIdx++;
+        gradientId = scope.zrId + '-g' + scope.gradientIdx++;
         gradientCache[gradientKey] = gradientId;
 
         gradientAttrs.id = gradientId;
@@ -514,7 +514,7 @@ function setPattern(
     const patternCache = scope.patternCache;
     let patternId = patternCache[patternKey];
     if (!patternId) {
-        patternId = 'p' + scope.patternIdx++;
+        patternId = scope.zrId + '-p' + scope.patternIdx++;
         patternCache[patternKey] = patternId;
         patternAttrs.id = patternId;
         patternVNode = scope.defs[patternId] = createVNode(
@@ -536,7 +536,7 @@ export function setClipPath(
     const {clipPathCache, defs} = scope;
     let clipPathId = clipPathCache[clipPath.id];
     if (!clipPathId) {
-        clipPathId = 'c' + scope.clipPathIdx++;
+        clipPathId = scope.zrId + '-c' + scope.clipPathIdx++;
         const clipPathAttrs: SVGVNodeAttrs = {
             id: clipPathId
         };

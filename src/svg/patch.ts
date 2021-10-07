@@ -38,6 +38,11 @@ function createKeyToOldIdx(
     for (let i = beginIdx; i <= endIdx; ++i) {
         const key = children[i].key;
         if (key !== undefined) {
+            if (process.env.NODE_ENV !== 'production') {
+                if (map[key] != null) {
+                    console.error(`Duplicate key ${key}`);
+                }
+            }
             map[key as string] = i;
         }
     }
@@ -246,7 +251,7 @@ function updateChildren(
             newStartVnode = newCh[++newStartIdx];
         }
         else {
-            if (oldKeyToIdx === undefined) {
+            if (isUndef(oldKeyToIdx)) {
                 oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
             }
             idxInOld = oldKeyToIdx[newStartVnode.key as string];

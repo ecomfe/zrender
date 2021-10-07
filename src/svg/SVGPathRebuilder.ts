@@ -84,12 +84,22 @@ export default class SVGPathRebuilder implements PathRebuilder {
         // It will not draw if start point and end point are exactly the same
         // We need to add two arcs
         if (isCircle) {
+            const p = this._p;
+            const dTheta = (clockwise ? 1 : -1) * (PI2 - 1 / p);
             this._add(
-                'A', rx, ry, xRot, +large, +clockwise,
-                cx + rx * mathCos(startAngle + PI),
-                cy + ry * mathSin(startAngle + PI)
+                'A', rx, ry, xRot, 1, +clockwise,
+                cx + rx * mathCos(startAngle + dTheta),
+                cy + ry * mathSin(startAngle + dTheta)
             );
-            this._add('A', rx, ry, xRot, +large, +clockwise, x0, y0);
+            // TODO.
+            // Usually we can simply divide the circle into two halfs arcs.
+            // But it will cause slightly diff with previous screenshot.
+            // We can't tell it but visual regression test can. To avoid too much breaks.
+            // We keep the logic on the browser as before.
+            // But in SSR mode wich has lower precision. We close the circle by adding another arc.
+            if (p > 1e-2) {
+                this._add('A', rx, ry, xRot, 0, +clockwise, x0, y0);
+            }
         }
         else {
             const x = cx + rx * mathCos(endAngle);

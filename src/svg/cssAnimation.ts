@@ -1,6 +1,6 @@
 import Transformable, { copyTransform, TRANSFORMABLE_PROPS } from '../core/Transformable';
 import Displayable from '../graphic/Displayable';
-import { SVGVNodeAttrs, BrushScope, createBrushScope } from './core';
+import { SVGVNodeAttrs, BrushScope, createBrushScope} from './core';
 import Path from '../graphic/Path';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import PathProxy from '../core/PathProxy';
@@ -101,7 +101,7 @@ function createCompoundPathCSSAnimation(
     let cssAnimationCfg: string;
     let cssAnimationName: string;
     each(paths, path => {
-        const subScope = createBrushScope();
+        const subScope = createBrushScope(scope.zrId);
         subScope.animation = true;
         createCSSAnimation(path, {}, subScope, true);
         const cssAnims = subScope.cssAnims;
@@ -337,7 +337,7 @@ export function createCSSAnimation(
     }
 
     if (cssAnimations.length) {
-        const className = 'zr-cls-' + scope.cssClassIdx++;
+        const className = scope.zrId + '-cls-' + scope.cssClassIdx++;
         scope.cssNodes['.' + className] = {
             animation: cssAnimations.join(',')
         };

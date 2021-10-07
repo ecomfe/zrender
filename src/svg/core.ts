@@ -115,6 +115,8 @@ export function getCssString(
 
 
 export interface BrushScope {
+    zrId: string
+
     shadowCache: Record<string, string>
     gradientCache: Record<string, string>
     patternCache: Record<string, string>
@@ -149,8 +151,9 @@ export interface BrushScope {
     compress?: boolean
 }
 
-export function createBrushScope(): BrushScope {
+export function createBrushScope(zrId: string): BrushScope {
     return {
+        zrId,
         shadowCache: {},
         patternCache: {},
         gradientCache: {},
