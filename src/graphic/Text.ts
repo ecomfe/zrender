@@ -2,7 +2,7 @@
  * RichText is a container that manages complex text label.
  * It will parse text string and create sub displayble elements respectively.
  */
-import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, MapToType } from '../core/types';
+import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, MapToType, FontWeight, FontStyle } from '../core/types';
 import { parseRichText, parsePlainText } from './helper/parseText';
 import TSpan, { TSpanStyleProps } from './TSpan';
 import { retrieve2, each, normalizeCssArray, trim, retrieve3, extend, keys, defaults } from '../core/util';
@@ -65,11 +65,11 @@ export interface TextStylePropsPart {
     /**
      * It helps merging respectively, rather than parsing an entire font string.
      */
-    fontStyle?: 'normal' | 'italic' | 'oblique'
+    fontStyle?: FontStyle
     /**
      * It helps merging respectively, rather than parsing an entire font string.
      */
-    fontWeight?: 'normal' | 'bold' | 'bolder' | 'lighter' | number
+    fontWeight?: FontWeight
     /**
      * It helps merging respectively, rather than parsing an entire font string.
      */
@@ -595,6 +595,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
             }
 
             subElStyle.font = textFont;
+            setSeparateFont(subElStyle, style);
 
             textY += lineHeight;
 
@@ -765,7 +766,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         );
 
         const hasShadow = tokenStyle.textShadowBlur > 0
-                    || style.textShadowBlur > 0;
+            || style.textShadowBlur > 0;
 
         subElStyle.text = token.text;
         subElStyle.x = x;
@@ -783,6 +784,10 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         subElStyle.textBaseline = 'middle';
         subElStyle.font = token.font || DEFAULT_FONT;
         subElStyle.opacity = retrieve3(tokenStyle.opacity, style.opacity, 1);
+
+
+        // TODO inherit each item from top style in token style?
+        setSeparateFont(subElStyle, tokenStyle);
 
         if (textStroke) {
             subElStyle.lineWidth = retrieve3(tokenStyle.lineWidth, style.lineWidth, defaultLineWidth);
@@ -884,20 +889,21 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         // FIXME in node-canvas fontWeight is before fontStyle
         // Use `fontSize` `fontFamily` to check whether font properties are defined.
         let font = '';
-        if (style.fontSize || style.fontFamily || style.fontWeight) {
+        if (hasSeparateFont(style)) {
             let fontSize = '';
+            const rawFontSize = style.fontSize;
             if (
-                typeof style.fontSize === 'string'
+                typeof rawFontSize === 'string'
                 && (
-                    style.fontSize.indexOf('px') !== -1
-                    || style.fontSize.indexOf('rem') !== -1
-                    || style.fontSize.indexOf('em') !== -1
+                    rawFontSize.indexOf('px') !== -1
+                    || rawFontSize.indexOf('rem') !== -1
+                    || rawFontSize.indexOf('em') !== -1
                 )
             ) {
-                fontSize = style.fontSize;
+                fontSize = rawFontSize;
             }
-            else if (!isNaN(+style.fontSize)) {
-                fontSize = style.fontSize + 'px';
+            else if (!isNaN(+rawFontSize)) {
+                fontSize = rawFontSize + 'px';
             }
             else {
                 fontSize = '12px';
@@ -918,8 +924,28 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
 const VALID_TEXT_ALIGN = {left: true, right: 1, center: 1};
 const VALID_TEXT_VERTICAL_ALIGN = {top: 1, bottom: 1, middle: 1};
 
+const FONT_PARTS = ['fontStyle', 'fontWeight', 'fontSize', 'fontFamily'] as const;
+
+function setSeparateFont(
+    targetStyle: TSpanStyleProps,
+    sourceStyle: TextStylePropsPart
+) {
+    for (let i = 0; i < FONT_PARTS.length; i++) {
+        const fontProp = FONT_PARTS[i];
+        const val = sourceStyle[fontProp];
+        if (val != null) {
+            (targetStyle as any)[fontProp] = val;
+        }
+    }
+}
+
+export function hasSeparateFont(style: Pick<TextStylePropsPart, 'fontSize' | 'fontFamily' | 'fontWeight'>) {
+    return style.fontSize || style.fontFamily || style.fontWeight;
+}
+
 export function normalizeTextStyle(style: TextStyleProps): TextStyleProps {
     normalizeStyle(style);
+    // TODO inherit each item from top style in token style?
     each(style.rich, normalizeStyle);
     return style;
 }

@@ -6,7 +6,9 @@ import { DEFAULT_TEXT_WIDTH_MAP } from './textWidthMap';
 
 let textWidthCache: Dictionary<LRU<number>> = {};
 
-export const DEFAULT_FONT = '12px sans-serif';
+export const DEFAULT_FONT_SIZE = 12;
+export const DEFAULT_FONT_FAMILY = 'sans-serif';
+export const DEFAULT_FONT = `${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`;
 
 let _ctx: CanvasRenderingContext2D;
 let _cachedFont: string;
@@ -27,7 +29,7 @@ function defaultMeasureText(text: string, font?: string): { width: number } {
         font = font || DEFAULT_FONT;
         // Use font size if there is no other method can be used.
         const res = /^([0-9]*?)px$/.exec(font);
-        const fontSize = +(res && res[1]) || 12;
+        const fontSize = +(res && res[1]) || DEFAULT_FONT_SIZE;
         let width = 0;
         if (font.indexOf('mono') >= 0) {   // is monospace
             width = fontSize * text.length;

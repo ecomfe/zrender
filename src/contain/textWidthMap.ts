@@ -16,7 +16,6 @@
 
 export const OFFSET = 20;
 export const SCALE = 100;
-export const DEFAULT_FONT_SIZE = 12;
 // TODO other basic fonts?
 // eslint-disable-next-line
 const defaultWidthMapStr = `007LLmW'55;N0500LLLLLLLLLL00NNNLzWW\\\\WQb\\0FWLg\\bWb\\WQ\\WrWWQ000CL5LLFLL0LL**F*gLLLL5F0LF\\FFF5.5N`;

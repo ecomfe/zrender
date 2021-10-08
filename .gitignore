@@ -165,3 +165,6 @@ pip-log.txt
 /lib
 /esm
 node_modules
+
+# rollup visualizer
+/stats.html

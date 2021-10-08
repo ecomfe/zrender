@@ -22,7 +22,7 @@ import {
 } from './helper';
 import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
-import { DEFAULT_FONT, getLineHeight } from '../contain/text';
+import { DEFAULT_FONT, DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE, getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import mapStyleToAttrs from './mapStyleToAttrs';
@@ -37,6 +37,7 @@ import { ImagePatternObject, SVGPatternObject } from '../graphic/Pattern';
 import { createOrUpdateImage } from '../graphic/helper/image';
 import { ImageLike } from '../core/types';
 import { createCSSAnimation } from './cssAnimation';
+import { hasSeparateFont } from '../graphic/Text';
 
 const round = Math.round;
 
@@ -261,10 +262,30 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
         || style.textAlign;
 
     const attrs: SVGVNodeAttrs = {
-        'style': `font:${font}`,
         'dominant-baseline': 'central',
         'text-anchor': textAlign
     };
+    if (hasSeparateFont(style)) {
+        // Set separate font attributes if possible. Or some platform like PowerPoint may not support it.
+        const fontStyle = style.fontStyle;
+        const fontSize = style.fontSize || DEFAULT_FONT_SIZE;
+        const fontFamily = style.fontFamily || DEFAULT_FONT_FAMILY;
+        const fontWeight = style.fontWeight;
+        attrs['font-size'] = fontSize + 'px';
+        attrs['font-family'] = fontFamily;
+
+        // TODO reduce the attribute to set. But should it inherit from the container element?
+        if (fontStyle && fontStyle !== 'normal') {
+            attrs['font-style'] = fontStyle;
+        }
+        if (fontWeight && fontWeight !== 'normal') {
+            attrs['font-weight'] = fontWeight;
+        }
+    }
+    else {
+        // If user set font manually.
+        attrs.style = `font: ${font}`;
+    }
     if (text.match(/\s/)) {
         // only enabled when have space in text.
         attrs['xml:space'] = 'preserve';
