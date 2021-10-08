@@ -17,6 +17,7 @@ import {
     isPattern,
     isRadialGradient,
     normalizeColor,
+    round1,
     round4,
     TEXT_ALIGN_TO_ANCHOR
 } from './helper';
@@ -265,28 +266,33 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
         'dominant-baseline': 'central',
         'text-anchor': textAlign
     };
+
     if (hasSeparateFont(style)) {
         // Set separate font attributes if possible. Or some platform like PowerPoint may not support it.
+        let separatedFontStr = '';
         const fontStyle = style.fontStyle;
-        const fontSize =  style.fontSize || DEFAULT_FONT_SIZE;
+        const fontSize = round1(retrieve2(style.fontSize, DEFAULT_FONT_SIZE));
+        if (!fontSize) {
+            return;
+        }
+
         const fontFamily = style.fontFamily || DEFAULT_FONT_FAMILY;
         const fontWeight = style.fontWeight;
-        attrs['font-size'] = fontSize + 'px';
-        attrs['font-family'] = fontFamily;
+        separatedFontStr += `font-size:${fontSize}px;font-family:${fontFamily};`;
 
         // TODO reduce the attribute to set. But should it inherit from the container element?
         if (fontStyle && fontStyle !== 'normal') {
-            attrs['font-style'] = fontStyle;
+            separatedFontStr += `font-style:${fontStyle};`;
         }
         if (fontWeight && fontWeight !== 'normal') {
-            attrs['font-weight'] = fontWeight;
+            separatedFontStr += `font-weight:${fontWeight};`;
         }
+        attrs.style = separatedFontStr;
     }
-    // FIXME
-    // Always set font in style to avoid developers set font in the CSS of page and overwrite the attributes.
-    // For example:
-    // text { font: 12px }
-    attrs.style = `font: ${font}`;
+    else {
+        // Use set font manually
+        attrs.style = `font: ${font}`;
+    }
 
 
     if (text.match(/\s/)) {
