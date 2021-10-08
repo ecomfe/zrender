@@ -119,6 +119,7 @@ export default class PatternManager extends Definable {
      */
     updateDom(pattern: PatternObject, patternDom: SVGElement) {
         if (isSVGPattern(pattern)) {
+            // New SVGPattern will not been supported in the legacy SVG renderer.
             // const svgElement = pattern.svgElement;
             // const isStringSVG = typeof svgElement === 'string';
             // if (isStringSVG || svgElement.parentNode !== patternDom) {

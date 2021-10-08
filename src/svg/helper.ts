@@ -67,7 +67,7 @@ export const TEXT_ALIGN_TO_ANCHOR = {
 };
 
 export function adjustTextY(y: number, lineHeight: number, textBaseline: CanvasTextBaseline): number {
-    // TODO Other transformues.
+    // TODO Other baselines.
     if (textBaseline === 'top') {
         y += lineHeight / 2;
     }
@@ -108,28 +108,28 @@ export function getClipPathsKey(clipPaths: Path[]) {
     return key.join(',');
 }
 
-export function isImagePattern(transformue: any): transformue is ImagePatternObject {
-    return transformue && (!!(transformue as ImagePatternObject).image);
+export function isImagePattern(val: any): val is ImagePatternObject {
+    return val && (!!(val as ImagePatternObject).image);
 }
-export function isSVGPattern(transformue: any): transformue is SVGPatternObject {
-    return transformue && (!!(transformue as SVGPatternObject).svgElement);
+export function isSVGPattern(val: any): val is SVGPatternObject {
+    return val && (!!(val as SVGPatternObject).svgElement);
 }
-export function isPattern(transformue: any): transformue is PatternObject {
-    return isImagePattern(transformue) || isSVGPattern(transformue);
-}
-
-export function isLinearGradient(transformue: GradientObject): transformue is LinearGradientObject {
-    return transformue.type === 'linear';
+export function isPattern(val: any): val is PatternObject {
+    return isImagePattern(val) || isSVGPattern(val);
 }
 
-export function isRadialGradient(transformue: GradientObject): transformue is RadialGradientObject {
-    return transformue.type === 'radial';
+export function isLinearGradient(val: GradientObject): val is LinearGradientObject {
+    return val.type === 'linear';
 }
 
-export function isGradient(transformue: any): transformue is GradientObject {
-    return transformue && (
-        (transformue as GradientObject).type === 'linear'
-        || (transformue as GradientObject).type === 'radial'
+export function isRadialGradient(val: GradientObject): val is RadialGradientObject {
+    return val.type === 'radial';
+}
+
+export function isGradient(val: any): val is GradientObject {
+    return val && (
+        (val as GradientObject).type === 'linear'
+        || (val as GradientObject).type === 'radial'
     );
 }
 

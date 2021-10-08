@@ -148,7 +148,7 @@ class SVGPainter implements PainterBase {
                     y: '0',
                     id: '0',
                     fill: color,
-                    fillOpacity: opacity
+                    'fill-opacity': opacity
                 }
             );
             children.push(this._bgVNode);
@@ -331,7 +331,9 @@ class SVGPainter implements PainterBase {
         this._svgDom =
         this._viewport =
         this.storage =
-        this._oldVNode = null;
+        this._oldVNode =
+        this._bgVNode =
+        this._mainVNode = null;
     }
     clear() {
         if (this._svgDom) {

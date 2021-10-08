@@ -5,7 +5,7 @@ import Path from '../graphic/Path';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import PathProxy from '../core/PathProxy';
 import { getPathPrecision, getSRTTransformString } from './helper';
-import { each, extend, filter, isEmptyObject, isString, keys } from '../core/util';
+import { each, extend, filter, isString, keys } from '../core/util';
 import Animator from '../animation/Animator';
 import { CompoundPath } from '../export';
 
@@ -314,7 +314,7 @@ export function createCSSAnimation(
         }
 
         if (filter(
-            percents, (percent) => !isEmptyObject(finalKfs[percent])
+            percents, (percent) => keys(finalKfs[percent]).length > 0
         ).length) {
             const animationName = addAnimation(finalKfs, scope);
             // eslint-disable-next-line
