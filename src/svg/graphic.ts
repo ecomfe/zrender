@@ -38,7 +38,7 @@ import { ImagePatternObject, SVGPatternObject } from '../graphic/Pattern';
 import { createOrUpdateImage } from '../graphic/helper/image';
 import { ImageLike } from '../core/types';
 import { createCSSAnimation } from './cssAnimation';
-import { hasSeparateFont } from '../graphic/Text';
+import { hasSeparateFont, parseFontSize } from '../graphic/Text';
 
 const round = Math.round;
 
@@ -271,14 +271,14 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
         // Set separate font attributes if possible. Or some platform like PowerPoint may not support it.
         let separatedFontStr = '';
         const fontStyle = style.fontStyle;
-        const fontSize = round1(retrieve2(style.fontSize, DEFAULT_FONT_SIZE));
-        if (!fontSize) {
+        const fontSize = parseFontSize(style.fontSize);
+        if (!parseFloat(fontSize)) {    // is 0px
             return;
         }
 
         const fontFamily = style.fontFamily || DEFAULT_FONT_FAMILY;
         const fontWeight = style.fontWeight;
-        separatedFontStr += `font-size:${fontSize}px;font-family:${fontFamily};`;
+        separatedFontStr += `font-size:${fontSize};font-family:${fontFamily};`;
 
         // TODO reduce the attribute to set. But should it inherit from the container element?
         if (fontStyle && fontStyle !== 'normal') {

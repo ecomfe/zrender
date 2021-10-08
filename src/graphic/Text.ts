@@ -6,7 +6,7 @@ import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, MapToType, FontWei
 import { parseRichText, parsePlainText } from './helper/parseText';
 import TSpan, { TSpanStyleProps } from './TSpan';
 import { retrieve2, each, normalizeCssArray, trim, retrieve3, extend, keys, defaults } from '../core/util';
-import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
+import { DEFAULT_FONT, adjustTextX, adjustTextY, DEFAULT_FONT_SIZE } from '../contain/text';
 import ZRImage from './Image';
 import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
@@ -890,28 +890,10 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         // Use `fontSize` `fontFamily` to check whether font properties are defined.
         let font = '';
         if (hasSeparateFont(style)) {
-            let fontSize = '';
-            const rawFontSize = style.fontSize;
-            if (
-                typeof rawFontSize === 'string'
-                && (
-                    rawFontSize.indexOf('px') !== -1
-                    || rawFontSize.indexOf('rem') !== -1
-                    || rawFontSize.indexOf('em') !== -1
-                )
-            ) {
-                fontSize = rawFontSize;
-            }
-            else if (!isNaN(+rawFontSize)) {
-                fontSize = rawFontSize + 'px';
-            }
-            else {
-                fontSize = '12px';
-            }
             font = [
                 style.fontStyle,
                 style.fontWeight,
-                fontSize,
+                parseFontSize(style.fontSize),
                 // If font properties are defined, `fontFamily` should not be ignored.
                 style.fontFamily || 'sans-serif'
             ].join(' ');
@@ -925,6 +907,25 @@ const VALID_TEXT_ALIGN = {left: true, right: 1, center: 1};
 const VALID_TEXT_VERTICAL_ALIGN = {top: 1, bottom: 1, middle: 1};
 
 const FONT_PARTS = ['fontStyle', 'fontWeight', 'fontSize', 'fontFamily'] as const;
+
+export function parseFontSize(fontSize: number | string) {
+    if (
+        typeof fontSize === 'string'
+        && (
+            fontSize.indexOf('px') !== -1
+            || fontSize.indexOf('rem') !== -1
+            || fontSize.indexOf('em') !== -1
+        )
+    ) {
+        return fontSize;
+    }
+    else if (!isNaN(+fontSize)) {
+        return fontSize + 'px';
+    }
+    else {
+        return DEFAULT_FONT_SIZE + 'px';
+    }
+}
 
 function setSeparateFont(
     targetStyle: TSpanStyleProps,
