@@ -21,7 +21,7 @@ import {
     createBrushScope
 } from './core';
 import { normalizeColor } from './helper';
-import { disableUserSelect, extend, keys, logError, map } from '../core/util';
+import { defaults, disableUserSelect, extend, keys, logError, map } from '../core/util';
 import Path from '../graphic/Path';
 import patch from './patch';
 import { getSize } from '../canvas/helper';
@@ -191,9 +191,19 @@ class SVGPainter implements PainterBase {
         );
     }
 
-    renderToString() {
+    renderToString(opts?: {
+        /**
+         * If add css animation.
+         */
+        cssAnimation: boolean
+    }) {
+        const defaultOpts = {
+            cssAnimation: true
+        };
+        opts = defaults(opts || {}, defaultOpts);
+
         return vNodeToString(this.renderToVNode({
-            animation: true,
+            animation: defaultOpts.cssAnimation,
             willUpdate: false,
             compress: true
         }), { newline: true });
