@@ -268,7 +268,7 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     if (hasSeparateFont(style)) {
         // Set separate font attributes if possible. Or some platform like PowerPoint may not support it.
         const fontStyle = style.fontStyle;
-        const fontSize = style.fontSize || DEFAULT_FONT_SIZE;
+        const fontSize =  style.fontSize || DEFAULT_FONT_SIZE;
         const fontFamily = style.fontFamily || DEFAULT_FONT_FAMILY;
         const fontWeight = style.fontWeight;
         attrs['font-size'] = fontSize + 'px';
@@ -282,10 +282,13 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
             attrs['font-weight'] = fontWeight;
         }
     }
-    else {
-        // If user set font manually.
-        attrs.style = `font: ${font}`;
-    }
+    // FIXME
+    // Always set font in style to avoid developers set font in the CSS of page and overwrite the attributes.
+    // For example:
+    // text { font: 12px }
+    attrs.style = `font: ${font}`;
+
+
     if (text.match(/\s/)) {
         // only enabled when have space in text.
         attrs['xml:space'] = 'preserve';
