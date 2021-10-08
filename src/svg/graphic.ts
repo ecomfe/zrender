@@ -309,6 +309,9 @@ function setShadow(
             const globalScale = el.getGlobalScale();
             const scaleX = globalScale[0];
             const scaleY = globalScale[1];
+            if (!scaleX || !scaleY) {
+                return;
+            }
 
             const offsetX = style.shadowOffsetX || 0;
             const offsetY = style.shadowOffsetY || 0;
