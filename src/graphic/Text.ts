@@ -941,7 +941,7 @@ function setSeparateFont(
 }
 
 export function hasSeparateFont(style: Pick<TextStylePropsPart, 'fontSize' | 'fontFamily' | 'fontWeight'>) {
-    return style.fontSize || style.fontFamily || style.fontWeight;
+    return style.fontSize != null || style.fontFamily || style.fontWeight;
 }
 
 export function normalizeTextStyle(style: TextStyleProps): TextStyleProps {
