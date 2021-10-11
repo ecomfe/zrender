@@ -1,3 +1,4 @@
+/* global: defineProperty */
 import { Dictionary, ArrayLike, KeyOfDistributive } from './types';
 import { GradientObject } from '../graphic/Gradient';
 import { ImagePatternObject } from '../graphic/Pattern';
@@ -38,6 +39,7 @@ const nativeMap = arrayProto.map;
 // In case some env may redefine the global variable `Function`.
 const ctorFunction = function () {}.constructor;
 const protoFunction = ctorFunction ? ctorFunction.prototype : null;
+const protoKey = '__proto__';
 
 // Avoid assign to an exported constiable, for transforming to cjs.
 const methods: {[key: string]: Function} = {};
@@ -47,6 +49,7 @@ export function $override(name: string, fn: Function) {
 }
 
 let idStart = 0x0907;
+
 /**
  * Generate unique id
  */
@@ -106,7 +109,8 @@ export function clone<T extends any>(source: T): T {
     else if (!BUILTIN_OBJECT[typeStr] && !isPrimitive(source) && !isDom(source)) {
         result = {} as any;
         for (let key in source) {
-            if (source.hasOwnProperty(key)) {
+            // Check if key is __proto__ to avoid prototype pollution
+            if (source.hasOwnProperty(key) && key !== protoKey) {
                 result[key] = clone(source[key]);
             }
         }
@@ -131,7 +135,8 @@ export function merge(target: any, source: any, overwrite?: boolean): any {
     }
 
     for (let key in source) {
-        if (source.hasOwnProperty(key)) {
+        // Check if key is __proto__ to avoid prototype pollution
+        if (source.hasOwnProperty(key) && key !== protoKey) {
             const targetProp = target[key];
             const sourceProp = source[key];
 
@@ -184,7 +189,8 @@ export function extend<
     }
     else {
         for (let key in source) {
-            if (source.hasOwnProperty(key)) {
+            // Check if key is __proto__ to avoid prototype pollution
+            if (source.hasOwnProperty(key) && key !== protoKey) {
                 (target as S & T)[key] = (source as T & S)[key];
             }
         }

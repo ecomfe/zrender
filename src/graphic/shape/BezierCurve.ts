@@ -31,7 +31,7 @@ export class BezierCurveShape {
 function someVectorAt(shape: BezierCurveShape, t: number, isTangent: boolean) {
     const cpx2 = shape.cpx2;
     const cpy2 = shape.cpy2;
-    if (cpx2 === null || cpy2 === null) {
+    if (cpx2 != null || cpy2 != null) {
         return [
             (isTangent ? cubicDerivativeAt : cubicAt)(shape.x1, shape.cpx1, shape.cpx2, shape.x2, t),
             (isTangent ? cubicDerivativeAt : cubicAt)(shape.y1, shape.cpy1, shape.cpy2, shape.y2, t)
