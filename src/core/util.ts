@@ -217,7 +217,8 @@ export const createCanvas = function (): HTMLCanvasElement {
 };
 
 methods.createCanvas = function (): HTMLCanvasElement {
-    return document.createElement('canvas');
+    return typeof document !== 'undefined'
+        && document.createElement('canvas');
 };
 
 /**
@@ -451,7 +452,6 @@ export function keys<T extends object>(obj: T): (KeyOfDistributive<T> & string)[
     }
     return keyList;
 }
-
 
 // Remove this type in returned function. Or it will conflicts wicth callback with given context. Like Eventful.
 // According to lib.es5.d.ts
@@ -753,8 +753,20 @@ export function createObject<T>(proto?: object, properties?: T): T {
     return obj;
 }
 
+
+export function disableUserSelect(dom: HTMLElement) {
+    const domStyle = dom.style;
+    domStyle.webkitUserSelect = 'none';
+    domStyle.userSelect = 'none';
+    // @ts-ignore
+    domStyle.webkitTapHighlightColor = 'rgba(0,0,0,0)';
+    (domStyle as any)['-webkit-touch-callout'] = 'none';
+}
+
 export function hasOwn(own: object, prop: string): boolean {
     return own.hasOwnProperty(prop);
 }
 
 export function noop() {}
+
+export const RADIAN_TO_DEGREE = 180 / Math.PI;

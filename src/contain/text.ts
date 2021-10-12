@@ -1,23 +1,46 @@
 import BoundingRect, { RectLike } from '../core/BoundingRect';
-import { createCanvas } from '../core/util';
+import { createCanvas, retrieve2 } from '../core/util';
 import { Dictionary, PropType, TextAlign, TextVerticalAlign, BuiltinTextPosition } from '../core/types';
 import LRU from '../core/LRU';
+import { DEFAULT_TEXT_WIDTH_MAP } from './textWidthMap';
 
 let textWidthCache: Dictionary<LRU<number>> = {};
 
-export const DEFAULT_FONT = '12px sans-serif';
+export const DEFAULT_FONT_SIZE = 12;
+export const DEFAULT_FONT_FAMILY = 'sans-serif';
+export const DEFAULT_FONT = `${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`;
 
 let _ctx: CanvasRenderingContext2D;
 let _cachedFont: string;
 
 function defaultMeasureText(text: string, font?: string): { width: number } {
     if (!_ctx) {
-        _ctx = createCanvas().getContext('2d');
+        const canvas = createCanvas();
+        _ctx = canvas && canvas.getContext('2d');
     }
-    if (_cachedFont !== font) {
-        _cachedFont = _ctx.font = font || DEFAULT_FONT;
+    if (_ctx) {
+        if (_cachedFont !== font) {
+            _cachedFont = _ctx.font = font || DEFAULT_FONT;
+        }
+        return _ctx.measureText(text);
     }
-    return _ctx.measureText(text);
+    else {
+        text = text || '';
+        font = font || DEFAULT_FONT;
+        // Use font size if there is no other method can be used.
+        const res = /^([0-9]*?)px$/.exec(font);
+        const fontSize = +(res && res[1]) || DEFAULT_FONT_SIZE;
+        let width = 0;
+        if (font.indexOf('mono') >= 0) {   // is monospace
+            width = fontSize * text.length;
+        }
+        else {
+            for (let i = 0; i < text.length; i++) {
+                width += retrieve2(DEFAULT_TEXT_WIDTH_MAP[text[i]], 1) * fontSize;
+            }
+        }
+        return { width };
+    }
 }
 
 let methods: {
@@ -46,9 +69,7 @@ export function getWidth(text: string, font: string): number {
     if (width == null) {
         width = methods.measureText(text, font).width;
         cacheOfFont.put(text, width);
-        // cacheMissCount++;
     }
-    // totalCount++;
 
     return width;
 }

@@ -13,13 +13,20 @@ export interface PainterBase {
 
     type: string
 
-    root: HTMLElement
+    // root will be undefined if ssr is true
+    root?: HTMLElement
+
+    // If ssr only
+    ssrOnly?: boolean
 
     // constructor(dom: HTMLElement, storage: Storage, opts: PainterOption, id: number): void
 
     resize(width?: number | string, height?: number | string): void
     refresh(): void
     clear(): void
+
+    // must be given if ssr is true.
+    renderToString?(): void;
 
     getType: () => string
 

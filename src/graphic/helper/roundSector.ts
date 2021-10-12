@@ -15,10 +15,10 @@ const e = 1e-4;
 type CornerTangents = {
     cx: number
     cy: number
-    x01: number
-    y01: number
-    x11: number
-    y11: number
+    x0: number
+    y0: number
+    x1: number
+    y1: number
 };
 
 function intersect(
@@ -46,47 +46,47 @@ function computeCornerTangents(
     radius: number, cr: number,
     clockwise: boolean
 ): CornerTangents {
-  const x01 = x0 - x1;
-  const y01 = y0 - y1;
-  const lo = (clockwise ? cr : -cr) / mathSqrt(x01 * x01 + y01 * y01);
-  const ox = lo * y01;
-  const oy = -lo * x01;
-  const x11 = x0 + ox;
-  const y11 = y0 + oy;
-  const x10 = x1 + ox;
-  const y10 = y1 + oy;
-  const x00 = (x11 + x10) / 2;
-  const y00 = (y11 + y10) / 2;
-  const dx = x10 - x11;
-  const dy = y10 - y11;
-  const d2 = dx * dx + dy * dy;
-  const r = radius - cr;
-  const s = x11 * y10 - x10 * y11;
-  const d = (dy < 0 ? -1 : 1) * mathSqrt(mathMax(0, r * r * d2 - s * s));
-  let cx0 = (s * dy - dx * d) / d2;
-  let cy0 = (-s * dx - dy * d) / d2;
-  const cx1 = (s * dy + dx * d) / d2;
-  const cy1 = (-s * dx + dy * d) / d2;
-  const dx0 = cx0 - x00;
-  const dy0 = cy0 - y00;
-  const dx1 = cx1 - x00;
-  const dy1 = cy1 - y00;
+    const x01 = x0 - x1;
+    const y01 = y0 - y1;
+    const lo = (clockwise ? cr : -cr) / mathSqrt(x01 * x01 + y01 * y01);
+    const ox = lo * y01;
+    const oy = -lo * x01;
+    const x11 = x0 + ox;
+    const y11 = y0 + oy;
+    const x10 = x1 + ox;
+    const y10 = y1 + oy;
+    const x00 = (x11 + x10) / 2;
+    const y00 = (y11 + y10) / 2;
+    const dx = x10 - x11;
+    const dy = y10 - y11;
+    const d2 = dx * dx + dy * dy;
+    const r = radius - cr;
+    const s = x11 * y10 - x10 * y11;
+    const d = (dy < 0 ? -1 : 1) * mathSqrt(mathMax(0, r * r * d2 - s * s));
+    let cx0 = (s * dy - dx * d) / d2;
+    let cy0 = (-s * dx - dy * d) / d2;
+    const cx1 = (s * dy + dx * d) / d2;
+    const cy1 = (-s * dx + dy * d) / d2;
+    const dx0 = cx0 - x00;
+    const dy0 = cy0 - y00;
+    const dx1 = cx1 - x00;
+    const dy1 = cy1 - y00;
 
-  // Pick the closer of the two intersection points
-  // TODO: Is there a faster way to determine which intersection to use?
-  if (dx0 * dx0 + dy0 * dy0 > dx1 * dx1 + dy1 * dy1) {
-      cx0 = cx1;
-      cy0 = cy1;
-  }
+    // Pick the closer of the two intersection points
+    // TODO: Is there a faster way to determine which intersection to use?
+    if (dx0 * dx0 + dy0 * dy0 > dx1 * dx1 + dy1 * dy1) {
+        cx0 = cx1;
+        cy0 = cy1;
+    }
 
-  return {
-    cx: cx0,
-    cy: cy0,
-    x01: -ox,
-    y01: -oy,
-    x11: cx0 * (radius / r - 1),
-    y11: cy0 * (radius / r - 1)
-  };
+    return {
+        cx: cx0,
+        cy: cy0,
+        x0: -ox,
+        y0: -oy,
+        x1: cx0 * (radius / r - 1),
+        y1: cy0 * (radius / r - 1)
+    };
 }
 
 export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
@@ -138,29 +138,29 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         arc = mathAbs(tmpAngles[0] - tmpAngles[1]);
     }
 
-    const x = shape.cx;
-    const y = shape.cy;
+    const cx = shape.cx;
+    const cy = shape.cy;
     const cornerRadius = shape.cornerRadius || 0;
     const innerCornerRadius = shape.innerCornerRadius || 0;
 
     // is a point
     if (!(radius > e)) {
-        ctx.moveTo(x, y);
+        ctx.moveTo(cx, cy);
     }
     // is a circle or annulus
     else if (arc > PI2 - e) {
         ctx.moveTo(
-            x + radius * mathCos(startAngle),
-            y + radius * mathSin(startAngle)
+            cx + radius * mathCos(startAngle),
+            cy + radius * mathSin(startAngle)
         );
-        ctx.arc(x, y, radius, startAngle, endAngle, !clockwise);
+        ctx.arc(cx, cy, radius, startAngle, endAngle, !clockwise);
 
         if (innerRadius > e) {
             ctx.moveTo(
-                x + innerRadius * mathCos(endAngle),
-                y + innerRadius * mathSin(endAngle)
+                cx + innerRadius * mathCos(endAngle),
+                cy + innerRadius * mathSin(endAngle)
             );
-            ctx.arc(x, y, innerRadius, endAngle, startAngle, clockwise);
+            ctx.arc(cx, cy, innerRadius, endAngle, startAngle, clockwise);
         }
     }
     // is a circular or annular sector
@@ -208,67 +208,67 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
 
         // the sector is collapsed to a line
         if (!(arc > e)) {
-            ctx.moveTo(x + xrs, y + yrs);
+            ctx.moveTo(cx + xrs, cy + yrs);
         }
         // the outer ring has corners
         else if (cr1 > e) {
             const ct0 = computeCornerTangents(xirs, yirs, xrs, yrs, radius, cr1, clockwise);
             const ct1 = computeCornerTangents(xre, yre, xire, yire, radius, cr1, clockwise);
 
-            ctx.moveTo(x + ct0.cx + ct0.x01, y + ct0.cy + ct0.y01);
+            ctx.moveTo(cx + ct0.cx + ct0.x0, cy + ct0.cy + ct0.y0);
 
             // Have the corners merged?
             if (cr1 < cr) {
                 // eslint-disable-next-line max-len
-                ctx.arc(x + ct0.cx, y + ct0.cy, cr1, mathATan2(ct0.y01, ct0.x01), mathATan2(ct1.y01, ct1.x01), !clockwise);
+                ctx.arc(cx + ct0.cx, cy + ct0.cy, cr1, mathATan2(ct0.y0, ct0.x0), mathATan2(ct1.y0, ct1.x0), !clockwise);
             }
             else {
                 // draw the two corners and the ring
                 // eslint-disable-next-line max-len
-                ctx.arc(x + ct0.cx, y + ct0.cy, cr1, mathATan2(ct0.y01, ct0.x01), mathATan2(ct0.y11, ct0.x11), !clockwise);
+                ctx.arc(cx + ct0.cx, cy + ct0.cy, cr1, mathATan2(ct0.y0, ct0.x0), mathATan2(ct0.y1, ct0.x1), !clockwise);
                 // eslint-disable-next-line max-len
-                ctx.arc(x, y, radius, mathATan2(ct0.cy + ct0.y11, ct0.cx + ct0.x11), mathATan2(ct1.cy + ct1.y11, ct1.cx + ct1.x11), !clockwise);
+                ctx.arc(cx, cy, radius, mathATan2(ct0.cy + ct0.y1, ct0.cx + ct0.x1), mathATan2(ct1.cy + ct1.y1, ct1.cx + ct1.x1), !clockwise);
                 // eslint-disable-next-line max-len
-                ctx.arc(x + ct1.cx, y + ct1.cy, cr1, mathATan2(ct1.y11, ct1.x11), mathATan2(ct1.y01, ct1.x01), !clockwise);
+                ctx.arc(cx + ct1.cx, cy + ct1.cy, cr1, mathATan2(ct1.y1, ct1.x1), mathATan2(ct1.y0, ct1.x0), !clockwise);
             }
         }
         // the outer ring is a circular arc
         else {
-            ctx.moveTo(x + xrs, y + yrs);
-            ctx.arc(x, y, radius, startAngle, endAngle, !clockwise);
+            ctx.moveTo(cx + xrs, cy + yrs);
+            ctx.arc(cx, cy, radius, startAngle, endAngle, !clockwise);
         }
 
         // no inner ring, is a circular sector
         if (!(innerRadius > e) || !(arc > e)) {
-            ctx.lineTo(x + xire, y + yire);
+            ctx.lineTo(cx + xire, cy + yire);
         }
         // the inner ring has corners
         else if (cr0 > e) {
             const ct0 = computeCornerTangents(xire, yire, xre, yre, innerRadius, -cr0, clockwise);
             const ct1 = computeCornerTangents(xrs, yrs, xirs, yirs, innerRadius, -cr0, clockwise);
-            ctx.lineTo(x + ct0.cx + ct0.x01, y + ct0.cy + ct0.y01);
+            ctx.lineTo(cx + ct0.cx + ct0.x0, cy + ct0.cy + ct0.y0);
 
             // Have the corners merged?
             if (cr0 < icr) {
                 // eslint-disable-next-line max-len
-                ctx.arc(x + ct0.cx, y + ct0.cy, cr0, mathATan2(ct0.y01, ct0.x01), mathATan2(ct1.y01, ct1.x01), !clockwise);
+                ctx.arc(cx + ct0.cx, cy + ct0.cy, cr0, mathATan2(ct0.y0, ct0.x0), mathATan2(ct1.y0, ct1.x0), !clockwise);
             }
             // draw the two corners and the ring
             else {
                 // eslint-disable-next-line max-len
-                ctx.arc(x + ct0.cx, y + ct0.cy, cr0, mathATan2(ct0.y01, ct0.x01), mathATan2(ct0.y11, ct0.x11), !clockwise);
+                ctx.arc(cx + ct0.cx, cy + ct0.cy, cr0, mathATan2(ct0.y0, ct0.x0), mathATan2(ct0.y1, ct0.x1), !clockwise);
                 // eslint-disable-next-line max-len
-                ctx.arc(x, y, innerRadius, mathATan2(ct0.cy + ct0.y11, ct0.cx + ct0.x11), mathATan2(ct1.cy + ct1.y11, ct1.cx + ct1.x11), clockwise);
+                ctx.arc(cx, cy, innerRadius, mathATan2(ct0.cy + ct0.y1, ct0.cx + ct0.x1), mathATan2(ct1.cy + ct1.y1, ct1.cx + ct1.x1), clockwise);
                 // eslint-disable-next-line max-len
-                ctx.arc(x + ct1.cx, y + ct1.cy, cr0, mathATan2(ct1.y11, ct1.x11), mathATan2(ct1.y01, ct1.x01), !clockwise);
+                ctx.arc(cx + ct1.cx, cy + ct1.cy, cr0, mathATan2(ct1.y1, ct1.x1), mathATan2(ct1.y0, ct1.x0), !clockwise);
             }
         }
         // the inner ring is just a circular arc
         else {
             // FIXME: if no lineTo, svg renderer will perform an abnormal drawing behavior.
-            ctx.lineTo(x + xire, y + yire);
+            ctx.lineTo(cx + xire, cy + yire);
 
-            ctx.arc(x, y, innerRadius, endAngle, startAngle, clockwise);
+            ctx.arc(cx, cy, innerRadius, endAngle, startAngle, clockwise);
         }
     }
 

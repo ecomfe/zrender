@@ -775,7 +775,7 @@ class Element<Props extends ElementProps = ElementProps> {
             const target = targetName
                 ? (normalState as any)[targetName] : normalState;
             // Only save keys that are changed by the states.
-            animator.saveFinalToTarget(target);
+            animator.saveTo(target);
         }
     }
 
@@ -1196,11 +1196,17 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     private _attachComponent(componentEl: Element) {
         if (componentEl.__zr && !componentEl.__hostTarget) {
-            throw new Error('Text element has been added to zrender.');
+            if (process.env.NODE_ENV !== 'production') {
+                throw new Error('Text element has been added to zrender.');
+            }
+            return;
         }
 
         if (componentEl === this) {
-            throw new Error('Recursive component attachment.');
+            if (process.env.NODE_ENV !== 'production') {
+                throw new Error('Recursive component attachment.');
+            }
+            return;
         }
 
         const zr = this.__zr;
@@ -1277,9 +1283,10 @@ class Element<Props extends ElementProps = ElementProps> {
         if (previousTextContent && previousTextContent !== textEl) {
             this.removeTextContent();
         }
-
-        if (textEl.__zr && !textEl.__hostTarget) {
-            throw new Error('Text element has been added to zrender.');
+        if (process.env.NODE_ENV !== 'production') {
+            if (textEl.__zr && !textEl.__hostTarget) {
+                throw new Error('Text element has been added to zrender.');
+            }
         }
 
         textEl.innerTransformable = new Transformable();
@@ -1463,17 +1470,20 @@ class Element<Props extends ElementProps = ElementProps> {
     animate(key?: string, loop?: boolean) {
         let target = key ? (this as any)[key] : this;
 
-        if (!target) {
-            logError(
-                'Property "'
-                + key
-                + '" is not existed in element '
-                + this.id
-            );
-            return;
+        if (process.env.NODE_ENV !== 'production') {
+            if (!target) {
+                logError(
+                    'Property "'
+                    + key
+                    + '" is not existed in element '
+                    + this.id
+                );
+                return;
+            }
         }
 
         const animator = new Animator(target, loop);
+        key && (animator.targetName = key);
         this.addAnimator(animator, key);
         return animator;
     }

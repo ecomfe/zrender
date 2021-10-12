@@ -4,7 +4,7 @@
 
 import Clip from './Clip';
 import * as color from '../tool/color';
-import {isArrayLike, keys, logError} from '../core/util';
+import {isArrayLike, keys, logError, map} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
 import { AnimationEasing } from './easing';
 import Animation from './Animation';
@@ -710,6 +710,16 @@ export default class Animator<T> {
         this._additiveAnimators = additiveTo;
     }
 
+    getMaxTime() {
+        return this._maxTime;
+    }
+    getDelay() {
+        return this._delay;
+    }
+    getLoop() {
+        return this._loop;
+    }
+
     getTarget() {
         return this._target;
     }
@@ -1006,6 +1016,10 @@ export default class Animator<T> {
         return this._tracks[propName];
     }
 
+    getTracks() {
+        return map(this._trackKeys, key => this._tracks[key]);
+    }
+
     /**
      * Return true if animator is not available anymore.
      */
@@ -1053,8 +1067,16 @@ export default class Animator<T> {
      * Save values of final state to target.
      * It is mainly used in state mangement. When state is switching during animation.
      * We need to save final state of animation to the normal state. Not interpolated value.
+     *
+     * @param target
+     * @param trackKeys
+     * @param firstOrLast If save first frame or last frame
      */
-    saveFinalToTarget(target: T, trackKeys?: readonly string[]) {
+    saveTo(
+        target: T,
+        trackKeys?: readonly string[],
+        firstOrLast?: boolean
+    ) {
         if (!target) {  // DO nothing if target is not given.
             return;
         }
@@ -1068,10 +1090,10 @@ export default class Animator<T> {
                 continue;
             }
             const kfs = track.keyframes;
-            const lastKf = kfs[kfs.length - 1];
-            if (lastKf) {
+            const kf = kfs[firstOrLast ? 0 : kfs.length - 1];
+            if (kf) {
                 // TODO CLONE?
-                let val: unknown = cloneValue(lastKf.value as any);
+                let val: unknown = cloneValue(kf.value as any);
                 if (track.isValueColor) {
                     val = rgba2String(val as number[]);
                 }
@@ -1105,5 +1127,6 @@ export default class Animator<T> {
             }
         }
     }
-
 }
+
+export type AnimatorTrack = Track;

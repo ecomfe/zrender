@@ -1,5 +1,6 @@
 // const typescript = require('@rollup/plugin-typescript');
 const typescript = require('rollup-plugin-typescript2');
+const replace = require('@rollup/plugin-replace');
 const rollup = require('rollup');
 const path = require('path');
 const processs = require('process');
@@ -12,24 +13,33 @@ function current() {
     return (new Date()).toLocaleString();
 }
 
-const inputOption = {
-    input: path.resolve(__dirname, '../index.ts'),
-    plugins: [typescript({
-        tsconfigOverride: {
-            compilerOptions: {
-                // Rollup don't use CommonJS by default.
-                module: 'ES2015',
-                sourceMap: true,
-                // Use the esm d.ts
-                declaration: false
-            }
-        }
-    }), progress({
-        scope: {
-            total: 0
-        }
-    })]
-};
+function createInputOption(env, isWatch) {
+    return {
+        input: path.resolve(__dirname, '../index.ts'),
+        plugins: [
+            typescript({
+                clean: !isWatch,
+                tsconfigOverride: {
+                    compilerOptions: {
+                        // Rollup don't use CommonJS by default.
+                        module: 'ES2015',
+                        sourceMap: true,
+                        // Use the esm d.ts
+                        declaration: false
+                    }
+                }
+            }),
+            replace({
+                'process.env.NODE_ENV': JSON.stringify(env)
+            }),
+            progress({
+                scope: {
+                    total: 0
+                }
+            })
+        ]
+    };
+}
 
 const outputOption = {
     format: 'umd',
@@ -39,18 +49,17 @@ const outputOption = {
 };
 
 function minify(outPath) {
-    const fileMinPath = outPath.replace(/.js$/, '.min.js');
     const code = fs.readFileSync(outPath, 'utf-8');
     const uglifyResult = UglifyJS.minify(code);
     if (uglifyResult.error) {
         throw new Error(uglifyResult.error);
     }
-    fs.writeFileSync(fileMinPath, uglifyResult.code, 'utf-8');
+    fs.writeFileSync(outPath, uglifyResult.code, 'utf-8');
 }
 
 if (processs.argv.includes('--watch')) {
     const watcher = rollup.watch({
-        ...inputOption,
+        ...createInputOption('development', true),
         output: [outputOption],
         watch: {
             clearScreen: true
@@ -83,13 +92,24 @@ if (processs.argv.includes('--watch')) {
     });
 }
 else {
+    // Unminified
     rollup.rollup({
-        ...inputOption
+        ...createInputOption('development', false)
     }).then(bundle => {
-        bundle.write(outputOption).then(function () {
-            if (process.argv.indexOf('--minify') >= 0) {
-                minify(outputOption.file);
-            }
-        });
+        bundle.write(outputOption);
     });
+    // Minified
+    if (process.argv.indexOf('--minify') >= 0) {
+        rollup.rollup({
+            ...createInputOption('production', false)
+        }).then(bundle => {
+            const file = outputOption.file.replace(/.js$/, '.min.js');
+            bundle.write(Object.assign(outputOption, {
+                file,
+                sourcemap: false
+            })).then(function () {
+                minify(file);
+            });
+        });
+    }
 }

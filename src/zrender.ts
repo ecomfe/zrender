@@ -21,16 +21,12 @@ import { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
 import { EventCallback } from './core/Eventful';
-import TSpan from './graphic/TSpan';
-import ZRImage from './graphic/Image';
 import Displayable from './graphic/Displayable';
 import { lum } from './tool/color';
 import { DARK_MODE_THRESHOLD } from './config';
 import Path from './graphic/Path';
 import Group from './graphic/Group';
 
-
-const useVML = !env.canvasSupported;
 
 type PainterBaseCtor = {
     new(dom: HTMLElement, storage: Storage, ...args: any[]): PainterBase
@@ -68,8 +64,10 @@ function isDarkMode(backgroundColor: string | GradientObject | PatternObject): b
 }
 
 class ZRender {
-
-    dom: HTMLElement
+    /**
+     * Not necessary if using SSR painter like svg-ssr
+     */
+    dom?: HTMLElement
 
     id: number
 
@@ -92,7 +90,7 @@ class ZRender {
 
     private _backgroundColor: string | GradientObject | PatternObject;
 
-    constructor(id: number, dom: HTMLElement, opts?: ZRenderInitOpt) {
+    constructor(id: number, dom?: HTMLElement, opts?: ZRenderInitOpt) {
         opts = opts || {};
 
         /**
@@ -106,17 +104,14 @@ class ZRender {
 
         let rendererType = opts.renderer || 'canvas';
 
-        // TODO WebGL
-        if (useVML) {
-            throw new Error('IE8 support has been dropped since 5.0');
-        }
-
         if (!painterCtors[rendererType]) {
             // Use the first registered renderer.
             rendererType = zrUtil.keys(painterCtors)[0];
         }
-        if (!painterCtors[rendererType]) {
-            throw new Error(`Renderer '${rendererType}' is not imported. Please import it first.`);
+        if (process.env.NODE_ENV !== 'production') {
+            if (!painterCtors[rendererType]) {
+                throw new Error(`Renderer '${rendererType}' is not imported. Please import it first.`);
+            }
         }
 
         opts.useDirtyRect = opts.useDirtyRect == null
@@ -124,21 +119,25 @@ class ZRender {
             : opts.useDirtyRect;
 
         const painter = new painterCtors[rendererType](dom, storage, opts, id);
+        const ssrMode = opts.ssr || painter.ssrOnly;
 
         this.storage = storage;
         this.painter = painter;
 
-        const handerProxy = (!env.node && !env.worker)
+        const handerProxy = (!env.node && !env.worker && !ssrMode)
             ? new HandlerProxy(painter.getViewportRoot(), painter.root)
             : null;
         this.handler = new Handler(storage, painter, handerProxy, painter.root);
 
         this.animation = new Animation({
             stage: {
-                update: () => this._flush(true)
+                update: ssrMode ? null : () => this._flush(true)
             }
         });
-        this.animation.start();
+
+        if (!ssrMode) {
+            this.animation.start();
+        }
     }
 
     /**
@@ -207,7 +206,6 @@ class ZRender {
      */
     refreshImmediately(fromInside?: boolean) {
         // const start = new Date();
-
         if (!fromInside) {
             // Update animation if refreshImmediately is invoked from outside.
             // Not trigger stage update to call flush again. Which may refresh twice
@@ -220,12 +218,6 @@ class ZRender {
         this.painter.refresh();
         // Avoid trigger zr.refresh in Element#beforeUpdate hook
         this._needsRefresh = false;
-
-        // const end = new Date();
-        // const log = document.getElementById('log');
-        // if (log) {
-        //     log.innerHTML = log.innerHTML + '<br>' + (end - start);
-        // }
     }
 
     /**
@@ -292,27 +284,6 @@ class ZRender {
     }
 
     /**
-     * Add element to hover layer
-     */
-    addHover(el: Displayable) {
-        // deprecated.
-    }
-
-    /**
-     * Add element from hover layer
-     */
-    removeHover(el: Path | TSpan | ZRImage) {
-        // deprecated.
-    }
-
-    /**
-     * Clear all hover elements in hover layer
-     */
-    clearHover() {
-        // deprecated.
-    }
-
-    /**
      * Refresh hover in next frame
      */
     refreshHover() {
@@ -362,18 +333,6 @@ class ZRender {
     getHeight(): number {
         return this.painter.getHeight();
     }
-
-    /**
-     * Export the canvas as Base64 URL
-     * @param {string} type
-     * @param {string} [backgroundColor='#fff']
-     * @return {string} Base64 URL
-     */
-    // toDataURL: function(type, backgroundColor) {
-    //     return this.painter.getRenderedCanvas({
-    //         backgroundColor: backgroundColor
-    //     }).toDataURL(type);
-    // },
 
     /**
      * Converting a path to image.
@@ -477,12 +436,15 @@ export interface ZRenderInitOpt {
     width?: number | string // 10, 10px, 'auto'
     height?: number | string
     useDirtyRect?: boolean
+    ssr?: boolean   // If enable ssr mode.
 }
 
 /**
  * Initializing a zrender instance
+ *
+ * @param dom Not necessary if using SSR painter like svg-ssr
  */
-export function init(dom: HTMLElement, opts?: ZRenderInitOpt) {
+export function init(dom?: HTMLElement | null, opts?: ZRenderInitOpt) {
     const zr = new ZRender(zrUtil.guid(), dom, opts);
     instances[zr.id] = zr;
     return zr;

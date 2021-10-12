@@ -448,7 +448,6 @@ function TimSort<T>(array: T[], compare: CompareFunc<T>) {
         }
         else if (length1 === 0) {
             throw new Error();
-            // throw new Error('mergeLow preconditions were not respected');
         }
         else {
             for (i = 0; i < length1; i++) {

@@ -7,8 +7,6 @@ import env from './env';
 import { ZRRawEvent } from './types';
 import {isCanvasEl, transformCoordWithViewport} from './dom';
 
-const isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
-
 const MOUSE_EVENT_REG = /^(?:mouse|pointer|contextmenu|drag|drop)|click/;
 const _calcOut: number[] = [];
 
@@ -55,8 +53,7 @@ export function clientToLocal(
     // not support the properties.
     // (see http://www.jacklmoore.com/notes/mouse-position/)
     // In zr painter.dom, padding edge equals to border edge.
-
-    if (calculate || !env.canvasSupported) {
+    if (calculate) {
         calculateZrXY(el, e as ZRRawEvent, out);
     }
     // Caution: In FireFox, layerX/layerY Mouse position relative to the closest positioned
@@ -207,7 +204,6 @@ function getWheelDeltaMayPolyfill(e: ZRRawEvent): number {
     // we currently do not break it.
     // But event "wheel" in firefox do not has "wheelDelta", so we calculate
     // "wheelDeta" from "deltaX", "deltaY" (which is the props in spec).
-
     const rawWheelDelta = (e as any).wheelDelta;
     // Theroetically `e.wheelDelta` won't be 0 unless some day it has been deprecated
     // by agent like Chrome or Safari. So we also calculate it if rawWheelDelta is 0.
@@ -249,34 +245,28 @@ export function addEventListener(
     handler: AddEventListenerParams[1],
     opt?: AddEventListenerParams[2]
 ) {
-    if (isDomLevel2) {
-        // Reproduct the console warning:
-        // [Violation] Added non-passive event listener to a scroll-blocking <some> event.
-        // Consider marking event handler as 'passive' to make the page more responsive.
-        // Just set console log level: verbose in chrome dev tool.
-        // then the warning log will be printed when addEventListener called.
-        // See https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md
-        // We have not yet found a neat way to using passive. Because in zrender the dom event
-        // listener delegate all of the upper events of element. Some of those events need
-        // to prevent default. For example, the feature `preventDefaultMouseMove` of echarts.
-        // Before passive can be adopted, these issues should be considered:
-        // (1) Whether and how a zrender user specifies an event listener passive. And by default,
-        // passive or not.
-        // (2) How to tread that some zrender event listener is passive, and some is not. If
-        // we use other way but not preventDefault of mousewheel and touchmove, browser
-        // compatibility should be handled.
+    // Reproduct the console warning:
+    // [Violation] Added non-passive event listener to a scroll-blocking <some> event.
+    // Consider marking event handler as 'passive' to make the page more responsive.
+    // Just set console log level: verbose in chrome dev tool.
+    // then the warning log will be printed when addEventListener called.
+    // See https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md
+    // We have not yet found a neat way to using passive. Because in zrender the dom event
+    // listener delegate all of the upper events of element. Some of those events need
+    // to prevent default. For example, the feature `preventDefaultMouseMove` of echarts.
+    // Before passive can be adopted, these issues should be considered:
+    // (1) Whether and how a zrender user specifies an event listener passive. And by default,
+    // passive or not.
+    // (2) How to tread that some zrender event listener is passive, and some is not. If
+    // we use other way but not preventDefault of mousewheel and touchmove, browser
+    // compatibility should be handled.
 
-        // const opts = (env.passiveSupported && name === 'mousewheel')
-        //     ? {passive: true}
-        //     // By default, the third param of el.addEventListener is `capture: false`.
-        //     : void 0;
-        // el.addEventListener(name, handler /* , opts */);
-        el.addEventListener(name, handler, opt);
-    }
-    else {
-        // For simplicity, do not implement `setCapture` for IE9-.
-        (el as any).attachEvent('on' + name, handler);
-    }
+    // const opts = (env.passiveSupported && name === 'mousewheel')
+    //     ? {passive: true}
+    //     // By default, the third param of el.addEventListener is `capture: false`.
+    //     : void 0;
+    // el.addEventListener(name, handler /* , opts */);
+    el.addEventListener(name, handler, opt);
 }
 
 /**
@@ -292,12 +282,7 @@ export function removeEventListener(
     handler: RemoveEventListenerParams[1],
     opt: RemoveEventListenerParams[2]
 ) {
-    if (isDomLevel2) {
-        el.removeEventListener(name, handler, opt);
-    }
-    else {
-        (el as any).detachEvent('on' + name, handler);
-    }
+    el.removeEventListener(name, handler, opt);
 }
 
 /**
@@ -307,16 +292,11 @@ export function removeEventListener(
  *
  * @param {Event} e A mouse or touch event.
  */
-export const stop = isDomLevel2
-    ? function (e: MouseEvent | TouchEvent | PointerEvent) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.cancelBubble = true;
-    }
-    : function (e: MouseEvent | TouchEvent | PointerEvent) {
-        e.returnValue = false;
-        e.cancelBubble = true;
-    };
+export const stop = function (e: MouseEvent | TouchEvent | PointerEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.cancelBubble = true;
+};
 
 /**
  * This method only works for mouseup and mousedown. The functionality is restricted
@@ -326,15 +306,6 @@ export const stop = isDomLevel2
  */
 export function isMiddleOrRightButtonOnMouseUpDown(e: { which: number }) {
     return e.which === 2 || e.which === 3;
-}
-
-/**
- * To be removed.
- * @deprecated
- */
-export function notLeftMouse(e: MouseEvent) {
-    // If e.which is undefined, considered as left mouse event.
-    return e.which > 1;
 }
 
 

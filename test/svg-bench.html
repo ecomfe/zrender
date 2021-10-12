@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG SSR</title>
+    <script src="lib/stats.js"></script>
+    <script src="../dist/zrender.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/preact@10.5.14/dist/preact.min.js"></script>
+</head>
+<body>
+    <div id="main"></div>
+
+    <script>
+    var container = document.getElementById('main');
+    var zr = zrender.init(container, {
+        renderer: 'svg',
+        width: 800,
+        height: 800
+    });
+
+    const cellSize = 8;
+    const elSize = 6;
+
+    const circles = [];
+    // Basic circle.
+    for (let i = 0; i < 100; i++) {
+        for (let k = 0; k < 100; k++) {
+            var circle = new zrender.Rect({
+                shape: {
+                    x: i * cellSize + cellSize / 2,
+                    y: k * cellSize + cellSize / 2,
+                    width: elSize,
+                    height: elSize,
+                    // r: elSize / 2
+                },
+                style: {
+                    fill: 'red'
+                }
+            });
+            circles.push(circle);
+            zr.add(circle);
+        };
+    }
+    const stats = new Stats();
+    document.body.appendChild(stats.dom);
+
+    // function patch(vnode) {
+    //     function mapToVitualDOM(vnode) {
+    //         return preact.h(
+    //             vnode.tag,
+    //             vnode.attrs,
+    //             vnode.children && vnode.children.map(child => mapToVitualDOM(child))
+    //         );
+    //     }
+    //     // console.log(mapToVitualDOM(vnode));
+    //     preact.render(mapToVitualDOM(vnode), container);
+    // }
+    function update() {
+        stats.begin();
+        for (let i = 0; i < circles.length; i++) {
+            // circles[i].ignore = Math.random() < 0.1;
+            // circles[i].z = Math.random() < 0.001 ? 1 : 0;
+            circles[i].setStyle('fill', Math.random() < 1.1 ? zrender.color.random() : 'red');
+        }
+        stats.end();
+        requestAnimationFrame(update);
+    }
+
+    update();
+    </script>
+</body>
+</html>

@@ -4,16 +4,8 @@
  * @author Zhang Wenli
  */
 
-import {createElement} from '../core';
+import {createElement} from '../../svg/core';
 import * as zrUtil from '../../core/util';
-import Path from '../../graphic/Path';
-import ZRImage from '../../graphic/Image';
-import TSpan from '../../graphic/TSpan';
-import {
-    path as svgPath,
-    image as svgImage,
-    text as svgText
-} from '../graphic';
 import Displayable from '../../graphic/Displayable';
 
 
@@ -51,9 +43,6 @@ export default class Definable {
         }
     }
 
-    createElement = createElement
-
-
     /**
      * Get the <defs> tag for svgRoot; optionally creates one if not exists.
      *
@@ -68,7 +57,7 @@ export default class Definable {
             // Not exist
             if (isForceCreating) {
                 let defs = svgRoot.insertBefore(
-                    this.createElement('defs'), // Create new tag
+                    createElement('defs'), // Create new tag
                     svgRoot.firstChild // Insert in the front of svg
                 ) as SVGDefsElement;
                 if (!defs.contains) {
@@ -232,29 +221,6 @@ export default class Definable {
             }
         });
     }
-
-
-    /**
-     * Get SVG proxy.
-     *
-     * @param displayable displayable element
-     * @return svg proxy of given element
-     */
-    getSvgProxy(displayable: Displayable) {
-        if (displayable instanceof Path) {
-            return svgPath;
-        }
-        else if (displayable instanceof ZRImage) {
-            return svgImage;
-        }
-        else if (displayable instanceof TSpan) {
-            return svgText;
-        }
-        else {
-            return svgPath;
-        }
-    }
-
 
     /**
      * Get SVG element.
