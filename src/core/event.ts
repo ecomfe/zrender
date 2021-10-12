@@ -9,6 +9,10 @@ import {isCanvasEl, transformCoordWithViewport} from './dom';
 
 const MOUSE_EVENT_REG = /^(?:mouse|pointer|contextmenu|drag|drop)|click/;
 const _calcOut: number[] = [];
+const firefoxNotSupportOffsetXY = env.browser.firefox
+    // use offsetX/offsetY for Firefox >= 39
+    // PENDING: consider Firefox for Android and Firefox OS? >= 43
+    && +(env.browser.version as string).split('.')[0] < 39;
 
 type FirefoxMouseEvent = {
     layerX: number
@@ -63,10 +67,7 @@ export function clientToLocal(
     // BTW2, (ev.offsetY || ev.pageY - $(ev.target).offset().top) is not correct in preserve-3d.
     // <https://bugs.jquery.com/ticket/8523#comment:14>
     // BTW3, In ff, offsetX/offsetY is always 0.
-    else if (env.browser.firefox
-        // use offsetX/offsetY for Firefox >= 39
-        // PENDING: consider Firefox for Android and Firefox OS? >= 43
-        && env.browser.version < '39'
+    else if (firefoxNotSupportOffsetXY
         && (e as FirefoxMouseEvent).layerX != null
         && (e as FirefoxMouseEvent).layerX !== (e as MouseEvent).offsetX
     ) {
