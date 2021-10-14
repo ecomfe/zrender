@@ -1,63 +1,9 @@
 import BoundingRect, { RectLike } from '../core/BoundingRect';
-import { createCanvas, retrieve2 } from '../core/util';
-import { Dictionary, PropType, TextAlign, TextVerticalAlign, BuiltinTextPosition } from '../core/types';
+import { Dictionary, TextAlign, TextVerticalAlign, BuiltinTextPosition } from '../core/types';
 import LRU from '../core/LRU';
-import { DEFAULT_TEXT_WIDTH_MAP } from './textWidthMap';
+import { DEFAULT_FONT, platformApi } from '../core/platform';
 
 let textWidthCache: Dictionary<LRU<number>> = {};
-
-export const DEFAULT_FONT_SIZE = 12;
-export const DEFAULT_FONT_FAMILY = 'sans-serif';
-export const DEFAULT_FONT = `${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`;
-
-let _ctx: CanvasRenderingContext2D;
-let _cachedFont: string;
-
-function defaultMeasureText(text: string, font?: string): { width: number } {
-    if (!_ctx) {
-        const canvas = createCanvas();
-        _ctx = canvas && canvas.getContext('2d');
-    }
-    if (_ctx) {
-        if (_cachedFont !== font) {
-            _cachedFont = _ctx.font = font || DEFAULT_FONT;
-        }
-        return _ctx.measureText(text);
-    }
-    else {
-        text = text || '';
-        font = font || DEFAULT_FONT;
-        // Use font size if there is no other method can be used.
-        const res = /^([0-9]*?)px$/.exec(font);
-        const fontSize = +(res && res[1]) || DEFAULT_FONT_SIZE;
-        let width = 0;
-        if (font.indexOf('mono') >= 0) {   // is monospace
-            width = fontSize * text.length;
-        }
-        else {
-            for (let i = 0; i < text.length; i++) {
-                width += retrieve2(DEFAULT_TEXT_WIDTH_MAP[text[i]], 1) * fontSize;
-            }
-        }
-        return { width };
-    }
-}
-
-let methods: {
-    measureText: (text: string, font?: string) => { width: number }
-} = {
-    measureText: defaultMeasureText
-};
-
-export function $override(
-    name: keyof typeof methods,
-    fn: PropType<typeof methods, keyof typeof methods>
-) {
-    methods[name] = fn;
-}
-
-// let cacheMissCount = 0;
-// let totalCount = 0;
 
 export function getWidth(text: string, font: string): number {
     font = font || DEFAULT_FONT;
@@ -67,7 +13,7 @@ export function getWidth(text: string, font: string): number {
     }
     let width = cacheOfFont.get(text);
     if (width == null) {
-        width = methods.measureText(text, font).width;
+        width = platformApi.measureText(text, font).width;
         cacheOfFont.put(text, width);
     }
 
@@ -152,7 +98,7 @@ export function getLineHeight(font?: string): number {
 export function measureText(text: string, font?: string): {
     width: number
 } {
-    return methods.measureText(text, font);
+    return platformApi.measureText(text, font);
 }
 
 

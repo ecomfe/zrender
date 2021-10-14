@@ -41,12 +41,6 @@ const ctorFunction = function () {}.constructor;
 const protoFunction = ctorFunction ? ctorFunction.prototype : null;
 const protoKey = '__proto__';
 
-// Avoid assign to an exported constiable, for transforming to cjs.
-const methods: {[key: string]: Function} = {};
-
-export function $override(name: string, fn: Function) {
-    methods[name] = fn;
-}
 
 let idStart = 0x0907;
 
@@ -211,16 +205,6 @@ export function defaults<
     }
     return target as T & S;
 }
-
-export const createCanvas = function (): HTMLCanvasElement {
-    return methods.createCanvas();
-};
-
-methods.createCanvas = function (): HTMLCanvasElement {
-    return typeof document !== 'undefined'
-        && document.createElement('canvas');
-};
-
 /**
  * 查询数组中元素的index
  */

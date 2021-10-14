@@ -17,13 +17,12 @@ import {
     isPattern,
     isRadialGradient,
     normalizeColor,
-    round1,
     round4,
     TEXT_ALIGN_TO_ANCHOR
 } from './helper';
 import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
-import { DEFAULT_FONT, DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE, getLineHeight } from '../contain/text';
+import { getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import mapStyleToAttrs from './mapStyleToAttrs';
@@ -39,6 +38,7 @@ import { createOrUpdateImage } from '../graphic/helper/image';
 import { ImageLike } from '../core/types';
 import { createCSSAnimation } from './cssAnimation';
 import { hasSeparateFont, parseFontSize } from '../graphic/Text';
+import { DEFAULT_FONT, DEFAULT_FONT_FAMILY } from '../core/platform';
 
 const round = Math.round;
 

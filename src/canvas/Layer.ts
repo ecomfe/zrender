@@ -11,9 +11,10 @@ import { createCanvasPattern } from './graphic';
 import Displayable from '../graphic/Displayable';
 import BoundingRect from '../core/BoundingRect';
 import { REDRAW_BIT } from '../graphic/constants';
+import { platformApi } from '../core/platform';
 
 function createDom(id: string, painter: CanvasPainter, dpr: number) {
-    const newDom = util.createCanvas();
+    const newDom = platformApi.createCanvas();
     const width = painter.getWidth();
     const height = painter.getHeight();
 

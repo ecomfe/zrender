@@ -1,9 +1,10 @@
 import Displayable, { DisplayableProps, DisplayableStatePropNames } from './Displayable';
-import { getBoundingRect, DEFAULT_FONT } from '../contain/text';
+import { getBoundingRect } from '../contain/text';
 import BoundingRect from '../core/BoundingRect';
 import { PathStyleProps, DEFAULT_PATH_STYLE } from './Path';
 import { createObject, defaults } from '../core/util';
 import { FontStyle, FontWeight, TextAlign, TextVerticalAlign } from '../core/types';
+import { DEFAULT_FONT } from '../core/platform';
 
 export interface TSpanStyleProps extends PathStyleProps {
 

@@ -10,12 +10,12 @@ import { getCanvasGradient, isClipPathChanged } from './helper';
 import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import TSpan, {TSpanStyleProps} from '../graphic/TSpan';
-import { DEFAULT_FONT } from '../contain/text';
 import { MatrixArray } from '../core/matrix';
 import { map, RADIAN_TO_DEGREE } from '../core/util';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
 import { REDRAW_BIT, SHAPE_CHANGED_BIT } from '../graphic/constants';
 import type IncrementalDisplayable from '../graphic/IncrementalDisplayable';
+import { DEFAULT_FONT } from '../core/platform';
 
 const pathProxyForDraw = new PathProxy(true);
 
