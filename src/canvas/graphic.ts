@@ -14,8 +14,8 @@ import { DEFAULT_FONT } from '../contain/text';
 import { MatrixArray } from '../core/matrix';
 import { map, RADIAN_TO_DEGREE } from '../core/util';
 import { normalizeLineDash } from '../graphic/helper/dashStyle';
-import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 import { REDRAW_BIT, SHAPE_CHANGED_BIT } from '../graphic/constants';
+import type IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 
 const pathProxyForDraw = new PathProxy(true);
 
@@ -765,13 +765,14 @@ export function brush(
             bindImageStyle(ctx, el as ZRImage, prevEl as ZRImage, forceSetStyle, scope);
             brushImage(ctx, el as ZRImage, style);
         }
-        else if (el instanceof IncrementalDisplayable) {
+        // Assume it's a IncrementalDisplayable
+        else if ((el as IncrementalDisplayable).getTemporalDisplayables) {
             if (scope.lastDrawType !== DRAW_TYPE_INCREMENTAL) {
                 forceSetStyle = true;
                 scope.lastDrawType = DRAW_TYPE_INCREMENTAL;
             }
 
-            brushIncremental(ctx, el, scope);
+            brushIncremental(ctx, el as IncrementalDisplayable, scope);
         }
 
     }
