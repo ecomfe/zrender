@@ -1,5 +1,3 @@
-import { extend, retrieve2 } from './util';
-
 export const DEFAULT_FONT_SIZE = 12;
 export const DEFAULT_FONT_FAMILY = 'sans-serif';
 export const DEFAULT_FONT = `${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`;
@@ -80,7 +78,8 @@ export const platformApi: Platform = {
                 }
                 else {
                     for (let i = 0; i < text.length; i++) {
-                        width += retrieve2(DEFAULT_TEXT_WIDTH_MAP[text[i]], 1) * fontSize;
+                        const preCalcWidth = DEFAULT_TEXT_WIDTH_MAP[text[i]];
+                        width += preCalcWidth == null ? fontSize : (preCalcWidth * fontSize);
                     }
                 }
                 return { width };
@@ -89,6 +88,11 @@ export const platformApi: Platform = {
     })()
 };
 
-export function setPlatformAPI(platformApis?: Partial<Platform>) {
-    extend(platformApi, platformApis);
+export function setPlatformAPI(newPlatformApis: Partial<Platform>) {
+    for (let key in platformApi) {
+        // Don't assign unkown methods.
+        if ((newPlatformApis as any)[key]) {
+            (platformApi as any)[key] = (newPlatformApis as any)[key];
+        }
+    }
 }
