@@ -56,7 +56,7 @@ describe('ElementAnimation', function () {
                 duration: 100,
                 done: () => {
                     animation.stop();
-                    resolve();
+                    resolve(undefined);
                 }
             });
             for (let i = 0; i < rect.animators.length; i++) {
