@@ -6,7 +6,7 @@ import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, MapToType, FontWei
 import { parseRichText, parsePlainText } from './helper/parseText';
 import TSpan, { TSpanStyleProps } from './TSpan';
 import { retrieve2, each, normalizeCssArray, trim, retrieve3, extend, keys, defaults } from '../core/util';
-import { DEFAULT_FONT, adjustTextX, adjustTextY, DEFAULT_FONT_SIZE } from '../contain/text';
+import { adjustTextX, adjustTextY } from '../contain/text';
 import ZRImage from './Image';
 import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
@@ -21,6 +21,7 @@ import Animator from '../animation/Animator';
 import Transformable from '../core/Transformable';
 import { ElementCommonState } from '../Element';
 import { GroupLike } from './Group';
+import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../core/platform';
 
 type TextContentBlock = ReturnType<typeof parseRichText>
 type TextLine = TextContentBlock['lines'][0]

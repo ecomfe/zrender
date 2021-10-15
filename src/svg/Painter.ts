@@ -21,7 +21,7 @@ import {
     createBrushScope
 } from './core';
 import { normalizeColor } from './helper';
-import { defaults, disableUserSelect, extend, keys, logError, map } from '../core/util';
+import { defaults, extend, keys, logError, map } from '../core/util';
 import Path from '../graphic/Path';
 import patch from './patch';
 import { getSize } from '../canvas/helper';
@@ -66,9 +66,6 @@ class SVGPainter implements PainterBase {
         // A unique id for generating svg ids.
         this._id = 'zr' + svgId++;
 
-        if (root && root.style) {
-            disableUserSelect(root);
-        }
 
         if (root && !opts.ssr) {
             const viewport = this._viewport = document.createElement('div');
@@ -107,6 +104,8 @@ class SVGPainter implements PainterBase {
             const vnode = this.renderToVNode({
                 willUpdate: true
             });
+            // Disable user selection.
+            vnode.attrs.style = 'user-select:none;position:absolute;left:0;top:0;';
             patch(this._oldVNode || this._svgDom, vnode);
             this._oldVNode = vnode;
         }

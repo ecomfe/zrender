@@ -12,10 +12,10 @@ import Storage from '../Storage';
 import { brush, BrushScope, brushSingle } from './graphic';
 import { PainterBase } from '../PainterBase';
 import BoundingRect from '../core/BoundingRect';
-import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 import Path from '../graphic/Path';
 import { REDRAW_BIT } from '../graphic/constants';
 import { getSize } from './helper';
+import type IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 const CANVAS_ZLEVEL = 314159;
@@ -396,7 +396,7 @@ export default class CanvasPainter implements PainterBase {
             const clearColor = layer.zlevel === this._zlevelList[0]
                 ? this._backgroundColor : null;
 
-            // All elements in this layer are cleared.
+            // All elements in this layer are removed.
             if (layer.__startIndex === layer.__endIndex) {
                 layer.clear(false, clearColor, repaintRects);
             }

@@ -7,10 +7,11 @@ import { getMatrixStr, TEXT_ALIGN_TO_ANCHOR, adjustTextY } from '../svg/helper';
 import * as matrix from '../core/matrix';
 import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
-import { DEFAULT_FONT, getLineHeight } from '../contain/text';
+import { getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import SVGPathRebuilder from '../svg/SVGPathRebuilder';
 import mapStyleToAttrs from '../svg/mapStyleToAttrs';
+import { DEFAULT_FONT } from '../core/platform';
 
 export interface SVGProxy<T> {
     brush(el: T): void

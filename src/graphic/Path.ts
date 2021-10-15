@@ -149,7 +149,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      */
     autoBatch: boolean
 
-    private _rectWithStroke: BoundingRect
+    private _rectStroke: BoundingRect
 
     protected _normalState: PathState
 
@@ -359,9 +359,9 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
             // Needs update rect with stroke lineWidth when
             // 1. Element changes scale or lineWidth
             // 2. Shape is changed
-            const rectWithStroke = this._rectWithStroke || (this._rectWithStroke = rect.clone());
+            const rectStroke = this._rectStroke || (this._rectStroke = rect.clone());
             if (this.__dirty || needsUpdateRect) {
-                rectWithStroke.copy(rect);
+                rectStroke.copy(rect);
                 // PENDING, Min line width is needed when line is horizontal or vertical
                 const lineScale = style.strokeNoScale ? this.getLineScale() : 1;
                 // FIXME Must after updateTransform
@@ -375,15 +375,15 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
                 // Consider line width
                 // Line scale can't be 0;
                 if (lineScale > 1e-10) {
-                    rectWithStroke.width += w / lineScale;
-                    rectWithStroke.height += w / lineScale;
-                    rectWithStroke.x -= w / lineScale / 2;
-                    rectWithStroke.y -= w / lineScale / 2;
+                    rectStroke.width += w / lineScale;
+                    rectStroke.height += w / lineScale;
+                    rectStroke.x -= w / lineScale / 2;
+                    rectStroke.y -= w / lineScale / 2;
                 }
             }
 
             // Return rect with stroke
-            return rectWithStroke;
+            return rectStroke;
         }
 
         return rect;
