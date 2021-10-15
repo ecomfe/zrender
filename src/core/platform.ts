@@ -8,8 +8,8 @@ interface Platform {
     measureText(text: string, font?: string): { width: number }
     loadImage(
         src: string,
-        onload: () => void,
-        onerrror: () => void
+        onload: () => void | HTMLImageElement['onload'],
+        onerror: () => void | HTMLImageElement['onerror']
     ): HTMLImageElement
 }
 
