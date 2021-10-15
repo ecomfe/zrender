@@ -6,6 +6,11 @@ interface Platform {
     // TODO CanvasLike?
     createCanvas(): HTMLCanvasElement
     measureText(text: string, font?: string): { width: number }
+    loadImage(
+        src: string,
+        onload: () => void,
+        onerrror: () => void
+    ): HTMLImageElement
 }
 
 // Text width map used for environment there is no canvas
@@ -85,7 +90,15 @@ export const platformApi: Platform = {
                 return { width };
             }
         };
-    })()
+    })(),
+
+    loadImage(src, onload, onerror) {
+        const image = new Image();
+        image.onload = onload;
+        image.onerror = onerror;
+        image.src = src;
+        return image;
+    }
 };
 
 export function setPlatformAPI(newPlatformApis: Partial<Platform>) {
