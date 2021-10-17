@@ -26,7 +26,7 @@ export interface PainterBase {
     clear(): void
 
     // must be given if ssr is true.
-    renderToString?(): void;
+    renderToString?(): string;
 
     getType: () => string
 
