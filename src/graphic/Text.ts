@@ -189,6 +189,10 @@ export interface TextStyleProps extends TextStylePropsPart {
 
 export interface TextProps extends DisplayableProps {
     style?: TextStyleProps
+    /**
+     * For the value interpolation animation
+     */
+    value?: number | string | (number | string)[]
 
     zlevel?: number
     z?: number
