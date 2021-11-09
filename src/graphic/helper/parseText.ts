@@ -163,6 +163,7 @@ export interface PlainTextContentBlock {
     height: number
     outerHeight: number
 
+    contentWidth: number
     width: number
 
     lines: string[]
@@ -187,7 +188,7 @@ export function parsePlainText(
     let width = style.width;
     let lines: string[];
 
-    if (width != null && overflow === 'break' || overflow === 'breakAll') {
+    if (width != null && (overflow === 'break' || overflow === 'breakAll')) {
         lines = text ? wrapText(text, style.font, width, overflow === 'breakAll', 0).lines : [];
     }
     else {
@@ -234,14 +235,12 @@ export function parsePlainText(
         }
     }
 
-    if (width == null) {
-        let maxWidth = 0;
-        // Calculate width
-        for (let i = 0; i < lines.length; i++) {
-            maxWidth = Math.max(getWidth(lines[i], font), maxWidth);
-        }
-        width = maxWidth;
+    let maxWidth = 0;
+    // Calculate width
+    for (let i = 0; i < lines.length; i++) {
+        maxWidth = Math.max(getWidth(lines[i], font), maxWidth);
     }
+    width = maxWidth;
 
     return {
         lines: lines,
@@ -250,7 +249,8 @@ export function parsePlainText(
         lineHeight: lineHeight,
         calculatedLineHeight: calculatedLineHeight,
         contentHeight: contentHeight,
-        width: width
+        width: width,
+        contentWidth: maxWidth
     };
 }
 
