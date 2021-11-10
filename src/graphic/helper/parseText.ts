@@ -240,7 +240,9 @@ export function parsePlainText(
     for (let i = 0; i < lines.length; i++) {
         maxWidth = Math.max(getWidth(lines[i], font), maxWidth);
     }
-    width = maxWidth;
+    if (width == null) {
+        width = maxWidth;
+    }
 
     return {
         lines: lines,
