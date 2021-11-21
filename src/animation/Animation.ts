@@ -37,7 +37,7 @@ interface AnimationOption {
  *             x: 100,
  *             y: 100
  *         })
- *         .start('spline');
+ *         .start();
  */
 
 export default class Animation extends Eventful {

@@ -9,7 +9,7 @@ import { VectorArray } from '../../core/vector';
 
 export class PolygonShape {
     points: VectorArray[] = null
-    smooth?: number | 'spline' = 0
+    smooth?: number = 0
     smoothConstraint?: VectorArray[] = null
 }
 

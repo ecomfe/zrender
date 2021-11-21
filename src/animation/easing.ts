@@ -6,7 +6,7 @@
 
 type easingFunc = (percent: number) => number;
 
-export type AnimationEasing = keyof typeof easing | easingFunc | 'spline';
+export type AnimationEasing = keyof typeof easing | easingFunc;
 
 const easing = {
     /**

@@ -145,69 +145,6 @@ function is1DArraySame(arr0: NumberArray, arr1: NumberArray) {
     return true;
 }
 
-
-/**
- * Catmull Rom interpolate number
- */
-function catmullRomInterpolate(
-    p0: number, p1: number, p2: number, p3: number, t: number, t2: number, t3: number
-) {
-    const v0 = (p2 - p0) * 0.5;
-    const v1 = (p3 - p1) * 0.5;
-    return (2 * (p1 - p2) + v0 + v1) * t3
-            + (-3 * (p1 - p2) - 2 * v0 - v1) * t2
-            + v0 * t + p1;
-}
-/**
- * Catmull Rom interpolate 1D array
- */
-function catmullRomInterpolate1DArray(
-    out: NumberArray,
-    p0: NumberArray,
-    p1: NumberArray,
-    p2: NumberArray,
-    p3: NumberArray,
-    t: number,
-    t2: number,
-    t3: number
-) {
-    const len = p0.length;
-    for (let i = 0; i < len; i++) {
-        out[i] = catmullRomInterpolate(
-            p0[i], p1[i], p2[i], p3[i], t, t2, t3
-        );
-    }
-}
-
-/**
- * Catmull Rom interpolate 2D array
- */
-function catmullRomInterpolate2DArray(
-    out: NumberArray[],
-    p0: NumberArray[],
-    p1: NumberArray[],
-    p2: NumberArray[],
-    p3: NumberArray[],
-    t: number,
-    t2: number,
-    t3: number
-) {
-    const len = p0.length;
-    const len2 = p0[0].length;
-    for (let i = 0; i < len; i++) {
-        if (!out[i]) {
-            out[1] = [];
-        }
-        for (let j = 0; j < len2; j++) {
-            out[i][j] = catmullRomInterpolate(
-                p0[i][j], p1[i][j], p2[i][j], p3[i][j],
-                t, t2, t3
-            );
-        }
-    }
-}
-
-
 export function cloneValue(value: InterpolatableType) {
     if (isArrayLike(value)) {
         const len = value.length;
@@ -252,11 +189,6 @@ class Track {
     maxTime: number = 0
 
     propName: string
-
-    /**
-     * If use spline interpolate
-     */
-    useSpline: boolean
 
     // Larger than 0 if value is array
     arrDim: number = 0
@@ -513,7 +445,6 @@ class Track {
         this._lastFrame = frameIdx;
         this._lastFramePercent = percent;
 
-
         const range = (nextFrame.percent - frame.percent);
         if (range === 0) {
             return;
@@ -527,101 +458,47 @@ class Track {
         if ((arrDim > 0 || isValueColor) && !targetArr) {
             targetArr = this._additiveValue = [];
         }
-        if (this.useSpline) {
-            const p1 = keyframes[frameIdx][valueKey];
-            const p0 = keyframes[frameIdx === 0 ? frameIdx : frameIdx - 1][valueKey];
-            const p2 = keyframes[frameIdx > kfsNum - 2 ? kfsNum - 1 : frameIdx + 1][valueKey];
-            const p3 = keyframes[frameIdx > kfsNum - 3 ? kfsNum - 1 : frameIdx + 2][valueKey];
 
-            if (arrDim > 0) {
-                arrDim === 1
-                    ? catmullRomInterpolate1DArray(
-                        targetArr as NumberArray,
-                        p0 as NumberArray,
-                        p1 as NumberArray,
-                        p2 as NumberArray,
-                        p3 as NumberArray,
-                        w, w * w, w * w * w
-                    )
-                    : catmullRomInterpolate2DArray(
-                        targetArr as NumberArray[],
-                        p0 as NumberArray[], p1 as NumberArray[], p2 as NumberArray[], p3 as NumberArray[],
-                        w, w * w, w * w * w
-                    );
-            }
-            else if (isValueColor) {
-                catmullRomInterpolate1DArray(
-                    targetArr,
-                    p0 as NumberArray, p1 as NumberArray, p2 as NumberArray, p3 as NumberArray,
-                    w, w * w, w * w * w
-                );
-                if (!isAdditive) {  // Convert to string later:)
-                    target[propName] = rgba2String(targetArr);
-                }
-            }
-            else {
-                let value;
-                if (!this.interpolable) {
-                    // String is step(0.5)
-                    // value = step(p1, p2, w);
-                    value = p2;
-                }
-                else {
-                    value = catmullRomInterpolate(
-                        p0 as number, p1 as number, p2 as number, p3 as number,
-                        w, w * w, w * w * w
-                    );
-                }
-                if (isAdditive) {
-                    this._additiveValue = value;
-                }
-                else {
-                    target[propName] = value;
-                }
-            }
-        }
-        else {
-            if (arrDim > 0) {
-                arrDim === 1
-                    ? interpolate1DArray(
-                        targetArr as NumberArray,
-                        frame[valueKey] as NumberArray,
-                        nextFrame[valueKey] as NumberArray,
-                        w
-                    )
-                    : interpolate2DArray(
-                        targetArr as NumberArray[],
-                        frame[valueKey] as NumberArray[],
-                        nextFrame[valueKey] as NumberArray[],
-                        w
-                    );
-            }
-            else if (isValueColor) {
-                interpolate1DArray(
-                    targetArr,
+        if (arrDim > 0) {
+            arrDim === 1
+                ? interpolate1DArray(
+                    targetArr as NumberArray,
                     frame[valueKey] as NumberArray,
                     nextFrame[valueKey] as NumberArray,
                     w
+                )
+                : interpolate2DArray(
+                    targetArr as NumberArray[],
+                    frame[valueKey] as NumberArray[],
+                    nextFrame[valueKey] as NumberArray[],
+                    w
                 );
-                if (!isAdditive) {  // Convert to string later:)
-                    target[propName] = rgba2String(targetArr);
-                }
+        }
+        else if (isValueColor) {
+            interpolate1DArray(
+                targetArr,
+                frame[valueKey] as NumberArray,
+                nextFrame[valueKey] as NumberArray,
+                w
+            );
+            if (!isAdditive) {  // Convert to string later:)
+                target[propName] = rgba2String(targetArr);
+            }
+        }
+        else {
+            let value;
+            if (!this.interpolable) {
+                // String is step(0.5)
+                value = step(frame[valueKey], nextFrame[valueKey], w);
             }
             else {
-                let value;
-                if (!this.interpolable) {
-                    // String is step(0.5)
-                    value = step(frame[valueKey], nextFrame[valueKey], w);
-                }
-                else {
-                    value = interpolateNumber(frame[valueKey] as number, nextFrame[valueKey] as number, w);
-                }
-                if (isAdditive) {
-                    this._additiveValue = value;
-                }
-                else {
-                    target[propName] = value;
-                }
+                value = interpolateNumber(frame[valueKey] as number, nextFrame[valueKey] as number, w);
+            }
+            if (isAdditive) {
+                this._additiveValue = value;
+            }
+            else {
+                target[propName] = value;
             }
         }
 
@@ -934,7 +811,7 @@ export default class Animator<T> {
                 this.animation.addClip(clip);
             }
 
-            if (easing && easing !== 'spline') {
+            if (easing) {
                 clip.easing = easing;
             }
         }
