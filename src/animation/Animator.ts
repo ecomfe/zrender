@@ -6,7 +6,7 @@ import Clip from './Clip';
 import * as color from '../tool/color';
 import {isArrayLike, keys, logError, map} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
-import { AnimationEasing } from './easing';
+import easingFuncs, { AnimationEasing } from './easing';
 import Animation from './Animation';
 
 type NumberArray = ArrayLike<number>
@@ -179,6 +179,7 @@ type Keyframe = {
     value: unknown
     percent: number
 
+    easing?: (percent: number) => number
     additiveValue?: unknown
 }
 
@@ -238,7 +239,7 @@ class Track {
         return this._additiveTrack;
     }
 
-    addKeyframe(time: number, value: unknown) {
+    addKeyframe(time: number, value: unknown, easing?: Keyframe['easing']) {
         if (time >= this.maxTime) {
             this.maxTime = time;
         }
@@ -317,7 +318,8 @@ class Track {
         const kf = {
             time,
             value,
-            percent: 0
+            percent: 0,
+            easing
         };
         // Not check if value equal here.
         this.keyframes.push(kf);
@@ -449,7 +451,12 @@ class Track {
         if (range === 0) {
             return;
         }
-        const w = (percent - frame.percent) / range;
+        let w = (percent - frame.percent) / range;
+        // Apply different easing of each keyframe.
+        // Use easing specified in target frame.
+        if (nextFrame.easing) {
+            w = nextFrame.easing(w);
+        }
 
         // If value is arr
         let targetArr = isAdditive ? this._additiveValue
@@ -615,14 +622,17 @@ export default class Animator<T> {
      * @param time 关键帧时间，单位是ms
      * @param props 关键帧的属性值，key-value表示
      */
-    when(time: number, props: Dictionary<any>) {
-        return this.whenWithKeys(time, props, keys(props) as string[]);
+    when(time: number, props: Dictionary<any>, easing?: AnimationEasing) {
+        return this.whenWithKeys(time, props, keys(props) as string[], easing);
     }
 
 
     // Fast path for add keyframes of aniamteTo
-    whenWithKeys(time: number, props: Dictionary<any>, propNames: string[]) {
+    whenWithKeys(time: number, props: Dictionary<any>, propNames: string[], easing?: AnimationEasing) {
         const tracks = this._tracks;
+        if (typeof easing === 'string') {
+            easing = easingFuncs[easing];
+        }
         for (let i = 0; i < propNames.length; i++) {
             const propName = propNames[i];
 
@@ -654,13 +664,12 @@ export default class Animator<T> {
                 // Else
                 //  Initialize value from current prop value
                 if (time !== 0) {
-                    track.addKeyframe(0, cloneValue(initialValue));
+                    track.addKeyframe(0, cloneValue(initialValue), easing);
                 }
 
                 this._trackKeys.push(propName);
             }
-            // PENDING
-            track.addKeyframe(time, cloneValue(props[propName]));
+            track.addKeyframe(time, cloneValue(props[propName]), easing);
         }
         this._maxTime = Math.max(this._maxTime, time);
         return this;
