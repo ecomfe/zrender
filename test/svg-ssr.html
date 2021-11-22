@@ -261,6 +261,33 @@
         zr.add(el);
     }
 
+    // Perframe easing animation
+    for (let i = 0; i < 10; i++) {
+        const el = new zrender.Circle({
+            x: i * cellSize + cellSize / 2,
+            y: cellSize * 11 + cellSize / 2,
+            shape: {
+                cx: 0,
+                cy: 0,
+                r: elSize / 2
+            },
+            style: {
+                fill: 'red'
+            }
+        });
+        el.animate(null, true)
+            .when(1000, {
+                scaleX: 0.2,
+                scaleY: 0.2
+            }, 'sinusoidalInOut')
+            .when(2000, {
+                scaleX: 1,
+                scaleY: 1
+            }, 'sinusoidalInOut')
+            .start()
+        zr.add(el);
+    }
+
 
     console.time('render');
     const svg = zr.painter.renderToString();

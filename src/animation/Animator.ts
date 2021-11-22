@@ -4,7 +4,7 @@
 
 import Clip from './Clip';
 import * as color from '../tool/color';
-import {isArrayLike, keys, logError, map} from '../core/util';
+import {isArrayLike, isFunction, isString, keys, logError, map} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
 import easingFuncs, { AnimationEasing } from './easing';
 import Animation from './Animation';
@@ -179,7 +179,8 @@ type Keyframe = {
     value: unknown
     percent: number
 
-    easing?: (percent: number) => number
+    easing?: AnimationEasing    // Raw easing
+    easingFunc?: (percent: number) => number
     additiveValue?: unknown
 }
 
@@ -239,7 +240,7 @@ class Track {
         return this._additiveTrack;
     }
 
-    addKeyframe(time: number, value: unknown, easing?: Keyframe['easing']) {
+    addKeyframe(time: number, value: unknown, easing?: AnimationEasing) {
         if (time >= this.maxTime) {
             this.maxTime = time;
         }
@@ -315,12 +316,16 @@ class Track {
             }
         }
 
-        const kf = {
+        const kf: Keyframe = {
             time,
             value,
-            percent: 0,
-            easing
+            percent: 0
         };
+        if (easing) {
+            // Save the raw easing name to be used in css animation output
+            kf.easing = easing;
+            kf.easingFunc = isFunction(easing) ? easing : easingFuncs[easing];
+        }
         // Not check if value equal here.
         this.keyframes.push(kf);
         return kf;
@@ -454,8 +459,8 @@ class Track {
         let w = (percent - frame.percent) / range;
         // Apply different easing of each keyframe.
         // Use easing specified in target frame.
-        if (nextFrame.easing) {
-            w = nextFrame.easing(w);
+        if (nextFrame.easingFunc) {
+            w = nextFrame.easingFunc(w);
         }
 
         // If value is arr
@@ -630,9 +635,6 @@ export default class Animator<T> {
     // Fast path for add keyframes of aniamteTo
     whenWithKeys(time: number, props: Dictionary<any>, propNames: string[], easing?: AnimationEasing) {
         const tracks = this._tracks;
-        if (typeof easing === 'string') {
-            easing = easingFuncs[easing];
-        }
         for (let i = 0; i < propNames.length; i++) {
             const propName = propNames[i];
 
