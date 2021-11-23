@@ -920,7 +920,7 @@ export default class Animator<T> {
 
         for (let i = 0; i < propNames.length; i++) {
             const track = tracks[propNames[i]];
-            if (track) {
+            if (track && !track.isFinished()) {
                 if (forwardToLast) {
                     track.step(this._target, 1);
                 }
