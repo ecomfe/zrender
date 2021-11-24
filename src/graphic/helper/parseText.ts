@@ -160,10 +160,11 @@ export interface PlainTextContentBlock {
     // Line height of actual content.
     calculatedLineHeight: number
 
-    height: number
-    outerHeight: number
-
     width: number
+    height: number
+
+    outerWidth: number
+    outerHeight: number
 
     lines: string[]
 }
@@ -213,17 +214,7 @@ export function parsePlainText(
         // }
     }
 
-    let outerHeight = height;
-    let outerWidth = width;
-    if (padding) {
-        outerHeight += padding[0] + padding[2];
-        if (outerWidth != null) {
-            outerWidth += padding[1] + padding[3];
-        }
-    }
-
-
-    if (text && truncate && outerWidth != null) {
+    if (text && truncate && width != null) {
         const options = prepareTruncateOptions(width, font, style.ellipsis, {
             minChar: style.truncateMinChar,
             placeholder: style.placeholder
@@ -234,18 +225,27 @@ export function parsePlainText(
         }
     }
 
+    let outerWidth = 0;
+    // Calculate width
+    for (let i = 0; i < lines.length; i++) {
+        outerWidth = Math.max(getWidth(lines[i], font), outerWidth);
+    }
     if (width == null) {
-        let maxWidth = 0;
-        // Calculate width
-        for (let i = 0; i < lines.length; i++) {
-            maxWidth = Math.max(getWidth(lines[i], font), maxWidth);
+        width = outerWidth;
+    }
+
+    let outerHeight = height;
+    if (padding) {
+        outerHeight += padding[0] + padding[2];
+        if (outerWidth != null) {
+            outerWidth += padding[1] + padding[3];
         }
-        width = maxWidth;
     }
 
     return {
         lines: lines,
         height: height,
+        outerWidth: outerWidth,
         outerHeight: outerHeight,
         lineHeight: lineHeight,
         calculatedLineHeight: calculatedLineHeight,
