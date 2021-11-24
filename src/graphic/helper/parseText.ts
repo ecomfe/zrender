@@ -163,7 +163,6 @@ export interface PlainTextContentBlock {
     height: number
     outerHeight: number
 
-    contentWidth: number
     width: number
 
     lines: string[]
@@ -235,12 +234,12 @@ export function parsePlainText(
         }
     }
 
-    let maxWidth = 0;
-    // Calculate width
-    for (let i = 0; i < lines.length; i++) {
-        maxWidth = Math.max(getWidth(lines[i], font), maxWidth);
-    }
     if (width == null) {
+        let maxWidth = 0;
+        // Calculate width
+        for (let i = 0; i < lines.length; i++) {
+            maxWidth = Math.max(getWidth(lines[i], font), maxWidth);
+        }
         width = maxWidth;
     }
 
@@ -251,8 +250,7 @@ export function parsePlainText(
         lineHeight: lineHeight,
         calculatedLineHeight: calculatedLineHeight,
         contentHeight: contentHeight,
-        width: width,
-        contentWidth: maxWidth
+        width: width
     };
 }
 
@@ -680,7 +678,6 @@ function wrapText(
                     // Append lastWord if have
                     if (currentWord) {
                         line += currentWord;
-                        accumWidth += currentWordWidth;
                         currentWord = '';
                         currentWordWidth = 0;
                     }
