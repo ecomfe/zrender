@@ -163,6 +163,11 @@ export interface PlainTextContentBlock {
     width: number
     height: number
 
+    /**
+     * Real text width containing padding.
+     * It should be the same as `width` if background is rendered
+     * and `width` is set by user.
+     */
     outerWidth: number
     outerHeight: number
 
@@ -226,12 +231,14 @@ export function parsePlainText(
         }
     }
 
+    // Calculate real text width and height
     let outerHeight = height;
     let outerWidth = 0;
     for (let i = 0; i < lines.length; i++) {
         outerWidth = Math.max(getWidth(lines[i], font), outerWidth);
     }
     if (width == null) {
+        // When width is not explicitly set, use outerWidth as width.
         width = outerWidth;
     }
 
@@ -242,6 +249,7 @@ export function parsePlainText(
     }
 
     if (bgColorDrawn) {
+        // When render background, outerWidth should be the same as width.
         outerWidth = width;
     }
 

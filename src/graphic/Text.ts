@@ -484,6 +484,11 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         const needDrawBg = needDrawBackground(style);
         const bgColorDrawn = !!(style.backgroundColor);
 
+        /**
+         * outerWidth is the real text width containing padding,
+         * while contentBlock.width equals to style.width when
+         * style.width is set, which is the constraining width.
+         */
         const outerHeight = contentBlock.outerHeight;
         const outerWidth = contentBlock.outerWidth;
         const innerWidth = textPadding
@@ -504,6 +509,8 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         let textY = adjustTextY(baseY, contentBlock.contentHeight, verticalAlign);
 
         if (needDrawBg || textPadding) {
+            let outerWidth = contentBlock.width;
+            textPadding && (outerWidth += textPadding[1] + textPadding[3]);
             // Consider performance, do not call getTextWidth util necessary.
             const boxX = adjustTextX(baseX, outerWidth, textAlign);
             const boxY = adjustTextY(baseY, outerHeight, verticalAlign);
@@ -602,6 +609,11 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
                 el.setBoundingRect(new BoundingRect(
                     adjustTextX(subElStyle.x, style.width, subElStyle.textAlign as TextAlign),
                     adjustTextY(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline as TextVerticalAlign),
+                    /**
+                     * Text boundary should be the real text width.
+                     * Otherwise, there will be extra space in the
+                     * bounding rect calculated.
+                     */
                     innerWidth,
                     calculatedLineHeight
                 ));
