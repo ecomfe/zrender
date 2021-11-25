@@ -484,11 +484,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         const needDrawBg = needDrawBackground(style);
         const bgColorDrawn = !!(style.backgroundColor);
 
-        /**
-         * outerWidth is the real text width containing padding,
-         * while contentBlock.width equals to style.width when
-         * style.width is set, which is the constraining width.
-         */
+        // outerWidth is the real text width containing padding.
         const outerHeight = contentBlock.outerHeight;
         const outerWidth = contentBlock.outerWidth;
         const innerWidth = textPadding
