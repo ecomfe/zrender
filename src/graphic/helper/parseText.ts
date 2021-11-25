@@ -182,6 +182,7 @@ export function parsePlainText(
     const truncate = overflow === 'truncate';
     const calculatedLineHeight = getLineHeight(font);
     const lineHeight = retrieve2(style.lineHeight, calculatedLineHeight);
+    const bgColorDrawn = !!(style.backgroundColor);
 
     const truncateLineOverflow = style.lineOverflow === 'truncate';
 
@@ -225,8 +226,8 @@ export function parsePlainText(
         }
     }
 
+    let outerHeight = height;
     let outerWidth = 0;
-    // Calculate width
     for (let i = 0; i < lines.length; i++) {
         outerWidth = Math.max(getWidth(lines[i], font), outerWidth);
     }
@@ -234,12 +235,14 @@ export function parsePlainText(
         width = outerWidth;
     }
 
-    let outerHeight = height;
     if (padding) {
         outerHeight += padding[0] + padding[2];
-        if (outerWidth != null) {
-            outerWidth += padding[1] + padding[3];
-        }
+        outerWidth += padding[1] + padding[3];
+        width += padding[1] + padding[3];
+    }
+
+    if (bgColorDrawn) {
+        outerWidth = width;
     }
 
     return {
