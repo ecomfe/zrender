@@ -509,8 +509,6 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         let textY = adjustTextY(baseY, contentBlock.contentHeight, verticalAlign);
 
         if (needDrawBg || textPadding) {
-            let outerWidth = contentBlock.width;
-            textPadding && (outerWidth += textPadding[1] + textPadding[3]);
             // Consider performance, do not call getTextWidth util necessary.
             const boxX = adjustTextX(baseX, outerWidth, textAlign);
             const boxY = adjustTextY(baseY, outerHeight, verticalAlign);
