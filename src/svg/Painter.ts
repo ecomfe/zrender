@@ -108,6 +108,7 @@ class SVGPainter implements PainterBase {
             vnode.attrs.style = 'user-select:none;position:absolute;left:0;top:0;';
             patch(this._oldVNode || this._svgDom, vnode);
             this._oldVNode = vnode;
+            this._svgDom = vnode.elm as SVGElement;
         }
     }
 
