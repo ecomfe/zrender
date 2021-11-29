@@ -336,11 +336,11 @@ export function createCSSAnimation(
         ).length) {
             const animationName = addAnimation(finalKfs, scope);
             // eslint-disable-next-line
-            for (const attrName in finalKfs[percents[0]]) {
-                // Remove the attrs in the element because it will be set by animation.
-                // Reduce the size.
-                attrs[attrName] = false;
-            }
+            // for (const attrName in finalKfs[percents[0]]) {
+            //     // Remove the attrs in the element because it will be set by animation.
+            //     // Reduce the size.
+            //     attrs[attrName] = false;
+            // }
             // animationName {duration easing delay loop} fillMode
             return `${animationName} ${groupAnimator[0]} both`;
         }
