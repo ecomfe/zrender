@@ -486,10 +486,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
 
         // outerWidth is the real text width containing padding.
         const outerHeight = contentBlock.outerHeight;
-        const outerWidth = contentBlock.outerWidth;
-        const innerWidth = textPadding
-            ? outerWidth - textPadding[1] - textPadding[3]
-            : outerWidth;
+        const contentWidth = contentBlock.contentWidth;
 
         const textLines = contentBlock.lines;
         const lineHeight = contentBlock.lineHeight;
@@ -506,10 +503,10 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
 
         if (needDrawBg || textPadding) {
             // Consider performance, do not call getTextWidth util necessary.
-            const boxX = adjustTextX(baseX, outerWidth, textAlign);
+            const boxX = adjustTextX(baseX, contentWidth, textAlign);
             const boxY = adjustTextY(baseY, outerHeight, verticalAlign);
 
-            needDrawBg && this._renderBackground(style, style, boxX, boxY, outerWidth, outerHeight);
+            needDrawBg && this._renderBackground(style, style, boxX, boxY, contentWidth, outerHeight);
         }
 
         // `textBaseline` is set as 'middle'.
