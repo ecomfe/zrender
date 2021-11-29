@@ -194,7 +194,7 @@ class Track {
 
     // Larger than 0 if value is array
     arrDim: number = 0
-    isValueColor: boolean
+    isColor: boolean
 
     interpolable: boolean = true
 
@@ -249,7 +249,6 @@ class Track {
         }
 
         let keyframes = this.keyframes;
-
         let len = keyframes.length;
 
         if (this.interpolable) {
@@ -293,7 +292,7 @@ class Track {
                     const colorArray = color.parse(value);
                     if (colorArray) {
                         value = colorArray;
-                        this.isValueColor = true;
+                        this.isColor = true;
                     }
                     else {
                         this.interpolable = false;
@@ -306,7 +305,7 @@ class Track {
 
                 if (this._isAllValueEqual && len > 0) {
                     let lastFrame = keyframes[len - 1];
-                    if (this.isValueColor && !is1DArraySame(lastFrame.value as number[], value as number[])) {
+                    if (this.isColor && !is1DArraySame(lastFrame.value as number[], value as number[])) {
                         this._isAllValueEqual = false;
                     }
                     else if (lastFrame.value !== value) {
@@ -327,7 +326,7 @@ class Track {
             kf.easingFunc = isFunction(easing) ? easing : easingFuncs[easing];
         }
         // Not check if value equal here.
-        this.keyframes.push(kf);
+        keyframes.push(kf);
         return kf;
     }
 
@@ -359,7 +358,7 @@ class Track {
             && this.needsAnimate()
             && additiveTrack.needsAnimate()
             && arrDim === additiveTrack.arrDim
-            && this.isValueColor === additiveTrack.isValueColor
+            && this.isColor === additiveTrack.isColor
             && !additiveTrack._finished
         ) {
             this._additiveTrack = additiveTrack;
@@ -368,7 +367,7 @@ class Track {
             // Calculate difference
             for (let i = 0; i < kfsLen; i++) {
                 if (arrDim === 0) {
-                    if (this.isValueColor) {
+                    if (this.isColor) {
                         kfs[i].additiveValue =
                             add1DArray([], kfs[i].value as NumberArray, startValue as NumberArray, -1);
                     }
@@ -409,14 +408,16 @@ class Track {
         const valueKey = isAdditive ? 'additiveValue' : 'value';
 
         const keyframes = this.keyframes;
-        const kfsNum = this.keyframes.length;
+        const kfsNum = keyframes.length;
         const propName = this.propName;
         const arrDim = this.arrDim;
-        const isValueColor = this.isValueColor;
+        const isValueColor = this.isColor;
         // Find the range keyframes
         // kf1-----kf2---------current--------kf3
         // find kf2 and kf3 and do interpolation
         let frameIdx;
+        const lastFrame = this._lastFrame;
+        const min = Math.min;
         // In the easing function like elasticOut, percent may less than 0
         if (percent < 0) {
             frameIdx = 0;
@@ -424,23 +425,24 @@ class Track {
         else if (percent < this._lastFramePercent) {
             // Start from next key
             // PENDING start from lastFrame ?
-            const start = Math.min(this._lastFrame + 1, kfsNum - 1);
+            const start = min(lastFrame + 1, kfsNum - 1);
             for (frameIdx = start; frameIdx >= 0; frameIdx--) {
                 if (keyframes[frameIdx].percent <= percent) {
                     break;
                 }
             }
             // PENDING really need to do this ?
-            frameIdx = Math.min(frameIdx, kfsNum - 2);
+            frameIdx = min(frameIdx, kfsNum - 2);
         }
         else {
-            for (frameIdx = this._lastFrame; frameIdx < kfsNum; frameIdx++) {
+            for (frameIdx = lastFrame; frameIdx < kfsNum; frameIdx++) {
                 if (keyframes[frameIdx].percent > percent) {
                     break;
                 }
             }
-            frameIdx = Math.min(frameIdx - 1, kfsNum - 2);
+            frameIdx = min(frameIdx - 1, kfsNum - 2);
         }
+
         let nextFrame = keyframes[frameIdx + 1];
         let frame = keyframes[frameIdx];
 
@@ -526,7 +528,7 @@ class Track {
         const additiveValue = this._additiveValue;
 
         if (arrDim === 0) {
-            if (this.isValueColor) {
+            if (this.isColor) {
                 // TODO reduce unnecessary parse
                 color.parse(target[propName], tmpRgba);
                 add1DArray(tmpRgba, tmpRgba, additiveValue as NumberArray, 1);
@@ -648,7 +650,7 @@ export default class Animator<T> {
                     const lastFinalKf = additiveTrack.keyframes[additiveTrack.keyframes.length - 1];
                     // Use the last state of additived animator.
                     initialValue = lastFinalKf && lastFinalKf.value;
-                    if (additiveTrack.isValueColor && initialValue) {
+                    if (additiveTrack.isColor && initialValue) {
                         // Convert to rgba string
                         initialValue = rgba2String(initialValue as number[]);
                     }
@@ -982,7 +984,7 @@ export default class Animator<T> {
             if (kf) {
                 // TODO CLONE?
                 let val: unknown = cloneValue(kf.value as any);
-                if (track.isValueColor) {
+                if (track.isColor) {
                     val = rgba2String(val as number[]);
                 }
 

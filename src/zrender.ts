@@ -13,7 +13,7 @@ import * as zrUtil from './core/util';
 import Handler from './Handler';
 import Storage from './Storage';
 import {PainterBase} from './PainterBase';
-import Animation from './animation/Animation';
+import Animation, {getTime} from './animation/Animation';
 import HandlerProxy from './dom/HandlerProxy';
 import Element, { ElementEventCallback } from './Element';
 import { Dictionary, ElementEventName, RenderedEvent, WithThisType } from './core/types';
@@ -239,7 +239,7 @@ class ZRender {
     private _flush(fromInside?: boolean) {
         let triggerRendered;
 
-        const start = new Date().getTime();
+        const start = getTime();
         if (this._needsRefresh) {
             triggerRendered = true;
             this.refreshImmediately(fromInside);
@@ -249,7 +249,7 @@ class ZRender {
             triggerRendered = true;
             this.refreshHoverImmediately();
         }
-        const end = new Date().getTime();
+        const end = getTime();
 
         if (triggerRendered) {
             this._stillFrameAccum = 0;

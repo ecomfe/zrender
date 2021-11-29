@@ -15,6 +15,7 @@
 
 import easingFuncs, {AnimationEasing} from './easing';
 import type Animation from './Animation';
+import { isFunction, isString, noop } from '../core/util';
 
 type OnframeCallback = (percent: number) => void;
 type ondestroyCallback = () => void
@@ -37,13 +38,10 @@ export interface ClipProps {
 
 export default class Clip {
 
-    // 生命周期
     private _life: number
-    // 延时
     private _delay: number
 
-    private _initialized: boolean = false
-    // 开始时间
+    private _inited: boolean = false
     private _startTime = 0 // 开始时间单位毫秒
 
     private _pausedTime = 0
@@ -66,29 +64,25 @@ export default class Clip {
     constructor(opts: ClipProps) {
 
         this._life = opts.life || 1000;
-
         this._delay = opts.delay || 0;
 
-        // this._startTime = new Date().getTime() + this._delay;
-
-        // 是否循环
-        this.loop = opts.loop == null ? false : opts.loop;
+        this.loop = opts.loop || false;
 
         this.gap = opts.gap || 0;
 
         this.easing = opts.easing || 'linear';
 
-        this.onframe = opts.onframe;
-        this.ondestroy = opts.ondestroy;
-        this.onrestart = opts.onrestart;
+        this.onframe = opts.onframe || noop;
+        this.ondestroy = opts.ondestroy || noop;
+        this.onrestart = opts.onrestart || noop;
     }
 
     step(globalTime: number, deltaTime: number): boolean {
         // Set startTime on first step, or _startTime may has milleseconds different between clips
         // PENDING
-        if (!this._initialized) {
+        if (!this._inited) {
             this._startTime = globalTime + this._delay;
-            this._initialized = true;
+            this._inited = true;
         }
 
         if (this._paused) {
@@ -96,7 +90,9 @@ export default class Clip {
             return;
         }
 
-        let percent = (globalTime - this._startTime - this._pausedTime) / this._life;
+        const life = this._life;
+        let elapsedTime = globalTime - this._startTime - this._pausedTime;
+        let percent = elapsedTime / life;
 
         // PENDING: Not begin yet. Still run the loop.
         // In the case callback needs to be invoked.
@@ -109,19 +105,23 @@ export default class Clip {
         percent = Math.min(percent, 1);
 
         const easing = this.easing;
-        const easingFunc = typeof easing === 'string'
+        const easingFunc = isString(easing)
             ? easingFuncs[easing as keyof typeof easingFuncs] : easing;
-        const schedule = typeof easingFunc === 'function'
+        const schedule = isFunction(easingFunc)
             ? easingFunc(percent)
             : percent;
 
-        this.onframe && this.onframe(schedule);
+        this.onframe(schedule);
 
         // 结束
         if (percent === 1) {
             if (this.loop) {
-                this._restart(globalTime);
-                this.onrestart && this.onrestart();
+                // Restart
+                const remainder = elapsedTime % life;
+                this._startTime = globalTime - remainder + this.gap;
+                this._pausedTime = 0;
+
+                this.onrestart();
             }
             else {
                 return true;
@@ -129,12 +129,6 @@ export default class Clip {
         }
 
         return false;
-    }
-
-    private _restart(globalTime: number) {
-        const remainder = (globalTime - this._startTime - this._pausedTime) % this._life;
-        this._startTime = globalTime - remainder + this.gap;
-        this._pausedTime = 0;
     }
 
     pause() {

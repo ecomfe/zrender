@@ -1,4 +1,4 @@
-import Transformable, { copyTransform, TRANSFORMABLE_PROPS } from '../core/Transformable';
+import Transformable, { copyTransform } from '../core/Transformable';
 import Displayable from '../graphic/Displayable';
 import { SVGVNodeAttrs, BrushScope, createBrushScope} from './core';
 import Path from '../graphic/Path';
@@ -37,16 +37,6 @@ export const EASING_MAP: Record<string, string> = {
 };
 
 const transformOriginKey = 'transform-origin';
-
-function sameTransform(a: any, b: any) {
-    for (let i = 0; i < TRANSFORMABLE_PROPS.length; i++) {
-        const prop = TRANSFORMABLE_PROPS[i];
-        if (a[prop] !== b[prop]) {
-            return false;
-        }
-    }
-    return true;
-}
 
 function buildPathString(el: Path, kfShape: Path['shape'], path: PathProxy) {
     const shape = extend({}, el.shape);
@@ -227,7 +217,7 @@ export function createCSSAnimation(
 
                             cssKfs[percent] = cssKfs[percent] || {};
                             cssKfs[percent][attrName] =
-                                track.isValueColor ? col2str(kf.value as any) : kf.value;
+                                track.isColor ? col2str(kf.value as any) : kf.value;
 
                             if (kfEasing) {
                                 // TODO. If different property have different easings.
