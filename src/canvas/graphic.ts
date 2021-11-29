@@ -482,7 +482,7 @@ function bindPathAndTextCommonStyle(
         }
         ctx.globalAlpha = style.opacity == null ? 1 : style.opacity;
     }
-    if (el && el.hasStroke()) {
+    if (el.hasStroke()) {
         const lineWidth = style.lineWidth;
         const newLineWidth = lineWidth / (
             (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1

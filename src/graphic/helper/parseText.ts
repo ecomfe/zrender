@@ -156,9 +156,11 @@ function estimateLength(
 
 export interface PlainTextContentBlock {
     lineHeight: number
-    contentHeight: number
     // Line height of actual content.
     calculatedLineHeight: number
+
+    contentWidth: number
+    contentHeight: number
 
     width: number
     height: number
@@ -233,15 +235,16 @@ export function parsePlainText(
 
     // Calculate real text width and height
     let outerHeight = height;
-    let outerWidth = 0;
+    let contentWidth = 0;
     for (let i = 0; i < lines.length; i++) {
-        outerWidth = Math.max(getWidth(lines[i], font), outerWidth);
+        contentWidth = Math.max(getWidth(lines[i], font), contentWidth);
     }
     if (width == null) {
         // When width is not explicitly set, use outerWidth as width.
-        width = outerWidth;
+        width = contentWidth;
     }
 
+    let outerWidth = contentWidth;
     if (padding) {
         outerHeight += padding[0] + padding[2];
         outerWidth += padding[1] + padding[3];
@@ -260,6 +263,7 @@ export function parsePlainText(
         outerHeight: outerHeight,
         lineHeight: lineHeight,
         calculatedLineHeight: calculatedLineHeight,
+        contentWidth: outerWidth,
         contentHeight: contentHeight,
         width: width
     };
