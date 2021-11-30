@@ -9,11 +9,9 @@
  */
 
 import { isArray, isObject } from '../core/util';
-import { createElement, createVNode, SVGVNode } from './core';
+import { createElement, createVNode, SVGVNode, XMLNS, XML_NAMESPACE, XLINKNS } from './core';
 import * as api from './domapi';
 
-const xlinkNS = 'http://www.w3.org/1999/xlink';
-const xmlNS = 'http://www.w3.org/XML/1998/namespace';
 const colonChar = 58;
 const xChar = 120;
 const emptyNode = createVNode('', '') as SVGVNode;
@@ -169,15 +167,15 @@ function updateAttrs(oldVnode: SVGVNode, vnode: SVGVNode): void {
                 }
                 // TODO
                 else if (key === 'xmlns:xlink' || key === 'xmlns') {
-                    elm.setAttributeNS('http://www.w3.org/2000/xmlns/', key, cur as any);
+                    elm.setAttributeNS(XMLNS, key, cur as any);
                 }
                 else if (key.charCodeAt(3) === colonChar) {
                     // Assume xml namespace
-                    elm.setAttributeNS(xmlNS, key, cur as any);
+                    elm.setAttributeNS(XML_NAMESPACE, key, cur as any);
                 }
                 else if (key.charCodeAt(5) === colonChar) {
                     // Assume xlink namespace
-                    elm.setAttributeNS(xlinkNS, key, cur as any);
+                    elm.setAttributeNS(XLINKNS, key, cur as any);
                 }
                 else {
                     elm.setAttribute(key, cur as any);

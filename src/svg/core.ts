@@ -6,6 +6,7 @@ export type CSSAnimationVNode = Record<string, Record<string, string>>
 export const SVGNS = 'http://www.w3.org/2000/svg';
 export const XLINKNS = 'http://www.w3.org/1999/xlink';
 export const XMLNS = 'http://www.w3.org/2000/xmlns/';
+export const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 
 export function createElement(name: string) {
     return document.createElementNS(SVGNS, name);
