@@ -172,3 +172,19 @@ export function createBrushScope(zrId: string): BrushScope {
         clipPathIdx: 0
     };
 }
+
+export function createSVGVNode(width?: number | string, height?: number | string, children?: SVGVNode[]) {
+    return createVNode(
+        'svg',
+        'root',
+        {
+            'width': width,
+            'height': height,
+            'xmlns': SVGNS,
+            'xmlns:xlink': XLINKNS,
+            'version': '1.1',
+            'baseProfile': 'full'
+        },
+        children
+    );
+}
