@@ -41,7 +41,7 @@ function createKeyToOldIdx(
                     console.error(`Duplicate key ${key}`);
                 }
             }
-            map[key as string] = i;
+            map[key] = i;
         }
     }
     return map;
@@ -54,24 +54,7 @@ function sameVnode(vnode1: SVGVNode, vnode2: SVGVNode): boolean {
     return isSameTag && isSameKey;
 }
 
-function isVnode(vnode: any): vnode is SVGVNode {
-    return vnode.tag !== undefined;
-}
-
 type KeyToIndexMap = { [key: string]: number };
-
-function emptyNodeAt(elm: Element): SVGVNode {
-    const id = elm.id ? '#' + elm.id : '';
-
-    // elm.className doesn't return a string when elm is an SVG element inside a shadowRoot.
-    // https://stackoverflow.com/questions/29454340/detecting-classname-of-svganimatedstring
-    const classes = elm.getAttribute('class');
-
-    const c = classes ? '.' + classes.split(' ').join('.') : '';
-    const vnode = createVNode(api.tagName(elm).toLowerCase() + id + c, '') as SVGVNode;
-    vnode.elm = elm;
-    return vnode;
-}
 
 function createElm(vnode: SVGVNode, insertedVnodeQueue: VNodeQueue): Node {
     let i: any;
@@ -93,7 +76,7 @@ function createElm(vnode: SVGVNode, insertedVnodeQueue: VNodeQueue): Node {
             for (i = 0; i < children.length; ++i) {
                 const ch = children[i];
                 if (ch != null) {
-                    api.appendChild(elm, createElm(ch as SVGVNode, insertedVnodeQueue));
+                    api.appendChild(elm, createElm(ch, insertedVnodeQueue));
                 }
             }
         }
@@ -128,7 +111,7 @@ function removeVnodes(parentElm: Node, vnodes: SVGVNode[], startIdx: number, end
         const ch = vnodes[startIdx];
         if (ch != null) {
             if (isDef(ch.tag)) {
-                const parent = api.parentNode(ch.elm) as Node;
+                const parent = api.parentNode(ch.elm);
                 api.removeChild(parent, ch.elm);
             }
             else {
@@ -141,9 +124,9 @@ function removeVnodes(parentElm: Node, vnodes: SVGVNode[], startIdx: number, end
 
 function updateAttrs(oldVnode: SVGVNode, vnode: SVGVNode): void {
     let key: string;
-    const elm: Element = vnode.elm as Element;
-    let oldAttrs = oldVnode.attrs || {};
-    let attrs = vnode.attrs || {};
+    const elm = vnode.elm as Element;
+    const oldAttrs = oldVnode.attrs || {};
+    const attrs = vnode.attrs || {};
 
     if (oldAttrs === attrs) {
         return;
@@ -284,8 +267,8 @@ function updateChildren(
 
 function patchVnode(oldVnode: SVGVNode, vnode: SVGVNode, insertedVnodeQueue: VNodeQueue) {
     const elm = (vnode.elm = oldVnode.elm)!;
-    const oldCh = oldVnode.children as SVGVNode[];
-    const ch = vnode.children as SVGVNode[];
+    const oldCh = oldVnode.children;
+    const ch = vnode.children;
     if (oldVnode === vnode) {
         return;
     }
@@ -319,21 +302,15 @@ function patchVnode(oldVnode: SVGVNode, vnode: SVGVNode, insertedVnodeQueue: VNo
     }
 }
 
-export default function patch(oldVnode: SVGVNode | Element, vnode: SVGVNode): SVGVNode {
-    let elm: Node;
-    let parent: Node;
+export default function patch(oldVnode: SVGVNode, vnode: SVGVNode): SVGVNode {
     const insertedVnodeQueue: VNodeQueue = [];
-
-    if (!isVnode(oldVnode)) {
-        oldVnode = emptyNodeAt(oldVnode);
-    }
 
     if (sameVnode(oldVnode, vnode)) {
         patchVnode(oldVnode, vnode, insertedVnodeQueue);
     }
     else {
-        elm = oldVnode.elm!;
-        parent = api.parentNode(elm) as Node;
+        const elm = oldVnode.elm!;
+        const parent = api.parentNode(elm);
 
         createElm(vnode, insertedVnodeQueue);
 
