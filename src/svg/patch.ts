@@ -9,25 +9,22 @@
  */
 
 import { isArray, isObject } from '../core/util';
-import { createElement, createVNode, SVGVNode } from './core';
+import { createElement, createVNode, SVGVNode, XMLNS, XML_NAMESPACE, XLINKNS } from './core';
 import * as api from './domapi';
 
-const xlinkNS = 'http://www.w3.org/1999/xlink';
-const xmlNS = 'http://www.w3.org/XML/1998/namespace';
 const colonChar = 58;
 const xChar = 120;
-const emptyNode = createVNode('', '') as SVGVNode;
+const emptyNode = createVNode('', '');
 
 type NonUndefined<T> = T extends undefined ? never : T;
 
 function isUndef(s: any): boolean {
     return s === undefined;
 }
+
 function isDef<A>(s: A): s is NonUndefined<A> {
     return s !== undefined;
 }
-
-type VNodeQueue = SVGVNode[];
 
 function createKeyToOldIdx(
     children: SVGVNode[],
@@ -43,7 +40,7 @@ function createKeyToOldIdx(
                     console.error(`Duplicate key ${key}`);
                 }
             }
-            map[key as string] = i;
+            map[key] = i;
         }
     }
     return map;
@@ -56,26 +53,9 @@ function sameVnode(vnode1: SVGVNode, vnode2: SVGVNode): boolean {
     return isSameTag && isSameKey;
 }
 
-function isVnode(vnode: any): vnode is SVGVNode {
-    return vnode.tag !== undefined;
-}
-
 type KeyToIndexMap = { [key: string]: number };
 
-function emptyNodeAt(elm: Element): SVGVNode {
-    const id = elm.id ? '#' + elm.id : '';
-
-    // elm.className doesn't return a string when elm is an SVG element inside a shadowRoot.
-    // https://stackoverflow.com/questions/29454340/detecting-classname-of-svganimatedstring
-    const classes = elm.getAttribute('class');
-
-    const c = classes ? '.' + classes.split(' ').join('.') : '';
-    const vnode = createVNode(api.tagName(elm).toLowerCase() + id + c, '') as SVGVNode;
-    vnode.elm = elm;
-    return vnode;
-}
-
-function createElm(vnode: SVGVNode, insertedVnodeQueue: VNodeQueue): Node {
+function createElm(vnode: SVGVNode): Node {
     let i: any;
     const children = vnode.children;
     const tag = vnode.tag;
@@ -95,7 +75,7 @@ function createElm(vnode: SVGVNode, insertedVnodeQueue: VNodeQueue): Node {
             for (i = 0; i < children.length; ++i) {
                 const ch = children[i];
                 if (ch != null) {
-                    api.appendChild(elm, createElm(ch as SVGVNode, insertedVnodeQueue));
+                    api.appendChild(elm, createElm(ch));
                 }
             }
         }
@@ -114,13 +94,12 @@ function addVnodes(
     before: Node | null,
     vnodes: SVGVNode[],
     startIdx: number,
-    endIdx: number,
-    insertedVnodeQueue: VNodeQueue
+    endIdx: number
 ) {
     for (; startIdx <= endIdx; ++startIdx) {
         const ch = vnodes[startIdx];
         if (ch != null) {
-            api.insertBefore(parentElm, createElm(ch, insertedVnodeQueue), before);
+            api.insertBefore(parentElm, createElm(ch), before);
         }
     }
 }
@@ -130,7 +109,7 @@ function removeVnodes(parentElm: Node, vnodes: SVGVNode[], startIdx: number, end
         const ch = vnodes[startIdx];
         if (ch != null) {
             if (isDef(ch.tag)) {
-                const parent = api.parentNode(ch.elm) as Node;
+                const parent = api.parentNode(ch.elm);
                 api.removeChild(parent, ch.elm);
             }
             else {
@@ -143,9 +122,9 @@ function removeVnodes(parentElm: Node, vnodes: SVGVNode[], startIdx: number, end
 
 function updateAttrs(oldVnode: SVGVNode, vnode: SVGVNode): void {
     let key: string;
-    const elm: Element = vnode.elm as Element;
-    let oldAttrs = oldVnode.attrs || {};
-    let attrs = vnode.attrs || {};
+    const elm = vnode.elm as Element;
+    const oldAttrs = oldVnode.attrs || {};
+    const attrs = vnode.attrs || {};
 
     if (oldAttrs === attrs) {
         return;
@@ -169,15 +148,15 @@ function updateAttrs(oldVnode: SVGVNode, vnode: SVGVNode): void {
                 }
                 // TODO
                 else if (key === 'xmlns:xlink' || key === 'xmlns') {
-                    elm.setAttributeNS('http://www.w3.org/2000/xmlns/', key, cur as any);
+                    elm.setAttributeNS(XMLNS, key, cur as any);
                 }
                 else if (key.charCodeAt(3) === colonChar) {
                     // Assume xml namespace
-                    elm.setAttributeNS(xmlNS, key, cur as any);
+                    elm.setAttributeNS(XML_NAMESPACE, key, cur as any);
                 }
                 else if (key.charCodeAt(5) === colonChar) {
                     // Assume xlink namespace
-                    elm.setAttributeNS(xlinkNS, key, cur as any);
+                    elm.setAttributeNS(XLINKNS, key, cur as any);
                 }
                 else {
                     elm.setAttribute(key, cur as any);
@@ -197,9 +176,7 @@ function updateAttrs(oldVnode: SVGVNode, vnode: SVGVNode): void {
 }
 
 
-function updateChildren(
-    parentElm: Node, oldCh: SVGVNode[], newCh: SVGVNode[], insertedVnodeQueue: VNodeQueue
-) {
+function updateChildren(parentElm: Node, oldCh: SVGVNode[], newCh: SVGVNode[]) {
     let oldStartIdx = 0;
     let newStartIdx = 0;
     let oldEndIdx = oldCh.length - 1;
@@ -227,25 +204,25 @@ function updateChildren(
             newEndVnode = newCh[--newEndIdx];
         }
         else if (sameVnode(oldStartVnode, newStartVnode)) {
-            patchVnode(oldStartVnode, newStartVnode, insertedVnodeQueue);
+            patchVnode(oldStartVnode, newStartVnode);
             oldStartVnode = oldCh[++oldStartIdx];
             newStartVnode = newCh[++newStartIdx];
         }
         else if (sameVnode(oldEndVnode, newEndVnode)) {
-            patchVnode(oldEndVnode, newEndVnode, insertedVnodeQueue);
+            patchVnode(oldEndVnode, newEndVnode);
             oldEndVnode = oldCh[--oldEndIdx];
             newEndVnode = newCh[--newEndIdx];
         }
         else if (sameVnode(oldStartVnode, newEndVnode)) {
             // Vnode moved right
-            patchVnode(oldStartVnode, newEndVnode, insertedVnodeQueue);
+            patchVnode(oldStartVnode, newEndVnode);
             api.insertBefore(parentElm, oldStartVnode.elm!, api.nextSibling(oldEndVnode.elm!));
             oldStartVnode = oldCh[++oldStartIdx];
             newEndVnode = newCh[--newEndIdx];
         }
         else if (sameVnode(oldEndVnode, newStartVnode)) {
             // Vnode moved left
-            patchVnode(oldEndVnode, newStartVnode, insertedVnodeQueue);
+            patchVnode(oldEndVnode, newStartVnode);
             api.insertBefore(parentElm, oldEndVnode.elm!, oldStartVnode.elm!);
             oldEndVnode = oldCh[--oldEndIdx];
             newStartVnode = newCh[++newStartIdx];
@@ -254,19 +231,19 @@ function updateChildren(
             if (isUndef(oldKeyToIdx)) {
                 oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
             }
-            idxInOld = oldKeyToIdx[newStartVnode.key as string];
+            idxInOld = oldKeyToIdx[newStartVnode.key];
             if (isUndef(idxInOld)) {
                 // New element
-                api.insertBefore(parentElm, createElm(newStartVnode, insertedVnodeQueue), oldStartVnode.elm!);
+                api.insertBefore(parentElm, createElm(newStartVnode), oldStartVnode.elm!);
             }
             else {
                 elmToMove = oldCh[idxInOld];
                 if (elmToMove.tag !== newStartVnode.tag) {
-                    api.insertBefore(parentElm, createElm(newStartVnode, insertedVnodeQueue), oldStartVnode.elm!);
+                    api.insertBefore(parentElm, createElm(newStartVnode), oldStartVnode.elm!);
                 }
                 else {
-                    patchVnode(elmToMove, newStartVnode, insertedVnodeQueue);
-                    oldCh[idxInOld] = undefined as any;
+                    patchVnode(elmToMove, newStartVnode);
+                    oldCh[idxInOld] = undefined;
                     api.insertBefore(parentElm, elmToMove.elm!, oldStartVnode.elm!);
                 }
             }
@@ -276,7 +253,7 @@ function updateChildren(
     if (oldStartIdx <= oldEndIdx || newStartIdx <= newEndIdx) {
         if (oldStartIdx > oldEndIdx) {
             before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].elm;
-            addVnodes(parentElm, before, newCh, newStartIdx, newEndIdx, insertedVnodeQueue);
+            addVnodes(parentElm, before, newCh, newStartIdx, newEndIdx);
         }
         else {
             removeVnodes(parentElm, oldCh, oldStartIdx, oldEndIdx);
@@ -284,10 +261,10 @@ function updateChildren(
     }
 }
 
-function patchVnode(oldVnode: SVGVNode, vnode: SVGVNode, insertedVnodeQueue: VNodeQueue) {
+function patchVnode(oldVnode: SVGVNode, vnode: SVGVNode) {
     const elm = (vnode.elm = oldVnode.elm)!;
-    const oldCh = oldVnode.children as SVGVNode[];
-    const ch = vnode.children as SVGVNode[];
+    const oldCh = oldVnode.children;
+    const ch = vnode.children;
     if (oldVnode === vnode) {
         return;
     }
@@ -297,14 +274,14 @@ function patchVnode(oldVnode: SVGVNode, vnode: SVGVNode, insertedVnodeQueue: VNo
     if (isUndef(vnode.text)) {
         if (isDef(oldCh) && isDef(ch)) {
             if (oldCh !== ch) {
-                updateChildren(elm, oldCh, ch, insertedVnodeQueue);
+                updateChildren(elm, oldCh, ch);
             }
         }
         else if (isDef(ch)) {
             if (isDef(oldVnode.text)) {
                 api.setTextContent(elm, '');
             }
-            addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue);
+            addVnodes(elm, null, ch, 0, ch.length - 1);
         }
         else if (isDef(oldCh)) {
             removeVnodes(elm, oldCh, 0, oldCh.length - 1);
@@ -321,23 +298,15 @@ function patchVnode(oldVnode: SVGVNode, vnode: SVGVNode, insertedVnodeQueue: VNo
     }
 }
 
-export default function patch(oldVnode: SVGVNode | Element, vnode: SVGVNode): SVGVNode {
-    let elm: Node;
-    let parent: Node;
-    const insertedVnodeQueue: VNodeQueue = [];
-
-    if (!isVnode(oldVnode)) {
-        oldVnode = emptyNodeAt(oldVnode);
-    }
-
+export default function patch(oldVnode: SVGVNode, vnode: SVGVNode): SVGVNode {
     if (sameVnode(oldVnode, vnode)) {
-        patchVnode(oldVnode, vnode, insertedVnodeQueue);
+        patchVnode(oldVnode, vnode);
     }
     else {
-        elm = oldVnode.elm!;
-        parent = api.parentNode(elm) as Node;
+        const elm = oldVnode.elm!;
+        const parent = api.parentNode(elm);
 
-        createElm(vnode, insertedVnodeQueue);
+        createElm(vnode);
 
         if (parent !== null) {
             api.insertBefore(parent, vnode.elm!, api.nextSibling(elm));

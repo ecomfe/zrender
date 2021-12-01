@@ -9,16 +9,15 @@ import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
 import { PainterBase } from '../PainterBase';
 import {
+    createElement,
     createVNode,
     vNodeToString,
     SVGVNodeAttrs,
     SVGVNode,
-    createElement,
-    SVGNS,
-    XLINKNS,
     getCssString,
     BrushScope,
-    createBrushScope
+    createBrushScope,
+    createSVGVNode
 } from './core';
 import { normalizeColor } from './helper';
 import { defaults, extend, keys, logError, map } from '../core/util';
@@ -66,13 +65,14 @@ class SVGPainter implements PainterBase {
         // A unique id for generating svg ids.
         this._id = 'zr' + svgId++;
 
+        this._oldVNode = createSVGVNode(opts.width, opts.height);
 
         if (root && !opts.ssr) {
             const viewport = this._viewport = document.createElement('div');
-            viewport.style.cssText = 'overflow:hidden;position:relative';
-            const svgDom = this._svgDom = createElement('svg');
-            root.appendChild(viewport);
+            viewport.style.cssText = 'position:relative;overflow:hidden';
+            const svgDom = this._svgDom = this._oldVNode.elm = createElement('svg');
             viewport.appendChild(svgDom);
+            root.appendChild(viewport);
         }
 
         this.resize(opts.width, opts.height);
@@ -105,8 +105,8 @@ class SVGPainter implements PainterBase {
                 willUpdate: true
             });
             // Disable user selection.
-            vnode.attrs.style = 'user-select:none;position:absolute;left:0;top:0;';
-            patch(this._oldVNode || this._svgDom, vnode);
+            vnode.attrs.style = 'position:absolute;left:0;top:0;user-select:none';
+            patch(this._oldVNode, vnode);
             this._oldVNode = vnode;
         }
     }
@@ -125,8 +125,8 @@ class SVGPainter implements PainterBase {
 
         const list = this.storage.getDisplayList(true);
         const bgColor = this._backgroundColor;
-        const width = this._width + '';
-        const height = this._height + '';
+        const width = this._width;
+        const height = this._height;
 
         const scope = createBrushScope(this._id);
         scope.animation = opts.animation;
@@ -175,19 +175,7 @@ class SVGPainter implements PainterBase {
             }
         }
 
-        return createVNode(
-            'svg',
-            'root',
-            {
-                'width': width,
-                'height': height,
-                'xmlns': SVGNS,
-                'xmlns:xlink': XLINKNS,
-                'version': '1.1',
-                'baseProfile': 'full'
-            },
-            children
-        );
+        return createSVGVNode(width, height, children);
     }
 
     renderToString(opts?: {
