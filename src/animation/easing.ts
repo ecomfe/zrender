@@ -347,4 +347,5 @@ const easingFuncs = {
     }
 };
 
+
 export default easingFuncs;

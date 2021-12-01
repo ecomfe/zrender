@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation Keyframe Easing</title>
+    <script src="../dist/zrender.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tweakpane@3.0.5/dist/tweakpane.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tweakpane/plugin-essentials@0.1.4/dist/tweakpane-plugin-essentials.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        html, body, #main {
+            width: 100%;
+        }
+        #main {
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div id="main"></div>
+    <h2>SVG SSR</h2>
+    <div id="replay"></div>
+    <script type="text/javascript">
+        var main = document.getElementById('main');
+        // 初始化zrender
+        var zr = zrender.init(main, {
+            renderer: 'svg'
+        });
+
+        var circles = [];
+
+        for (var i = 0; i < 5; i++) {
+            var circle = new zrender.Circle({
+                x: 100,
+                y: i * 80,
+                shape: {
+                    cx: 30,
+                    cy: 30,
+                    r: 30
+                },
+                style: {
+                    fill: 'red',
+                    lineWidth: 5
+                },
+            });
+            zr.add(circle);
+            circles.push(circle);
+        }
+
+        function startAnimation(easing) {
+            circles.forEach((circle, idx) => {
+                circle.x = 100;
+                circle.animate('')
+                    .when(1000, {
+                        x: 800
+                    })
+                    .delay(idx * 100)
+                    .start(easing);
+            });
+
+            document.getElementById('replay').innerHTML = zr.painter.renderToString();
+        }
+
+        startAnimation();
+
+        const pane = new Tweakpane.Pane();
+        pane.registerPlugin(TweakpaneEssentialsPlugin);
+
+        pane.addBlade({
+            view: 'cubicbezier',
+            value: [0, 0, 1, 1],
+            expanded: true,
+            label: 'cubic-bezier',
+            picker: 'inline',
+        }).on('change', (ev) => {
+            const easing = `cubic-bezier(${ev.value.x1}, ${ev.value.y1}, ${ev.value.x2}, ${ev.value.y2})`;
+            startAnimation(easing);
+        });
+    </script>
+</body>
+</html>

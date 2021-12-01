@@ -9,6 +9,7 @@ import { each, extend, filter, isString, keys } from '../core/util';
 import Animator from '../animation/Animator';
 import { CompoundPath } from '../export';
 import { AnimationEasing } from '../animation/easing';
+import { createCubicEasingFunc } from '../animation/cubicEasing';
 
 export const EASING_MAP: Record<string, string> = {
     // From https://easings.net/
@@ -133,7 +134,11 @@ function createCompoundPathCSSAnimation(
 }
 
 function getEasingFunc(easing: AnimationEasing) {
-    return (isString(easing) && EASING_MAP[easing]) ? `cubic-bezier(${EASING_MAP[easing]})` : '';
+    return isString(easing)
+        ? EASING_MAP[easing]
+            ? `cubic-bezier(${EASING_MAP[easing]})`
+            : createCubicEasingFunc(easing) ? easing : ''
+        : '';
 }
 
 export function createCSSAnimation(

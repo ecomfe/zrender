@@ -4,10 +4,11 @@
 
 import Clip from './Clip';
 import * as color from '../tool/color';
-import {isArrayLike, isFunction, isString, keys, logError, map} from '../core/util';
+import {isArrayLike, isFunction, keys, logError, map} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
 import easingFuncs, { AnimationEasing } from './easing';
 import Animation from './Animation';
+import { createCubicEasingFunc } from './cubicEasing';
 
 type NumberArray = ArrayLike<number>
 type InterpolatableType = string | number | NumberArray | NumberArray[];
@@ -316,7 +317,9 @@ class Track {
         if (easing) {
             // Save the raw easing name to be used in css animation output
             kf.easing = easing;
-            kf.easingFunc = isFunction(easing) ? easing : easingFuncs[easing];
+            kf.easingFunc = isFunction(easing)
+                ? easing
+                : easingFuncs[easing] || createCubicEasingFunc(easing);
         }
         // Not check if value equal here.
         keyframes.push(kf);
@@ -818,7 +821,7 @@ export default class Animator<T> {
             }
 
             if (easing) {
-                clip.easing = easing;
+                clip.setEasing(easing);
             }
         }
         else {

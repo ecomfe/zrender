@@ -15,7 +15,8 @@
 
 import easingFuncs, {AnimationEasing} from './easing';
 import type Animation from './Animation';
-import { isFunction, isString, noop } from '../core/util';
+import { isFunction, noop } from '../core/util';
+import { createCubicEasingFunc } from './cubicEasing';
 
 type OnframeCallback = (percent: number) => void;
 type ondestroyCallback = () => void
@@ -51,7 +52,9 @@ export default class Clip {
 
     loop: boolean
     gap: number
+
     easing: AnimationEasing
+    easingFunc: (p: number) => number
 
     // For linked list. Readonly
     next: Clip
@@ -70,11 +73,11 @@ export default class Clip {
 
         this.gap = opts.gap || 0;
 
-        this.easing = opts.easing || 'linear';
-
         this.onframe = opts.onframe || noop;
         this.ondestroy = opts.ondestroy || noop;
         this.onrestart = opts.onrestart || noop;
+
+        opts.easing && this.setEasing(opts.easing);
     }
 
     step(globalTime: number, deltaTime: number): boolean {
@@ -104,12 +107,8 @@ export default class Clip {
 
         percent = Math.min(percent, 1);
 
-        const easing = this.easing;
-        const easingFunc = isString(easing)
-            ? easingFuncs[easing as keyof typeof easingFuncs] : easing;
-        const schedule = isFunction(easingFunc)
-            ? easingFunc(percent)
-            : percent;
+        const easingFunc = this.easingFunc;
+        const schedule = easingFunc ? easingFunc(percent) : percent;
 
         this.onframe(schedule);
 
@@ -137,5 +136,12 @@ export default class Clip {
 
     resume() {
         this._paused = false;
+    }
+
+    setEasing(easing: AnimationEasing) {
+        this.easing = easing;
+        this.easingFunc = isFunction(easing)
+            ? easing
+            : easingFuncs[easing] || createCubicEasingFunc(easing);
     }
 }
