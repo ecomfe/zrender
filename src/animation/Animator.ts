@@ -188,7 +188,6 @@ let tmpRgba: number[] = [0, 0, 0, 0];
 class Track {
 
     keyframes: Keyframe[] = []
-    maxTime: number = 0
 
     propName: string
 
@@ -232,8 +231,7 @@ class Track {
     needsAnimate() {
         return !this._isAllValueEqual
              && this.keyframes.length >= 2
-             && this.interpolable
-             && this.maxTime > 0;
+             && this.interpolable;
     }
 
     getAdditiveTrack() {
@@ -241,12 +239,7 @@ class Track {
     }
 
     addKeyframe(time: number, value: unknown, easing?: AnimationEasing) {
-        if (time >= this.maxTime) {
-            this.maxTime = time;
-        }
-        else {
-            this._needsSort = true;
-        }
+        this._needsSort = true;
 
         let keyframes = this.keyframes;
         let len = keyframes.length;
@@ -330,7 +323,7 @@ class Track {
         return kf;
     }
 
-    prepare(additiveTrack?: Track) {
+    prepare(maxTime: number, additiveTrack?: Track) {
         let kfs = this.keyframes;
         if (this._needsSort) {
             // Sort keyframe as ascending
@@ -344,7 +337,7 @@ class Track {
         const lastKf = kfs[kfsLen - 1];
 
         for (let i = 0; i < kfsLen; i++) {
-            kfs[i].percent = kfs[i].time / this.maxTime;
+            kfs[i].percent = kfs[i].time / maxTime;
 
             if (arrDim > 0 && i !== kfsLen - 1) {
                 // Align array with target frame.
@@ -766,7 +759,7 @@ export default class Animator<T> {
             const track = this._tracks[propName];
             const additiveTrack = this._getAdditiveTrack(propName);
             const kfs = track.keyframes;
-            track.prepare(additiveTrack);
+            track.prepare(this._maxTime, additiveTrack);
             if (track.needsAnimate()) {
                 tracks.push(track);
             }
@@ -1013,7 +1006,7 @@ export default class Animator<T> {
 
                 track.addKeyframe(lastKf.time, finalProps[propName]);
                 // Prepare again.
-                track.prepare(track.getAdditiveTrack());
+                track.prepare(this._maxTime, track.getAdditiveTrack());
             }
         }
     }
