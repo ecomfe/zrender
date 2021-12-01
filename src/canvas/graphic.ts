@@ -74,12 +74,13 @@ export function createCanvasPattern(
         const canvasPattern = ctx.createPattern(image, pattern.repeat || 'repeat');
         if (
             typeof DOMMatrix === 'function'
+            && canvasPattern                // image may be not ready
             && canvasPattern.setTransform   // setTransform may not be supported in some old devices.
         ) {
             const matrix = new DOMMatrix();
-            matrix.rotateSelf(0, 0, (pattern.rotation || 0) * RADIAN_TO_DEGREE);
-            matrix.scaleSelf((pattern.scaleX || 1), (pattern.scaleY || 1));
             matrix.translateSelf((pattern.x || 0), (pattern.y || 0));
+            matrix.rotateSelf(0, 0, (pattern.rotation || 0) / Math.PI * 180);
+            matrix.scaleSelf((pattern.scaleX || 1), (pattern.scaleY || 1));
             canvasPattern.setTransform(matrix);
         }
         return canvasPattern;
