@@ -586,14 +586,14 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
                 subElStyle.shadowOffsetY = style.textShadowOffsetY || 0;
             }
 
+            // Always override default fill and stroke value.
+            subElStyle.stroke = textStroke as string;
+            subElStyle.fill = textFill as string;
+
             if (textStroke) {
-                subElStyle.stroke = textStroke as string;
                 subElStyle.lineWidth = style.lineWidth || defaultLineWidth;
                 subElStyle.lineDash = style.lineDash;
                 subElStyle.lineDashOffset = style.lineDashOffset || 0;
-            }
-            if (textFill) {
-                subElStyle.fill = textFill as string;
             }
 
             subElStyle.font = textFont;
