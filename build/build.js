@@ -30,6 +30,7 @@ function createInputOption(env, isWatch) {
                 }
             }),
             replace({
+                preventAssignment: true,
                 'process.env.NODE_ENV': JSON.stringify(env)
             }),
             progress({

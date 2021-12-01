@@ -49,7 +49,6 @@ const mathMin = Math.min;
 const mathMax = Math.max;
 const mathCos = Math.cos;
 const mathSin = Math.sin;
-const mathSqrt = Math.sqrt;
 const mathAbs = Math.abs;
 
 const PI = Math.PI;

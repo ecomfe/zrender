@@ -34,6 +34,7 @@ export interface TextStylePropsPart {
 
     fill?: string
     stroke?: string
+    strokeNoScale?: boolean
 
     opacity?: number
     fillOpacity?: number
