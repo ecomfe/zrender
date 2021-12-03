@@ -22,7 +22,7 @@ import {
 import { normalizeColor } from './helper';
 import { defaults, extend, keys, logError, map } from '../core/util';
 import Path from '../graphic/Path';
-import patch from './patch';
+import patch, { updateAttrs } from './patch';
 import { getSize } from '../canvas/helper';
 
 let svgId = 0;
@@ -71,6 +71,7 @@ class SVGPainter implements PainterBase {
             const viewport = this._viewport = document.createElement('div');
             viewport.style.cssText = 'position:relative;overflow:hidden';
             const svgDom = this._svgDom = this._oldVNode.elm = createElement('svg');
+            updateAttrs(null, this._oldVNode);
             viewport.appendChild(svgDom);
             root.appendChild(viewport);
         }
