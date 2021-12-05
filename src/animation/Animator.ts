@@ -4,7 +4,7 @@
 
 import Clip from './Clip';
 import * as color from '../tool/color';
-import {isArrayLike, isFunction, keys, logError, map} from '../core/util';
+import {isArrayLike, isFunction, isNumber, keys, logError, map} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
 import easingFuncs, { AnimationEasing } from './easing';
 import Animation from './Animation';
@@ -202,15 +202,19 @@ class Track {
 
     private _needsSort: boolean = false
 
-    private _isAllValueEqual = true
-
     private _additiveTrack: Track
     // Temporal storage for interpolated additive value.
     private _additiveValue: unknown
 
     // Info for run
-    private _lastFrame = 0
-    private _lastFramePercent = 0
+    /**
+     * Last frame
+     */
+    private _lastFr = 0
+    /**
+     * Percent of last frame.
+     */
+    private _lastFrP = 0
 
     constructor(propName: string) {
         this.propName = propName;
@@ -230,8 +234,7 @@ class Track {
     }
 
     needsAnimate() {
-        return !this._isAllValueEqual
-             && this.keyframes.length >= 2
+        return this.keyframes.length >= 2
              && this.interpolable;
     }
 
@@ -254,8 +257,8 @@ class Track {
                     return;
                 }
                 // Not a number array.
-                if (arrayDim === 1 && typeof value[0] !== 'number'
-                    || arrayDim === 2 && typeof value[0][0] !== 'number') {
+                if (arrayDim === 1 && !isNumber(value[0])
+                    || arrayDim === 2 && !isNumber(value[0][0])) {
                     this.interpolable = false;
                     return;
                 }
@@ -263,15 +266,9 @@ class Track {
                     let lastFrame = keyframes[len - 1];
 
                     // For performance consideration. only check 1d array
-                    if (this._isAllValueEqual) {
-                        if (arrayDim === 1) {
-                            if (!is1DArraySame(value, lastFrame.value as number[])) {
-                                this._isAllValueEqual = false;
-                            }
-                        }
-                        else {
-                            this._isAllValueEqual = false;
-                        }
+                    if (arrayDim === 1 && is1DArraySame(value, lastFrame.value as number[])) {
+                        // Ignore this frame.
+                        return;
                     }
                 }
                 this.arrDim = arrayDim;
@@ -297,13 +294,13 @@ class Track {
                     return;
                 }
 
-                if (this._isAllValueEqual && len > 0) {
+                if (len > 0) {
                     let lastFrame = keyframes[len - 1];
-                    if (this.isColor && !is1DArraySame(lastFrame.value as number[], value as number[])) {
-                        this._isAllValueEqual = false;
-                    }
-                    else if (lastFrame.value !== value) {
-                        this._isAllValueEqual = false;
+                    if (lastFrame.value === value
+                        || this.isColor && is1DArraySame(lastFrame.value as number[], value as number[])
+                    ) {
+                        // Ignore this frame.
+                        return;
                     }
                 }
             }
@@ -412,13 +409,13 @@ class Track {
         // kf1-----kf2---------current--------kf3
         // find kf2 and kf3 and do interpolation
         let frameIdx;
-        const lastFrame = this._lastFrame;
+        const lastFrame = this._lastFr;
         const min = Math.min;
         // In the easing function like elasticOut, percent may less than 0
         if (percent < 0) {
             frameIdx = 0;
         }
-        else if (percent < this._lastFramePercent) {
+        else if (percent < this._lastFrP) {
             // Start from next key
             // PENDING start from lastFrame ?
             const start = min(lastFrame + 1, kfsNum - 1);
@@ -427,7 +424,6 @@ class Track {
                     break;
                 }
             }
-            // PENDING really need to do this ?
             frameIdx = min(frameIdx, kfsNum - 2);
         }
         else {
@@ -447,8 +443,8 @@ class Track {
             return;
         }
 
-        this._lastFrame = frameIdx;
-        this._lastFramePercent = percent;
+        this._lastFr = frameIdx;
+        this._lastFrP = percent;
 
         const range = (nextFrame.percent - frame.percent);
         if (range === 0) {
@@ -745,10 +741,13 @@ export default class Animator<T> {
     /**
      * Start the animation
      * @param easing
-     * @param  forceAnimate
+     * @param  minDuration Set min duration of animation.
      * @return
      */
-    start(easing?: AnimationEasing, forceAnimate?: boolean) {
+    start(
+        easing?: AnimationEasing,
+        minDuration?: number
+    ) {
         if (this._started > 0) {
             return;
         }
@@ -757,27 +756,37 @@ export default class Animator<T> {
         const self = this;
 
         let tracks: Track[] = [];
+        let oneShotTracks: Track[] = [];
+        let maxTime = this._maxTime || 0;
+        if (minDuration) {
+            maxTime = Math.max(minDuration, maxTime);
+        }
+
         for (let i = 0; i < this._trackKeys.length; i++) {
             const propName = this._trackKeys[i];
             const track = this._tracks[propName];
             const additiveTrack = this._getAdditiveTrack(propName);
             const kfs = track.keyframes;
+            const kfsNum = kfs.length;
             track.prepare(this._maxTime, additiveTrack);
             if (track.needsAnimate()) {
                 tracks.push(track);
             }
             else if (!track.interpolable) {
-                const lastKf = kfs[kfs.length - 1];
+                const lastKf = kfs[kfsNum - 1];
                 // Set final value.
                 if (lastKf) {
                     (self._target as any)[track.propName] = lastKf.value;
                 }
             }
+            else if (kfsNum === 1) {
+                oneShotTracks.push(track);
+            }
         }
         // Add during callback on the last clip
-        if (tracks.length || forceAnimate) {
+        if (tracks.length || minDuration > 0) {
             const clip = new Clip({
-                life: this._maxTime,
+                life: maxTime,
                 loop: this._loop,
                 delay: this._delay,
                 onframe(percent: number) {
@@ -803,6 +812,17 @@ export default class Animator<T> {
                         // Because target may be changed.
                         tracks[i].step(self._target, percent);
                     }
+                    if (oneShotTracks) {
+                        // For tracks that only has percent: 0 keyframe
+                        // We do step once for setting the property to the targets.
+                        // For example. animate().when(0, { x: 0 }).when(100, {x: 0})
+                        // Only the first keyframe will be keepd.
+                        for (let i = 0; i < oneShotTracks.length; i++) {
+                            oneShotTracks[i].step(self._target, percent);
+                        }
+                        oneShotTracks = null;
+                    }
+
                     const onframeList = self._onframeCbs;
                     if (onframeList) {
                         for (let i = 0; i < onframeList.length; i++) {
