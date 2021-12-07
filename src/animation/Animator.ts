@@ -198,6 +198,12 @@ class Track {
 
     interpolable: boolean = true
 
+    /**
+     * If force run this track regardless there is only one keyframe.
+     * It can make sure the target can always be set with the value from keyframe.
+     */
+    force?: boolean
+
     private _finished: boolean
 
     private _needsSort: boolean = false
@@ -234,7 +240,8 @@ class Track {
     }
 
     needsAnimate() {
-        return this.keyframes.length >= 2
+        const kfsNum = this.keyframes.length;
+        return (kfsNum >= 2 || this.force && kfsNum >= 1)
              && this.interpolable;
     }
 
@@ -411,32 +418,39 @@ class Track {
         let frameIdx;
         const lastFrame = this._lastFr;
         const min = Math.min;
-        // In the easing function like elasticOut, percent may less than 0
-        if (percent < 0) {
-            frameIdx = 0;
-        }
-        else if (percent < this._lastFrP) {
-            // Start from next key
-            // PENDING start from lastFrame ?
-            const start = min(lastFrame + 1, kfsNum - 1);
-            for (frameIdx = start; frameIdx >= 0; frameIdx--) {
-                if (keyframes[frameIdx].percent <= percent) {
-                    break;
-                }
-            }
-            frameIdx = min(frameIdx, kfsNum - 2);
+        let frame;
+        let nextFrame;
+        if (kfsNum === 1 && this.force) {
+            frame = nextFrame = keyframes[0];
         }
         else {
-            for (frameIdx = lastFrame; frameIdx < kfsNum; frameIdx++) {
-                if (keyframes[frameIdx].percent > percent) {
-                    break;
-                }
+            // In the easing function like elasticOut, percent may less than 0
+            if (percent < 0) {
+                frameIdx = 0;
             }
-            frameIdx = min(frameIdx - 1, kfsNum - 2);
-        }
+            else if (percent < this._lastFrP) {
+                // Start from next key
+                // PENDING start from lastFrame ?
+                const start = min(lastFrame + 1, kfsNum - 1);
+                for (frameIdx = start; frameIdx >= 0; frameIdx--) {
+                    if (keyframes[frameIdx].percent <= percent) {
+                        break;
+                    }
+                }
+                frameIdx = min(frameIdx, kfsNum - 2);
+            }
+            else {
+                for (frameIdx = lastFrame; frameIdx < kfsNum; frameIdx++) {
+                    if (keyframes[frameIdx].percent > percent) {
+                        break;
+                    }
+                }
+                frameIdx = min(frameIdx - 1, kfsNum - 2);
+            }
 
-        let nextFrame = keyframes[frameIdx + 1];
-        let frame = keyframes[frameIdx];
+            nextFrame = keyframes[frameIdx + 1];
+            frame = keyframes[frameIdx];
+        }
 
         // Defensive coding.
         if (!(frame && nextFrame)) {
@@ -446,11 +460,8 @@ class Track {
         this._lastFr = frameIdx;
         this._lastFrP = percent;
 
-        const range = (nextFrame.percent - frame.percent);
-        if (range === 0) {
-            return;
-        }
-        let w = (percent - frame.percent) / range;
+        const interval = (nextFrame.percent - frame.percent);
+        let w = interval === 0 ? 1 : (percent - frame.percent) / interval;
         // Apply different easing of each keyframe.
         // Use easing specified in target frame.
         if (nextFrame.easingFunc) {
@@ -662,6 +673,9 @@ export default class Animator<T> {
                 if (time !== 0) {
                     track.addKeyframe(0, cloneValue(initialValue), easing);
                 }
+                else {
+                    track.force = true;
+                }
 
                 this._trackKeys.push(propName);
             }
@@ -756,7 +770,6 @@ export default class Animator<T> {
         const self = this;
 
         let tracks: Track[] = [];
-        let oneShotTracks: Track[] = [];
         let maxTime = this._maxTime || 0;
         if (minDuration) {
             maxTime = Math.max(minDuration, maxTime);
@@ -778,9 +791,6 @@ export default class Animator<T> {
                 if (lastKf) {
                     (self._target as any)[track.propName] = lastKf.value;
                 }
-            }
-            else if (kfsNum === 1) {
-                oneShotTracks.push(track);
             }
         }
         // Add during callback on the last clip
@@ -811,16 +821,6 @@ export default class Animator<T> {
                         // NOTE: don't cache target outside.
                         // Because target may be changed.
                         tracks[i].step(self._target, percent);
-                    }
-                    if (oneShotTracks) {
-                        // For tracks that only has percent: 0 keyframe
-                        // We do step once for setting the property to the targets.
-                        // For example. animate().when(0, { x: 0 }).when(100, {x: 0})
-                        // Only the first keyframe will be keepd.
-                        for (let i = 0; i < oneShotTracks.length; i++) {
-                            oneShotTracks[i].step(self._target, percent);
-                        }
-                        oneShotTracks = null;
                     }
 
                     const onframeList = self._onframeCbs;
