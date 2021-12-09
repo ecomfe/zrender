@@ -263,7 +263,7 @@ export function parsePlainText(
         outerHeight: outerHeight,
         lineHeight: lineHeight,
         calculatedLineHeight: calculatedLineHeight,
-        contentWidth: outerWidth,
+        contentWidth: contentWidth,
         contentHeight: contentHeight,
         width: width
     };
