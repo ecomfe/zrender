@@ -417,7 +417,7 @@ class Track {
         // find kf2 and kf3 and do interpolation
         let frameIdx;
         const lastFrame = this._lastFr;
-        const min = Math.min;
+        const mathMin = Math.min;
         let frame;
         let nextFrame;
         if (kfsNum === 1 && this.force) {
@@ -431,13 +431,13 @@ class Track {
             else if (percent < this._lastFrP) {
                 // Start from next key
                 // PENDING start from lastFrame ?
-                const start = min(lastFrame + 1, kfsNum - 1);
+                const start = mathMin(lastFrame + 1, kfsNum - 1);
                 for (frameIdx = start; frameIdx >= 0; frameIdx--) {
                     if (keyframes[frameIdx].percent <= percent) {
                         break;
                     }
                 }
-                frameIdx = min(frameIdx, kfsNum - 2);
+                frameIdx = mathMin(frameIdx, kfsNum - 2);
             }
             else {
                 for (frameIdx = lastFrame; frameIdx < kfsNum; frameIdx++) {
@@ -445,7 +445,7 @@ class Track {
                         break;
                     }
                 }
-                frameIdx = min(frameIdx - 1, kfsNum - 2);
+                frameIdx = mathMin(frameIdx - 1, kfsNum - 2);
             }
 
             nextFrame = keyframes[frameIdx + 1];
@@ -461,7 +461,8 @@ class Track {
         this._lastFrP = percent;
 
         const interval = (nextFrame.percent - frame.percent);
-        let w = interval === 0 ? 1 : (percent - frame.percent) / interval;
+        let w = interval === 0 ? 1 : mathMin((percent - frame.percent) / interval, 1);
+
         // Apply different easing of each keyframe.
         // Use easing specified in target frame.
         if (nextFrame.easingFunc) {
@@ -772,7 +773,7 @@ export default class Animator<T> {
         let tracks: Track[] = [];
         let maxTime = this._maxTime || 0;
         if (minDuration) {
-            maxTime = Math.max(minDuration, maxTime);
+            maxTime = this._maxTime = Math.max(minDuration, maxTime);
         }
 
         for (let i = 0; i < this._trackKeys.length; i++) {
@@ -781,7 +782,7 @@ export default class Animator<T> {
             const additiveTrack = this._getAdditiveTrack(propName);
             const kfs = track.keyframes;
             const kfsNum = kfs.length;
-            track.prepare(this._maxTime, additiveTrack);
+            track.prepare(maxTime, additiveTrack);
             if (track.needsAnimate()) {
                 tracks.push(track);
             }

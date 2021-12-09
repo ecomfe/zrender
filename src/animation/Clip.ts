@@ -4,7 +4,6 @@
  * @config life(1000) 动画时长
  * @config delay(0) 动画延迟时间
  * @config loop(true)
- * @config gap(0) 循环的间隔时间
  * @config onframe
  * @config easing(optional)
  * @config ondestroy(optional)
@@ -29,7 +28,6 @@ export interface ClipProps {
     life?: number
     delay?: number
     loop?: boolean
-    gap?: number
     easing?: AnimationEasing
 
     onframe?: OnframeCallback
@@ -51,7 +49,6 @@ export default class Clip {
     animation: Animation
 
     loop: boolean
-    gap: number
 
     easing: AnimationEasing
     easingFunc: (p: number) => number
@@ -70,8 +67,6 @@ export default class Clip {
         this._delay = opts.delay || 0;
 
         this.loop = opts.loop || false;
-
-        this.gap = opts.gap || 0;
 
         this.onframe = opts.onframe || noop;
         this.ondestroy = opts.ondestroy || noop;
@@ -117,7 +112,7 @@ export default class Clip {
             if (this.loop) {
                 // Restart
                 const remainder = elapsedTime % life;
-                this._startTime = globalTime - remainder + this.gap;
+                this._startTime = globalTime - remainder;
                 this._pausedTime = 0;
 
                 this.onrestart();
