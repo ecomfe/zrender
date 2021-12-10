@@ -19,7 +19,7 @@ import {
     createBrushScope,
     createSVGVNode
 } from './core';
-import { normalizeColor } from './helper';
+import { normalizeColor, encodeBase64 } from './helper';
 import { defaults, extend, keys, logError, map } from '../core/util';
 import Path from '../graphic/Path';
 import patch, { updateAttrs } from './patch';
@@ -340,11 +340,13 @@ class SVGPainter implements PainterBase {
         this._oldVNode = null;
     }
     toDataURL(base64?: boolean) {
-        const str = encodeURIComponent(this.renderToString());
+        let str = encodeURIComponent(this.renderToString());
         const prefix = 'data:image/svg+xml;';
-        return base64
-            ? prefix + 'base64,' + window.btoa(unescape(str))
-            : prefix + 'charset=UTF-8,' + str;
+        if (base64) {
+            str = encodeBase64(str);
+            return str ? prefix + 'base64,' + str : null;
+        }
+        return prefix + 'charset=UTF-8,' + str;
     }
 
     refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];

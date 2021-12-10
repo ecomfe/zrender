@@ -170,3 +170,19 @@ export function getSRTTransformString(
 
     return res.join(' ');
 }
+
+export const encodeBase64 = (function () {
+    if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
+        return function (str: string) {
+            return window.btoa(unescape(str));
+        };
+    }
+    if (typeof Buffer !== 'undefined') {
+        return function (str: string) {
+            return Buffer.from(str).toString('base64');
+        };
+    }
+    return function (str: string): string {
+        return null;
+    };
+})();
