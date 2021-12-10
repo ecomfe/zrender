@@ -339,10 +339,12 @@ class SVGPainter implements PainterBase {
         }
         this._oldVNode = null;
     }
-    toDataURL() {
-        const str = this.renderToString();
-        const html = encodeURIComponent(str);
-        return 'data:image/svg+xml;charset=UTF-8,' + html;
+    toDataURL(base64?: boolean) {
+        const str = encodeURIComponent(this.renderToString());
+        const prefix = 'data:image/svg+xml;';
+        return base64
+            ? prefix + 'base64,' + window.btoa(unescape(str))
+            : prefix + 'charset=UTF-8,' + str;
     }
 
     refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];
