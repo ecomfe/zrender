@@ -248,7 +248,7 @@ export default class Animation extends Eventful {
      */
     // TODO Gap
     animate<T>(target: T, options: {
-        loop?: boolean  // Whether loop animation.
+        loop?: boolean  // Whether loop animation
     }) {
         options = options || {};
 

@@ -15,15 +15,10 @@ type InterpolatableType = string | number | NumberArray | NumberArray[];
 
 const arraySlice = Array.prototype.slice;
 
-export function interpolateNumber(p0: number, p1: number, percent: number): number {
+function interpolateNumber(p0: number, p1: number, percent: number): number {
     return (p1 - p0) * percent + p0;
 }
-
-export function step(p0: any, p1: any, percent: number): any {
-    return percent > 0.5 ? p1 : p0;
-}
-
-export function interpolate1DArray(
+function interpolate1DArray(
     out: NumberArray,
     p0: NumberArray,
     p1: NumberArray,
@@ -36,7 +31,7 @@ export function interpolate1DArray(
     }
 }
 
-export function interpolate2DArray(
+function interpolate2DArray(
     out: NumberArray[],
     p0: NumberArray[],
     p1: NumberArray[],
@@ -133,7 +128,7 @@ function fillArray(
     }
 }
 
-function is1DArraySame(arr0: NumberArray, arr1: NumberArray) {
+export function is1DArraySame(arr0: NumberArray, arr1: NumberArray) {
     const len = arr0.length;
     if (len !== arr1.length) {
         return false;
@@ -196,13 +191,9 @@ class Track {
     arrDim: number = 0
     isColor: boolean
 
-    interpolable: boolean = true
+    discrete: boolean = false
 
-    /**
-     * If force run this track regardless there is only one keyframe.
-     * It can make sure the target can always be set with the value from keyframe.
-     */
-    force?: boolean
+    _invalid: boolean = false;
 
     private _finished: boolean
 
@@ -240,9 +231,7 @@ class Track {
     }
 
     needsAnimate() {
-        const kfsNum = this.keyframes.length;
-        return (kfsNum >= 2 || this.force && kfsNum >= 1)
-             && this.interpolable;
+        return this.keyframes.length >= 1;
     }
 
     getAdditiveTrack() {
@@ -255,63 +244,42 @@ class Track {
         let keyframes = this.keyframes;
         let len = keyframes.length;
 
-        if (this.interpolable) {
-            // Handling values only if it's possible to be interpolated.
-            if (isArrayLike(value)) {
-                let arrayDim = guessArrayDim(value);
-                if (len > 0 && this.arrDim !== arrayDim) { // Two values has differnt dimension.
-                    this.interpolable = false;
-                    return;
-                }
-                // Not a number array.
-                if (arrayDim === 1 && !isNumber(value[0])
-                    || arrayDim === 2 && !isNumber(value[0][0])) {
-                    this.interpolable = false;
-                    return;
-                }
-                if (len > 0) {
-                    let lastFrame = keyframes[len - 1];
+        let discrete = false;
 
-                    // For performance consideration. only check 1d array
-                    if (arrayDim === 1 && is1DArraySame(value, lastFrame.value as number[])) {
-                        // Ignore this frame.
-                        return;
-                    }
-                }
-                this.arrDim = arrayDim;
+        // Handling values only if it's possible to be interpolated.
+        if (isArrayLike(value)) {
+            let arrayDim = guessArrayDim(value);
+            if (len > 0 && this.arrDim !== arrayDim) { // Two values has differnt dimension.
+                discrete = true;
             }
-            else {
-                if (this.arrDim > 0) {  // Previous value is array.
-                    this.interpolable = false;
-                    return;
-                }
+            // Not a number array.
+            if (arrayDim === 1 && !isNumber(value[0])
+                || arrayDim === 2 && !isNumber(value[0][0])) {
+                discrete = true;
+            }
+            this.arrDim = arrayDim;
+        }
+        else {
+            if (this.arrDim > 0) {  // Previous value is array.
+                discrete = true;
+            }
 
-                if (typeof value === 'string') {
-                    const colorArray = color.parse(value);
-                    if (colorArray) {
-                        value = colorArray;
-                        this.isColor = true;
-                    }
-                    else {
-                        this.interpolable = false;
-                    }
+            if (typeof value === 'string') {
+                const colorArray = color.parse(value);
+                if (colorArray) {
+                    value = colorArray;
+                    this.isColor = true;
                 }
-                else if (typeof value !== 'number' || isNaN(value)) {
-                    this.interpolable = false;
-                    return;
+                else {
+                    discrete = true;
                 }
-
-                if (len > 0) {
-                    let lastFrame = keyframes[len - 1];
-                    if (lastFrame.value === value
-                        || this.isColor && is1DArraySame(lastFrame.value as number[], value as number[])
-                    ) {
-                        // Ignore this frame.
-                        return;
-                    }
-                }
+            }
+            else if (typeof value !== 'number' || isNaN(value)) {
+                discrete = true;
             }
         }
+
+        this.discrete = this.discrete || discrete;
 
         const kf: Keyframe = {
             time,
@@ -404,7 +372,7 @@ class Track {
             // Remove additive track if it's finished.
             this._additiveTrack = null;
         }
-        const isAdditive = this._additiveTrack != null;
+        const isAdditive = this._additiveTrack != null && !this.discrete;
         const valueKey = isAdditive ? 'additiveValue' : 'value';
 
         const keyframes = this.keyframes;
@@ -420,7 +388,7 @@ class Track {
         const mathMin = Math.min;
         let frame;
         let nextFrame;
-        if (kfsNum === 1 && this.force) {
+        if (kfsNum === 1) {
             frame = nextFrame = keyframes[0];
         }
         else {
@@ -477,7 +445,10 @@ class Track {
             targetArr = this._additiveValue = [];
         }
 
-        if (arrDim > 0) {
+        if (this.discrete) {
+            target[propName] = w < 1 ? frame[valueKey] : nextFrame[valueKey];
+        }
+        else if (arrDim > 0) {
             arrDim === 1
                 ? interpolate1DArray(
                     targetArr as NumberArray,
@@ -504,14 +475,7 @@ class Track {
             }
         }
         else {
-            let value;
-            if (!this.interpolable) {
-                // String is step(0.5)
-                value = step(frame[valueKey], nextFrame[valueKey], w);
-            }
-            else {
-                value = interpolateNumber(frame[valueKey] as number, nextFrame[valueKey] as number, w);
-            }
+            const value = interpolateNumber(frame[valueKey] as number, nextFrame[valueKey] as number, w);
             if (isAdditive) {
                 this._additiveValue = value;
             }
@@ -576,15 +540,25 @@ export default class Animator<T> {
     private _target: T
 
     private _loop: boolean
-    private _delay = 0
+    private _delay: number
     private _maxTime = 0
 
-    // Some status
-    private _paused = false
+    /**
+     * If animator is paused
+     * @default false
+     */
+    private _paused: boolean
     // 0: Not started
     // 1: Invoked started
     // 2: Has been run for at least one frame.
     private _started = 0
+
+    /**
+     * If allow discrete animation
+     * @default false
+     */
+    private _allowDiscrete: boolean
+    private _allowDuplicate: boolean
 
     private _additiveAnimators: Animator<any>[]
 
@@ -595,7 +569,12 @@ export default class Animator<T> {
 
     private _clip: Clip = null
 
-    constructor(target: T, loop: boolean, additiveTo?: Animator<any>[]) {
+    constructor(
+        target: T,
+        loop: boolean,
+        allowDiscreteAnimation?: boolean,  // If doing discrete animation on the values can't be interpolated
+        additiveTo?: Animator<any>[]
+    ) {
         this._target = target;
         this._loop = loop;
         if (loop && additiveTo) {
@@ -603,14 +582,18 @@ export default class Animator<T> {
             return;
         }
         this._additiveAnimators = additiveTo;
+
+        this._allowDiscrete = allowDiscreteAnimation;
     }
 
     getMaxTime() {
         return this._maxTime;
     }
+
     getDelay() {
         return this._delay;
     }
+
     getLoop() {
         return this._loop;
     }
@@ -673,9 +656,6 @@ export default class Animator<T> {
                 //  Initialize value from current prop value
                 if (time !== 0) {
                     track.addKeyframe(0, cloneValue(initialValue), easing);
-                }
-                else {
-                    track.force = true;
                 }
 
                 this._trackKeys.push(propName);
@@ -784,13 +764,16 @@ export default class Animator<T> {
             const kfsNum = kfs.length;
             track.prepare(maxTime, additiveTrack);
             if (track.needsAnimate()) {
-                tracks.push(track);
-            }
-            else if (!track.interpolable) {
-                const lastKf = kfs[kfsNum - 1];
-                // Set final value.
-                if (lastKf) {
-                    (self._target as any)[track.propName] = lastKf.value;
+                // Set value directly if discrete animation is not allowed.
+                if (!this._allowDiscrete && track.discrete) {
+                    const lastKf = kfs[kfsNum - 1];
+                    // Set final value.
+                    if (lastKf) {
+                        (self._target as any)[track.propName] = lastKf.value;
+                    }
+                }
+                else {
+                    tracks.push(track);
                 }
             }
         }
@@ -799,7 +782,7 @@ export default class Animator<T> {
             const clip = new Clip({
                 life: maxTime,
                 loop: this._loop,
-                delay: this._delay,
+                delay: this._delay || 0,
                 onframe(percent: number) {
                     self._started = 2;
                     // Remove additived animator if it's finished.
@@ -943,7 +926,7 @@ export default class Animator<T> {
                 if (forwardToLast) {
                     track.step(this._target, 1);
                 }
-                // If the track has not been run for at least wrong frame.
+                // If the track has not been run for at least one frame.
                 // The property may be stayed at the final state. when setToFinal is set true.
                 // For example:
                 // Animate x from 0 to 100, then animate to 150 immediately.

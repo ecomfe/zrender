@@ -1,6 +1,6 @@
 import Transformable from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
-import Animator, {cloneValue} from './animation/Animator';
+import Animator, {cloneValue, is1DArraySame} from './animation/Animator';
 import { ZRenderType } from './zrender';
 import {
     Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes,
@@ -1461,13 +1461,14 @@ class Element<Props extends ElementProps = ElementProps> {
      *
      * @param path The key to fetch value from object. Mostly style or shape.
      * @param loop Whether to loop animation.
+     * @param allowDiscreteAnimation Whether to allow discrete animation
      * @example:
      *     el.animate('style', false)
      *         .when(1000, {x: 10} )
      *         .done(function(){ // Animation done })
      *         .start()
      */
-    animate(key?: string, loop?: boolean) {
+    animate(key?: string, loop?: boolean, allowDiscreteAnimation?: boolean) {
         let target = key ? (this as any)[key] : this;
 
         if (process.env.NODE_ENV !== 'production') {
@@ -1482,7 +1483,7 @@ class Element<Props extends ElementProps = ElementProps> {
             }
         }
 
-        const animator = new Animator(target, loop);
+        const animator = new Animator(target, loop, allowDiscreteAnimation);
         key && (animator.targetName = key);
         this.addAnimator(animator, key);
         return animator;
@@ -1824,6 +1825,22 @@ function copyValue(target: Dictionary<any>, source: Dictionary<any>, key: string
     }
 }
 
+function needAnimateKey(target: Dictionary<any>, source: Dictionary<any>, key: string, force: boolean) {
+    const sourceVal = source[key];
+    const targetVal = target[key];
+    return !(
+        // Can't animate between null value. assign directly. For example. stroke animate from #fff to null.
+        sourceVal == null
+        || targetVal == null
+        // Not animate not changed value if not using force.
+        || !force && (
+            sourceVal === targetVal
+            // Only check 1 dimension array
+            || isArrayLike(sourceVal) && isArrayLike(targetVal) && is1DArraySame(sourceVal, targetVal)
+        )
+    );
+}
+
 function animateToShallow<T>(
     animatable: Element<T>,
     topKey: string,
@@ -1845,8 +1862,7 @@ function animateToShallow<T>(
     for (let k = 0; k < targetKeys.length; k++) {
         const innerKey = targetKeys[k] as string;
 
-        if (source[innerKey] != null
-            && target[innerKey] != null // Can't animate between null value. assign directly. For example. stroke animate from #fff to null.
+        if (needAnimateKey(target, source, innerKey, cfg.force)
             && (animateAll || (animationProps as Dictionary<any>)[innerKey])
         ) {
             if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
@@ -1953,7 +1969,7 @@ function animateToShallow<T>(
             }
         }
 
-        const animator = new Animator(source, false, additive ? existsAnimatorsOnSameTarget : null);
+        const animator = new Animator(source, false, false, additive ? existsAnimatorsOnSameTarget : null);
         animator.targetName = topKey;
         if (cfg.scope) {
             animator.scope = cfg.scope;
