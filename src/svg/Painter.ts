@@ -340,7 +340,7 @@ class SVGPainter implements PainterBase {
         this._oldVNode = null;
     }
     toDataURL(base64?: boolean) {
-        let str = encodeURIComponent(this.renderToString());
+        const str = encodeURIComponent(this.renderToString());
         return 'data:image/svg+xml;'
             + (base64 ? 'base64,' + encodeBase64(str) : 'charset=UTF-8,' + str);
     }
