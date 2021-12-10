@@ -172,16 +172,16 @@ export function getSRTTransformString(
 }
 
 export const encodeBase64 = (function () {
-    // if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
-    //     return function (str: string) {
-    //         return window.btoa(unescape(str));
-    //     };
-    // }
-    // if (typeof Buffer !== 'undefined') {
-    //     return function (str: string) {
-    //         return Buffer.from(str).toString('base64');
-    //     };
-    // }
+    if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
+        return function (str: string) {
+            return window.btoa(unescape(str));
+        };
+    }
+    if (typeof Buffer !== 'undefined') {
+        return function (str: string) {
+            return Buffer.from(str).toString('base64');
+        };
+    }
     return function (str: string): string {
         if (process.env.NODE_ENV !== 'production') {
             logError('Base64 isn\'t natively supported in the current environment.');
