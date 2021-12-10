@@ -340,9 +340,13 @@ class SVGPainter implements PainterBase {
         this._oldVNode = null;
     }
     toDataURL(base64?: boolean) {
-        const str = encodeURIComponent(this.renderToString());
-        return 'data:image/svg+xml;'
-            + (base64 ? 'base64,' + encodeBase64(str) : 'charset=UTF-8,' + str);
+        let str = encodeURIComponent(this.renderToString());
+        const prefix = 'data:image/svg+xml;';
+        if (base64) {
+            str = encodeBase64(str);
+            return str ? prefix + 'base64,' + str : null;
+        }
+        return prefix + 'charset=UTF-8,' + str;
     }
 
     refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];

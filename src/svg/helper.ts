@@ -2,7 +2,7 @@
 
 import { MatrixArray } from '../core/matrix';
 import Transformable, { TransformProp } from '../core/Transformable';
-import { RADIAN_TO_DEGREE, retrieve2 } from '../core/util';
+import { RADIAN_TO_DEGREE, retrieve2, logError } from '../core/util';
 import Displayable from '../graphic/Displayable';
 import { GradientObject } from '../graphic/Gradient';
 import { LinearGradientObject } from '../graphic/LinearGradient';
@@ -172,19 +172,19 @@ export function getSRTTransformString(
 }
 
 export const encodeBase64 = (function () {
-    if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
-        return function (str: string) {
-            return window.btoa(unescape(str));
-        };
-    }
-    if (typeof Buffer !== 'undefined') {
-        return function (str: string) {
-            return Buffer.from(str).toString('base64');
-        };
-    }
+    // if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
+    //     return function (str: string) {
+    //         return window.btoa(unescape(str));
+    //     };
+    // }
+    // if (typeof Buffer !== 'undefined') {
+    //     return function (str: string) {
+    //         return Buffer.from(str).toString('base64');
+    //     };
+    // }
     return function (str: string): string {
         if (process.env.NODE_ENV !== 'production') {
-            throw new Error('Base64 isn\'t natively supported in the current environment.');
+            logError('Base64 isn\'t natively supported in the current environment.');
         }
         return null;
     };
