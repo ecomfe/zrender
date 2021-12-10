@@ -183,6 +183,9 @@ export const encodeBase64 = (function () {
         };
     }
     return function (str: string): string {
+        if (process.env.NODE_ENV !== 'production') {
+            throw new Error('Base64 isn\'t natively supported in the current environment.');
+        }
         return null;
     };
 })();
