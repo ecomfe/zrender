@@ -2,7 +2,7 @@
 
 import { MatrixArray } from '../core/matrix';
 import Transformable, { TransformProp } from '../core/Transformable';
-import { RADIAN_TO_DEGREE, retrieve2, logError } from '../core/util';
+import { RADIAN_TO_DEGREE, retrieve2, logError, isFunction } from '../core/util';
 import Displayable from '../graphic/Displayable';
 import { GradientObject } from '../graphic/Gradient';
 import { LinearGradientObject } from '../graphic/LinearGradient';
@@ -10,6 +10,7 @@ import Path from '../graphic/Path';
 import { ImagePatternObject, PatternObject, SVGPatternObject } from '../graphic/Pattern';
 import { RadialGradientObject } from '../graphic/RadialGradient';
 import { parse } from '../tool/color';
+import env from '../core/env';
 
 const mathRound = Math.round;
 
@@ -172,7 +173,7 @@ export function getSRTTransformString(
 }
 
 export const encodeBase64 = (function () {
-    if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
+    if (env.hasGlobalWindow && isFunction(window.btoa)) {
         return function (str: string) {
             return window.btoa(unescape(str));
         };

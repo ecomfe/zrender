@@ -1,9 +1,11 @@
+import env from '../core/env';
+
 type RequestAnimationFrameType = typeof window.requestAnimationFrame
 
 let requestAnimationFrame: RequestAnimationFrameType;
 
 requestAnimationFrame = (
-	typeof window !== 'undefined'
+	env.hasGlobalWindow
 		&& (
 			(window.requestAnimationFrame && window.requestAnimationFrame.bind(window))
 			// https://github.com/ecomfe/zrender/issues/189#issuecomment-224919809

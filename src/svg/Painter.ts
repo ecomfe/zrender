@@ -344,7 +344,7 @@ class SVGPainter implements PainterBase {
         const prefix = 'data:image/svg+xml;';
         if (base64) {
             str = encodeBase64(str);
-            return str ? prefix + 'base64,' + str : null;
+            return str && prefix + 'base64,' + str;
         }
         return prefix + 'charset=UTF-8,' + str;
     }
