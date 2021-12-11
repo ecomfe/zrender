@@ -23,6 +23,8 @@ class Env {
     domSupported = false
     transformSupported = false
     transform3dSupported = false
+
+    hasGlobalWindow = typeof window !== 'undefined'
 }
 
 const env = new Env();
