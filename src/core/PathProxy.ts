@@ -11,7 +11,7 @@ import * as vec2 from './vector';
 import BoundingRect from './BoundingRect';
 import {devicePixelRatio as dpr} from '../config';
 import { fromLine, fromCubic, fromQuadratic, fromArc } from './bbox';
-import { cubicAt, cubicLength, cubicSubdivide, quadraticLength, quadraticSubdivide } from './curve';
+import { cubicLength, cubicSubdivide, quadraticLength, quadraticSubdivide } from './curve';
 
 const CMD = {
     M: 1,

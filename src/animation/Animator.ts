@@ -4,14 +4,35 @@
 
 import Clip from './Clip';
 import * as color from '../tool/color';
-import {isArrayLike, isFunction, isNumber, keys, logError, map} from '../core/util';
+import {isArrayLike, isFunction, isGradientObject, isNumber, keys, logError, map} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
 import easingFuncs, { AnimationEasing } from './easing';
 import Animation from './Animation';
 import { createCubicEasingFunc } from './cubicEasing';
+import { LinearGradientObject } from '../export';
+import { isLinearGradient, isRadialGradient } from '../svg/helper';
 
 type NumberArray = ArrayLike<number>
 type InterpolatableType = string | number | NumberArray | NumberArray[];
+
+interface ParsedColorStop {
+    color: number[],
+    offset: number
+};
+
+interface ParsedGradientObject {
+    colorStops: ParsedColorStop[]
+    x: number
+    y: number
+    global: boolean
+}
+interface ParsedLinearGradientObject extends ParsedGradientObject {
+    x2: number
+    y2: number
+}
+interface ParsedRadialGradientObject extends ParsedGradientObject {
+    r: number
+}
 
 const arraySlice = Array.prototype.slice;
 
@@ -29,6 +50,7 @@ function interpolate1DArray(
     for (let i = 0; i < len; i++) {
         out[i] = interpolateNumber(p0[i], p1[i], percent);
     }
+    return out;
 }
 
 function interpolate2DArray(
@@ -48,6 +70,7 @@ function interpolate2DArray(
             out[i][j] = interpolateNumber(p0[i][j], p1[i][j], percent);
         }
     }
+    return out;
 }
 
 function add1DArray(
@@ -80,6 +103,22 @@ function add2DArray(
         }
     }
     return out;
+}
+
+function fillColorStops(val0: ParsedColorStop[], val1: ParsedColorStop[]) {
+    const len0 = val0.length;
+    const len1 = val1.length;
+
+    const shorterArr = len0 > len1 ? val1 : val0;
+    const shorterLen = Math.min(len0, len1);
+    const last = shorterArr[shorterLen - 1] || { color: [0, 0, 0, 0], offset: 0 };
+    for (let i = shorterLen; i < Math.max(len0, len1); i++) {
+        // Use last color stop to fill the shorter array
+        shorterArr.push({
+            offset: last.offset,
+            color: last.color.slice()
+        });
+    }
 }
 // arr0 is source array, arr1 is target array.
 // Do some preprocess to avoid error happened when interpolating from arr0 to arr1
@@ -159,9 +198,10 @@ export function cloneValue(value: InterpolatableType) {
 }
 
 function rgba2String(rgba: number[]): string {
-    rgba[0] = Math.floor(rgba[0]);
-    rgba[1] = Math.floor(rgba[1]);
-    rgba[2] = Math.floor(rgba[2]);
+    rgba[0] = Math.floor(rgba[0]) || 0;
+    rgba[1] = Math.floor(rgba[1]) || 0;
+    rgba[2] = Math.floor(rgba[2]) || 0;
+    rgba[3] = rgba[3] == null ? 1 : rgba[3];
 
     return 'rgba(' + rgba.join(',') + ')';
 }
@@ -190,6 +230,12 @@ class Track {
     // Larger than 0 if value is array
     arrDim: number = 0
     isColor: boolean
+    /**
+     * 0: Not gradient
+     * 1: Linear Gradient
+     * 2: Radial Gradient
+     */
+    isGradient: 0 | 1 | 2
 
     discrete: boolean = false
 
@@ -274,6 +320,33 @@ class Track {
                     discrete = true;
                 }
             }
+            else if (isGradientObject(value)) {
+                // TODO Color to gradient or gradient to color.
+                const parsedGradient = {
+                    colorStops: map(value.colorStops, colorStop => ({
+                        offset: colorStop.offset,
+                        color: color.parse(colorStop.color)
+                    })),
+                    x: (value as LinearGradientObject).x,
+                    y: (value as LinearGradientObject).y
+                };
+                let gradientType: 1 | 2;
+                if (isLinearGradient(value)) {
+                    gradientType = 1;
+                    (parsedGradient as ParsedLinearGradientObject).x2 = value.x2;
+                    (parsedGradient as ParsedLinearGradientObject).y2 = value.y2;
+                }
+                else if (isRadialGradient(value)) {
+                    gradientType = 2;
+                    (parsedGradient as ParsedRadialGradientObject).r = value.r;
+                }
+                // Not all gradient
+                if (len > 0 && this.isGradient !== gradientType) {
+                    discrete = true;
+                }
+                value = parsedGradient;
+                this.isGradient = gradientType;
+            }
             else if (typeof value !== 'number' || isNaN(value)) {
                 discrete = true;
             }
@@ -310,18 +383,33 @@ class Track {
         const arrDim = this.arrDim;
         const kfsLen = kfs.length;
         const lastKf = kfs[kfsLen - 1];
+        const isDiscrete = this.discrete;
 
-        for (let i = 0; i < kfsLen; i++) {
-            kfs[i].percent = kfs[i].time / maxTime;
-
-            if (arrDim > 0 && i !== kfsLen - 1) {
-                // Align array with target frame.
-                fillArray(kfs[i].value as NumberArray, lastKf.value as NumberArray, arrDim);
+        if (!isDiscrete) {
+            for (let i = 0; i < kfsLen; i++) {
+                const kf = kfs[i];
+                const value = kf.value;
+                const lastValue = lastKf.value;
+                kf.percent = kf.time / maxTime;
+                if (arrDim > 0 && i !== kfsLen - 1) {
+                    // Align array with target frame.
+                    fillArray(value as NumberArray, lastValue as NumberArray, arrDim);
+                }
+                else if (this.isGradient) {
+                    fillColorStops(
+                        (value as ParsedLinearGradientObject).colorStops,
+                        (lastValue as ParsedLinearGradientObject).colorStops
+                    );
+                }
             }
         }
 
         // Only apply additive animaiton on INTERPOLABLE SAME TYPE values.
-        if (additiveTrack
+        if (
+            !isDiscrete
+            // TODO support gradient
+            && !this.isGradient
+            && additiveTrack
             // If two track both will be animated and have same value format.
             && this.needsAnimate()
             && additiveTrack.needsAnimate()
@@ -372,7 +460,7 @@ class Track {
             // Remove additive track if it's finished.
             this._additiveTrack = null;
         }
-        const isAdditive = this._additiveTrack != null && !this.discrete;
+        const isAdditive = this._additiveTrack != null;
         const valueKey = isAdditive ? 'additiveValue' : 'value';
 
         const keyframes = this.keyframes;
@@ -380,6 +468,7 @@ class Track {
         const propName = this.propName;
         const arrDim = this.arrDim;
         const isValueColor = this.isColor;
+        const gradientType = this.isGradient;
         // Find the range keyframes
         // kf1-----kf2---------current--------kf3
         // find kf2 and kf3 and do interpolation
@@ -462,6 +551,41 @@ class Track {
                     nextFrame[valueKey] as NumberArray[],
                     w
                 );
+        }
+        else if (gradientType) {
+            const val = frame[valueKey] as ParsedGradientObject;
+            const nextVal = nextFrame[valueKey] as ParsedGradientObject;
+            target[propName] = {
+                type: gradientType === 1 ? 'linear' : 'radial',
+                x: interpolateNumber(val.x, nextVal.x, w),
+                y: interpolateNumber(val.x, nextVal.x, w),
+                // TODO performance
+                colorStops: map(val.colorStops, (colorStop, idx) => {
+                    const nextColorStop = nextVal.colorStops[idx];
+                    return {
+                        offset: interpolateNumber(colorStop.offset, nextColorStop.offset, w),
+                        color: rgba2String(interpolate1DArray(
+                            [] as number[], colorStop.color, nextColorStop.color, w
+                        ) as number[])
+                    };
+                }),
+                global: nextVal.global
+            };
+            if (gradientType === 1) {
+                // Linear
+                target[propName].x2 = interpolateNumber(
+                    (val as ParsedLinearGradientObject).x2, (nextVal as ParsedLinearGradientObject).x2, w
+                );
+                target[propName].y2 = interpolateNumber(
+                    (val as ParsedLinearGradientObject).y2, (nextVal as ParsedLinearGradientObject).y2, w
+                );
+            }
+            else {
+                // Radial
+                target[propName].r = interpolateNumber(
+                    (val as ParsedRadialGradientObject).r, (nextVal as ParsedRadialGradientObject).r, w
+                );
+            }
         }
         else if (isValueColor) {
             interpolate1DArray(
@@ -755,7 +879,6 @@ export default class Animator<T> {
         if (minDuration) {
             maxTime = this._maxTime = Math.max(minDuration, maxTime);
         }
-
         for (let i = 0; i < this._trackKeys.length; i++) {
             const propName = this._trackKeys[i];
             const track = this._tracks[propName];
