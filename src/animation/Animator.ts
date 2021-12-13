@@ -4,13 +4,14 @@
 
 import Clip from './Clip';
 import * as color from '../tool/color';
-import {isArrayLike, isFunction, isGradientObject, isNumber, keys, logError, map} from '../core/util';
+import {extend, isArrayLike, isFunction, isGradientObject, isNumber, keys, logError, map} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
 import easingFuncs, { AnimationEasing } from './easing';
 import Animation from './Animation';
 import { createCubicEasingFunc } from './cubicEasing';
 import { LinearGradientObject } from '../export';
 import { isLinearGradient, isRadialGradient } from '../svg/helper';
+import { GradientObject } from '../graphic/Gradient';
 
 type NumberArray = ArrayLike<number>
 type InterpolatableType = string | number | NumberArray | NumberArray[];
@@ -322,23 +323,17 @@ class Track {
             }
             else if (isGradientObject(value)) {
                 // TODO Color to gradient or gradient to color.
-                const parsedGradient = {
-                    colorStops: map(value.colorStops, colorStop => ({
-                        offset: colorStop.offset,
-                        color: color.parse(colorStop.color)
-                    })),
-                    x: (value as LinearGradientObject).x,
-                    y: (value as LinearGradientObject).y
-                };
+                const parsedGradient = extend({}, value) as unknown as ParsedGradientObject;
+                parsedGradient.colorStops = map(value.colorStops, colorStop => ({
+                    offset: colorStop.offset,
+                    color: color.parse(colorStop.color)
+                }));
                 let gradientType: 1 | 2;
                 if (isLinearGradient(value)) {
                     gradientType = 1;
-                    (parsedGradient as ParsedLinearGradientObject).x2 = value.x2;
-                    (parsedGradient as ParsedLinearGradientObject).y2 = value.y2;
                 }
                 else if (isRadialGradient(value)) {
                     gradientType = 2;
-                    (parsedGradient as ParsedRadialGradientObject).r = value.r;
                 }
                 // Not all gradient
                 if (len > 0 && this.isGradient !== gradientType) {
@@ -1109,6 +1104,14 @@ export default class Animator<T> {
                 let val: unknown = cloneValue(kf.value as any);
                 if (track.isColor) {
                     val = rgba2String(val as number[]);
+                }
+                else if (track.isGradient) {
+                    const colorStops = map((val as ParsedGradientObject).colorStops, colorStop => ({
+                        offset: colorStop.offset,
+                        color: rgba2String(colorStop.color)
+                    }));
+                    val = extend({}, val) as unknown as ParsedGradientObject;
+                    (val as GradientObject).colorStops = colorStops;
                 }
 
                 (target as any)[propName] = val;

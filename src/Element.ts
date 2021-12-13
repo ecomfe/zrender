@@ -20,7 +20,8 @@ import {
     logError,
     mixin,
     isArrayLike,
-    isTypedArray
+    isTypedArray,
+    isGradientObject
 } from './core/util';
 import Polyline from './graphic/shape/Polyline';
 import Group from './graphic/Group';
@@ -1865,7 +1866,9 @@ function animateToShallow<T>(
         if (needAnimateKey(target, source, innerKey, cfg.force)
             && (animateAll || (animationProps as Dictionary<any>)[innerKey])
         ) {
-            if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
+            if (isObject(target[innerKey])
+                && !isArrayLike(target[innerKey]) && !isGradientObject(target[innerKey])
+            ) {
                 if (topKey) {
                     // logError('Only support 1 depth nest object animation.');
                     // Assign directly.
