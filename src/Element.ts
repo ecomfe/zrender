@@ -1767,7 +1767,10 @@ function animateTo<T>(
         if (abortedCb) {
             animator.aborted(abortedCb);
         }
-        animator.start(cfg.easing, cfg.force ? cfg.duration : 0);
+        if (cfg.force) {
+            animator.duration(cfg.duration);
+        }
+        animator.start(cfg.easing);
     }
 
     return animators;

@@ -662,6 +662,11 @@ export default class Animator<T> {
     private _maxTime = 0
 
     /**
+     * If force run regardless of empty tracks when duration is set.
+     */
+    private _force: boolean;
+
+    /**
      * If animator is paused
      * @default false
      */
@@ -676,7 +681,6 @@ export default class Animator<T> {
      * @default false
      */
     private _allowDiscrete: boolean
-    private _allowDuplicate: boolean
 
     private _additiveAnimators: Animator<any>[]
 
@@ -798,6 +802,18 @@ export default class Animator<T> {
         return !!this._paused;
     }
 
+    /**
+     * Set duration of animator.
+     * Will run this duration regardless the track max time or if trackes exits.
+     * @param duration
+     * @returns
+     */
+    duration(duration: number) {
+        this._maxTime = duration;
+        this._force = true;
+        return this;
+    }
+
     private _doneCallback() {
         this._setTracksFinished();
         // Clear clip
@@ -854,13 +870,9 @@ export default class Animator<T> {
     /**
      * Start the animation
      * @param easing
-     * @param  minDuration Set min duration of animation.
      * @return
      */
-    start(
-        easing?: AnimationEasing,
-        minDuration?: number
-    ) {
+    start(easing?: AnimationEasing) {
         if (this._started > 0) {
             return;
         }
@@ -870,9 +882,6 @@ export default class Animator<T> {
 
         let tracks: Track[] = [];
         let maxTime = this._maxTime || 0;
-        if (minDuration) {
-            maxTime = this._maxTime = Math.max(minDuration, maxTime);
-        }
         for (let i = 0; i < this._trackKeys.length; i++) {
             const propName = this._trackKeys[i];
             const track = this._tracks[propName];
@@ -895,7 +904,7 @@ export default class Animator<T> {
             }
         }
         // Add during callback on the last clip
-        if (tracks.length || minDuration > 0) {
+        if (tracks.length || this._force) {
             const clip = new Clip({
                 life: maxTime,
                 loop: this._loop,
