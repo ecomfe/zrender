@@ -7,7 +7,7 @@ import PathProxy from '../core/PathProxy';
 import { getPathPrecision, getSRTTransformString } from './helper';
 import { each, extend, filter, isString, keys } from '../core/util';
 import Animator from '../animation/Animator';
-import { CompoundPath } from '../export';
+import CompoundPath from '../graphic/CompoundPath';
 import { AnimationEasing } from '../animation/easing';
 import { createCubicEasingFunc } from '../animation/cubicEasing';
 

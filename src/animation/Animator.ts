@@ -9,7 +9,6 @@ import {ArrayLike, Dictionary} from '../core/types';
 import easingFuncs, { AnimationEasing } from './easing';
 import Animation from './Animation';
 import { createCubicEasingFunc } from './cubicEasing';
-import { LinearGradientObject } from '../export';
 import { isLinearGradient, isRadialGradient } from '../svg/helper';
 import { GradientObject } from '../graphic/Gradient';
 
