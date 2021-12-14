@@ -379,12 +379,12 @@ class Track {
         const lastKf = kfs[kfsLen - 1];
         const isDiscrete = this.discrete;
 
-        if (!isDiscrete) {
-            for (let i = 0; i < kfsLen; i++) {
-                const kf = kfs[i];
-                const value = kf.value;
-                const lastValue = lastKf.value;
-                kf.percent = kf.time / maxTime;
+        for (let i = 0; i < kfsLen; i++) {
+            const kf = kfs[i];
+            const value = kf.value;
+            const lastValue = lastKf.value;
+            kf.percent = kf.time / maxTime;
+            if (!isDiscrete) {
                 if (arrDim > 0 && i !== kfsLen - 1) {
                     // Align array with target frame.
                     fillArray(value as NumberArray, lastValue as NumberArray, arrDim);
