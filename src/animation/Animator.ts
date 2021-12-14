@@ -772,11 +772,12 @@ export default class Animator<T> {
                     // zrLog('Invalid property ' + propName);
                     continue;
                 }
-                // If time is 0
+                // If time is <= 0
                 //  Then props is given initialize value
+                //  Note: initial percent can be negative, which means the initial value is before the animation start.
                 // Else
                 //  Initialize value from current prop value
-                if (time !== 0) {
+                if (time > 0) {
                     track.addKeyframe(0, cloneValue(initialValue), easing);
                 }
 
@@ -880,8 +881,8 @@ export default class Animator<T> {
 
         const self = this;
 
-        let tracks: Track[] = [];
-        let maxTime = this._maxTime || 0;
+        const tracks: Track[] = [];
+        const maxTime = this._maxTime || 0;
         for (let i = 0; i < this._trackKeys.length; i++) {
             const propName = this._trackKeys[i];
             const track = this._tracks[propName];
