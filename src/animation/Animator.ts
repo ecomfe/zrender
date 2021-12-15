@@ -1061,6 +1061,8 @@ export default class Animator<T> {
                 else if (this._started === 1) {
                     track.step(this._target, 0);
                 }
+                // Set track to finished
+                track.setFinished();
             }
         }
         let allAborted = true;

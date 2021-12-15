@@ -21,7 +21,8 @@ import {
     mixin,
     isArrayLike,
     isTypedArray,
-    isGradientObject
+    isGradientObject,
+    filter
 } from './core/util';
 import Polyline from './graphic/shape/Polyline';
 import Group from './graphic/Group';
@@ -1628,13 +1629,15 @@ class Element<Props extends ElementProps = ElementProps> {
         const elProto = Element.prototype;
         elProto.type = 'element';
         elProto.name = '';
-        elProto.ignore = false;
-        elProto.silent = false;
-        elProto.isGroup = false;
-        elProto.draggable = false;
-        elProto.dragging = false;
-        elProto.ignoreClip = false;
+
+        elProto.ignore =
+        elProto.silent =
+        elProto.isGroup =
+        elProto.draggable =
+        elProto.dragging =
+        elProto.ignoreClip =
         elProto.__inHover = false;
+
         elProto.__dirty = REDRAW_BIT;
 
 
@@ -1654,7 +1657,9 @@ class Element<Props extends ElementProps = ElementProps> {
         ) {
             Object.defineProperty(elProto, key, {
                 get() {
-                    logDeprecatedError(key, xKey, yKey);
+                    if (process.env.NODE_ENV !== 'production') {
+                        logDeprecatedError(key, xKey, yKey);
+                    }
                     if (!this[privateKey]) {
                         const pos: number[] = this[privateKey] = [];
                         enhanceArray(this, pos);
@@ -1662,7 +1667,9 @@ class Element<Props extends ElementProps = ElementProps> {
                     return this[privateKey];
                 },
                 set(pos: number[]) {
-                    logDeprecatedError(key, xKey, yKey);
+                    if (process.env.NODE_ENV !== 'production') {
+                        logDeprecatedError(key, xKey, yKey);
+                    }
                     this[xKey] = pos[0];
                     this[yKey] = pos[1];
                     this[privateKey] = pos;
@@ -1688,7 +1695,10 @@ class Element<Props extends ElementProps = ElementProps> {
                 });
             }
         }
-        if (Object.defineProperty && (!(env as any).browser.ie || (env as any).browser.version > 8)) {
+        if (Object.defineProperty
+            // Just don't support ie8
+            // && (!(env as any).browser.ie || (env as any).browser.version > 8)
+        ) {
             createLegacyProperty('position', '_legacyPos', 'x', 'y');
             createLegacyProperty('scale', '_legacyScale', 'scaleX', 'scaleY');
             createLegacyProperty('origin', '_legacyOrigin', 'originX', 'originY');
@@ -1870,7 +1880,8 @@ function animateToShallow<T>(
             && (animateAll || (animationProps as Dictionary<any>)[innerKey])
         ) {
             if (isObject(target[innerKey])
-                && !isArrayLike(target[innerKey]) && !isGradientObject(target[innerKey])
+                && !isArrayLike(target[innerKey])
+                && !isGradientObject(target[innerKey])
             ) {
                 if (topKey) {
                     // logError('Only support 1 depth nest object animation.');
@@ -1918,22 +1929,18 @@ function animateToShallow<T>(
     ) {
         // Find last animator animating same prop.
         const existsAnimators = animatable.animators;
-        let existsAnimatorsOnSameTarget: Animator<any>[] = [];
-        for (let i = 0; i < existsAnimators.length; i++) {
-            // Use key string instead object reference because ref may be changed.
-            if (existsAnimators[i].targetName === topKey) {
-                existsAnimatorsOnSameTarget.push(existsAnimators[i]);
-            }
-        }
 
-        if (!additive && existsAnimatorsOnSameTarget.length) {
+        if (!additive) {
             // Stop exists animation on specific tracks. Only one animator available for each property.
             // TODO Should invoke previous animation callback?
-            for (let i = 0; i < existsAnimatorsOnSameTarget.length; i++) {
-                const allAborted = existsAnimatorsOnSameTarget[i].stopTracks(changedKeys);
-                if (allAborted) {   // This animator can't be used.
-                    const idx = indexOf(existsAnimators, existsAnimatorsOnSameTarget[i]);
-                    existsAnimators.splice(idx, 1);
+            for (let i = 0; i < existsAnimators.length; i++) {
+                const animator = existsAnimators[i];
+                if (animator.targetName === topKey) {
+                    const allAborted = existsAnimators[i].stopTracks(changedKeys);
+                    if (allAborted) {   // This animator can't be used.
+                        const idx = indexOf(existsAnimators, existsAnimators[i]);
+                        existsAnimators.splice(idx, 1);
+                    }
                 }
             }
         }
@@ -1975,7 +1982,11 @@ function animateToShallow<T>(
             }
         }
 
-        const animator = new Animator(source, false, false, additive ? existsAnimatorsOnSameTarget : null);
+        const animator = new Animator(source, false, false, additive ? filter(
+            // Use key string instead object reference because ref may be changed.
+            existsAnimators, animator => animator.targetName === topKey
+        ) : null);
+
         animator.targetName = topKey;
         if (cfg.scope) {
             animator.scope = cfg.scope;
