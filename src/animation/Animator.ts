@@ -4,7 +4,7 @@
 
 import Clip from './Clip';
 import * as color from '../tool/color';
-import {extend, isArrayLike, isFunction, isGradientObject, isNumber, keys, logError, map} from '../core/util';
+import {extend, isArrayLike, isFunction, isGradientObject, isNumber, isString, keys, logError, map} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
 import easingFuncs, { AnimationEasing } from './easing';
 import Animation from './Animation';
@@ -125,7 +125,7 @@ function fillColorStops(val0: ParsedColorStop[], val1: ParsedColorStop[]) {
 function fillArray(
     val0: NumberArray | NumberArray[],
     val1: NumberArray | NumberArray[],
-    arrDim: number
+    arrDim: 1 | 2
 ) {
     // TODO Handling different length TypedArray
     let arr0 = val0 as (number | number[])[];
@@ -206,36 +206,51 @@ function rgba2String(rgba: number[]): string {
     return 'rgba(' + rgba.join(',') + ')';
 }
 
-function guessArrayDim(value: ArrayLike<unknown>): number {
+function guessArrayDim(value: ArrayLike<unknown>): 1 | 2 {
     return isArrayLike(value && (value as ArrayLike<unknown>)[0]) ? 2 : 1;
 }
+
+const VALUE_TYPE_NUMBER = 0;
+const VALUE_TYPE_1D_ARRAY = 1;
+const VALUE_TYPE_2D_ARRAY = 2;
+const VALUE_TYPE_COLOR = 3;
+const VALUE_TYPE_LINEAR_GRADIENT = 4;
+const VALUE_TYPE_RADIAL_GRADIENT = 5;
+// Other value type that can only use discrete animation.
+const VALUE_TYPE_UNKOWN = 6;
+
+type ValueType = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 type Keyframe = {
     time: number
     value: unknown
     percent: number
+    // Raw value for discrete animation.
+    rawValue: unknown
 
     easing?: AnimationEasing    // Raw easing
     easingFunc?: (percent: number) => number
     additiveValue?: unknown
 }
 
+
+function isGradientValueType(valType: ValueType): valType is 4 | 5 {
+    return valType === VALUE_TYPE_LINEAR_GRADIENT || valType === VALUE_TYPE_RADIAL_GRADIENT;
+}
+function isArrayValueType(valType: ValueType): valType is 1 | 2 {
+    return valType === VALUE_TYPE_1D_ARRAY || valType === VALUE_TYPE_2D_ARRAY;
+}
+
+
 let tmpRgba: number[] = [0, 0, 0, 0];
+
 class Track {
 
     keyframes: Keyframe[] = []
 
     propName: string
 
-    // Larger than 0 if value is array
-    arrDim: number = 0
-    isColor: boolean
-    /**
-     * 0: Not gradient
-     * 1: Linear Gradient
-     * 2: Radial Gradient
-     */
-    isGradient: 0 | 1 | 2
+    valType: ValueType
 
     discrete: boolean = false
 
@@ -284,66 +299,60 @@ class Track {
         return this._additiveTrack;
     }
 
-    addKeyframe(time: number, value: unknown, easing?: AnimationEasing) {
+    addKeyframe(time: number, rawValue: unknown, easing?: AnimationEasing) {
         this._needsSort = true;
 
         let keyframes = this.keyframes;
         let len = keyframes.length;
 
         let discrete = false;
+        let valType: ValueType = VALUE_TYPE_UNKOWN;
+        let value = rawValue;
 
         // Handling values only if it's possible to be interpolated.
-        if (isArrayLike(value)) {
-            let arrayDim = guessArrayDim(value);
-            if (len > 0 && this.arrDim !== arrayDim) { // Two values has differnt dimension.
-                discrete = true;
-            }
+        if (isArrayLike(rawValue)) {
+            let arrayDim = guessArrayDim(rawValue);
+            valType = arrayDim;
             // Not a number array.
-            if (arrayDim === 1 && !isNumber(value[0])
-                || arrayDim === 2 && !isNumber(value[0][0])) {
+            if (arrayDim === 1 && !isNumber(rawValue[0])
+                || arrayDim === 2 && !isNumber(rawValue[0][0])) {
                 discrete = true;
             }
-            this.arrDim = arrayDim;
         }
         else {
-            if (this.arrDim > 0) {  // Previous value is array.
-                discrete = true;
+            if (!isNaN(+rawValue)) {
+                valType = VALUE_TYPE_NUMBER;
             }
-
-            if (typeof value === 'string') {
-                const colorArray = color.parse(value);
+            else if (isString(rawValue)) {
+                const colorArray = color.parse(rawValue);
                 if (colorArray) {
                     value = colorArray;
-                    this.isColor = true;
-                }
-                else {
-                    discrete = true;
+                    valType = VALUE_TYPE_COLOR;
                 }
             }
-            else if (isGradientObject(value)) {
+            else if (isGradientObject(rawValue)) {
                 // TODO Color to gradient or gradient to color.
                 const parsedGradient = extend({}, value) as unknown as ParsedGradientObject;
-                parsedGradient.colorStops = map(value.colorStops, colorStop => ({
+                parsedGradient.colorStops = map(rawValue.colorStops, colorStop => ({
                     offset: colorStop.offset,
                     color: color.parse(colorStop.color)
                 }));
-                let gradientType: 1 | 2;
-                if (isLinearGradient(value)) {
-                    gradientType = 1;
+                if (isLinearGradient(rawValue)) {
+                    valType = VALUE_TYPE_LINEAR_GRADIENT;
                 }
-                else if (isRadialGradient(value)) {
-                    gradientType = 2;
-                }
-                // Not all gradient
-                if (len > 0 && this.isGradient !== gradientType) {
-                    discrete = true;
+                else if (isRadialGradient(rawValue)) {
+                    valType = VALUE_TYPE_RADIAL_GRADIENT;
                 }
                 value = parsedGradient;
-                this.isGradient = gradientType;
             }
-            else if (typeof value !== 'number' || isNaN(value)) {
-                discrete = true;
-            }
+        }
+
+        if (len === 0) {
+            // Inference type from the first keyframe.
+            this.valType = valType;
+        }
+        else if (valType !== this.valType) { // Not same value type.
+            discrete = true;
         }
 
         this.discrete = this.discrete || discrete;
@@ -351,6 +360,7 @@ class Track {
         const kf: Keyframe = {
             time,
             value,
+            rawValue,
             percent: 0
         };
         if (easing) {
@@ -374,10 +384,12 @@ class Track {
             });
         }
 
-        const arrDim = this.arrDim;
+        const valType = this.valType;
         const kfsLen = kfs.length;
         const lastKf = kfs[kfsLen - 1];
         const isDiscrete = this.discrete;
+        const isArr = isArrayValueType(valType);
+        const isGradient = isGradientValueType(valType);
 
         for (let i = 0; i < kfsLen; i++) {
             const kf = kfs[i];
@@ -385,11 +397,11 @@ class Track {
             const lastValue = lastKf.value;
             kf.percent = kf.time / maxTime;
             if (!isDiscrete) {
-                if (arrDim > 0 && i !== kfsLen - 1) {
+                if (isArr && i !== kfsLen - 1) {
                     // Align array with target frame.
-                    fillArray(value as NumberArray, lastValue as NumberArray, arrDim);
+                    fillArray(value as NumberArray, lastValue as NumberArray, valType);
                 }
-                else if (this.isGradient) {
+                else if (isGradient) {
                     fillColorStops(
                         (value as ParsedLinearGradientObject).colorStops,
                         (lastValue as ParsedLinearGradientObject).colorStops
@@ -402,13 +414,12 @@ class Track {
         if (
             !isDiscrete
             // TODO support gradient
-            && !this.isGradient
+            && valType !== VALUE_TYPE_RADIAL_GRADIENT
             && additiveTrack
             // If two track both will be animated and have same value format.
             && this.needsAnimate()
             && additiveTrack.needsAnimate()
-            && arrDim === additiveTrack.arrDim
-            && this.isColor === additiveTrack.isColor
+            && valType === additiveTrack.valType
             && !additiveTrack._finished
         ) {
             this._additiveTrack = additiveTrack;
@@ -416,30 +427,17 @@ class Track {
             const startValue = kfs[0].value;
             // Calculate difference
             for (let i = 0; i < kfsLen; i++) {
-                if (arrDim === 0) {
-                    if (this.isColor) {
-                        kfs[i].additiveValue =
-                            add1DArray([], kfs[i].value as NumberArray, startValue as NumberArray, -1);
-                    }
-                    else {
-                        kfs[i].additiveValue = kfs[i].value as number - (startValue as number);
-                    }
+                if (valType === VALUE_TYPE_NUMBER) {
+                    kfs[i].additiveValue = kfs[i].value as number - (startValue as number);
                 }
-                else if (arrDim === 1) {
-                    kfs[i].additiveValue = add1DArray(
-                        [],
-                        kfs[i].value as NumberArray,
-                        startValue as NumberArray,
-                        -1
-                    );
+                else if (valType === VALUE_TYPE_COLOR) {
+                    kfs[i].additiveValue =
+                        add1DArray([], kfs[i].value as NumberArray, startValue as NumberArray, -1);
                 }
-                else if (arrDim === 2) {
-                    kfs[i].additiveValue = add2DArray(
-                        [],
-                        kfs[i].value as NumberArray[],
-                        startValue as NumberArray[],
-                        -1
-                    );
+                else if (isArrayValueType(valType)) {
+                    kfs[i].additiveValue = valType === VALUE_TYPE_1D_ARRAY
+                        ? add1DArray([], kfs[i].value as NumberArray, startValue as NumberArray, -1)
+                        : add2DArray([], kfs[i].value as NumberArray[], startValue as NumberArray[], -1);
                 }
             }
         }
@@ -457,12 +455,11 @@ class Track {
         const isAdditive = this._additiveTrack != null;
         const valueKey = isAdditive ? 'additiveValue' : 'value';
 
+        const valType = this.valType;
         const keyframes = this.keyframes;
         const kfsNum = keyframes.length;
         const propName = this.propName;
-        const arrDim = this.arrDim;
-        const isValueColor = this.isColor;
-        const gradientType = this.isGradient;
+        const isValueColor = valType === VALUE_TYPE_COLOR;
         // Find the range keyframes
         // kf1-----kf2---------current--------kf3
         // find kf2 and kf3 and do interpolation
@@ -524,15 +521,16 @@ class Track {
         let targetArr = isAdditive ? this._additiveValue
             : (isValueColor ? tmpRgba : target[propName]);
 
-        if ((arrDim > 0 || isValueColor) && !targetArr) {
+        if ((isArrayValueType(valType) || isValueColor) && !targetArr) {
             targetArr = this._additiveValue = [];
         }
 
         if (this.discrete) {
-            target[propName] = w < 1 ? frame[valueKey] : nextFrame[valueKey];
+            // use raw value without parse in discrete animation.
+            target[propName] = w < 1 ? frame.rawValue : nextFrame.rawValue;
         }
-        else if (arrDim > 0) {
-            arrDim === 1
+        else if (isArrayValueType(valType)) {
+            valType === VALUE_TYPE_1D_ARRAY
                 ? interpolate1DArray(
                     targetArr as NumberArray,
                     frame[valueKey] as NumberArray,
@@ -546,11 +544,12 @@ class Track {
                     w
                 );
         }
-        else if (gradientType) {
+        else if (isGradientValueType(valType)) {
             const val = frame[valueKey] as ParsedGradientObject;
             const nextVal = nextFrame[valueKey] as ParsedGradientObject;
+            const isLinearGradient = valType === VALUE_TYPE_LINEAR_GRADIENT;
             target[propName] = {
-                type: gradientType === 1 ? 'linear' : 'radial',
+                type: isLinearGradient ? 'linear' : 'radial',
                 x: interpolateNumber(val.x, nextVal.x, w),
                 y: interpolateNumber(val.x, nextVal.x, w),
                 // TODO performance
@@ -565,7 +564,7 @@ class Track {
                 }),
                 global: nextVal.global
             };
-            if (gradientType === 1) {
+            if (isLinearGradient) {
                 // Linear
                 target[propName].x2 = interpolateNumber(
                     (val as ParsedLinearGradientObject).x2, (nextVal as ParsedLinearGradientObject).x2, w
@@ -609,26 +608,24 @@ class Track {
     }
 
     private _addToTarget(target: any) {
-        const arrDim = this.arrDim;
+        const valType = this.valType;
         const propName = this.propName;
         const additiveValue = this._additiveValue;
 
-        if (arrDim === 0) {
-            if (this.isColor) {
-                // TODO reduce unnecessary parse
-                color.parse(target[propName], tmpRgba);
-                add1DArray(tmpRgba, tmpRgba, additiveValue as NumberArray, 1);
-                target[propName] = rgba2String(tmpRgba);
-            }
-            else {
-                // Add a difference value based on the change of previous frame.
-                target[propName] = target[propName] + additiveValue;
-            }
+        if (valType === VALUE_TYPE_NUMBER) {
+            // Add a difference value based on the change of previous frame.
+            target[propName] = target[propName] + additiveValue;
         }
-        else if (arrDim === 1) {
+        else if (valType === VALUE_TYPE_COLOR) {
+            // TODO reduce unnecessary parse
+            color.parse(target[propName], tmpRgba);
+            add1DArray(tmpRgba, tmpRgba, additiveValue as NumberArray, 1);
+            target[propName] = rgba2String(tmpRgba);
+        }
+        else if (valType === VALUE_TYPE_1D_ARRAY) {
             add1DArray(target[propName], target[propName], additiveValue as NumberArray, 1);
         }
-        else if (arrDim === 2) {
+        else if (valType === VALUE_TYPE_2D_ARRAY) {
             add2DArray(target[propName], target[propName], additiveValue as NumberArray[], 1);
         }
     }
@@ -756,10 +753,11 @@ export default class Animator<T> {
                 let initialValue;
                 const additiveTrack = this._getAdditiveTrack(propName);
                 if (additiveTrack) {
-                    const lastFinalKf = additiveTrack.keyframes[additiveTrack.keyframes.length - 1];
+                    const addtiveTrackKfs = additiveTrack.keyframes;
+                    const lastFinalKf = addtiveTrackKfs[addtiveTrackKfs.length - 1];
                     // Use the last state of additived animator.
                     initialValue = lastFinalKf && lastFinalKf.value;
-                    if (additiveTrack.isColor && initialValue) {
+                    if (additiveTrack.valType === VALUE_TYPE_COLOR && initialValue) {
                         // Convert to rgba string
                         initialValue = rgba2String(initialValue as number[]);
                     }
@@ -896,8 +894,10 @@ export default class Animator<T> {
                     const lastKf = kfs[kfsNum - 1];
                     // Set final value.
                     if (lastKf) {
-                        (self._target as any)[track.propName] = lastKf.value;
+                        // use raw value without parse.
+                        (self._target as any)[track.propName] = lastKf.rawValue;
                     }
+                    track.setFinished();
                 }
                 else {
                     tracks.push(track);
@@ -1110,20 +1110,8 @@ export default class Animator<T> {
             const kf = kfs[firstOrLast ? 0 : kfs.length - 1];
             if (kf) {
                 // TODO CLONE?
-                let val: unknown = cloneValue(kf.value as any);
-                if (track.isColor) {
-                    val = rgba2String(val as number[]);
-                }
-                else if (track.isGradient) {
-                    const colorStops = map((val as ParsedGradientObject).colorStops, colorStop => ({
-                        offset: colorStop.offset,
-                        color: rgba2String(colorStop.color)
-                    }));
-                    val = extend({}, val) as unknown as ParsedGradientObject;
-                    (val as GradientObject).colorStops = colorStops;
-                }
-
-                (target as any)[propName] = val;
+                // Use raw value without parse.
+                (target as any)[propName] = cloneValue(kf.rawValue as any);
             }
         }
     }
