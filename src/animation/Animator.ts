@@ -731,8 +731,9 @@ export default class Animator<T> {
 
     /**
      * Set Animation keyframe
-     * @param time 关键帧时间，单位是ms
-     * @param props 关键帧的属性值，key-value表示
+     * @param time time of keyframe in ms
+     * @param props key-value props of keyframe.
+     * @param easing
      */
     when(time: number, props: Dictionary<any>, easing?: AnimationEasing) {
         return this.whenWithKeys(time, props, keys(props) as string[], easing);
@@ -1060,8 +1061,6 @@ export default class Animator<T> {
                 else if (this._started === 1) {
                     track.step(this._target, 0);
                 }
-                // Set track to finished
-                track.setFinished();
             }
         }
         let allAborted = true;
