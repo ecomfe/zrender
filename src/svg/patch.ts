@@ -120,10 +120,10 @@ function removeVnodes(parentElm: Node, vnodes: SVGVNode[], startIdx: number, end
     }
 }
 
-function updateAttrs(oldVnode: SVGVNode, vnode: SVGVNode): void {
+export function updateAttrs(oldVnode: SVGVNode, vnode: SVGVNode): void {
     let key: string;
     const elm = vnode.elm as Element;
-    const oldAttrs = oldVnode.attrs || {};
+    const oldAttrs = oldVnode && oldVnode.attrs || {};
     const attrs = vnode.attrs || {};
 
     if (oldAttrs === attrs) {

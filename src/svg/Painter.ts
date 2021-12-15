@@ -19,10 +19,10 @@ import {
     createBrushScope,
     createSVGVNode
 } from './core';
-import { normalizeColor } from './helper';
+import { normalizeColor, encodeBase64 } from './helper';
 import { defaults, extend, keys, logError, map } from '../core/util';
 import Path from '../graphic/Path';
-import patch from './patch';
+import patch, { updateAttrs } from './patch';
 import { getSize } from '../canvas/helper';
 
 let svgId = 0;
@@ -71,6 +71,7 @@ class SVGPainter implements PainterBase {
             const viewport = this._viewport = document.createElement('div');
             viewport.style.cssText = 'position:relative;overflow:hidden';
             const svgDom = this._svgDom = this._oldVNode.elm = createElement('svg');
+            updateAttrs(null, this._oldVNode);
             viewport.appendChild(svgDom);
             root.appendChild(viewport);
         }
@@ -338,10 +339,14 @@ class SVGPainter implements PainterBase {
         }
         this._oldVNode = null;
     }
-    toDataURL() {
-        const str = this.renderToString();
-        const html = encodeURIComponent(str);
-        return 'data:image/svg+xml;charset=UTF-8,' + html;
+    toDataURL(base64?: boolean) {
+        let str = encodeURIComponent(this.renderToString());
+        const prefix = 'data:image/svg+xml;';
+        if (base64) {
+            str = encodeBase64(str);
+            return str && prefix + 'base64,' + str;
+        }
+        return prefix + 'charset=UTF-8,' + str;
     }
 
     refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];

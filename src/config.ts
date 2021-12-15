@@ -1,7 +1,9 @@
+import env from './core/env';
+
 let dpr = 1;
 
 // If in browser environment
-if (typeof window !== 'undefined') {
+if (env.hasGlobalWindow) {
     dpr = Math.max(
         window.devicePixelRatio
         || (window.screen && (window.screen as any).deviceXDPI / (window.screen as any).logicalXDPI)
