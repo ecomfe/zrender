@@ -166,19 +166,6 @@ function fillArray(
     }
 }
 
-export function is1DArraySame(arr0: NumberArray, arr1: NumberArray) {
-    const len = arr0.length;
-    if (len !== arr1.length) {
-        return false;
-    }
-    for (let i = 0; i < len; i++) {
-        if (arr0[i] !== arr1[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
 export function cloneValue(value: InterpolatableType) {
     if (isArrayLike(value)) {
         const len = value.length;

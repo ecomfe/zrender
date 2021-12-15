@@ -1,6 +1,6 @@
 import Transformable from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
-import Animator, {cloneValue, is1DArraySame} from './animation/Animator';
+import Animator, {cloneValue} from './animation/Animator';
 import { ZRenderType } from './zrender';
 import {
     Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes,
@@ -1839,26 +1839,29 @@ function copyValue(target: Dictionary<any>, source: Dictionary<any>, key: string
     }
 }
 
-function needAnimateKey(target: Dictionary<any>, source: Dictionary<any>, key: string, force: boolean) {
-    const sourceVal = source[key];
-    const targetVal = target[key];
-    return !(
-        // Can't animate between null value. assign directly. For example. stroke animate from #fff to null.
-        sourceVal == null
-        || targetVal == null
-        // Not animate not changed value if not using force.
-        || !force && (
-            sourceVal === targetVal
-            // Only check 1 dimension array
-            || isArrayLike(sourceVal) && isArrayLike(targetVal) && is1DArraySame(sourceVal, targetVal)
-        )
-    );
+function isValueSame(val1: any, val2: any) {
+    return val1 === val2
+        // Only check 1 dimension array
+        || isArrayLike(val1) && isArrayLike(val2) && is1DArraySame(val1, val2);
+}
+
+function is1DArraySame(arr0: ArrayLike<number>, arr1: ArrayLike<number>) {
+    const len = arr0.length;
+    if (len !== arr1.length) {
+        return false;
+    }
+    for (let i = 0; i < len; i++) {
+        if (arr0[i] !== arr1[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 function animateToShallow<T>(
     animatable: Element<T>,
     topKey: string,
-    source: Dictionary<any>,
+    animateObj: Dictionary<any>,
     target: Dictionary<any>,
     cfg: ElementAnimateConfig,
     animationProps: Dictionary<any> | true,
@@ -1876,7 +1879,9 @@ function animateToShallow<T>(
     for (let k = 0; k < targetKeys.length; k++) {
         const innerKey = targetKeys[k] as string;
 
-        if (needAnimateKey(target, source, innerKey, cfg.force)
+        if (
+            target[innerKey] != null
+            && animateObj[innerKey] != null
             && (animateAll || (animationProps as Dictionary<any>)[innerKey])
         ) {
             if (isObject(target[innerKey])
@@ -1888,7 +1893,7 @@ function animateToShallow<T>(
                     // Assign directly.
                     // TODO richText?
                     if (!reverse) {
-                        source[innerKey] = target[innerKey];
+                        animateObj[innerKey] = target[innerKey];
                         animatable.updateDuringAnimation(topKey);
                     }
                     continue;
@@ -1896,7 +1901,7 @@ function animateToShallow<T>(
                 animateToShallow(
                     animatable,
                     innerKey,
-                    source[innerKey],
+                    animateObj[innerKey],
                     target[innerKey],
                     cfg,
                     animationProps && (animationProps as Dictionary<any>)[innerKey],
@@ -1905,13 +1910,16 @@ function animateToShallow<T>(
                 );
             }
             else {
-                animatableKeys.push(innerKey);
+                // Not animate not changed value if not using force.
+                if (cfg.force || !isValueSame(target[innerKey], animateObj[innerKey])) {
+                    animatableKeys.push(innerKey);
+                }
                 changedKeys.push(innerKey);
             }
         }
         else if (!reverse) {
             // Assign target value directly.
-            source[innerKey] = target[innerKey];
+            animateObj[innerKey] = target[innerKey];
             animatable.updateDuringAnimation(topKey);
             // Previous animation will be stopped on the changed keys.
             // So direct assign is also included.
@@ -1921,30 +1929,32 @@ function animateToShallow<T>(
 
     const keyLen = animatableKeys.length;
 
+
+    // Find last animator animating same prop.
+    const existsAnimators = animatable.animators;
+
+    // Stop previous animations on the same property.
+    if (!additive && changedKeys.length) {
+        // Stop exists animation on specific tracks. Only one animator available for each property.
+        // TODO Should invoke previous animation callback?
+        for (let i = 0; i < existsAnimators.length; i++) {
+            const animator = existsAnimators[i];
+            if (animator.targetName === topKey) {
+                const allAborted = existsAnimators[i].stopTracks(changedKeys);
+                if (allAborted) {   // This animator can't be used.
+                    const idx = indexOf(existsAnimators, existsAnimators[i]);
+                    existsAnimators.splice(idx, 1);
+                }
+            }
+        }
+    }
+
     if (keyLen > 0
         // cfg.force is mainly for keep invoking onframe and ondone callback even if animation is not necessary.
         // So if there is already has animators. There is no need to create another animator if not necessary.
         // Or it will always add one more with empty target.
         || (cfg.force && !animators.length)
     ) {
-        // Find last animator animating same prop.
-        const existsAnimators = animatable.animators;
-
-        if (!additive) {
-            // Stop exists animation on specific tracks. Only one animator available for each property.
-            // TODO Should invoke previous animation callback?
-            for (let i = 0; i < existsAnimators.length; i++) {
-                const animator = existsAnimators[i];
-                if (animator.targetName === topKey) {
-                    const allAborted = existsAnimators[i].stopTracks(changedKeys);
-                    if (allAborted) {   // This animator can't be used.
-                        const idx = indexOf(existsAnimators, existsAnimators[i]);
-                        existsAnimators.splice(idx, 1);
-                    }
-                }
-            }
-        }
-
         let revertedSource: Dictionary<any>;
         let reversedTarget: Dictionary<any>;
         let sourceClone: Dictionary<any>;
@@ -1955,7 +1965,7 @@ function animateToShallow<T>(
             }
             for (let i = 0; i < keyLen; i++) {
                 const innerKey = animatableKeys[i];
-                reversedTarget[innerKey] = source[innerKey];
+                reversedTarget[innerKey] = animateObj[innerKey];
                 if (setToFinal) {
                     revertedSource[innerKey] = target[innerKey];
                 }
@@ -1966,7 +1976,7 @@ function animateToShallow<T>(
                     // to prevent the "final" values from being read in any other places (like other running
                     // animator during callbacks).
                     // But if `setToFinal: true` this feature can not be satisfied.
-                    source[innerKey] = target[innerKey];
+                    animateObj[innerKey] = target[innerKey];
                 }
             }
         }
@@ -1975,14 +1985,14 @@ function animateToShallow<T>(
             for (let i = 0; i < keyLen; i++) {
                 const innerKey = animatableKeys[i];
                 // NOTE: Must clone source after the stopTracks. The property may be modified in stopTracks.
-                sourceClone[innerKey] = cloneValue(source[innerKey]);
+                sourceClone[innerKey] = cloneValue(animateObj[innerKey]);
                 // Use copy, not change the original reference
                 // Copy from target to source.
-                copyValue(source, target, innerKey);
+                copyValue(animateObj, target, innerKey);
             }
         }
 
-        const animator = new Animator(source, false, false, additive ? filter(
+        const animator = new Animator(animateObj, false, false, additive ? filter(
             // Use key string instead object reference because ref may be changed.
             existsAnimators, animator => animator.targetName === topKey
         ) : null);
