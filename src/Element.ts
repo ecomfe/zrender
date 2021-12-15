@@ -29,7 +29,6 @@ import Group from './graphic/Group';
 import Point from './core/Point';
 import { LIGHT_LABEL_COLOR, DARK_LABEL_COLOR } from './config';
 import { parse, stringify } from './tool/color';
-import env from './core/env';
 import { REDRAW_BIT } from './graphic/constants';
 
 export interface ElementAnimateConfig {
@@ -1868,14 +1867,16 @@ function animateToShallow<T>(
     animators: Animator<any>[],
     reverse: boolean    // If `true`, animate from the `target` to current state.
 ) {
-    const animatableKeys: string[] = [];
-    const changedKeys: string[] = [];
     const targetKeys = keys(target);
     const duration = cfg.duration;
     const delay = cfg.delay;
     const additive = cfg.additive;
     const setToFinal = cfg.setToFinal;
     const animateAll = !isObject(animationProps);
+    // Find last animator animating same prop.
+    const existsAnimators = animatable.animators;
+
+    let animationKeys: string[] = [];
     for (let k = 0; k < targetKeys.length; k++) {
         const innerKey = targetKeys[k] as string;
 
@@ -1910,11 +1911,7 @@ function animateToShallow<T>(
                 );
             }
             else {
-                // Not animate not changed value if not using force.
-                if (cfg.force || !isValueSame(target[innerKey], animateObj[innerKey])) {
-                    animatableKeys.push(innerKey);
-                }
-                changedKeys.push(innerKey);
+                animationKeys.push(innerKey);
             }
         }
         else if (!reverse) {
@@ -1923,30 +1920,33 @@ function animateToShallow<T>(
             animatable.updateDuringAnimation(topKey);
             // Previous animation will be stopped on the changed keys.
             // So direct assign is also included.
-            changedKeys.push(innerKey);
+            animationKeys.push(innerKey);
         }
     }
 
-    const keyLen = animatableKeys.length;
-
-
-    // Find last animator animating same prop.
-    const existsAnimators = animatable.animators;
-
+    let keyLen = animationKeys.length;
     // Stop previous animations on the same property.
-    if (!additive && changedKeys.length) {
+    if (!additive && keyLen) {
         // Stop exists animation on specific tracks. Only one animator available for each property.
         // TODO Should invoke previous animation callback?
         for (let i = 0; i < existsAnimators.length; i++) {
             const animator = existsAnimators[i];
             if (animator.targetName === topKey) {
-                const allAborted = existsAnimators[i].stopTracks(changedKeys);
+                const allAborted = animator.stopTracks(animationKeys);
                 if (allAborted) {   // This animator can't be used.
-                    const idx = indexOf(existsAnimators, existsAnimators[i]);
+                    const idx = indexOf(existsAnimators, animator);
                     existsAnimators.splice(idx, 1);
                 }
             }
         }
+    }
+
+    // Ignore values not changed.
+    // NOTE: Must filter it after previous animation stopped
+    // and make sure the value to compare is using initial frame if animation is not started yet when setToFinal is used.
+    if (!cfg.force) {
+        animationKeys = filter(animationKeys, key => !isValueSame(target[key], animateObj[key]));
+        keyLen = animationKeys.length;
     }
 
     if (keyLen > 0
@@ -1964,7 +1964,7 @@ function animateToShallow<T>(
                 revertedSource = {};
             }
             for (let i = 0; i < keyLen; i++) {
-                const innerKey = animatableKeys[i];
+                const innerKey = animationKeys[i];
                 reversedTarget[innerKey] = animateObj[innerKey];
                 if (setToFinal) {
                     revertedSource[innerKey] = target[innerKey];
@@ -1983,7 +1983,7 @@ function animateToShallow<T>(
         else if (setToFinal) {
             sourceClone = {};
             for (let i = 0; i < keyLen; i++) {
-                const innerKey = animatableKeys[i];
+                const innerKey = animationKeys[i];
                 // NOTE: Must clone source after the stopTracks. The property may be modified in stopTracks.
                 sourceClone[innerKey] = cloneValue(animateObj[innerKey]);
                 // Use copy, not change the original reference
@@ -2003,16 +2003,16 @@ function animateToShallow<T>(
         }
 
         if (setToFinal && revertedSource) {
-            animator.whenWithKeys(0, revertedSource, animatableKeys);
+            animator.whenWithKeys(0, revertedSource, animationKeys);
         }
         if (sourceClone) {
-            animator.whenWithKeys(0, sourceClone, animatableKeys);
+            animator.whenWithKeys(0, sourceClone, animationKeys);
         }
 
         animator.whenWithKeys(
             duration == null ? 500 : duration,
             reverse ? reversedTarget : target,
-            animatableKeys
+            animationKeys
         ).delay(delay || 0);
 
         animatable.addAnimator(animator, topKey);
