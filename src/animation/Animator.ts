@@ -10,7 +10,6 @@ import easingFuncs, { AnimationEasing } from './easing';
 import Animation from './Animation';
 import { createCubicEasingFunc } from './cubicEasing';
 import { isLinearGradient, isRadialGradient } from '../svg/helper';
-import { GradientObject } from '../graphic/Gradient';
 
 type NumberArray = ArrayLike<number>
 type InterpolatableType = string | number | NumberArray | NumberArray[];

@@ -5,7 +5,7 @@ import Path from '../graphic/Path';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import PathProxy from '../core/PathProxy';
 import { getPathPrecision, getSRTTransformString } from './helper';
-import { each, extend, filter, isString, keys } from '../core/util';
+import { each, extend, filter, isNumber, isString, keys } from '../core/util';
 import Animator from '../animation/Animator';
 import CompoundPath from '../graphic/CompoundPath';
 import { AnimationEasing } from '../animation/easing';
@@ -219,14 +219,17 @@ export function createCSSAnimation(
                             const kf = kfs[i];
                             const percent = Math.round(kf.time / maxTime * 100) + '%';
                             const kfEasing = getEasingFunc(kf.easing);
+                            const rawValue = kf.rawValue;
 
-                            cssKfs[percent] = cssKfs[percent] || {};
-                            cssKfs[percent][attrName] =
-                                track.isColor ? col2str(kf.value as any) : kf.value;
+                            // TODO gradient
+                            if (isString(rawValue) || isNumber(rawValue)) {
+                                cssKfs[percent] = cssKfs[percent] || {};
+                                cssKfs[percent][attrName] = kf.rawValue;
 
-                            if (kfEasing) {
-                                // TODO. If different property have different easings.
-                                cssKfs[percent][animationTimingFunctionAttrName] = kfEasing;
+                                if (kfEasing) {
+                                    // TODO. If different property have different easings.
+                                    cssKfs[percent][animationTimingFunctionAttrName] = kfEasing;
+                                }
                             }
                         }
                     }
