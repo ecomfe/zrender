@@ -52,14 +52,6 @@ function buildPathString(el: Path, kfShape: Path['shape'], path: PathProxy) {
     return svgPathBuilder.getStr();
 }
 
-function col2str(rgba: number[]): string {
-    rgba[0] = Math.floor(rgba[0]);
-    rgba[1] = Math.floor(rgba[1]);
-    rgba[2] = Math.floor(rgba[2]);
-
-    return `rgba(${rgba.join(',')})`;
-}
-
 function setTransformOrigin(target: Record<string, string>, transform: Transformable) {
     const {originX, originY} = transform;
     if (originX || originY) {
