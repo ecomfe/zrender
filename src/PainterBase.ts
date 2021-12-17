@@ -38,7 +38,6 @@ export interface PainterBase {
     getViewportRootOffset: () => {offsetLeft: number, offsetTop: number}
 
     refreshHover(): void
-    pathToImage(e: Path, dpr: number): ZRImage
 
     configLayer(zlevel: number, config: Dictionary<any>): void
     setBackgroundColor(backgroundColor: string | GradientObject | PatternObject): void

@@ -335,16 +335,6 @@ class ZRender {
     }
 
     /**
-     * Converting a path to image.
-     * It has much better performance of drawing image rather than drawing a vector path.
-     */
-    pathToImage(e: Path, dpr: number) {
-        if (this.painter.pathToImage) {
-            return this.painter.pathToImage(e, dpr);
-        }
-    }
-
-    /**
      * Set default cursor
      * @param cursorStyle='default' 例如 crosshair
      */
