@@ -1,4 +1,4 @@
-import Transformable from './core/Transformable';
+import Transformable, {TRANSFORMABLE_PROPS, TransformProp} from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
 import Animator, {cloneValue} from './animation/Animator';
 import { ZRenderType } from './zrender';
@@ -22,7 +22,8 @@ import {
     isArrayLike,
     isTypedArray,
     isGradientObject,
-    filter
+    filter,
+    reduce
 } from './core/util';
 import Polyline from './graphic/shape/Polyline';
 import Group from './graphic/Group';
@@ -230,7 +231,7 @@ interface ElementEventHandlerProps {
     ondrop: ElementEventCallback<unknown, unknown>
 }
 
-export interface ElementProps extends Partial<ElementEventHandlerProps> {
+export interface ElementProps extends Partial<ElementEventHandlerProps>, Partial<Pick<Transformable, TransformProp>> {
     name?: string
     ignore?: boolean
     isGroup?: boolean
@@ -239,15 +240,6 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
     silent?: boolean
 
     ignoreClip?: boolean
-    // From transform
-    x?: number
-    y?: number
-    scaleX?: number
-    scaleY?: number
-    originX?: number
-    originY?: number
-    rotation?: number
-
     globalScaleRatio?: number
 
     textConfig?: ElementTextConfig
@@ -266,17 +258,11 @@ export interface ElementProps extends Partial<ElementEventHandlerProps> {
 export const PRESERVED_NORMAL_STATE = '__zr_normal__';
 // export const PRESERVED_MERGED_STATE = '__zr_merged__';
 
-const PRIMARY_STATES_KEYS = ['x', 'y', 'scaleX', 'scaleY', 'originX', 'originY', 'rotation', 'ignore'] as const;
-const DEFAULT_ANIMATABLE_MAP: Partial<Record<ElementStatePropNames, boolean>> = {
-    x: true,
-    y: true,
-    scaleX: true,
-    scaleY: true,
-    originX: true,
-    originY: true,
-    rotation: true,
-    ignore: false
-};
+const PRIMARY_STATES_KEYS = (TRANSFORMABLE_PROPS as any).concat(['ignore']) as [TransformProp, 'ignore'];
+const DEFAULT_ANIMATABLE_MAP = reduce(TRANSFORMABLE_PROPS, (obj, key) => {
+    obj[key] = true;
+    return obj;
+}, {ignore: false} as Partial<Record<ElementStatePropNames, boolean>>);
 
 export type ElementStatePropNames = (typeof PRIMARY_STATES_KEYS)[number] | 'textConfig';
 export type ElementState = Pick<ElementProps, ElementStatePropNames> & ElementCommonState

@@ -28,6 +28,12 @@ class Transformable {
     skewY: number
 
     rotation: number
+
+    /**
+     * Will translated the element to the anchor position before applying other transforms.
+     */
+    anchorX: number
+    anchorY: number
     /**
      * Origin of scale, rotation, skew
      */
@@ -293,6 +299,8 @@ class Transformable {
         const oy = target.originY || 0;
         const sx = target.scaleX;
         const sy = target.scaleY;
+        const ax = target.anchorX;
+        const ay = target.anchorY;
         const rotation = target.rotation || 0;
         const x = target.x;
         const y = target.y;
@@ -300,12 +308,14 @@ class Transformable {
         // TODO: zrender use different hand in coordinate system and y axis is inversed.
         const skewY = target.skewY ? Math.tan(-target.skewY) : 0;
 
-        // The order of transform (-origin * scale * skew * rotate * origin * translate).
+        // The order of transform (-anchor * -origin * scale * skew * rotate * origin * translate).
         // We merge (-origin * scale * skew) into one. Also did identity in these operations.
         // origin
-        if (ox || oy) {
-            m[4] = -ox * sx - skewX * oy * sy;
-            m[5] = -oy * sy - skewY * ox * sx;
+        if (ox || oy || ax || ay) {
+            const dx = ox + ax;
+            const dy = oy + ay;
+            m[4] = -dx * sx - skewX * dy * sy;
+            m[5] = -dy * sy - skewY * dx * sx;
         }
         else {
             m[4] = m[5] = 0;
@@ -329,21 +339,23 @@ class Transformable {
 
     private static initDefaultProps = (function () {
         const proto = Transformable.prototype;
-        proto.x = 0;
-        proto.y = 0;
-        proto.scaleX = 1;
-        proto.scaleY = 1;
-        proto.originX = 0;
-        proto.originY = 0;
-        proto.skewX = 0;
-        proto.skewY = 0;
-        proto.rotation = 0;
+        proto.scaleX =
+        proto.scaleY =
         proto.globalScaleRatio = 1;
+        proto.x =
+        proto.y =
+        proto.originX =
+        proto.originY =
+        proto.skewX =
+        proto.skewY =
+        proto.rotation =
+        proto.anchorX =
+        proto.anchorY = 0;
     })()
 };
 
 export const TRANSFORMABLE_PROPS = [
-    'x', 'y', 'originX', 'originY', 'rotation', 'scaleX', 'scaleY', 'skewX', 'skewY'
+    'x', 'y', 'originX', 'originY', 'anchorX', 'anchorY', 'rotation', 'scaleX', 'scaleY', 'skewX', 'skewY'
 ] as const;
 
 export type TransformProp = (typeof TRANSFORMABLE_PROPS)[number]
