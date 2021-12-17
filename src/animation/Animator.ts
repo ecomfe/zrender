@@ -306,14 +306,19 @@ class Track {
             }
         }
         else {
-            if (!isNaN(+rawValue)) {
+            if (isNumber(value)) {
                 valType = VALUE_TYPE_NUMBER;
             }
             else if (isString(rawValue)) {
-                const colorArray = color.parse(rawValue);
-                if (colorArray) {
-                    value = colorArray;
-                    valType = VALUE_TYPE_COLOR;
+                if (!isNaN(+rawValue)) {    // Can be string number like '2'
+                    valType = VALUE_TYPE_NUMBER;
+                }
+                else {
+                    const colorArray = color.parse(rawValue);
+                    if (colorArray) {
+                        value = colorArray;
+                        valType = VALUE_TYPE_COLOR;
+                    }
                 }
             }
             else if (isGradientObject(rawValue)) {
@@ -337,7 +342,8 @@ class Track {
             // Inference type from the first keyframe.
             this.valType = valType;
         }
-        else if (valType !== this.valType) { // Not same value type.
+         // Not same value type or can't be interpolated.
+        else if (valType !== this.valType || valType === VALUE_TYPE_UNKOWN) {
             discrete = true;
         }
 
