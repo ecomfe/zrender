@@ -24,7 +24,6 @@ import { EventCallback } from './core/Eventful';
 import Displayable from './graphic/Displayable';
 import { lum } from './tool/color';
 import { DARK_MODE_THRESHOLD } from './config';
-import Path from './graphic/Path';
 import Group from './graphic/Group';
 
 
