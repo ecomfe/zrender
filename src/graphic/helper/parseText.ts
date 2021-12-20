@@ -578,7 +578,7 @@ function pushTokens(
 
 function isLatin(ch: string) {
     let code = ch.charCodeAt(0);
-    return code >= 0x21 && code <= 0xFF;
+    return code >= 0x21 && code <= 0x17F;
 }
 
 const breakCharMap = reduce(',&?/;] '.split(''), function (obj, ch) {

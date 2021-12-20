@@ -2,17 +2,15 @@ import {devicePixelRatio} from '../config';
 import * as util from '../core/util';
 import Layer, { LayerConfig } from './Layer';
 import requestAnimationFrame from '../animation/requestAnimationFrame';
-import ZRImage from '../graphic/Image';
 import env from '../core/env';
 import Displayable from '../graphic/Displayable';
-import { WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/types';
+import { WXCanvasRenderingContext } from '../core/types';
 import { GradientObject } from '../graphic/Gradient';
 import { ImagePatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
 import { brush, BrushScope, brushSingle } from './graphic';
 import { PainterBase } from '../PainterBase';
 import BoundingRect from '../core/BoundingRect';
-import Path from '../graphic/Path';
 import { REDRAW_BIT } from '../graphic/constants';
 import { getSize } from './helper';
 import type IncrementalDisplayable from '../graphic/IncrementalDisplayable';
@@ -975,67 +973,5 @@ export default class CanvasPainter implements PainterBase {
      */
     getHeight() {
         return this._height;
-    }
-
-    pathToImage(path: Path, dpr?: number): ZRImage {
-        dpr = dpr || this.dpr;
-
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const rect = path.getBoundingRect();
-        const style = path.style;
-        const shadowBlurSize = style.shadowBlur * dpr;
-        const shadowOffsetX = style.shadowOffsetX * dpr;
-        const shadowOffsetY = style.shadowOffsetY * dpr;
-        const lineWidth = path.hasStroke() ? style.lineWidth : 0;
-
-        const leftMargin = Math.max(lineWidth / 2, -shadowOffsetX + shadowBlurSize);
-        const rightMargin = Math.max(lineWidth / 2, shadowOffsetX + shadowBlurSize);
-        const topMargin = Math.max(lineWidth / 2, -shadowOffsetY + shadowBlurSize);
-        const bottomMargin = Math.max(lineWidth / 2, shadowOffsetY + shadowBlurSize);
-        const width = rect.width + leftMargin + rightMargin;
-        const height = rect.height + topMargin + bottomMargin;
-
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
-
-        ctx.scale(dpr, dpr);
-        ctx.clearRect(0, 0, width, height);
-        (ctx as ZRCanvasRenderingContext).dpr = dpr;
-
-        const pathTransform = {
-            x: path.x,
-            y: path.y,
-            scaleX: path.scaleX,
-            scaleY: path.scaleY,
-            rotation: path.rotation,
-            originX: path.originX,
-            originY: path.originY
-        };
-        path.x = leftMargin - rect.x;
-        path.y = topMargin - rect.y;
-        path.rotation = 0;
-        path.scaleX = 1;
-        path.scaleY = 1;
-        path.updateTransform();
-        if (path) {
-            brush(ctx, path, {
-                inHover: false,
-                viewWidth: this._width,
-                viewHeight: this._height
-            }, true);
-        }
-
-        const imgShape = new ZRImage({
-            style: {
-                x: 0,
-                y: 0,
-                image: canvas
-            }
-        });
-
-        util.extend(path, pathTransform);
-
-        return imgShape;
     }
 };

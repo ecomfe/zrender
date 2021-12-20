@@ -168,7 +168,7 @@
         zr.add(group);
     }
 
-    // Transform animation with multiple keyframe
+    // Transform animation with multiple keyframe and easing
     for (let i = 0; i < 10; i++) {
         const el = new zrender.Circle({
             x: i * cellSize + cellSize / 2,
@@ -184,14 +184,14 @@
         });
         el.animate(null, true)
             .when(1000, {
-                scaleX: 1.2,
-                scaleY: 1.2
-            })
+                scaleX: 0.2,
+                scaleY: 0.2
+            }, 'sinusoidalInOut')
             .when(2000, {
                 scaleX: 1,
                 scaleY: 1
-            })
-            .start();
+            }, 'sinusoidalInOut')
+            .start()
         zr.add(el);
     }
 
@@ -260,7 +260,6 @@
             .start('circularInOut');
         zr.add(el);
     }
-
 
     console.time('render');
     const svg = zr.painter.renderToString();

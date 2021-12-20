@@ -2,7 +2,7 @@
 import Path, { DEFAULT_PATH_STYLE, PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
-import { normalizeLineDash } from '../graphic/helper/dashStyle';
+import { getLineDash } from '../canvas/dashStyle';
 import { map } from '../core/util';
 import { normalizeColor } from './helper';
 
@@ -38,7 +38,7 @@ export default function mapStyleToAttrs(
 
     // only set opacity. stroke and fill cannot be applied to svg image
     if (el instanceof ZRImage) {
-        updateAttr('opacity', opacity + '');
+        updateAttr('opacity', opacity);
         return;
     }
 
@@ -49,7 +49,7 @@ export default function mapStyleToAttrs(
             ? style.fillOpacity * fill.opacity * opacity
             : fill.opacity * opacity;
         if (forceUpdate || fillOpacity < 1) {
-            updateAttr('fill-opacity', fillOpacity + '');
+            updateAttr('fill-opacity', fillOpacity);
         }
     }
     else {
@@ -69,31 +69,24 @@ export default function mapStyleToAttrs(
         const strokeFirst = style.strokeFirst;
 
         if (forceUpdate || strokeWidth !== 1) {
-            updateAttr('stroke-width', strokeWidth + '');
+            updateAttr('stroke-width', strokeWidth);
         }
         // stroke then fill for text; fill then stroke for others
         if (forceUpdate || strokeFirst) {
             updateAttr('paint-order', strokeFirst ? 'stroke' : 'fill');
         }
         if (forceUpdate || strokeOpacity < 1) {
-            updateAttr('stroke-opacity', strokeOpacity + '');
+            updateAttr('stroke-opacity', strokeOpacity);
         }
 
-        let lineDash = style.lineDash && strokeWidth > 0 && normalizeLineDash(style.lineDash, strokeWidth);
-        if (lineDash) {
-            let lineDashOffset = style.lineDashOffset;
-            if (strokeScale && strokeScale !== 1) {
-                lineDash = map(lineDash, function (rawVal) {
-                    return rawVal / strokeScale;
-                });
-                if (lineDashOffset) {
-                    lineDashOffset /= strokeScale;
-                    lineDashOffset = mathRound(lineDashOffset);
+        if (style.lineDash) {
+            let [lineDash, lineDashOffset] = getLineDash(el);
+            if (lineDash) {
+                lineDashOffset = mathRound(lineDashOffset || 0);
+                updateAttr('stroke-dasharray', lineDash.join(','));
+                if (lineDashOffset || forceUpdate) {
+                    updateAttr('stroke-dashoffset', lineDashOffset);
                 }
-            }
-            updateAttr('stroke-dasharray', lineDash.join(','));
-            if (lineDashOffset || forceUpdate) {
-                updateAttr('stroke-dashoffset', (lineDashOffset || 0) + '');
             }
         }
         else if (forceUpdate) {

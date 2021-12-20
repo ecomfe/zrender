@@ -13,7 +13,7 @@ import * as zrUtil from './core/util';
 import Handler from './Handler';
 import Storage from './Storage';
 import {PainterBase} from './PainterBase';
-import Animation from './animation/Animation';
+import Animation, {getTime} from './animation/Animation';
 import HandlerProxy from './dom/HandlerProxy';
 import Element, { ElementEventCallback } from './Element';
 import { Dictionary, ElementEventName, RenderedEvent, WithThisType } from './core/types';
@@ -24,7 +24,6 @@ import { EventCallback } from './core/Eventful';
 import Displayable from './graphic/Displayable';
 import { lum } from './tool/color';
 import { DARK_MODE_THRESHOLD } from './config';
-import Path from './graphic/Path';
 import Group from './graphic/Group';
 
 
@@ -239,7 +238,7 @@ class ZRender {
     private _flush(fromInside?: boolean) {
         let triggerRendered;
 
-        const start = new Date().getTime();
+        const start = getTime();
         if (this._needsRefresh) {
             triggerRendered = true;
             this.refreshImmediately(fromInside);
@@ -249,7 +248,7 @@ class ZRender {
             triggerRendered = true;
             this.refreshHoverImmediately();
         }
-        const end = new Date().getTime();
+        const end = getTime();
 
         if (triggerRendered) {
             this._stillFrameAccum = 0;
@@ -332,16 +331,6 @@ class ZRender {
      */
     getHeight(): number {
         return this.painter.getHeight();
-    }
-
-    /**
-     * Converting a path to image.
-     * It has much better performance of drawing image rather than drawing a vector path.
-     */
-    pathToImage(e: Path, dpr: number) {
-        if (this.painter.pathToImage) {
-            return this.painter.pathToImage(e, dpr);
-        }
     }
 
     /**

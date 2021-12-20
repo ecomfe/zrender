@@ -404,7 +404,6 @@ class SVGPainter implements PainterBase {
         return 'data:image/svg+xml;charset=UTF-8,' + html;
     }
     refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];
-    pathToImage = createMethodNotSupport('pathToImage') as PainterBase['pathToImage'];
     configLayer = createMethodNotSupport('configLayer') as PainterBase['configLayer'];
 }
 

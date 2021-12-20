@@ -11,7 +11,7 @@ import * as vec2 from './vector';
 import BoundingRect from './BoundingRect';
 import {devicePixelRatio as dpr} from '../config';
 import { fromLine, fromCubic, fromQuadratic, fromArc } from './bbox';
-import { cubicAt, cubicLength, cubicSubdivide, quadraticLength, quadraticSubdivide } from './curve';
+import { cubicLength, cubicSubdivide, quadraticLength, quadraticSubdivide } from './curve';
 
 const CMD = {
     M: 1,
@@ -49,7 +49,6 @@ const mathMin = Math.min;
 const mathMax = Math.max;
 const mathCos = Math.cos;
 const mathSin = Math.sin;
-const mathSqrt = Math.sqrt;
 const mathAbs = Math.abs;
 
 const PI = Math.PI;

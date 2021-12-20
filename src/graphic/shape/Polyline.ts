@@ -10,7 +10,7 @@ export class PolylineShape {
     points: VectorArray[] = null
     // Percent of displayed polyline. For animating purpose
     percent?: number = 1
-    smooth?: number | 'spline' = 0
+    smooth?: number = 0
     smoothConstraint?: VectorArray[] = null
 }
 

@@ -6,9 +6,9 @@
 
 type easingFunc = (percent: number) => number;
 
-export type AnimationEasing = keyof typeof easing | easingFunc | 'spline';
+export type AnimationEasing = keyof typeof easingFuncs | easingFunc;
 
-const easing = {
+const easingFuncs = {
     /**
     * @param {number} k
     * @return {number}
@@ -315,7 +315,7 @@ const easing = {
     * @return {number}
     */
     bounceIn(k: number) {
-        return 1 - easing.bounceOut(1 - k);
+        return 1 - easingFuncs.bounceOut(1 - k);
     },
     /**
     * @param {number} k
@@ -341,10 +341,11 @@ const easing = {
     */
     bounceInOut(k: number) {
         if (k < 0.5) {
-            return easing.bounceIn(k * 2) * 0.5;
+            return easingFuncs.bounceIn(k * 2) * 0.5;
         }
-        return easing.bounceOut(k * 2 - 1) * 0.5 + 0.5;
+        return easingFuncs.bounceOut(k * 2 - 1) * 0.5 + 0.5;
     }
 };
 
-export default easing;
+
+export default easingFuncs;

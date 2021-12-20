@@ -1,13 +1,15 @@
-import Transformable, { copyTransform, TRANSFORMABLE_PROPS } from '../core/Transformable';
+import Transformable, { copyTransform } from '../core/Transformable';
 import Displayable from '../graphic/Displayable';
 import { SVGVNodeAttrs, BrushScope, createBrushScope} from './core';
 import Path from '../graphic/Path';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import PathProxy from '../core/PathProxy';
 import { getPathPrecision, getSRTTransformString } from './helper';
-import { each, extend, filter, isString, keys } from '../core/util';
+import { each, extend, filter, isNumber, isString, keys } from '../core/util';
 import Animator from '../animation/Animator';
-import { CompoundPath } from '../export';
+import CompoundPath from '../graphic/CompoundPath';
+import { AnimationEasing } from '../animation/easing';
+import { createCubicEasingFunc } from '../animation/cubicEasing';
 
 export const EASING_MAP: Record<string, string> = {
     // From https://easings.net/
@@ -37,16 +39,6 @@ export const EASING_MAP: Record<string, string> = {
 
 const transformOriginKey = 'transform-origin';
 
-function sameTransform(a: any, b: any) {
-    for (let i = 0; i < TRANSFORMABLE_PROPS.length; i++) {
-        const prop = TRANSFORMABLE_PROPS[i];
-        if (a[prop] !== b[prop]) {
-            return false;
-        }
-    }
-    return true;
-}
-
 function buildPathString(el: Path, kfShape: Path['shape'], path: PathProxy) {
     const shape = extend({}, el.shape);
     extend(shape, kfShape);
@@ -58,14 +50,6 @@ function buildPathString(el: Path, kfShape: Path['shape'], path: PathProxy) {
     svgPathBuilder.generateStr();
     // will add path("") when generated to css string in the final step.
     return svgPathBuilder.getStr();
-}
-
-function col2str(rgba: number[]): string {
-    rgba[0] = Math.floor(rgba[0]);
-    rgba[1] = Math.floor(rgba[1]);
-    rgba[2] = Math.floor(rgba[2]);
-
-    return `rgba(${rgba.join(',')})`;
 }
 
 function setTransformOrigin(target: Record<string, string>, transform: Transformable) {
@@ -141,6 +125,14 @@ function createCompoundPathCSSAnimation(
     return cssAnimationCfg.replace(cssAnimationName, animationName);
 }
 
+function getEasingFunc(easing: AnimationEasing) {
+    return isString(easing)
+        ? EASING_MAP[easing]
+            ? `cubic-bezier(${EASING_MAP[easing]})`
+            : createCubicEasingFunc(easing) ? easing : ''
+        : '';
+}
+
 export function createCSSAnimation(
     el: Displayable,
     attrs: SVGVNodeAttrs,
@@ -169,11 +161,11 @@ export function createCSSAnimation(
     for (let i = 0; i < len; i++) {
         const animator = animators[i];
         const cfgArr: (string | number)[] = [animator.getMaxTime() / 1000 + 's'];
-        const easing = animator.getClip().easing;
+        const easing = getEasingFunc(animator.getClip().easing);
         const delay = animator.getDelay();
 
-        if (isString(easing) && EASING_MAP[easing]) {
-            cfgArr.push(`cubic-bezier(${EASING_MAP[easing]})`);
+        if (easing) {
+            cfgArr.push(easing);
         }
         else {
             cfgArr.push('linear');
@@ -199,6 +191,8 @@ export function createCSSAnimation(
 
         const finalKfs: Record<string, CssKF> = {};
 
+        const animationTimingFunctionAttrName = 'animation-timing-function';
+
         function saveAnimatorTrackToCssKfs(
             animator: Animator<any>,
             cssKfs: Record<string, CssKF>,
@@ -216,9 +210,19 @@ export function createCSSAnimation(
                         for (let i = 0; i < kfs.length; i++) {
                             const kf = kfs[i];
                             const percent = Math.round(kf.time / maxTime * 100) + '%';
-                            cssKfs[percent] = cssKfs[percent] || {};
-                            cssKfs[percent][attrName] =
-                                track.isValueColor ? col2str(kf.value as any) : kf.value;
+                            const kfEasing = getEasingFunc(kf.easing);
+                            const rawValue = kf.rawValue;
+
+                            // TODO gradient
+                            if (isString(rawValue) || isNumber(rawValue)) {
+                                cssKfs[percent] = cssKfs[percent] || {};
+                                cssKfs[percent][attrName] = kf.rawValue;
+
+                                if (kfEasing) {
+                                    // TODO. If different property have different easings.
+                                    cssKfs[percent][animationTimingFunctionAttrName] = kfEasing;
+                                }
+                            }
                         }
                     }
                 }
@@ -244,11 +248,17 @@ export function createCSSAnimation(
             copyTransform(transform, el);
             extend(transform, transformKfs[percent]);
             const str = getSRTTransformString(transform);
+            const timingFunction = transformKfs[percent][animationTimingFunctionAttrName];
             finalKfs[percent] = str ? {
                 transform: str
             } : {};
             // TODO set transform origin in element?
             setTransformOrigin(finalKfs[percent], transform);
+
+            // Save timing function
+            if (timingFunction) {
+                finalKfs[percent][animationTimingFunctionAttrName] = timingFunction;
+            }
         };
 
 
@@ -257,7 +267,10 @@ export function createCSSAnimation(
         // eslint-disable-next-line
         for (let percent in shapeKfs) {
             finalKfs[percent] = finalKfs[percent] || {};
+
             const isFirst = !path;
+            const timingFunction = shapeKfs[percent][animationTimingFunctionAttrName];
+
             if (isFirst) {
                 path = new PathProxy();
             }
@@ -269,6 +282,11 @@ export function createCSSAnimation(
             if (!isFirst && len !== newLen) {
                 canAnimateShape = false;
                 break;
+            }
+
+            // Save timing function
+            if (timingFunction) {
+                finalKfs[percent][animationTimingFunctionAttrName] = timingFunction;
             }
         };
         if (!canAnimateShape) {
@@ -318,11 +336,11 @@ export function createCSSAnimation(
         ).length) {
             const animationName = addAnimation(finalKfs, scope);
             // eslint-disable-next-line
-            for (const attrName in finalKfs[percents[0]]) {
-                // Remove the attrs in the element because it will be set by animation.
-                // Reduce the size.
-                attrs[attrName] = false;
-            }
+            // for (const attrName in finalKfs[percents[0]]) {
+            //     // Remove the attrs in the element because it will be set by animation.
+            //     // Reduce the size.
+            //     attrs[attrName] = false;
+            // }
             // animationName {duration easing delay loop} fillMode
             return `${animationName} ${groupAnimator[0]} both`;
         }
