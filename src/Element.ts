@@ -1865,22 +1865,22 @@ function animateToShallow<T>(
     let animationKeys: string[] = [];
     for (let k = 0; k < targetKeys.length; k++) {
         const innerKey = targetKeys[k] as string;
+        const targetVal = target[innerKey];
 
         if (
-            target[innerKey] != null
-            && animateObj[innerKey] != null
+            targetVal != null && animateObj[innerKey] != null
             && (animateAll || (animationProps as Dictionary<any>)[innerKey])
         ) {
-            if (isObject(target[innerKey])
-                && !isArrayLike(target[innerKey])
-                && !isGradientObject(target[innerKey])
+            if (isObject(targetVal)
+                && !isArrayLike(targetVal)
+                && !isGradientObject(targetVal)
             ) {
                 if (topKey) {
                     // logError('Only support 1 depth nest object animation.');
                     // Assign directly.
                     // TODO richText?
                     if (!reverse) {
-                        animateObj[innerKey] = target[innerKey];
+                        animateObj[innerKey] = targetVal;
                         animatable.updateDuringAnimation(topKey);
                     }
                     continue;
@@ -1889,7 +1889,7 @@ function animateToShallow<T>(
                     animatable,
                     innerKey,
                     animateObj[innerKey],
-                    target[innerKey],
+                    targetVal,
                     cfg,
                     animationProps && (animationProps as Dictionary<any>)[innerKey],
                     animators,
@@ -1902,7 +1902,7 @@ function animateToShallow<T>(
         }
         else if (!reverse) {
             // Assign target value directly.
-            animateObj[innerKey] = target[innerKey];
+            animateObj[innerKey] = targetVal;
             animatable.updateDuringAnimation(topKey);
             // Previous animation will be stopped on the changed keys.
             // So direct assign is also included.
