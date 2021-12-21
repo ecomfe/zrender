@@ -407,10 +407,8 @@ function bindCommonProps(
         }
     }
     if (forceSetAll || style.opacity !== prevStyle.opacity) {
-        if (!styleChanged) {
-            flushPathDrawn(ctx, scope);
-            styleChanged = true;
-        }
+        flushPathDrawn(ctx, scope);
+        styleChanged = true;
         // Ensure opacity is between 0 ~ 1. Invalid opacity will lead to a failure set and use the leaked opacity from the previous.
         const opacity = Math.max(Math.min(style.opacity, 1), 0);
         ctx.globalAlpha = isNaN(opacity) ? DEFAULT_COMMON_STYLE.opacity : opacity;
@@ -487,7 +485,7 @@ function bindPathAndTextCommonStyle(
     if (el.hasStroke()) {
         const lineWidth = style.lineWidth;
         const newLineWidth = lineWidth / (
-            (style.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
+            (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1
         );
         if (ctx.lineWidth !== newLineWidth) {
             if (!styleChanged) {

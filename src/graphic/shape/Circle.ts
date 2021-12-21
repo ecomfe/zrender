@@ -26,8 +26,10 @@ class Circle extends Path<CircleProps> {
     }
 
     buildPath(ctx: CanvasRenderingContext2D, shape: CircleShape) {
+        // Use moveTo to start a new sub path.
+        // Or it will be connected to other subpaths when in CompoundPath
+        ctx.moveTo(shape.cx + shape.r, shape.cy);
         ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2);
-        ctx.closePath();
     }
 };
 
