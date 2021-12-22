@@ -29,7 +29,7 @@ import mapStyleToAttrs from './mapStyleToAttrs';
 import { SVGVNodeAttrs, createVNode, SVGVNode, vNodeToString, BrushScope } from './core';
 import { MatrixArray } from '../core/matrix';
 import Displayable from '../graphic/Displayable';
-import { assert, logError, map, retrieve2 } from '../core/util';
+import { assert, isFunction, isString, logError, map, retrieve2 } from '../core/util';
 import Polyline from '../graphic/shape/Polyline';
 import Polygon from '../graphic/shape/Polygon';
 import { GradientObject } from '../graphic/Gradient';
@@ -41,6 +41,13 @@ import { hasSeparateFont, parseFontSize } from '../graphic/Text';
 import { DEFAULT_FONT, DEFAULT_FONT_FAMILY } from '../core/platform';
 
 const round = Math.round;
+
+function isImageLike(val: any): val is HTMLImageElement {
+    return val && isString(val.src);
+}
+function isCanvasLike(val: any): val is HTMLCanvasElement {
+    return val && isFunction(val.toDataURL);
+}
 
 
 type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;
@@ -204,12 +211,14 @@ export function brushSVGImage(el: ZRImage, scope: BrushScope) {
     const style = el.style;
     let image = style.image;
 
-    if (image instanceof HTMLImageElement) {
-        image = image.src;
-    }
-    // heatmap layer in geo may be a canvas
-    else if (image instanceof HTMLCanvasElement) {
-        image = image.toDataURL();
+    if (image && !isString(image)) {
+        if (isImageLike(image)) {
+            image = image.src;
+        }
+        // heatmap layer in geo may be a canvas
+        else if (isCanvasLike(image)) {
+            image = image.toDataURL();
+        }
     }
 
     if (!image) {
@@ -472,13 +481,13 @@ function setPattern(
         let imageHeight = val.imageHeight;
         let imageSrc;
         const patternImage = val.image;
-        if (typeof patternImage === 'string') {
+        if (isString(patternImage)) {
             imageSrc = patternImage;
         }
-        else if (patternImage instanceof HTMLImageElement) {
+        else if (isImageLike(patternImage)) {
             imageSrc = patternImage.src;
         }
-        else if (patternImage instanceof HTMLCanvasElement) {
+        else if (isCanvasLike(patternImage)) {
             imageSrc = patternImage.toDataURL();
         }
 
