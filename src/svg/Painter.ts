@@ -20,7 +20,7 @@ import {
     createSVGVNode
 } from './core';
 import { normalizeColor, encodeBase64 } from './helper';
-import { defaults, extend, keys, logError, map } from '../core/util';
+import { extend, keys, logError, map, retrieve2 } from '../core/util';
 import Path from '../graphic/Path';
 import patch, { updateAttrs } from './patch';
 import { getSize } from '../canvas/helper';
@@ -119,7 +119,8 @@ class SVGPainter implements PainterBase {
     renderToVNode(opts?: {
         animation?: boolean
         willUpdate?: boolean
-        compress?: boolean
+        compress?: boolean,
+        useViewBox?: boolean
     }) {
 
         opts = opts || {};
@@ -176,24 +177,27 @@ class SVGPainter implements PainterBase {
             }
         }
 
-        return createSVGVNode(width, height, children);
+        return createSVGVNode(width, height, children, opts.useViewBox);
     }
 
     renderToString(opts?: {
         /**
          * If add css animation.
+         * @default true
          */
-        cssAnimation: boolean
+        cssAnimation?: boolean
+        /**
+         * If use viewBox
+         * @default true
+         */
+        useViewBox?: boolean
     }) {
-        const defaultOpts = {
-            cssAnimation: true
-        };
-        opts = defaults(opts || {}, defaultOpts);
-
+        opts = opts || {};
         return vNodeToString(this.renderToVNode({
-            animation: defaultOpts.cssAnimation,
+            animation: retrieve2(opts.cssAnimation, true),
             willUpdate: false,
-            compress: true
+            compress: true,
+            useViewBox: retrieve2(opts.useViewBox, true)
         }), { newline: true });
     }
 
