@@ -135,6 +135,8 @@
 
 
     // Image with cliPath
+    const imageObj = new Image();
+    imageObj.src = 'asset/test.png';
     for (let k = 0; k < 2; k++) {
         const group = new zrender.Group();
         for (let i = 0; i < 10; i++) {
@@ -142,7 +144,7 @@
                 x: i * cellSize + (cellSize - elSize) / 2,
                 y: cellSize * (5 + k),
                 style: {
-                    image: 'asset/test.png',
+                    image: k ? 'asset/test.png' : imageObj,
                     width: elSize,
                     height: elSize
                 }
