@@ -174,7 +174,12 @@ export function createBrushScope(zrId: string): BrushScope {
     };
 }
 
-export function createSVGVNode(width?: number | string, height?: number | string, children?: SVGVNode[]) {
+export function createSVGVNode(
+    width: number | string,
+    height: number | string,
+    children?: SVGVNode[],
+    useViewBox?: boolean
+) {
     return createVNode(
         'svg',
         'root',
@@ -184,7 +189,8 @@ export function createSVGVNode(width?: number | string, height?: number | string
             'xmlns': SVGNS,
             'xmlns:xlink': XLINKNS,
             'version': '1.1',
-            'baseProfile': 'full'
+            'baseProfile': 'full',
+            'viewBox': useViewBox ? `0 0 ${width} ${height}` : false
         },
         children
     );

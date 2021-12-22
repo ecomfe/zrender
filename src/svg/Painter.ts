@@ -119,7 +119,8 @@ class SVGPainter implements PainterBase {
     renderToVNode(opts?: {
         animation?: boolean
         willUpdate?: boolean
-        compress?: boolean
+        compress?: boolean,
+        useViewBox?: boolean
     }) {
 
         opts = opts || {};
@@ -176,14 +177,18 @@ class SVGPainter implements PainterBase {
             }
         }
 
-        return createSVGVNode(width, height, children);
+        return createSVGVNode(width, height, children, opts.useViewBox);
     }
 
     renderToString(opts?: {
         /**
          * If add css animation.
          */
-        cssAnimation: boolean
+        cssAnimation?: boolean
+        /**
+         * If use viewBox
+         */
+        useViewBox?: boolean
     }) {
         const defaultOpts = {
             cssAnimation: true
@@ -193,7 +198,8 @@ class SVGPainter implements PainterBase {
         return vNodeToString(this.renderToVNode({
             animation: defaultOpts.cssAnimation,
             willUpdate: false,
-            compress: true
+            compress: true,
+            useViewBox: opts.useViewBox
         }), { newline: true });
     }
 
