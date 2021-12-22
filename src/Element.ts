@@ -752,7 +752,8 @@ class Element<Props extends ElementProps = ElementProps> {
             const animator = this.animators[i];
             const fromStateTransition = animator.__fromStateTransition;
             // Ignore animation from state transition(except normal).
-            if (fromStateTransition && fromStateTransition !== PRESERVED_NORMAL_STATE) {
+            // Ignore loop animation.
+            if (animator.getLoop() || fromStateTransition && fromStateTransition !== PRESERVED_NORMAL_STATE) {
                 continue;
             }
 
@@ -1161,10 +1162,13 @@ class Element<Props extends ElementProps = ElementProps> {
             for (let i = 0; i < this.animators.length; i++) {
                 const animator = this.animators[i];
                 const targetName = animator.targetName;
-                animator.__changeFinalValue(targetName
-                    ? ((state || normalState) as any)[targetName]
-                    : (state || normalState)
-                );
+                // Ignore loop animation
+                if (!animator.getLoop()) {
+                    animator.__changeFinalValue(targetName
+                        ? ((state || normalState) as any)[targetName]
+                        : (state || normalState)
+                    );
+                }
             }
         }
 
