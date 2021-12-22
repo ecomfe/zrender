@@ -20,7 +20,7 @@ import {
     createSVGVNode
 } from './core';
 import { normalizeColor, encodeBase64 } from './helper';
-import { defaults, extend, keys, logError, map } from '../core/util';
+import { defaults, extend, keys, logError, map, retrieve2 } from '../core/util';
 import Path from '../graphic/Path';
 import patch, { updateAttrs } from './patch';
 import { getSize } from '../canvas/helper';
@@ -183,23 +183,21 @@ class SVGPainter implements PainterBase {
     renderToString(opts?: {
         /**
          * If add css animation.
+         * @default true
          */
         cssAnimation?: boolean
         /**
          * If use viewBox
+         * @default true
          */
         useViewBox?: boolean
     }) {
-        const defaultOpts = {
-            cssAnimation: true
-        };
-        opts = defaults(opts || {}, defaultOpts);
-
+        opts = opts || {};
         return vNodeToString(this.renderToVNode({
-            animation: defaultOpts.cssAnimation,
+            animation: retrieve2(opts.cssAnimation, true),
             willUpdate: false,
             compress: true,
-            useViewBox: opts.useViewBox
+            useViewBox: retrieve2(opts.useViewBox, true)
         }), { newline: true });
     }
 
