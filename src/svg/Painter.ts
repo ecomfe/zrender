@@ -20,7 +20,7 @@ import {
     createSVGVNode
 } from './core';
 import { normalizeColor, encodeBase64 } from './helper';
-import { defaults, extend, keys, logError, map, retrieve2 } from '../core/util';
+import { extend, keys, logError, map, retrieve2 } from '../core/util';
 import Path from '../graphic/Path';
 import patch, { updateAttrs } from './patch';
 import { getSize } from '../canvas/helper';
