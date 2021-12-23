@@ -2,23 +2,31 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <script src="lib/rollup.browser.js"></script>
-    <script src="lib/requireES.js"></script>
     <script src="lib/config.js"></script>
 </head>
 <body>
-    <script type="text/javascript">
+    <script type="importmap">
+    {
+        "imports": {
+          "tslib": "../node_modules/tslib/tslib.es6.js"
+        }
+    }
+    </script>
+    <script type="module">
 
-    requireES([
-        'zrender/esm/zrender',
-        'zrender/esm/graphic/shape/Sector',
-        'zrender/esm/canvas/canvas'
-        // 'zrender/esm/vml/vml'
-    ], function(zrender, SectorShape){
+        if (typeof process === 'undefined' || !process.env) {
+            window.process = {
+                env: {
+                    NODE_ENV: 'development'
+                }
+            };
+        }
+
+        import * as zrender from '../index.js';
         // 初始化zrender
         var zr = zrender.init(document.getElementById('main'));
 
-        zr.add(new SectorShape({
+        zr.add(new zrender.Sector({
             position: [100, 100],
             scale: [1, 1],
             style: {
@@ -32,7 +40,7 @@
             }
         }));
 
-        zr.add(new SectorShape({
+        zr.add(new zrender.Sector({
             position: [100, 100],
             scale: [1, 1],
             style: {
@@ -46,7 +54,7 @@
             }
         }));
 
-        zr.add(new SectorShape({
+        zr.add(new zrender.Sector({
             position: [100, 100],
             scale: [1, 1],
             style: {
@@ -60,7 +68,7 @@
             }
         }));
 
-        zr.add(new SectorShape({
+        zr.add(new zrender.Sector({
             position: [100, 100],
             scale: [1, 1],
             style: {
@@ -74,7 +82,7 @@
             }
         }));
 
-        zr.add(new SectorShape({
+        zr.add(new zrender.Sector({
             position: [100, 100],
             scale: [1, 1],
             style: {
@@ -89,7 +97,6 @@
                 innerCornerRadius: 10
             }
         }));
-    });
     </script>
     <div id="main" style="width:1000px;height:600px;"></div>
 </body>

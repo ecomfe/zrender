@@ -4,8 +4,6 @@
     <meta charset="utf-8" />
     <title>Path to Bezier</title>
     <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.js"></script>
-    <script src="lib/rollup.browser.js"></script>
-    <script src="lib/requireES.js"></script>
     <script src="lib/config.js"></script>
 </head>
 <body>
@@ -17,134 +15,87 @@
         }
     </style>
     <canvas id="main" width="1600" height="1600"></canvas>
-    <script>
-        requireES([
-            "zrender/lib/graphic/shape/Sector",
-            "zrender/lib/core/PathProxy",
-            "zrender/lib/tool/convertPath",
-            "zrender/lib/tool/morphPath",
-        ], function(Sector, PathProxy, {pathToBezierCurves, pathToPolygons}, {alignBezierCurves}) {
+    <script type="importmap">
+    {
+        "imports": {
+          "zrender/": "../",
+          "tslib": "../node_modules/tslib/tslib.es6.js"
+        }
+      }
+    </script>
+    <script type="module">
+        import Sector from "zrender/lib/graphic/shape/Sector.js";
+        import PathProxy from "zrender/lib/core/PathProxy.js";
+        import {pathToBezierCurves, pathToPolygons} from "zrender/lib/tool/convertPath.js";
+        import {alignBezierCurves} from "zrender/lib/tool/morphPath.js";
 
-            const canvas = document.querySelector('#main');
-            const ctx = canvas.getContext('2d');
+        const canvas = document.querySelector('#main');
+        const ctx = canvas.getContext('2d');
 
-            const R = 20;
-            const G = 50;
+        const R = 20;
+        const G = 50;
 
-            const config = {
-                startAngle: 0
+        const config = {
+            startAngle: 0
+        }
+
+        function drawPolygon(data) {
+            ctx.beginPath();
+            ctx.moveTo(data[0], data[1])
+            for (let i = 2; i < data.length;) {
+                ctx.lineTo(data[i++], data[i++]);
             }
-
-            function drawPolygon(data) {
-                ctx.beginPath();
-                ctx.moveTo(data[0], data[1])
-                for (let i = 2; i < data.length;) {
-                    ctx.lineTo(data[i++], data[i++]);
-                }
+        }
+        function drawBezier(data) {
+            ctx.beginPath();
+            for (let i = 0; i < data.length;) {
+                i === 0 && ctx.moveTo(data[i++], data[i++]);
+                ctx.bezierCurveTo(data[i++], data[i++], data[i++], data[i++], data[i++], data[i++]);
             }
-            function drawBezier(data) {
-                ctx.beginPath();
-                for (let i = 0; i < data.length;) {
-                    i === 0 && ctx.moveTo(data[i++], data[i++]);
-                    ctx.bezierCurveTo(data[i++], data[i++], data[i++], data[i++], data[i++], data[i++]);
-                }
-            }
-            // We choose the most complex sector path to test.
-            function buildSector() {
-                for (let k = 0; k < 4; k++) {
-                    for (let i = 0; i < 20; i++) {
-                        const sign = 1 - (k % 2) * 2;
-                        const endAngle = config.startAngle + (Math.PI * 2 * (1 - i / 10));
-                        const cx = i * G + G;
-                        const cy = G + k * G * 3;
-                        const r = R;
-                        const anticlockwise = k < 2;
-                        // const circleArgs = [x * G + G, G + k * G * 2, R, startAngle, endAngle, k < 2];
-                        // const circlePath = new PathProxy.default();
-                        // circlePath.beginPath();
-                        // circlePath.arc.apply(circlePath, circleArgs);
+        }
+        // We choose the most complex sector path to test.
+        function buildSector() {
+            for (let k = 0; k < 4; k++) {
+                for (let i = 0; i < 20; i++) {
+                    const sign = 1 - (k % 2) * 2;
+                    const endAngle = config.startAngle + (Math.PI * 2 * (1 - i / 10));
+                    const cx = i * G + G;
+                    const cy = G + k * G * 3;
+                    const r = R;
+                    const anticlockwise = k < 2;
+                    // const circleArgs = [x * G + G, G + k * G * 2, R, startAngle, endAngle, k < 2];
+                    // const circlePath = new PathProxy();
+                    // circlePath.beginPath();
+                    // circlePath.arc.apply(circlePath, circleArgs);
 
-                        const sector = new Sector.default({
-                            shape: {
-                                cx, cy, r, startAngle: config.startAngle, endAngle,
-                                clockwise: !anticlockwise,
-                                r0: r / 2
-                            }
-                        });
-                        sector.createPathProxy();
-                        sector.buildPath(sector.path, sector.shape);
-
-                        ctx.beginPath();
-                        sector.path.rebuildPath(ctx);
-                        ctx.strokeStyle = 'green';
-                        ctx.lineWidth = 2;
-                        ctx.stroke();
-
-                        ctx.fillStyle = 'rgba(0,0,0,0.2)'
-                        const arr = pathToBezierCurves(sector.path);
-                        ctx.save();
-                        ctx.translate(0, G);
-                        ctx.strokeStyle = 'red';
-                        drawBezier(arr[0]);
-                        ctx.stroke();
-                        ctx.fill();
-                        ctx.restore();
-
-
-                        const polygon = pathToPolygons(sector.path);
-                        ctx.save();
-                        ctx.translate(0, G * 2);
-                        ctx.strokeStyle = 'blue';
-                        drawPolygon(polygon[0]);
-                        ctx.stroke();
-                        ctx.fill();
-                        ctx.restore();
-                    }
-                }
-            }
-
-            function buildPolygon() {
-                for (let k = 0; k < 20; k++) {
-                    const polygonPoints = [];
-                    const N = k + 3;
-                    const dStep = 2 * Math.PI / N;
-                    for (let i = 0; i < N; i++) {
-                        polygonPoints.push(
-                            [k * G + G + Math.cos(i * dStep) * R, G * 14 + Math.sin(i * dStep) * R]
-                        );
-                    }
-
-                    const polygonPath = new PathProxy.default();
-                    for (let i = 0; i < polygonPoints.length; i++) {
-                        const x = polygonPoints[i][0];
-                        const y = polygonPoints[i][1];
-                        i === 0 ? polygonPath.moveTo(x, y) : polygonPath.lineTo(x, y);
-                    }
-                    polygonPath.closePath();
-                    const arr = pathToBezierCurves(polygonPath);
+                    const sector = new Sector({
+                        shape: {
+                            cx, cy, r, startAngle: config.startAngle, endAngle,
+                            clockwise: !anticlockwise,
+                            r0: r / 2
+                        }
+                    });
+                    sector.createPathProxy();
+                    sector.buildPath(sector.path, sector.shape);
 
                     ctx.beginPath();
+                    sector.path.rebuildPath(ctx);
                     ctx.strokeStyle = 'green';
                     ctx.lineWidth = 2;
-                    for (let i = 0; i < polygonPoints.length; i++) {
-                        const x = polygonPoints[i][0];
-                        const y = polygonPoints[i][1];
-                        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-                    }
-                    ctx.closePath();
                     ctx.stroke();
 
                     ctx.fillStyle = 'rgba(0,0,0,0.2)'
+                    const arr = pathToBezierCurves(sector.path);
                     ctx.save();
                     ctx.translate(0, G);
                     ctx.strokeStyle = 'red';
-                    ctx.lineWidth = 1;
                     drawBezier(arr[0]);
                     ctx.stroke();
                     ctx.fill();
                     ctx.restore();
 
-                    const polygon = pathToPolygons(polygonPath);
+
+                    const polygon = pathToPolygons(sector.path);
                     ctx.save();
                     ctx.translate(0, G * 2);
                     ctx.strokeStyle = 'blue';
@@ -154,19 +105,71 @@
                     ctx.restore();
                 }
             }
+        }
 
-            function update() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                buildSector();
-                buildPolygon();
+        function buildPolygon() {
+            for (let k = 0; k < 20; k++) {
+                const polygonPoints = [];
+                const N = k + 3;
+                const dStep = 2 * Math.PI / N;
+                for (let i = 0; i < N; i++) {
+                    polygonPoints.push(
+                        [k * G + G + Math.cos(i * dStep) * R, G * 14 + Math.sin(i * dStep) * R]
+                    );
+                }
+
+                const polygonPath = new PathProxy();
+                for (let i = 0; i < polygonPoints.length; i++) {
+                    const x = polygonPoints[i][0];
+                    const y = polygonPoints[i][1];
+                    i === 0 ? polygonPath.moveTo(x, y) : polygonPath.lineTo(x, y);
+                }
+                polygonPath.closePath();
+                const arr = pathToBezierCurves(polygonPath);
+
+                ctx.beginPath();
+                ctx.strokeStyle = 'green';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < polygonPoints.length; i++) {
+                    const x = polygonPoints[i][0];
+                    const y = polygonPoints[i][1];
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(0,0,0,0.2)'
+                ctx.save();
+                ctx.translate(0, G);
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 1;
+                drawBezier(arr[0]);
+                ctx.stroke();
+                ctx.fill();
+                ctx.restore();
+
+                const polygon = pathToPolygons(polygonPath);
+                ctx.save();
+                ctx.translate(0, G * 2);
+                ctx.strokeStyle = 'blue';
+                drawPolygon(polygon[0]);
+                ctx.stroke();
+                ctx.fill();
+                ctx.restore();
             }
+        }
+
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            buildSector();
+            buildPolygon();
+        }
 
 
-            const gui = new dat.GUI();
-            gui.add(config, 'startAngle', -10, 10).onChange(update)
+        const gui = new dat.GUI();
+        gui.add(config, 'startAngle', -10, 10).onChange(update)
 
-            update();
-        });
+        update();
     </script>
 </body>
 </html>
