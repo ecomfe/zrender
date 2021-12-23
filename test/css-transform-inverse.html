@@ -24,8 +24,6 @@ under the License.
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <script src="lib/facePrint.js"></script>
-        <script src="lib/rollup.browser.js"></script>
-        <script src="lib/requireES.js"></script>
         <script src="lib/config.js"></script>
     </head>
     <body>
@@ -179,52 +177,58 @@ under the License.
 
 
 
-        <script>
-            requireES(
-                [
-                    'zrender/esm/zrender',
-                    'zrender/esm/canvas/canvas',
-                    'zrender/esm/core/dom',
-                    'zrender/esm/graphic/shape/Polyline',
-                    'zrender/esm/graphic/shape/Rect'
-                ],
-                initAllTry
-            );
+        <script type="importmap">
+        {
+            "imports": {
+                "tslib": "../node_modules/tslib/tslib.es6.js"
+            }
+        }
+        </script>
+        <script type="module">
+            if (typeof process === 'undefined' || !process.env) {
+                window.process = {
+                    env: {
+                        NODE_ENV: 'development'
+                    }
+                };
+            }
 
-            function initAllTry(zrender, domUtil, Polyline, Rect) {
-                var allTries = document.getElementById('allTries');
-                allTries.style.display = 'block';
 
-                initSingleTry(document.getElementById('try0'));
-                initSingleTry(document.getElementById('try2'));
-                initSingleTry(document.getElementById('try3'));
+            import * as zrender from '../index.js';
+            import * as dom from '../lib/core/dom.js';
 
-                function initSingleTry(tryDom) {
-                    var tryBox = tryDom.querySelector('.try-box');
+            var allTries = document.getElementById('allTries');
+            allTries.style.display = 'block';
 
-                    var zr = zrender.init(tryBox, {
-                        renderer: 'canvas'
-                    });
-                    zr.on('click', function (e) {
-                        console.log('handle click');
-                        drawPointer(zr, e);
-                    });
-                }
+            initSingleTry(document.getElementById('try0'));
+            initSingleTry(document.getElementById('try2'));
+            initSingleTry(document.getElementById('try3'));
 
-                function drawPointer(zr, zrEvent) {
-                    var zrX = zrEvent.offsetX;
-                    var zrY = zrEvent.offsetY;
-                    var bodyCoord = [];
-                    domUtil.transformLocalCoord(
-                        bodyCoord, zr.painter.getViewportRoot(), document.body, zrX, zrY
-                    );
+            function initSingleTry(tryDom) {
+                var tryBox = tryDom.querySelector('.try-box');
 
-                    var pointerMarker = document.createElement('div');
-                    pointerMarker.classList.add('pointer-marker');
-                    pointerMarker.style.left = bodyCoord[0] + 'px';
-                    pointerMarker.style.top = bodyCoord[1] + 'px';
-                    document.body.appendChild(pointerMarker);
-                }
+                var zr = zrender.init(tryBox, {
+                    renderer: 'canvas'
+                });
+                zr.on('click', function (e) {
+                    console.log('handle click');
+                    drawPointer(zr, e);
+                });
+            }
+
+            function drawPointer(zr, zrEvent) {
+                var zrX = zrEvent.offsetX;
+                var zrY = zrEvent.offsetY;
+                var bodyCoord = [];
+                domUtil.transformLocalCoord(
+                    bodyCoord, zr.painter.getViewportRoot(), document.body, zrX, zrY
+                );
+
+                var pointerMarker = document.createElement('div');
+                pointerMarker.classList.add('pointer-marker');
+                pointerMarker.style.left = bodyCoord[0] + 'px';
+                pointerMarker.style.top = bodyCoord[1] + 'px';
+                document.body.appendChild(pointerMarker);
             }
         </script>
 

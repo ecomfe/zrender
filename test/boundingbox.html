@@ -3,22 +3,27 @@
 <head>
     <meta charset="utf-8" />
     <title>包围盒计算测试</title>
-    <script src="lib/rollup.browser.js"></script>
-    <script src="lib/requireES.js"></script>
     <script src="lib/config.js"></script>
 </head>
 <body>
     <div id="Main"></div>
 </body>
-    <script type="text/javascript">
-
-    requireES(['zrender/lib/zrender', 'zrender/lib/core/PathProxy'], function(zrender, PathProxy) {
+    <script type="importmap">
+    {
+        "imports": {
+          "zrender/": "../",
+          "tslib": "../node_modules/tslib/tslib.es6.js"
+        }
+      }
+    </script>
+    <script type="module">
+        import PathProxy from 'zrender/lib/core/PathProxy.js'
         var canvas = document.createElement('canvas')
         document.getElementById("Main").appendChild(canvas);
         canvas.width = 1024;
         canvas.height = 600;
         var ctx = canvas.getContext("2d");
-        var path = new PathProxy.default();
+        var path = new PathProxy();
         path.setContext(ctx);
         path.beginPath();
         path.moveTo(20, 20);
@@ -31,6 +36,5 @@
         var bb = path.getBoundingRect();
         ctx.beginPath();
         ctx.strokeRect(bb.x, bb.y, bb.width, bb.height);
-    });
     </script>
 </html>
