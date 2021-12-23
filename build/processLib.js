@@ -27,7 +27,16 @@ function addJsExtension(moduleName) {
 }
 
 async function transform() {
-    const libFiles = await globby(path.join(__dirname, '../lib/**/*.js'));
+    const libFiles = await globby([
+        '**/*.js'
+    ], {
+        cwd: path.join(__dirname, '../lib'),
+        absolute: true
+    });
+
+    if (libFiles.length === 0) {
+        throw new Error('No lib files found.')
+    }
 
     for (let file of libFiles) {
         const code = fs.readFileSync(file, 'utf-8');
