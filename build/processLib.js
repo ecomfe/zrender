@@ -60,8 +60,4 @@ transform().then(() => {
     });
 }).then(() => {
     console.log(chalk.green('Libs can be bundled!'));
-})
-
-
-
-// Do bundling test to check if transform is correct.
+});
