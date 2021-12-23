@@ -429,13 +429,13 @@ const svgText: SVGProxy<TSpan> = {
         setTransform(textSvgEl, el.transform);
 
         // Consider different font display differently in vertial align, we always
-        // set vertialAlign as 'middle', and use 'y' to locate text vertically.
+        // set verticalAlign as 'middle', and use 'y' to locate text vertically.
         const x = style.x || 0;
         const y = adjustTextY(style.y || 0, getLineHeight(font), style.textBaseline);
         const textAlign = TEXT_ALIGN_TO_ANCHOR[style.textAlign as keyof typeof TEXT_ALIGN_TO_ANCHOR]
             || style.textAlign;
 
-        attr(textSvgEl, 'dominant-baseline', 'central');
+        attr(textSvgEl, 'dominant-baseline', style.textBaseline || 'central');
         attr(textSvgEl, 'text-anchor', textAlign);
         attr(textSvgEl, 'x', x + '');
         attr(textSvgEl, 'y', y + '');
