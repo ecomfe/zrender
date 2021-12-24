@@ -54,14 +54,9 @@ async function transform() {
     )
 }
 
-async function testLibBundling() {
-
-}
-
 transform().then(() => {
     console.log(chalk.green('Added .js extensions.'));
     console.log(chalk.gray('Start testing generated libs...'));
-    return testLibBundling();
 }).then(() => {
     return rollup.rollup({
         input: path.resolve(__dirname, '../index.js'),
