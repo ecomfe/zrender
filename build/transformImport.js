@@ -3,7 +3,7 @@
 // Reference:
 // https://regexr.com/47jlq
 // https://gist.github.com/manekinekko/7e58a17bc62a9be47172
-const regexp = /((?:(?:import)|(?:export))\s+?(?:(?:(?:[\w*\s{},\/\/\*]*)\s+from\s+?)|))(?:(?:"(.*?)")|(?:'(.*?)'))([\s]*?(?:;|$|))/g;
+const regexp = /((?:(?:import)|(?:export))\s+?(?:(?:(?:[\w*\s{},\/]*)\s+from\s+?)|))(?:(?:"(.*?)")|(?:'(.*?)'))([\s]*?(?:;|$|))/g;
 
 module.exports.transformImport = function (code, processModuleName) {
     return code.replace(regexp, (str, prefix, moduleNameA, moduleNameB, postfix) => {
