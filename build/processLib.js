@@ -54,10 +54,6 @@ async function transform() {
     )
 }
 
-async function testLibBundling() {
-
-}
-
 transform().then(() => {
     console.log(chalk.green('Added .js extensions.'));
     console.log(chalk.gray('Start testing generated libs...'));

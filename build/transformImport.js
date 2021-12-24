@@ -3,7 +3,7 @@
 // Reference:
 // https://regexr.com/47jlq
 // https://gist.github.com/manekinekko/7e58a17bc62a9be47172
-const regexp = /((?:(?:import)|(?:export))\s+?(?:(?:(?:[\w*\s{},]*)\s+from\s+?)|))(?:(?:"(.*?)")|(?:'(.*?)'))([\s]*?(?:;|$|))/g;
+const regexp = /((?:(?:import)|(?:export))\s+?(?:(?:(?:[\w*\s{},\/\/\*]*)\s+from\s+?)|))(?:(?:"(.*?)")|(?:'(.*?)'))([\s]*?(?:;|$|))/g;
 
 module.exports.transformImport = function (code, processModuleName) {
     return code.replace(regexp, (str, prefix, moduleNameA, moduleNameB, postfix) => {
@@ -52,6 +52,11 @@ import "module-8";
 
 import "module-9"    // comment no problem
 
+import {
+    AAAA,
+    // BBB
+} from 'module-10';
+
 import "module-b' // doesn't match -> the opening and closing quation mark are different
 
 importing hya from 'ttt'
@@ -62,9 +67,9 @@ import fbsfrom ''
 // Export expressions.
 export { aaa };
 
-export * from "module-10";
+export * from "module-11";
 
-export { aaa } from "module-11";
+export { aaa } from "module-12";
 
 // Should not be parsed
 export default aaa;
@@ -90,7 +95,8 @@ module.exports.runTest = function () {
         'module-8',
         'module-9',
         'module-10',
-        'module-11'
+        'module-11',
+        'module-12'
     ]
     let cursor = 0;
     module.exports.transformImport(testCases, (moduleName) => {
@@ -106,4 +112,4 @@ module.exports.runTest = function () {
     console.log('All test passed!')
 }
 
-// module.exports.runTest();
+module.exports.runTest();
