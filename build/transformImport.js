@@ -112,4 +112,4 @@ module.exports.runTest = function () {
     console.log('All test passed!')
 }
 
-module.exports.runTest();
+// module.exports.runTest();
