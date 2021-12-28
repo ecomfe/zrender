@@ -93,8 +93,24 @@
                 endAngle: 0,
                 r0: 50,
                 r: 100,
-                cornerRadius: 10,
-                innerCornerRadius: 10
+                // cornerRadius: 10,
+                // innerCornerRadius: 10,
+                cr: [10, 10]
+            }
+        }));
+
+        zr.add(new zrender.Sector({
+            position: [400, 150],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: Math.PI * -60 / 180,
+                endAngle: Math.PI * 60 / 180,
+                r0: 50,
+                r: 140,
+                cr: [5, 10, 15, 20]
             }
         }));
     </script>

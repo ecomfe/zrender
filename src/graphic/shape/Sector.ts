@@ -9,8 +9,20 @@ export class SectorShape {
     startAngle = 0
     endAngle = Math.PI * 2
     clockwise = true
-    cornerRadius = 0
-    innerCornerRadius = 0
+    /**
+     * Corner radius of sector
+     *
+     * clockwise, from inside to outside, four corners are
+     * inner start -> inner end
+     * outer start -> outer end
+     *
+     * cr = 5               => [5, 5, 5, 5]
+     * cr = [5]             => [5, 5, 0, 0]
+     * cr = [5, 10]         => [5, 10, 5, 10]
+     * cr = [5, 10, 15]     => [5, 10, 15, 15]
+     * cr = [5, 10, 15, 20] => [5, 10, 15, 20]
+     */
+    cr: number | string | (number | string)[] = 0
 }
 
 export interface SectorProps extends PathProps {

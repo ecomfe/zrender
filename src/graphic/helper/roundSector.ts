@@ -1,4 +1,6 @@
+import { parsePercent } from '../../contain/text';
 import PathProxy, { normalizeArcAngles } from '../../core/PathProxy';
+import { isArray, map } from '../../core/util';
 
 const PI = Math.PI;
 const PI2 = PI * 2;
@@ -12,31 +14,22 @@ const mathMax = Math.max;
 const mathMin = Math.min;
 const e = 1e-4;
 
-type CornerTangents = {
-    cx: number
-    cy: number
-    x0: number
-    y0: number
-    x1: number
-    y1: number
-};
-
 function intersect(
     x0: number, y0: number,
     x1: number, y1: number,
     x2: number, y2: number,
     x3: number, y3: number
 ): [number, number] {
-    const x10 = x1 - x0;
-    const y10 = y1 - y0;
-    const x32 = x3 - x2;
-    const y32 = y3 - y2;
-    let t = y32 * x10 - x32 * y10;
+    const dx10 = x1 - x0;
+    const dy10 = y1 - y0;
+    const dx32 = x3 - x2;
+    const dy32 = y3 - y2;
+    let t = dy32 * dx10 - dx32 * dy10;
     if (t * t < e) {
         return;
     }
-    t = (x32 * (y0 - y2) - y32 * (x0 - x2)) / t;
-    return [x0 + t * x10, y0 + t * y10];
+    t = (dx32 * (y0 - y2) - dy32 * (x0 - x2)) / t;
+    return [x0 + t * dx10, y0 + t * dy10];
 }
 
 // Compute perpendicular offset line of length rc.
@@ -45,7 +38,7 @@ function computeCornerTangents(
     x1: number, y1: number,
     radius: number, cr: number,
     clockwise: boolean
-): CornerTangents {
+) {
     const x01 = x0 - x1;
     const y01 = y0 - y1;
     const lo = (clockwise ? cr : -cr) / mathSqrt(x01 * x01 + y01 * y01);
@@ -89,6 +82,46 @@ function computeCornerTangents(
     };
 }
 
+function calcCornerCircleCenter(x: number, y: number, r: number, angle: number) {
+    return {
+        x: x + r * mathCos(angle),
+        y: y + r * mathSin(angle)
+    };
+}
+
+// For compactibility, don't use normalizeCssArray
+// 5 represents [5, 5, 5, 5]
+// [5] represents [5, 5, 0, 0]
+// [5, 10] represents [5, 5, 10, 10]
+// [5, 10, 15] represents [5, 10, 15, 15]
+// [5, 10, 15, 20] represents [5, 10, 15, 20]
+function normalizeCornerRadius(
+    cr: number | string | (number | string)[],
+    r0: number,
+    r: number
+) {
+    let arr: (number | string)[];
+    if (isArray(cr)) {
+        const len = cr.length;
+        if (len === 4) {
+            arr = cr;
+        }
+        else if (len === 3) {
+            arr = cr.concat(cr[len - 1]);
+        }
+        else if (len === 2) {
+            arr = [cr[0], cr[0], cr[1], cr[1]];
+        }
+        else {
+            arr = [cr[0], cr[0], 0, 0];
+        }
+    }
+    else {
+        arr = [cr, cr, cr, cr];
+    }
+    return map(arr, (cr, idx) => parsePercent(cr, idx < 2 ? r0 : r));
+}
+
 export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     cx: number
     cy: number
@@ -97,11 +130,11 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     clockwise?: boolean,
     r?: number,
     r0?: number,
-    cornerRadius?: number,
-    innerCornerRadius?: number
+    cr?: number | string | (number | string)[]
 }) {
-    let radius = mathMax(shape.r, 0);
-    let innerRadius = mathMax(shape.r0 || 0, 0);
+    const { r, r0 } = shape;
+    let radius = mathMax(r, 0);
+    let innerRadius = mathMax(r0 || 0, 0);
     const hasRadius = radius > 0;
     const hasInnerRadius = innerRadius > 0;
 
@@ -123,8 +156,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     }
 
     const clockwise = !!shape.clockwise;
-    const startAngle = shape.startAngle;
-    const endAngle = shape.endAngle;
+    const { startAngle, endAngle, cx, cy, cr } = shape;
 
     // PENDING: whether normalizing angles is required?
     let arc: number;
@@ -138,10 +170,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         arc = mathAbs(tmpAngles[0] - tmpAngles[1]);
     }
 
-    const cx = shape.cx;
-    const cy = shape.cy;
-    const cornerRadius = shape.cornerRadius || 0;
-    const innerCornerRadius = shape.innerCornerRadius || 0;
+    const [icrStart, icrEnd, ocrStart, ocrEnd] = normalizeCornerRadius(cr, r0, r);
 
     // is a point
     if (!(radius > e)) {
@@ -149,27 +178,28 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     }
     // is a circle or annulus
     else if (arc > PI2 - e) {
-        ctx.moveTo(
-            cx + radius * mathCos(startAngle),
-            cy + radius * mathSin(startAngle)
-        );
+        const { x, y } = calcCornerCircleCenter(cx, cy, radius, startAngle);
+        ctx.moveTo(x, y);
         ctx.arc(cx, cy, radius, startAngle, endAngle, !clockwise);
 
         if (innerRadius > e) {
-            ctx.moveTo(
-                cx + innerRadius * mathCos(endAngle),
-                cy + innerRadius * mathSin(endAngle)
-            );
+            const { x, y } = calcCornerCircleCenter(cx, cy, innerRadius, endAngle);
+            ctx.moveTo(x, y);
             ctx.arc(cx, cy, innerRadius, endAngle, startAngle, clockwise);
         }
     }
     // is a circular or annular sector
     else {
         const halfRd = mathAbs(radius - innerRadius) / 2;
-        const cr = mathMin(halfRd, cornerRadius);
-        const icr = mathMin(halfRd, innerCornerRadius);
-        let cr0 = icr;
-        let cr1 = cr;
+        let ocrs = mathMin(halfRd, ocrStart);
+        let ocre = mathMin(halfRd, ocrEnd);
+        let icrs = mathMin(halfRd, icrStart);
+        let icre = mathMin(halfRd, icrEnd);
+
+        let ocrMax = mathMax(ocrs, ocre);
+        let icrMax = mathMax(icrs, icre);
+        let limitedOcrMax = ocrMax;
+        let limitedIcrMax = icrMax;
 
         const xrs = radius * mathCos(startAngle);
         const yrs = radius * mathSin(startAngle);
@@ -182,7 +212,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         let yirs;
 
         // draw corner radius
-        if (cr > e || icr > e) {
+        if (ocrMax > e || icrMax > e) {
             xre = radius * mathCos(endAngle);
             yre = radius * mathSin(endAngle);
             xirs = innerRadius * mathCos(startAngle);
@@ -200,8 +230,8 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
                         mathACos((x0 * x1 + y0 * y1) / (mathSqrt(x0 * x0 + y0 * y0) * mathSqrt(x1 * x1 + y1 * y1))) / 2
                     );
                     const b = mathSqrt(it[0] * it[0] + it[1] * it[1]);
-                    cr0 = mathMin(icr, (innerRadius - b) / (a - 1));
-                    cr1 = mathMin(cr, (radius - b) / (a + 1));
+                    limitedOcrMax = mathMin(ocrMax, (radius - b) / (a + 1));
+                    limitedIcrMax = mathMin(icrMax, (innerRadius - b) / (a - 1));
                 }
             }
         }
@@ -211,25 +241,27 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
             ctx.moveTo(cx + xrs, cy + yrs);
         }
         // the outer ring has corners
-        else if (cr1 > e) {
-            const ct0 = computeCornerTangents(xirs, yirs, xrs, yrs, radius, cr1, clockwise);
-            const ct1 = computeCornerTangents(xre, yre, xire, yire, radius, cr1, clockwise);
+        else if (limitedOcrMax > e) {
+            const crStart = mathMin(ocrStart, limitedOcrMax);
+            const crEnd = mathMin(ocrEnd, limitedOcrMax);
+            const ct0 = computeCornerTangents(xirs, yirs, xrs, yrs, radius, crStart, clockwise);
+            const ct1 = computeCornerTangents(xre, yre, xire, yire, radius, crEnd, clockwise);
 
             ctx.moveTo(cx + ct0.cx + ct0.x0, cy + ct0.cy + ct0.y0);
 
             // Have the corners merged?
-            if (cr1 < cr) {
+            if (limitedOcrMax < ocrMax) {
                 // eslint-disable-next-line max-len
-                ctx.arc(cx + ct0.cx, cy + ct0.cy, cr1, mathATan2(ct0.y0, ct0.x0), mathATan2(ct1.y0, ct1.x0), !clockwise);
+                ctx.arc(cx + ct0.cx, cy + ct0.cy, limitedOcrMax, mathATan2(ct0.y0, ct0.x0), mathATan2(ct1.y0, ct1.x0), !clockwise);
             }
             else {
                 // draw the two corners and the ring
                 // eslint-disable-next-line max-len
-                ctx.arc(cx + ct0.cx, cy + ct0.cy, cr1, mathATan2(ct0.y0, ct0.x0), mathATan2(ct0.y1, ct0.x1), !clockwise);
+                ctx.arc(cx + ct0.cx, cy + ct0.cy, crStart, mathATan2(ct0.y0, ct0.x0), mathATan2(ct0.y1, ct0.x1), !clockwise);
                 // eslint-disable-next-line max-len
                 ctx.arc(cx, cy, radius, mathATan2(ct0.cy + ct0.y1, ct0.cx + ct0.x1), mathATan2(ct1.cy + ct1.y1, ct1.cx + ct1.x1), !clockwise);
                 // eslint-disable-next-line max-len
-                ctx.arc(cx + ct1.cx, cy + ct1.cy, cr1, mathATan2(ct1.y1, ct1.x1), mathATan2(ct1.y0, ct1.x0), !clockwise);
+                ctx.arc(cx + ct1.cx, cy + ct1.cy, crEnd, mathATan2(ct1.y1, ct1.x1), mathATan2(ct1.y0, ct1.x0), !clockwise);
             }
         }
         // the outer ring is a circular arc
@@ -243,31 +275,30 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
             ctx.lineTo(cx + xire, cy + yire);
         }
         // the inner ring has corners
-        else if (cr0 > e) {
-            const ct0 = computeCornerTangents(xire, yire, xre, yre, innerRadius, -cr0, clockwise);
-            const ct1 = computeCornerTangents(xrs, yrs, xirs, yirs, innerRadius, -cr0, clockwise);
+        else if (limitedIcrMax > e) {
+            const crStart = mathMin(icrStart, limitedIcrMax);
+            const crEnd = mathMin(icrEnd, limitedIcrMax);
+            const ct0 = computeCornerTangents(xire, yire, xre, yre, innerRadius, -crEnd, clockwise);
+            const ct1 = computeCornerTangents(xrs, yrs, xirs, yirs, innerRadius, -crStart, clockwise);
             ctx.lineTo(cx + ct0.cx + ct0.x0, cy + ct0.cy + ct0.y0);
 
             // Have the corners merged?
-            if (cr0 < icr) {
+            if (limitedIcrMax < icrMax) {
                 // eslint-disable-next-line max-len
-                ctx.arc(cx + ct0.cx, cy + ct0.cy, cr0, mathATan2(ct0.y0, ct0.x0), mathATan2(ct1.y0, ct1.x0), !clockwise);
+                ctx.arc(cx + ct0.cx, cy + ct0.cy, limitedIcrMax, mathATan2(ct0.y0, ct0.x0), mathATan2(ct1.y0, ct1.x0), !clockwise);
             }
             // draw the two corners and the ring
             else {
                 // eslint-disable-next-line max-len
-                ctx.arc(cx + ct0.cx, cy + ct0.cy, cr0, mathATan2(ct0.y0, ct0.x0), mathATan2(ct0.y1, ct0.x1), !clockwise);
+                ctx.arc(cx + ct0.cx, cy + ct0.cy, crEnd, mathATan2(ct0.y0, ct0.x0), mathATan2(ct0.y1, ct0.x1), !clockwise);
                 // eslint-disable-next-line max-len
                 ctx.arc(cx, cy, innerRadius, mathATan2(ct0.cy + ct0.y1, ct0.cx + ct0.x1), mathATan2(ct1.cy + ct1.y1, ct1.cx + ct1.x1), clockwise);
                 // eslint-disable-next-line max-len
-                ctx.arc(cx + ct1.cx, cy + ct1.cy, cr0, mathATan2(ct1.y1, ct1.x1), mathATan2(ct1.y0, ct1.x0), !clockwise);
+                ctx.arc(cx + ct1.cx, cy + ct1.cy, crStart, mathATan2(ct1.y1, ct1.x1), mathATan2(ct1.y0, ct1.x0), !clockwise);
             }
         }
         // the inner ring is just a circular arc
         else {
-            // FIXME: if no lineTo, svg renderer will perform an abnormal drawing behavior.
-            ctx.lineTo(cx + xire, cy + yire);
-
             ctx.arc(cx, cy, innerRadius, endAngle, startAngle, clockwise);
         }
     }
