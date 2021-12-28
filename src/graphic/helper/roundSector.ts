@@ -82,7 +82,7 @@ function computeCornerTangents(
     };
 }
 
-function calcCornerCircleCenter(x: number, y: number, r: number, angle: number) {
+function calcCircleCenter(x: number, y: number, r: number, angle: number) {
     return {
         x: x + r * mathCos(angle),
         y: y + r * mathSin(angle)
@@ -130,7 +130,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     clockwise?: boolean,
     r?: number,
     r0?: number,
-    cr?: number | string | (number | string)[]
+    cornerRadius?: number | string | (number | string)[]
 }) {
     const { r, r0 } = shape;
     let radius = mathMax(r, 0);
@@ -156,7 +156,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     }
 
     const clockwise = !!shape.clockwise;
-    const { startAngle, endAngle, cx, cy, cr } = shape;
+    const { startAngle, endAngle, cx, cy, cornerRadius } = shape;
 
     // PENDING: whether normalizing angles is required?
     let arc: number;
@@ -170,7 +170,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         arc = mathAbs(tmpAngles[0] - tmpAngles[1]);
     }
 
-    const [icrStart, icrEnd, ocrStart, ocrEnd] = normalizeCornerRadius(cr, r0, r);
+    const [icrStart, icrEnd, ocrStart, ocrEnd] = normalizeCornerRadius(cornerRadius, r0, r);
 
     // is a point
     if (!(radius > e)) {
@@ -178,12 +178,12 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     }
     // is a circle or annulus
     else if (arc > PI2 - e) {
-        const { x, y } = calcCornerCircleCenter(cx, cy, radius, startAngle);
+        const { x, y } = calcCircleCenter(cx, cy, radius, startAngle);
         ctx.moveTo(x, y);
         ctx.arc(cx, cy, radius, startAngle, endAngle, !clockwise);
 
         if (innerRadius > e) {
-            const { x, y } = calcCornerCircleCenter(cx, cy, innerRadius, endAngle);
+            const { x, y } = calcCircleCenter(cx, cy, innerRadius, endAngle);
             ctx.moveTo(x, y);
             ctx.arc(cx, cy, innerRadius, endAngle, startAngle, clockwise);
         }
