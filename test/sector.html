@@ -24,7 +24,9 @@
 
         import * as zrender from '../index.js';
         // 初始化zrender
-        var zr = zrender.init(document.getElementById('main'));
+        var zr = zrender.init(document.getElementById('main'), {
+            renderer: window.__ZRENDER__DEFAULT__RENDERER__
+        });
 
         zr.add(new zrender.Sector({
             position: [100, 100],
