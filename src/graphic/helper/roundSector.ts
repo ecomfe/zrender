@@ -89,7 +89,7 @@ function calcCircleCenter(x: number, y: number, r: number, angle: number) {
     };
 }
 
-// For compactibility, don't use normalizeCssArray
+// For compatibility, don't use normalizeCssArray
 // 5 represents [5, 5, 5, 5]
 // [5] represents [5, 5, 0, 0]
 // [5, 10] represents [5, 5, 10, 10]
@@ -119,7 +119,9 @@ function normalizeCornerRadius(
     else {
         arr = [cr, cr, cr, cr];
     }
-    return map(arr, (cr, idx) => parsePercent(cr, idx < 2 ? r0 : r));
+    // use `r - r0` if the sector is annular
+    const dr = r && r0 ? r - r0 : r;
+    return map(arr, cr => parsePercent(cr, dr));
 }
 
 export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
@@ -169,7 +171,16 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         arc = mathAbs(tmpAngles[0] - tmpAngles[1]);
     }
 
-    const [icrStart, icrEnd, ocrStart, ocrEnd] = normalizeCornerRadius(cornerRadius, innerRadius, radius);
+    let icrStart;
+    let icrEnd;
+    let ocrStart;
+    let ocrEnd;
+    if (cornerRadius) {
+        [icrStart, icrEnd, ocrStart, ocrEnd] = normalizeCornerRadius(cornerRadius, innerRadius, radius);
+    }
+    else {
+        icrStart = icrEnd = ocrStart = ocrEnd = 0;
+    }
 
     // is a point
     if (!(radius > e)) {
