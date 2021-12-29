@@ -132,9 +132,8 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     r0?: number,
     cornerRadius?: number | string | (number | string)[]
 }) {
-    const { r, r0 } = shape;
-    let radius = mathMax(r, 0);
-    let innerRadius = mathMax(r0 || 0, 0);
+    let radius = mathMax(shape.r, 0);
+    let innerRadius = mathMax(shape.r0 || 0, 0);
     const hasRadius = radius > 0;
     const hasInnerRadius = innerRadius > 0;
 
@@ -170,7 +169,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         arc = mathAbs(tmpAngles[0] - tmpAngles[1]);
     }
 
-    const [icrStart, icrEnd, ocrStart, ocrEnd] = normalizeCornerRadius(cornerRadius, r0, r);
+    const [icrStart, icrEnd, ocrStart, ocrEnd] = normalizeCornerRadius(cornerRadius, innerRadius, radius);
 
     // is a point
     if (!(radius > e)) {
