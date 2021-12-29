@@ -120,7 +120,7 @@ function normalizeCornerRadius(
         arr = [cr, cr, cr, cr];
     }
     // use `r - r0` if the sector is annular
-    const dr = r && r0 ? r - r0 : r;
+    const dr = r0 ? r - r0 : r;
     return map(arr, cr => parsePercent(cr, dr));
 }
 
