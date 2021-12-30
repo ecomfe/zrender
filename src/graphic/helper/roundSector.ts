@@ -201,13 +201,13 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         }
 
         const halfRd = mathAbs(radius - innerRadius) / 2;
-        let ocrs = mathMin(halfRd, ocrStart);
-        let ocre = mathMin(halfRd, ocrEnd);
-        let icrs = mathMin(halfRd, icrStart);
-        let icre = mathMin(halfRd, icrEnd);
+        const ocrs = mathMin(halfRd, ocrStart);
+        const ocre = mathMin(halfRd, ocrEnd);
+        const icrs = mathMin(halfRd, icrStart);
+        const icre = mathMin(halfRd, icrEnd);
 
-        let ocrMax = mathMax(ocrs, ocre);
-        let icrMax = mathMax(icrs, icre);
+        const ocrMax = mathMax(ocrs, ocre);
+        const icrMax = mathMax(icrs, icre);
         let limitedOcrMax = ocrMax;
         let limitedIcrMax = icrMax;
 
