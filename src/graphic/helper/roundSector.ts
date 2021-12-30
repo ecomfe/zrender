@@ -103,6 +103,9 @@ function normalizeCornerRadius(
     let arr: (number | string)[];
     if (isArray(cr)) {
         const len = cr.length;
+        if (!len) {
+            return [];
+        }
         if (len === 4) {
             arr = cr;
         }
@@ -171,17 +174,6 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         arc = mathAbs(tmpAngles[0] - tmpAngles[1]);
     }
 
-    let icrStart;
-    let icrEnd;
-    let ocrStart;
-    let ocrEnd;
-    if (cornerRadius) {
-        [icrStart, icrEnd, ocrStart, ocrEnd] = normalizeCornerRadius(cornerRadius, innerRadius, radius);
-    }
-    else {
-        icrStart = icrEnd = ocrStart = ocrEnd = 0;
-    }
-
     // is a point
     if (!(radius > e)) {
         ctx.moveTo(cx, cy);
@@ -200,6 +192,14 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     }
     // is a circular or annular sector
     else {
+        let icrStart;
+        let icrEnd;
+        let ocrStart;
+        let ocrEnd;
+        if (cornerRadius) {
+            [icrStart, icrEnd, ocrStart, ocrEnd] = normalizeCornerRadius(cornerRadius, innerRadius, radius);
+        }
+
         const halfRd = mathAbs(radius - innerRadius) / 2;
         let ocrs = mathMin(halfRd, ocrStart);
         let ocre = mathMin(halfRd, ocrEnd);
