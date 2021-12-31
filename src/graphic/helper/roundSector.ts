@@ -104,7 +104,7 @@ function normalizeCornerRadius(
     if (isArray(cr)) {
         const len = cr.length;
         if (!len) {
-            return [];
+            return cr;
         }
         if (len === 4) {
             arr = cr;
