@@ -99,12 +99,12 @@ function normalizeCornerRadius(
     cr: number | string | (number | string)[],
     r0: number,
     r: number
-) {
+): number[] {
     let arr: (number | string)[];
     if (isArray(cr)) {
         const len = cr.length;
         if (!len) {
-            return cr;
+            return cr as number[];
         }
         if (len === 4) {
             arr = cr;
