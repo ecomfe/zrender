@@ -186,7 +186,7 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
         let svgPathBuilder = elExt.__svgPathBuilder;
         if (elExt.__svgPathVersion !== pathVersion
             || !svgPathBuilder
-            || el.style.strokePercent !== elExt.__svgPathStrokePercent
+            || strokePercent !== elExt.__svgPathStrokePercent
         ) {
             if (!svgPathBuilder) {
                 svgPathBuilder = elExt.__svgPathBuilder = new SVGPathRebuilder();
@@ -195,7 +195,7 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
             path.rebuildPath(svgPathBuilder, strokePercent);
             svgPathBuilder.generateStr();
             elExt.__svgPathVersion = pathVersion;
-            elExt.__svgPathStrokePercent = el.style.strokePercent;
+            elExt.__svgPathStrokePercent = strokePercent;
         }
 
         attrs.d = svgPathBuilder.getStr();
