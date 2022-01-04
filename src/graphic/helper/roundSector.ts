@@ -180,13 +180,17 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     }
     // is a circle or annulus
     else if (arc > PI2 - e) {
-        const { x, y } = calcCircleCenter(cx, cy, radius, startAngle);
-        ctx.moveTo(x, y);
+        ctx.moveTo(
+            cx + radius * mathCos(startAngle),
+            cy + radius * mathSin(startAngle)
+        );
         ctx.arc(cx, cy, radius, startAngle, endAngle, !clockwise);
 
         if (innerRadius > e) {
-            const { x, y } = calcCircleCenter(cx, cy, innerRadius, endAngle);
-            ctx.moveTo(x, y);
+            ctx.moveTo(
+                cx + innerRadius * mathCos(endAngle),
+                cy + innerRadius * mathSin(endAngle)
+            );
             ctx.arc(cx, cy, innerRadius, endAngle, startAngle, clockwise);
         }
     }
