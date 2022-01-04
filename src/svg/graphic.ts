@@ -133,6 +133,7 @@ const buitinShapesDef: Record<string, [ConvertShapeToAttr, ShapeValidator?]> = {
 interface PathWithSVGBuildPath extends Path {
     __svgPathVersion: number
     __svgPathBuilder: SVGPathRebuilder
+    __svgPathStrokePercent: number
 }
 
 function hasShapeAnimation(el: Displayable) {
@@ -185,7 +186,7 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
         let svgPathBuilder = elExt.__svgPathBuilder;
         if (elExt.__svgPathVersion !== pathVersion
             || !svgPathBuilder
-            || strokePercent < 1
+            || el.style.strokePercent !== elExt.__svgPathStrokePercent
         ) {
             if (!svgPathBuilder) {
                 svgPathBuilder = elExt.__svgPathBuilder = new SVGPathRebuilder();
@@ -194,6 +195,7 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
             path.rebuildPath(svgPathBuilder, strokePercent);
             svgPathBuilder.generateStr();
             elExt.__svgPathVersion = pathVersion;
+            elExt.__svgPathStrokePercent = el.style.strokePercent;
         }
 
         attrs.d = svgPathBuilder.getStr();
