@@ -82,13 +82,6 @@ function computeCornerTangents(
     };
 }
 
-function calcCircleCenter(x: number, y: number, r: number, angle: number) {
-    return {
-        x: x + r * mathCos(angle),
-        y: y + r * mathSin(angle)
-    };
-}
-
 // For compatibility, don't use normalizeCssArray
 // 5 represents [5, 5, 5, 5]
 // [5] represents [5, 5, 0, 0]
