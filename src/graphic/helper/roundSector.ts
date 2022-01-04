@@ -257,18 +257,18 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
             ctx.moveTo(cx + ct0.cx + ct0.x0, cy + ct0.cy + ct0.y0);
 
             // Have the corners merged?
-            if (limitedOcrMax < ocrMax) {
+            if (limitedOcrMax < ocrMax && crStart === crEnd) {
                 // eslint-disable-next-line max-len
                 ctx.arc(cx + ct0.cx, cy + ct0.cy, limitedOcrMax, mathATan2(ct0.y0, ct0.x0), mathATan2(ct1.y0, ct1.x0), !clockwise);
             }
             else {
                 // draw the two corners and the ring
                 // eslint-disable-next-line max-len
-                ctx.arc(cx + ct0.cx, cy + ct0.cy, crStart, mathATan2(ct0.y0, ct0.x0), mathATan2(ct0.y1, ct0.x1), !clockwise);
+                crStart > 0 && ctx.arc(cx + ct0.cx, cy + ct0.cy, crStart, mathATan2(ct0.y0, ct0.x0), mathATan2(ct0.y1, ct0.x1), !clockwise);
                 // eslint-disable-next-line max-len
                 ctx.arc(cx, cy, radius, mathATan2(ct0.cy + ct0.y1, ct0.cx + ct0.x1), mathATan2(ct1.cy + ct1.y1, ct1.cx + ct1.x1), !clockwise);
                 // eslint-disable-next-line max-len
-                ctx.arc(cx + ct1.cx, cy + ct1.cy, crEnd, mathATan2(ct1.y1, ct1.x1), mathATan2(ct1.y0, ct1.x0), !clockwise);
+                crEnd > 0 && ctx.arc(cx + ct1.cx, cy + ct1.cy, crEnd, mathATan2(ct1.y1, ct1.x1), mathATan2(ct1.y0, ct1.x0), !clockwise);
             }
         }
         // the outer ring is a circular arc
@@ -290,22 +290,25 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
             ctx.lineTo(cx + ct0.cx + ct0.x0, cy + ct0.cy + ct0.y0);
 
             // Have the corners merged?
-            if (limitedIcrMax < icrMax) {
+            if (limitedIcrMax < icrMax && crStart === crEnd) {
                 // eslint-disable-next-line max-len
                 ctx.arc(cx + ct0.cx, cy + ct0.cy, limitedIcrMax, mathATan2(ct0.y0, ct0.x0), mathATan2(ct1.y0, ct1.x0), !clockwise);
             }
             // draw the two corners and the ring
             else {
                 // eslint-disable-next-line max-len
-                ctx.arc(cx + ct0.cx, cy + ct0.cy, crEnd, mathATan2(ct0.y0, ct0.x0), mathATan2(ct0.y1, ct0.x1), !clockwise);
+                crEnd > 0 && ctx.arc(cx + ct0.cx, cy + ct0.cy, crEnd, mathATan2(ct0.y0, ct0.x0), mathATan2(ct0.y1, ct0.x1), !clockwise);
                 // eslint-disable-next-line max-len
                 ctx.arc(cx, cy, innerRadius, mathATan2(ct0.cy + ct0.y1, ct0.cx + ct0.x1), mathATan2(ct1.cy + ct1.y1, ct1.cx + ct1.x1), clockwise);
                 // eslint-disable-next-line max-len
-                ctx.arc(cx + ct1.cx, cy + ct1.cy, crStart, mathATan2(ct1.y1, ct1.x1), mathATan2(ct1.y0, ct1.x0), !clockwise);
+                crStart > 0 && ctx.arc(cx + ct1.cx, cy + ct1.cy, crStart, mathATan2(ct1.y1, ct1.x1), mathATan2(ct1.y0, ct1.x0), !clockwise);
             }
         }
         // the inner ring is just a circular arc
         else {
+            // FIXME: if no lineTo, svg renderer will perform an abnormal drawing behavior.
+            ctx.lineTo(cx + xire, cy + yire);
+
             ctx.arc(cx, cy, innerRadius, endAngle, startAngle, clockwise);
         }
     }

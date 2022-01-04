@@ -116,6 +116,35 @@
                 // clockwise: false
             }
         }));
+
+        zr.add(new zrender.Sector({
+            position: [400, 350],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: Math.PI * -160 / 180,
+                endAngle: Math.PI * -20 / 180,
+                r0: 50,
+                r: 140,
+                cornerRadius: [0, 0, 0, 20]
+            }
+        }));
+
+        zr.add(new zrender.Sector({
+            position: [400, 550],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: Math.PI * -160 / 180,
+                endAngle: Math.PI * -20 / 180,
+                r: 140,
+                cornerRadius: [0, 0, '20%', 20]
+            }
+        }));
     </script>
     <div id="main" style="width:1000px;height:600px;"></div>
 </body>
