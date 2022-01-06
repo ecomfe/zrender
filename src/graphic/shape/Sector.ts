@@ -22,7 +22,7 @@ export class SectorShape {
      * [5, 10, 15]     => [5, 10, 15, 15]
      * [5, 10, 15, 20] => [5, 10, 15, 20]
      */
-    cornerRadius: number | string | (number | string)[] = 0
+    cornerRadius: number | number[] = 0
 }
 
 export interface SectorProps extends PathProps {

@@ -88,36 +88,30 @@ function computeCornerTangents(
 // [5, 10] represents [5, 5, 10, 10]
 // [5, 10, 15] represents [5, 10, 15, 15]
 // [5, 10, 15, 20] represents [5, 10, 15, 20]
-function normalizeCornerRadius(
-    cr: number | string | (number | string)[],
-    r0: number,
-    r: number
-): number[] {
-    let arr: (number | string)[];
+function normalizeCornerRadius(cr: number | number[]): number[] {
+    let arr: number[];
     if (isArray(cr)) {
         const len = cr.length;
         if (!len) {
             return cr as number[];
         }
-        if (len === 4) {
-            arr = cr;
-        }
-        else if (len === 3) {
-            arr = cr.concat(cr[len - 1]);
+        if (len === 1) {
+            arr = [cr[0], cr[0], 0, 0];
         }
         else if (len === 2) {
             arr = [cr[0], cr[0], cr[1], cr[1]];
         }
+        else if (len === 3) {
+            arr = cr.concat(cr[2]);
+        }
         else {
-            arr = [cr[0], cr[0], 0, 0];
+            arr = cr;
         }
     }
     else {
         arr = [cr, cr, cr, cr];
     }
-    // use `r - r0` if the sector is annular
-    const dr = r0 ? r - r0 : r;
-    return map(arr, cr => parsePercent(cr, dr));
+    return arr;
 }
 
 export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
@@ -128,7 +122,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     clockwise?: boolean,
     r?: number,
     r0?: number,
-    cornerRadius?: number | string | (number | string)[]
+    cornerRadius?: number | number[]
 }) {
     let radius = mathMax(shape.r, 0);
     let innerRadius = mathMax(shape.r0 || 0, 0);
@@ -194,7 +188,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         let ocrStart;
         let ocrEnd;
         if (cornerRadius) {
-            [icrStart, icrEnd, ocrStart, ocrEnd] = normalizeCornerRadius(cornerRadius, innerRadius, radius);
+            [icrStart, icrEnd, ocrStart, ocrEnd] = normalizeCornerRadius(cornerRadius);
         }
 
         const halfRd = mathAbs(radius - innerRadius) / 2;
