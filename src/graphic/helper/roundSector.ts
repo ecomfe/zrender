@@ -1,6 +1,5 @@
-import { parsePercent } from '../../contain/text';
 import PathProxy, { normalizeArcAngles } from '../../core/PathProxy';
-import { isArray, map } from '../../core/util';
+import { isArray } from '../../core/util';
 
 const PI = Math.PI;
 const PI2 = PI * 2;
