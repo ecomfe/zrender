@@ -4,7 +4,7 @@
 
 import Clip from './Clip';
 import * as color from '../tool/color';
-import {extend, isArrayLike, isFunction, isGradientObject, isNumber, isString, keys, logError, map} from '../core/util';
+import {eqNaN, extend, isArrayLike, isFunction, isGradientObject, isNumber, isString, keys, logError, map} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
 import easingFuncs, { AnimationEasing } from './easing';
 import Animation from './Animation';
@@ -306,7 +306,7 @@ class Track {
             }
         }
         else {
-            if (isNumber(value)) {
+            if (isNumber(rawValue) && !eqNaN(rawValue)) {
                 valType = VALUE_TYPE_NUMBER;
             }
             else if (isString(rawValue)) {
