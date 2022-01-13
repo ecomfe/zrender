@@ -1,4 +1,4 @@
-import PathProxy, { normalizeArcAngles } from '../../core/PathProxy';
+import PathProxy from '../../core/PathProxy';
 import { isArray } from '../../core/util';
 
 const PI = Math.PI;
