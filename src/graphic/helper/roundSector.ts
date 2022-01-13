@@ -1,4 +1,4 @@
-import PathProxy, { normalizeArcAngles } from '../../core/PathProxy';
+import PathProxy from '../../core/PathProxy';
 import { isArray } from '../../core/util';
 
 const PI = Math.PI;
@@ -148,17 +148,9 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     const clockwise = !!shape.clockwise;
     const { startAngle, endAngle, cx, cy, cornerRadius } = shape;
 
-    // PENDING: whether normalizing angles is required?
-    let arc: number;
-    // FIXME: there may be a precision issue in `normalizeArcAngles`
-    if (startAngle === endAngle) {
-        arc = 0;
-    }
-    else {
-        const tmpAngles = [startAngle, endAngle];
-        normalizeArcAngles(tmpAngles, !clockwise);
-        arc = mathAbs(tmpAngles[0] - tmpAngles[1]);
-    }
+    let arc = mathAbs(endAngle - startAngle);
+    const mod = arc && arc % PI2;
+    mod && (arc = mod);
 
     // is a point
     if (!(radius > e)) {
@@ -186,58 +178,71 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         let icrEnd;
         let ocrStart;
         let ocrEnd;
-        if (cornerRadius) {
-            [icrStart, icrEnd, ocrStart, ocrEnd] = normalizeCornerRadius(cornerRadius);
-        }
 
-        const halfRd = mathAbs(radius - innerRadius) / 2;
-        const ocrs = mathMin(halfRd, ocrStart);
-        const ocre = mathMin(halfRd, ocrEnd);
-        const icrs = mathMin(halfRd, icrStart);
-        const icre = mathMin(halfRd, icrEnd);
+        let ocrs;
+        let ocre;
+        let icrs;
+        let icre;
 
-        const ocrMax = mathMax(ocrs, ocre);
-        const icrMax = mathMax(icrs, icre);
-        let limitedOcrMax = ocrMax;
-        let limitedIcrMax = icrMax;
-
-        const xrs = radius * mathCos(startAngle);
-        const yrs = radius * mathSin(startAngle);
-        const xire = innerRadius * mathCos(endAngle);
-        const yire = innerRadius * mathSin(endAngle);
+        let ocrMax;
+        let icrMax;
+        let limitedOcrMax;
+        let limitedIcrMax;
 
         let xre;
         let yre;
         let xirs;
         let yirs;
 
-        // draw corner radius
-        if (ocrMax > e || icrMax > e) {
-            xre = radius * mathCos(endAngle);
-            yre = radius * mathSin(endAngle);
-            xirs = innerRadius * mathCos(startAngle);
-            yirs = innerRadius * mathSin(startAngle);
+        const xrs = radius * mathCos(startAngle);
+        const yrs = radius * mathSin(startAngle);
+        const xire = innerRadius * mathCos(endAngle);
+        const yire = innerRadius * mathSin(endAngle);
 
-            // restrict the max value of corner radius
-            if (arc < PI) {
-                const it = intersect(xrs, yrs, xirs, yirs, xre, yre, xire, yire);
-                if (it) {
-                    const x0 = xrs - it[0];
-                    const y0 = yrs - it[1];
-                    const x1 = xre - it[0];
-                    const y1 = yre - it[1];
-                    const a = 1 / mathSin(
-                        mathACos((x0 * x1 + y0 * y1) / (mathSqrt(x0 * x0 + y0 * y0) * mathSqrt(x1 * x1 + y1 * y1))) / 2
-                    );
-                    const b = mathSqrt(it[0] * it[0] + it[1] * it[1]);
-                    limitedOcrMax = mathMin(ocrMax, (radius - b) / (a + 1));
-                    limitedIcrMax = mathMin(icrMax, (innerRadius - b) / (a - 1));
+        const hasArc = arc > e;
+        if (hasArc) {
+            if (cornerRadius) {
+                [icrStart, icrEnd, ocrStart, ocrEnd] = normalizeCornerRadius(cornerRadius);
+            }
+
+            const halfRd = mathAbs(radius - innerRadius) / 2;
+            ocrs = mathMin(halfRd, ocrStart);
+            ocre = mathMin(halfRd, ocrEnd);
+            icrs = mathMin(halfRd, icrStart);
+            icre = mathMin(halfRd, icrEnd);
+
+            limitedOcrMax = ocrMax = mathMax(ocrs, ocre);
+            limitedIcrMax = icrMax = mathMax(icrs, icre);
+
+            // draw corner radius
+            if (ocrMax > e || icrMax > e) {
+                xre = radius * mathCos(endAngle);
+                yre = radius * mathSin(endAngle);
+                xirs = innerRadius * mathCos(startAngle);
+                yirs = innerRadius * mathSin(startAngle);
+
+                // restrict the max value of corner radius
+                if (arc < PI) {
+                    const it = intersect(xrs, yrs, xirs, yirs, xre, yre, xire, yire);
+                    if (it) {
+                        const x0 = xrs - it[0];
+                        const y0 = yrs - it[1];
+                        const x1 = xre - it[0];
+                        const y1 = yre - it[1];
+                        const a = 1 / mathSin(
+                            // eslint-disable-next-line max-len
+                            mathACos((x0 * x1 + y0 * y1) / (mathSqrt(x0 * x0 + y0 * y0) * mathSqrt(x1 * x1 + y1 * y1))) / 2
+                        );
+                        const b = mathSqrt(it[0] * it[0] + it[1] * it[1]);
+                        limitedOcrMax = mathMin(ocrMax, (radius - b) / (a + 1));
+                        limitedIcrMax = mathMin(icrMax, (innerRadius - b) / (a - 1));
+                    }
                 }
             }
         }
 
         // the sector is collapsed to a line
-        if (!(arc > e)) {
+        if (!hasArc) {
             ctx.moveTo(cx + xrs, cy + yrs);
         }
         // the outer ring has corners
@@ -271,7 +276,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         }
 
         // no inner ring, is a circular sector
-        if (!(innerRadius > e) || !(arc > e)) {
+        if (!(innerRadius > e) || !hasArc) {
             ctx.lineTo(cx + xire, cy + yire);
         }
         // the inner ring has corners
