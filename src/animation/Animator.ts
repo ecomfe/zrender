@@ -543,7 +543,7 @@ class Track {
             target[propName] = {
                 type: isLinearGradient ? 'linear' : 'radial',
                 x: interpolateNumber(val.x, nextVal.x, w),
-                y: interpolateNumber(val.x, nextVal.x, w),
+                y: interpolateNumber(val.y, nextVal.y, w),
                 // TODO performance
                 colorStops: map(val.colorStops, (colorStop, idx) => {
                     const nextColorStop = nextVal.colorStops[idx];
