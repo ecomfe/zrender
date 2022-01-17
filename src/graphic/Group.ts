@@ -86,8 +86,10 @@ class Group extends Element<GroupProps> {
                 this._children.push(child);
                 this._doAdd(child);
             }
-            if (child.__hostTarget) {
-                throw 'This elemenet has been used as an attachment';
+            if (process.env.NODE_ENV !== 'production') {
+                if (child.__hostTarget) {
+                    throw 'This elemenet has been used as an attachment';
+                }
             }
         }
 

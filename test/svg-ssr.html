@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG SSR</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <div id="main"></div>
+
+    <script>
+    var zr = zrender.init(null, {
+        renderer: 'svg',
+        ssr: true,
+        width: 1200,
+        height: 1200
+    });
+
+    const cellSize = 80;
+    const elSize = 60;
+
+    // Basic rect.
+    for (let i = 0; i < 10; i++) {
+        const el = new zrender.Rect({
+            shape: {
+                x: i * cellSize + (cellSize - elSize) / 2,
+                y: (cellSize - elSize) / 2,
+                width: elSize,
+                height: elSize
+            },
+            style: {
+                fill: 'red'
+            }
+        });
+        zr.add(el);
+    }
+
+    // Circle with stroke and gradient.
+    for (let i = 0; i < 10; i++) {
+        const el = new zrender.Circle({
+            shape: {
+                cx: i * cellSize + cellSize / 2,
+                cy: cellSize + cellSize / 2,
+                r: elSize / 2
+            },
+            style: {
+                fill: {
+                    type: 'radial',
+                    x: 0.5,
+                    y: 0.5,
+                    r: 0.5,
+                    colorStops: [{
+                        offset: 0,
+                        color: 'red'
+                    }, {
+                        offset: 1,
+                        color: 'blue'
+                    }]
+                },
+                stroke: '#000',
+                lineWidth: 2
+            }
+        });
+        zr.add(el);
+    }
+
+    // Circle with stroke and pattern.
+    for (let i = 0; i < 10; i++) {
+        const el = new zrender.Circle({
+            shape: {
+                cx: i * cellSize + cellSize / 2,
+                cy: cellSize * 2 + cellSize / 2,
+                r: elSize / 2
+            },
+            style: {
+                fill: {
+                    image: 'asset/test.png',
+                    imageWidth: 10,
+                    imageHeight: 10
+                },
+                stroke: '#000',
+                lineWidth: 2
+            }
+        });
+        zr.add(el);
+    }
+
+    // Circle with shadow
+    for (let i = 0; i < 10; i++) {
+        const el = new zrender.Circle({
+            shape: {
+                cx: i * cellSize + cellSize / 2,
+                cy: cellSize * 3 + cellSize / 2,
+                r: elSize / 2
+            },
+            style: {
+                fill: 'red',
+                stroke: '#000',
+                lineWidth: 2,
+                shadowBlur: 10,
+                shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+        });
+        zr.add(el);
+    }
+
+    // Polygon with transform
+    for (let i = 0; i < 10; i++) {
+        const points = [];
+        for (let k = 0; k < 10; k++) {
+            points.push([
+                Math.cos(k / 10 * Math.PI * 2) * elSize / 2,
+                Math.sin(k / 10 * Math.PI * 2) * elSize / 2
+            ]);
+        }
+        const el = new zrender.Polygon({
+            shape: {
+                points
+            },
+            x: i * cellSize + cellSize / 2,
+            y: cellSize * 4 + cellSize / 2,
+            rotation: i * 0.2,
+            style: {
+                fill: 'red',
+                stroke: '#000',
+                lineWidth: 2,
+                shadowBlur: 10,
+                shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+        });
+        zr.add(el);
+    }
+
+
+    // Image with cliPath
+    const imageObj = new Image();
+    imageObj.src = 'asset/test.png';
+    for (let k = 0; k < 2; k++) {
+        const group = new zrender.Group();
+        for (let i = 0; i < 10; i++) {
+            const el = new zrender.Image({
+                x: i * cellSize + (cellSize - elSize) / 2,
+                y: cellSize * (5 + k),
+                style: {
+                    image: k ? 'asset/test.png' : imageObj,
+                    width: elSize,
+                    height: elSize
+                }
+            });
+            el.setClipPath(new zrender.Circle({
+                shape: {
+                    cx: elSize / 2,
+                    cy: elSize / 2,
+                    r: elSize / 2 + 3
+                }
+            }));
+            group.add(el);
+        }
+        group.setClipPath(new zrender.Rect({
+            x: cellSize + cellSize * 3 * k,
+            y: cellSize * (5 + k),
+            skewX: -1.3,
+            shape: {
+                width: cellSize * 7,
+                height: cellSize
+            }
+        }))
+        zr.add(group);
+    }
+
+    // Transform animation with multiple keyframe and easing
+    for (let i = 0; i < 10; i++) {
+        const el = new zrender.Circle({
+            x: i * cellSize + cellSize / 2,
+            y: cellSize * 7 + cellSize / 2,
+            shape: {
+                cx: 0,
+                cy: 0,
+                r: elSize / 2
+            },
+            style: {
+                fill: 'red'
+            }
+        });
+        el.animate(null, true)
+            .when(1000, {
+                scaleX: 0.2,
+                scaleY: 0.2
+            }, 'sinusoidalInOut')
+            .when(2000, {
+                scaleX: 1,
+                scaleY: 1
+            }, 'sinusoidalInOut')
+            .start()
+        zr.add(el);
+    }
+
+    // Shape animation
+    for (let i = 0; i < 10; i++) {
+        const el = new zrender.Circle({
+            x: i * cellSize + cellSize / 2,
+            y: cellSize * 8 + cellSize / 2,
+            shape: {
+                cx: 0,
+                cy: 0,
+                r: elSize / 2
+            },
+            style: {
+                fill: 'red'
+            }
+        });
+        el.animate('shape', true)
+            .when(1000, {
+                r: elSize / 3
+            })
+            .start();
+        zr.add(el);
+    }
+
+    // Style animation
+    for (let i = 0; i < 10; i++) {
+        const el = new zrender.Circle({
+            x: i * cellSize + cellSize / 2,
+            y: cellSize * 9 + cellSize / 2,
+            shape: {
+                cx: 0,
+                cy: 0,
+                r: elSize / 2
+            },
+            style: {
+                fill: 'red'
+            }
+        });
+        el.animate('style', true)
+            .when(1000, {
+                fill: 'blue'
+            })
+            .start();
+        zr.add(el);
+    }
+
+    // Easing animation
+    for (let i = 0; i < 10; i++) {
+        const el = new zrender.Circle({
+            x: i * cellSize + cellSize / 2,
+            y: cellSize * 10 + cellSize / 2,
+            shape: {
+                cx: 0,
+                cy: 0,
+                r: elSize / 2
+            },
+            style: {
+                fill: 'red'
+            }
+        });
+        el.animate(null, true)
+            .when(1000, {
+                x: i * cellSize + cellSize
+            })
+            .start('circularInOut');
+        zr.add(el);
+    }
+
+    console.time('render');
+    const svg = zr.painter.renderToString();
+    document.getElementById('main').innerHTML = svg;
+    console.timeEnd('render');
+
+    // var blob = new Blob([svg], { type: 'image/svg+xml' });
+    // var a = document.createElement('a');
+    // a.download = 'aaa.svg';
+    // a.href = URL.createObjectURL(blob);
+    // a.style.display = "none";
+    // a.click();
+    </script>
+</body>
+</html>

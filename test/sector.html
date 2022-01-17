@@ -2,23 +2,33 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <script src="lib/rollup.browser.js"></script>
-    <script src="lib/requireES.js"></script>
     <script src="lib/config.js"></script>
 </head>
 <body>
-    <script type="text/javascript">
+    <script type="importmap">
+    {
+        "imports": {
+          "tslib": "../node_modules/tslib/tslib.es6.js"
+        }
+    }
+    </script>
+    <script type="module">
 
-    requireES([
-        'zrender/esm/zrender',
-        'zrender/esm/graphic/shape/Sector',
-        'zrender/esm/canvas/canvas'
-        // 'zrender/esm/vml/vml'
-    ], function(zrender, SectorShape){
+        if (typeof process === 'undefined' || !process.env) {
+            window.process = {
+                env: {
+                    NODE_ENV: 'development'
+                }
+            };
+        }
+
+        import * as zrender from '../index.js';
         // 初始化zrender
-        var zr = zrender.init(document.getElementById('main'));
+        var zr = zrender.init(document.getElementById('main'), {
+            renderer: window.__ZRENDER__DEFAULT__RENDERER__
+        });
 
-        zr.add(new SectorShape({
+        zr.add(new zrender.Sector({
             position: [100, 100],
             scale: [1, 1],
             style: {
@@ -32,7 +42,7 @@
             }
         }));
 
-        zr.add(new SectorShape({
+        zr.add(new zrender.Sector({
             position: [100, 100],
             scale: [1, 1],
             style: {
@@ -46,7 +56,7 @@
             }
         }));
 
-        zr.add(new SectorShape({
+        zr.add(new zrender.Sector({
             position: [100, 100],
             scale: [1, 1],
             style: {
@@ -60,7 +70,7 @@
             }
         }));
 
-        zr.add(new SectorShape({
+        zr.add(new zrender.Sector({
             position: [100, 100],
             scale: [1, 1],
             style: {
@@ -74,7 +84,7 @@
             }
         }));
 
-        zr.add(new SectorShape({
+        zr.add(new zrender.Sector({
             position: [100, 100],
             scale: [1, 1],
             style: {
@@ -85,12 +95,86 @@
                 endAngle: 0,
                 r0: 50,
                 r: 100,
-                cornerRadius: 10,
-                innerCornerRadius: 10
+                // cornerRadius: 10,
+                // innerCornerRadius: 10,
+                cornerRadius: [10, 10]
             }
         }));
-    });
+
+        zr.add(new zrender.Sector({
+            position: [100, 300],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: 0.6981317007977319,
+                endAngle: 0.6981317007977318,
+                r: 100,
+                //clockwise: false
+            }
+        }));
+
+        zr.add(new zrender.Sector({
+            position: [100, 550],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: Math.PI * 2,
+                endAngle: -1,
+                cornerRadius: 20,
+                r: 100,
+                //clockwise: false
+            }
+        }));
+
+        zr.add(new zrender.Sector({
+            position: [400, 150],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: Math.PI * -160 / 180,
+                endAngle: Math.PI * -20 / 180,
+                r0: 50,
+                r: 140,
+                cornerRadius: [5, 15, 0, 70],
+                // clockwise: false
+            }
+        }));
+
+        zr.add(new zrender.Sector({
+            position: [400, 350],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: Math.PI * -160 / 180,
+                endAngle: Math.PI * -20 / 180,
+                r0: 50,
+                r: 140,
+                cornerRadius: [0, 0, 0, 20]
+            }
+        }));
+
+        zr.add(new zrender.Sector({
+            position: [400, 550],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: Math.PI * -160 / 180,
+                endAngle: Math.PI * -20 / 180,
+                r: 140,
+                cornerRadius: [0, 0, 35, 20]
+            }
+        }));
     </script>
-    <div id="main" style="width:1000px;height:600px;"></div>
+    <div id="main" style="width:1000px;height:800px;"></div>
 </body>
 </html>

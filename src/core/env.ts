@@ -17,31 +17,29 @@ class Env {
     wxa = false
     worker = false
 
-    canvasSupported = false
     svgSupported = false
     touchEventsSupported = false
     pointerEventsSupported = false
     domSupported = false
     transformSupported = false
     transform3dSupported = false
+
+    hasGlobalWindow = typeof window !== 'undefined'
 }
 
 const env = new Env();
 
 if (typeof wx === 'object' && typeof wx.getSystemInfoSync === 'function') {
     env.wxa = true;
-    env.canvasSupported = true;
     env.touchEventsSupported = true;
 }
 else if (typeof document === 'undefined' && typeof self !== 'undefined') {
     // In worker
     env.worker = true;
-    env.canvasSupported = true;
 }
 else if (typeof navigator === 'undefined') {
     // In node
     env.node = true;
-    env.canvasSupported = true;
     env.svgSupported = true;
 }
 else {
@@ -83,7 +81,6 @@ function detect(ua: string, env: Env) {
         browser.weChat = true;
     }
 
-    env.canvasSupported = !!document.createElement('canvas').getContext;
     env.svgSupported = typeof SVGRect !== 'undefined';
     env.touchEventsSupported = 'ontouchstart' in window && !browser.ie && !browser.edge;
     env.pointerEventsSupported = 'onpointerdown' in window

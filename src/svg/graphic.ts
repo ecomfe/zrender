@@ -2,300 +2,174 @@
 // 1. shadow
 // 2. Image: sx, sy, sw, sh
 
-import {createElement, normalizeColor} from './core';
-import { PathRebuilder } from '../core/PathProxy';
-import * as matrix from '../core/matrix';
+import {
+    adjustTextY,
+    getIdURL,
+    getMatrixStr,
+    getPathPrecision,
+    getShadowKey,
+    getSRTTransformString,
+    hasShadow,
+    isAroundZero,
+    isGradient,
+    isImagePattern,
+    isLinearGradient,
+    isPattern,
+    isRadialGradient,
+    normalizeColor,
+    round4,
+    TEXT_ALIGN_TO_ANCHOR
+} from './helper';
 import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
-import { DEFAULT_FONT, getLineHeight } from '../contain/text';
+import { getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
-import { map } from '../core/util';
-import { normalizeLineDash } from '../graphic/helper/dashStyle';
+import SVGPathRebuilder from './SVGPathRebuilder';
+import mapStyleToAttrs from './mapStyleToAttrs';
+import { SVGVNodeAttrs, createVNode, SVGVNode, vNodeToString, BrushScope } from './core';
+import { MatrixArray } from '../core/matrix';
+import Displayable from '../graphic/Displayable';
+import { assert, isFunction, isString, logError, map, retrieve2 } from '../core/util';
+import Polyline from '../graphic/shape/Polyline';
+import Polygon from '../graphic/shape/Polygon';
+import { GradientObject } from '../graphic/Gradient';
+import { ImagePatternObject, SVGPatternObject } from '../graphic/Pattern';
+import { createOrUpdateImage } from '../graphic/helper/image';
+import { ImageLike } from '../core/types';
+import { createCSSAnimation } from './cssAnimation';
+import { hasSeparateFont, parseFontSize } from '../graphic/Text';
+import { DEFAULT_FONT, DEFAULT_FONT_FAMILY } from '../core/platform';
 
-export interface SVGProxy<T> {
-    brush(el: T): void
+const round = Math.round;
+
+function isImageLike(val: any): val is HTMLImageElement {
+    return val && isString(val.src);
+}
+function isCanvasLike(val: any): val is HTMLCanvasElement {
+    return val && isFunction(val.toDataURL);
 }
 
-const NONE = 'none';
-const mathRound = Math.round;
-const mathSin = Math.sin;
-const mathCos = Math.cos;
-const PI = Math.PI;
-const PI2 = Math.PI * 2;
-const degree = 180 / PI;
-
-const EPSILON = 1e-4;
 
 type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;
 
-function round3(val: number) {
-    return mathRound(val * 1e3) / 1e3;
-}
-function round4(val: number) {
-    return mathRound(val * 1e4) / 1e4;
-}
-
-function isAroundZero(val: number) {
-    return val < EPSILON && val > -EPSILON;
-}
-
-function pathHasFill(style: AllStyleOption): style is PathStyleProps {
-    const fill = (style as PathStyleProps).fill;
-    return fill != null && fill !== NONE;
-}
-
-function pathHasStroke(style: AllStyleOption): style is PathStyleProps {
-    const stroke = (style as PathStyleProps).stroke;
-    return stroke != null && stroke !== NONE;
-}
-
-function setTransform(svgEl: SVGElement, m: matrix.MatrixArray) {
-    if (m) {
-        attr(svgEl, 'transform', 'matrix('
-            // Avoid large string of matrix
-            // PENDING If have precision issue when scaled
-            + round3(m[0]) + ','
-            + round3(m[1]) + ','
-            + round3(m[2]) + ','
-            + round3(m[3]) + ','
-            + round4(m[4]) + ','
-            + round4(m[5])
-         + ')');
-    }
-}
-
-function attr(el: SVGElement, key: string, val: string) {
-    if (!val || (val as any).type !== 'linear' && (val as any).type !== 'radial') {
-        // Don't set attribute for gradient, since it need new dom nodes
-        el.setAttribute(key, val);
-    }
-}
-
-function attrXLink(el: SVGElement, key: string, val: string) {
-    el.setAttributeNS('http://www.w3.org/1999/xlink', key, val);
-}
-
-function attrXML(el: SVGElement, key: string, val: string) {
-    el.setAttributeNS('http://www.w3.org/XML/1998/namespace', key, val);
-}
-
-function bindStyle(svgEl: SVGElement, style: PathStyleProps, el?: Path): void
-function bindStyle(svgEl: SVGElement, style: TSpanStyleProps, el?: TSpan): void
-function bindStyle(svgEl: SVGElement, style: ImageStyleProps, el?: ZRImage): void
-function bindStyle(svgEl: SVGElement, style: AllStyleOption, el?: Path | TSpan | ZRImage) {
-    const opacity = style.opacity == null ? 1 : style.opacity;
-
-    // only set opacity. stroke and fill cannot be applied to svg image
-    if (el instanceof ZRImage) {
-        attr(svgEl, 'opacity', opacity + '');
-        return;
-    }
-
-    if (pathHasFill(style)) {
-        const fill = normalizeColor(style.fill as string);
-        attr(svgEl, 'fill', fill.color);
-        attr(svgEl,
-            'fill-opacity',
-            (style.fillOpacity != null
-                ? style.fillOpacity * fill.opacity * opacity
-                : fill.opacity * opacity
-            ) + ''
-        );
-    }
-    else {
-        attr(svgEl, 'fill', NONE);
-    }
-
-    if (pathHasStroke(style)) {
-        const stroke = normalizeColor(style.stroke as string);
-        attr(svgEl, 'stroke', stroke.color);
-        const strokeWidth = style.lineWidth;
-        const strokeScale = style.strokeNoScale
-            ? (el as Path).getLineScale()
-            : 1;
-        attr(svgEl, 'stroke-width', (strokeScale ? strokeWidth / strokeScale : 0) + '');
-        // stroke then fill for text; fill then stroke for others
-        attr(svgEl, 'paint-order', style.strokeFirst ? 'stroke' : 'fill');
-        attr(svgEl, 'stroke-opacity', (
-            style.strokeOpacity != null
-                ? style.strokeOpacity * stroke.opacity * opacity
-                : stroke.opacity * opacity
-        ) + '');
-        let lineDash = style.lineDash && strokeWidth > 0 && normalizeLineDash(style.lineDash, strokeWidth);
-        if (lineDash) {
-            let lineDashOffset = style.lineDashOffset;
-            if (strokeScale && strokeScale !== 1) {
-                lineDash = map(lineDash, function (rawVal) {
-                    return rawVal / strokeScale;
-                });
-                if (lineDashOffset) {
-                    lineDashOffset /= strokeScale;
-                    lineDashOffset = mathRound(lineDashOffset);
-                }
-            }
-            attr(svgEl, 'stroke-dasharray', lineDash.join(','));
-            attr(svgEl, 'stroke-dashoffset', (lineDashOffset || 0) + '');
+function setStyleAttrs(attrs: SVGVNodeAttrs, style: AllStyleOption, el: Path | TSpan | ZRImage, scope: BrushScope) {
+    mapStyleToAttrs((key, val) => {
+        const isFillStroke = key === 'fill' || key === 'stroke';
+        if (isFillStroke && isGradient(val)) {
+            setGradient(style, attrs, key, scope);
+        }
+        else if (isFillStroke && isPattern(val)) {
+            setPattern(el, attrs, key, scope);
         }
         else {
-            attr(svgEl, 'stroke-dasharray', NONE);
+            attrs[key] = val;
         }
+    }, style, el, false);
 
-        // PENDING
-        style.lineCap && attr(svgEl, 'stroke-linecap', style.lineCap);
-        style.lineJoin && attr(svgEl, 'stroke-linejoin', style.lineJoin);
-        style.miterLimit && attr(svgEl, 'stroke-miterlimit', style.miterLimit + '');
-    }
-    else {
-        attr(svgEl, 'stroke', NONE);
+    setShadow(el, attrs, scope);
+}
+
+function noRotateScale(m: MatrixArray) {
+    return isAroundZero(m[0] - 1)
+        && isAroundZero(m[1])
+        && isAroundZero(m[2])
+        && isAroundZero(m[3] - 1);
+}
+
+function noTranslate(m: MatrixArray) {
+    return isAroundZero(m[4]) && isAroundZero(m[5]);
+}
+
+function setTransform(attrs: SVGVNodeAttrs, m: MatrixArray, compress?: boolean) {
+    if (m && !(noTranslate(m) && noRotateScale(m))) {
+        const mul = compress ? 10 : 1e4;
+        // Use translate possible to reduce the size a bit.
+        attrs.transform = noRotateScale(m)
+            ? `translate(${round(m[4] * mul) / mul} ${round(m[5] * mul) / mul})` : getMatrixStr(m);
     }
 }
 
-class SVGPathRebuilder implements PathRebuilder {
-    private _d: (string | number)[]
-    private _str: string
-    private _invalid: boolean
+type ShapeMapDesc = (string | [string, string])[];
+type ConvertShapeToAttr = (shape: any, attrs: SVGVNodeAttrs, mul?: number) => void;
+type ShapeValidator = (shape: any) => boolean;
 
-    // If is start of subpath
-    private _start: boolean;
-
-    reset() {
-        this._start = true;
-        this._d = [];
-        this._str = '';
+function convertPolyShape(shape: Polygon['shape'], attrs: SVGVNodeAttrs, mul: number) {
+    const points = shape.points;
+    const strArr = [];
+    for (let i = 0; i < points.length; i++) {
+        strArr.push(round(points[i][0] * mul) / mul);
+        strArr.push(round(points[i][1] * mul) / mul);
     }
-    moveTo(x: number, y: number) {
-        this._add('M', x, y);
-    }
-    lineTo(x: number, y: number) {
-        this._add('L', x, y);
-    }
-    bezierCurveTo(x: number, y: number, x2: number, y2: number, x3: number, y3: number) {
-        this._add('C', x, y, x2, y2, x3, y3);
-    }
-    quadraticCurveTo(x: number, y: number, x2: number, y2: number) {
-        this._add('Q', x, y, x2, y2);
-    }
-    arc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, anticlockwise: boolean) {
-        this.ellipse(cx, cy, r, r, 0, startAngle, endAngle, anticlockwise);
-    }
-    ellipse(
-        cx: number, cy: number,
-        rx: number, ry: number,
-        psi: number,
-        startAngle: number,
-        endAngle: number,
-        anticlockwise: boolean
-    ) {
-        let dTheta = endAngle - startAngle;
-        const clockwise = !anticlockwise;
-
-        const dThetaPositive = Math.abs(dTheta);
-        const isCircle = isAroundZero(dThetaPositive - PI2)
-            || (clockwise ? dTheta >= PI2 : -dTheta >= PI2);
-
-        // Mapping to 0~2PI
-        const unifiedTheta = dTheta > 0 ? dTheta % PI2 : (dTheta % PI2 + PI2);
-
-        let large = false;
-        if (isCircle) {
-            large = true;
-        }
-        else if (isAroundZero(dThetaPositive)) {
-            large = false;
-        }
-        else {
-            large = (unifiedTheta >= PI) === !!clockwise;
-        }
-
-        const x0 = round4(cx + rx * mathCos(startAngle));
-        const y0 = round4(cy + ry * mathSin(startAngle));
-
-        // It will not draw if start point and end point are exactly the same
-        // We need to shift the end point with a small value
-        // FIXME A better way to draw circle ?
-        if (isCircle) {
-            if (clockwise) {
-                dTheta = PI2 - 1e-4;
-            }
-            else {
-                dTheta = -PI2 + 1e-4;
-            }
-
-            large = true;
-        }
-
-        if (this._start) {
-            // Move to (x0, y0) only when CMD.A comes at the
-            // first position of a shape.
-            // For instance, when drawing a ring, CMD.A comes
-            // after CMD.M, so it's unnecessary to move to
-            // (x0, y0).
-            this._add('M', x0, y0);
-        }
-
-        const x = round4(cx + rx * mathCos(startAngle + dTheta));
-        const y = round4(cy + ry * mathSin(startAngle + dTheta));
-
-        if (isNaN(x0) || isNaN(y0) || isNaN(rx) || isNaN(ry) || isNaN(psi) || isNaN(degree) || isNaN(x) || isNaN(y)) {
-            return '';
-        }
-
-        // FIXME Ellipse
-        this._add('A', round4(rx), round4(ry),
-            mathRound(psi * degree), +large, +clockwise, x, y);
-    }
-    rect(x: number, y: number, w: number, h: number) {
-        this._add('M', x, y);
-        this._add('L', x + w, y);
-        this._add('L', x + w, y + h);
-        this._add('L', x, y + h);
-        this._add('L', x, y);
-        this._add('Z');
-    }
-    closePath() {
-        // Not use Z as first command
-        if (this._d.length > 0) {
-            this._add('Z');
-        }
-    }
-
-    _add(cmd: string, a?: number, b?: number, c?: number, d?: number, e?: number, f?: number, g?: number, h?: number) {
-        this._d.push(cmd);
-        for (let i = 1; i < arguments.length; i++) {
-            const val = arguments[i];
-            if (isNaN(val)) {
-                this._invalid = true;
-                return;
-            }
-            this._d.push(round4(val));
-        }
-        this._start = cmd === 'Z';
-    }
-
-    generateStr() {
-        this._str = this._invalid ? '' : this._d.join(' ');
-        this._d = [];
-    }
-    getStr() {
-        return this._str;
-    }
+    attrs.points = strArr.join(' ');
 }
+
+function validatePolyShape(shape: Polyline['shape']) {
+    return !shape.smooth;
+}
+
+function createAttrsConvert(desc: ShapeMapDesc): ConvertShapeToAttr {
+    const normalizedDesc: [string, string][] = map(desc, (item) =>
+        (typeof item === 'string' ? [item, item] : item)
+    );
+
+    return function (shape, attrs, mul) {
+        for (let i = 0; i < normalizedDesc.length; i++) {
+            const item = normalizedDesc[i];
+            const val = shape[item[0]];
+            if (val != null) {
+                attrs[item[1]] = round(val * mul) / mul;
+            }
+        }
+    };
+}
+
+const buitinShapesDef: Record<string, [ConvertShapeToAttr, ShapeValidator?]> = {
+    circle: [createAttrsConvert(['cx', 'cy', 'r'])],
+    polyline: [convertPolyShape, validatePolyShape],
+    polygon: [convertPolyShape, validatePolyShape]
+    // Ignore line because it will be larger.
+};
 
 interface PathWithSVGBuildPath extends Path {
     __svgPathVersion: number
     __svgPathBuilder: SVGPathRebuilder
+    __svgPathStrokePercent: number
 }
 
-const svgPath: SVGProxy<Path> = {
-    brush(el: Path) {
-        const style = el.style;
-
-        let svgEl = el.__svgEl;
-        if (!svgEl) {
-            svgEl = createElement('path');
-            el.__svgEl = svgEl;
+function hasShapeAnimation(el: Displayable) {
+    const animators = el.animators;
+    for (let i = 0; i < animators.length; i++) {
+        if (animators[i].targetName === 'shape') {
+            return true;
         }
+    }
+    return false;
+}
 
+export function brushSVGPath(el: Path, scope: BrushScope) {
+    const style = el.style;
+    const shape = el.shape;
+    const builtinShpDef = buitinShapesDef[el.type];
+    const attrs: SVGVNodeAttrs = {};
+    const needsAnimate = scope.animation;
+    let svgElType = 'path';
+    const strokePercent = el.style.strokePercent;
+    const precision = (scope.compress && getPathPrecision(el)) || 4;
+    // Using SVG builtin shapes if possible
+    if (builtinShpDef
+        // Force to use path if it will update later.
+        // To avoid some animation(like morph) fail
+        && !scope.willUpdate
+        && !(builtinShpDef[1] && !builtinShpDef[1](shape))
+        // use `path` to simplify the animate element creation logic.
+        && !(needsAnimate && hasShapeAnimation(el))
+        && !(strokePercent < 1)
+    ) {
+        svgElType = el.type;
+        const mul = Math.pow(10, precision);
+        builtinShpDef[0](shape, attrs, mul);
+    }
+    else {
         if (!el.path) {
             el.createPathProxy();
         }
@@ -306,139 +180,417 @@ const svgPath: SVGProxy<Path> = {
             el.buildPath(path, el.shape);
             el.pathUpdated();
         }
-
         const pathVersion = path.getVersion();
         const elExt = el as PathWithSVGBuildPath;
+
         let svgPathBuilder = elExt.__svgPathBuilder;
-        if (elExt.__svgPathVersion !== pathVersion || !svgPathBuilder || el.style.strokePercent < 1) {
+        if (elExt.__svgPathVersion !== pathVersion
+            || !svgPathBuilder
+            || strokePercent !== elExt.__svgPathStrokePercent
+        ) {
             if (!svgPathBuilder) {
                 svgPathBuilder = elExt.__svgPathBuilder = new SVGPathRebuilder();
             }
-            svgPathBuilder.reset();
-            path.rebuildPath(svgPathBuilder, el.style.strokePercent);
+            svgPathBuilder.reset(precision);
+            path.rebuildPath(svgPathBuilder, strokePercent);
             svgPathBuilder.generateStr();
             elExt.__svgPathVersion = pathVersion;
+            elExt.__svgPathStrokePercent = strokePercent;
         }
 
-        attr(svgEl, 'd', svgPathBuilder.getStr());
-
-        bindStyle(svgEl, style, el);
-        setTransform(svgEl, el.transform);
+        attrs.d = svgPathBuilder.getStr();
     }
-};
 
-export {svgPath as path};
+    setTransform(attrs, el.transform);
+    setStyleAttrs(attrs, style, el, scope);
 
-/***************************************************
- * IMAGE
- **************************************************/
-const svgImage: SVGProxy<ZRImage> = {
-    brush(el: ZRImage) {
-        const style = el.style;
-        let image = style.image;
+    scope.animation && createCSSAnimation(el, attrs, scope);
 
-        if (image instanceof HTMLImageElement) {
+    return createVNode(svgElType, el.id + '', attrs);
+}
+
+export function brushSVGImage(el: ZRImage, scope: BrushScope) {
+    const style = el.style;
+    let image = style.image;
+
+    if (image && !isString(image)) {
+        if (isImageLike(image)) {
             image = image.src;
         }
         // heatmap layer in geo may be a canvas
-        else if (image instanceof HTMLCanvasElement) {
+        else if (isCanvasLike(image)) {
             image = image.toDataURL();
         }
-        if (!image) {
+    }
+
+    if (!image) {
+        return;
+    }
+
+    const x = style.x || 0;
+    const y = style.y || 0;
+
+    const dw = style.width;
+    const dh = style.height;
+
+    const attrs: SVGVNodeAttrs = {
+        href: image as string,
+        width: dw,
+        height: dh
+    };
+    if (x) {
+        attrs.x = x;
+    }
+    if (y) {
+        attrs.y = y;
+    }
+
+    setTransform(attrs, el.transform);
+    setStyleAttrs(attrs, style, el, scope);
+
+    scope.animation && createCSSAnimation(el, attrs, scope);
+
+    return createVNode('image', el.id + '', attrs);
+};
+
+export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
+    const style = el.style;
+
+    let text = style.text;
+    // Convert to string
+    text != null && (text += '');
+    if (!text || isNaN(style.x) || isNaN(style.y)) {
+        return;
+    }
+
+    // style.font has been normalized by `normalizeTextStyle`.
+    const font = style.font || DEFAULT_FONT;
+
+    // Consider different font display differently in vertial align, we always
+    // set vertialAlign as 'middle', and use 'y' to locate text vertically.
+    const x = style.x || 0;
+    const y = adjustTextY(style.y || 0, getLineHeight(font), style.textBaseline);
+    const textAlign = TEXT_ALIGN_TO_ANCHOR[style.textAlign as keyof typeof TEXT_ALIGN_TO_ANCHOR]
+        || style.textAlign;
+
+    const attrs: SVGVNodeAttrs = {
+        'dominant-baseline': 'central',
+        'text-anchor': textAlign
+    };
+
+    if (hasSeparateFont(style)) {
+        // Set separate font attributes if possible. Or some platform like PowerPoint may not support it.
+        let separatedFontStr = '';
+        const fontStyle = style.fontStyle;
+        const fontSize = parseFontSize(style.fontSize);
+        if (!parseFloat(fontSize)) {    // is 0px
             return;
         }
 
-        const x = style.x || 0;
-        const y = style.y || 0;
+        const fontFamily = style.fontFamily || DEFAULT_FONT_FAMILY;
+        const fontWeight = style.fontWeight;
+        separatedFontStr += `font-size:${fontSize};font-family:${fontFamily};`;
 
-        const dw = style.width;
-        const dh = style.height;
-
-        let svgEl = el.__svgEl;
-        if (!svgEl) {
-            svgEl = createElement('image');
-            el.__svgEl = svgEl;
+        // TODO reduce the attribute to set. But should it inherit from the container element?
+        if (fontStyle && fontStyle !== 'normal') {
+            separatedFontStr += `font-style:${fontStyle};`;
         }
-
-        if (image !== el.__imageSrc) {
-            attrXLink(svgEl, 'href', image as string);
-            // Caching image src
-            el.__imageSrc = image as string;
+        if (fontWeight && fontWeight !== 'normal') {
+            separatedFontStr += `font-weight:${fontWeight};`;
         }
-
-        attr(svgEl, 'width', dw + '');
-        attr(svgEl, 'height', dh + '');
-
-        attr(svgEl, 'x', x + '');
-        attr(svgEl, 'y', y + '');
-
-        bindStyle(svgEl, style, el);
-        setTransform(svgEl, el.transform);
+        attrs.style = separatedFontStr;
     }
-};
-export {svgImage as image};
-
-/***************************************************
- * TEXT
- **************************************************/
-const TEXT_ALIGN_TO_ANCHOR = {
-    left: 'start',
-    right: 'end',
-    center: 'middle',
-    middle: 'middle'
-};
-
-function adjustTextY(y: number, lineHeight: number, textBaseline: CanvasTextBaseline): number {
-    // TODO Other values.
-    if (textBaseline === 'top') {
-        y += lineHeight / 2;
+    else {
+        // Use set font manually
+        attrs.style = `font: ${font}`;
     }
-    else if (textBaseline === 'bottom') {
-        y -= lineHeight / 2;
+
+
+    if (text.match(/\s/)) {
+        // only enabled when have space in text.
+        attrs['xml:space'] = 'preserve';
     }
-    return y;
+    if (x) {
+        attrs.x = x;
+    }
+    if (y) {
+        attrs.y = y;
+    }
+    setTransform(attrs, el.transform);
+    setStyleAttrs(attrs, style, el, scope);
+
+    scope.animation && createCSSAnimation(el, attrs, scope);
+
+    return createVNode('text', el.id + '', attrs, undefined, text);
 }
 
-const svgText: SVGProxy<TSpan> = {
-    brush(el: TSpan) {
-        const style = el.style;
-
-        let text = style.text;
-        // Convert to string
-        text != null && (text += '');
-        if (!text || isNaN(style.x) || isNaN(style.y)) {
-            return;
-        }
-
-        let textSvgEl = el.__svgEl as SVGTextElement;
-        if (!textSvgEl) {
-            textSvgEl = createElement('text') as SVGTextElement;
-            attrXML(textSvgEl, 'xml:space', 'preserve');
-            el.__svgEl = textSvgEl;
-        }
-
-        const font = style.font || DEFAULT_FONT;
-
-        // style.font has been normalized by `normalizeTextStyle`.
-        const textSvgElStyle = textSvgEl.style;
-        textSvgElStyle.font = font;
-
-        textSvgEl.textContent = text;
-
-        bindStyle(textSvgEl, style, el);
-        setTransform(textSvgEl, el.transform);
-
-        // Consider different font display differently in vertial align, we always
-        // set vertialAlign as 'middle', and use 'y' to locate text vertically.
-        const x = style.x || 0;
-        const y = adjustTextY(style.y || 0, getLineHeight(font), style.textBaseline);
-        const textAlign = TEXT_ALIGN_TO_ANCHOR[style.textAlign as keyof typeof TEXT_ALIGN_TO_ANCHOR]
-            || style.textAlign;
-
-        attr(textSvgEl, 'dominant-baseline', 'central');
-        attr(textSvgEl, 'text-anchor', textAlign);
-        attr(textSvgEl, 'x', x + '');
-        attr(textSvgEl, 'y', y + '');
+export function brush(el: Displayable, scope: BrushScope): SVGVNode {
+    if (el instanceof Path) {
+        return brushSVGPath(el, scope);
     }
-};
-export {svgText as text};
+    else if (el instanceof ZRImage) {
+        return brushSVGImage(el, scope);
+    }
+    else if (el instanceof TSpan) {
+        return brushSVGTSpan(el, scope);
+    }
+}
+
+function setShadow(
+    el: Displayable,
+    attrs: SVGVNodeAttrs,
+    scope: BrushScope
+) {
+    const style = el.style;
+    if (hasShadow(style)) {
+        const shadowKey = getShadowKey(el);
+        const shadowCache = scope.shadowCache;
+        let shadowId = shadowCache[shadowKey];
+        if (!shadowId) {
+            const globalScale = el.getGlobalScale();
+            const scaleX = globalScale[0];
+            const scaleY = globalScale[1];
+            if (!scaleX || !scaleY) {
+                return;
+            }
+
+            const offsetX = style.shadowOffsetX || 0;
+            const offsetY = style.shadowOffsetY || 0;
+            const blur = style.shadowBlur;
+            const {opacity, color} = normalizeColor(style.shadowColor);
+            const stdDx = blur / 2 / scaleX;
+            const stdDy = blur / 2 / scaleY;
+            const stdDeviation = stdDx + ' ' + stdDy;
+            // Use a simple prefix to reduce the size
+            shadowId = scope.zrId + '-s' + scope.shadowIdx++;
+            scope.defs[shadowId] = createVNode(
+                'filter', shadowId,
+                {
+                    'id': shadowId,
+                    'x': '-100%',
+                    'y': '-100%',
+                    'width': '300%',
+                    'height': '300%'
+                },
+                [
+                    createVNode('feDropShadow', '', {
+                        'dx': offsetX / scaleX,
+                        'dy': offsetY / scaleY,
+                        'stdDeviation': stdDeviation,
+                        'flood-color': color,
+                        'flood-opacity': opacity
+                    })
+                ]
+            );
+            shadowCache[shadowKey] = shadowId;
+        }
+        attrs.filter = getIdURL(shadowId);
+    }
+}
+
+function setGradient(
+    style: PathStyleProps,
+    attrs: SVGVNodeAttrs,
+    target: 'fill' | 'stroke',
+    scope: BrushScope
+) {
+    const val = style[target] as GradientObject;
+    let gradientTag;
+    let gradientAttrs: SVGVNodeAttrs = {
+        'gradientUnits': val.global
+            ? 'userSpaceOnUse' // x1, x2, y1, y2 in range of 0 to canvas width or height
+            : 'objectBoundingBox' // x1, x2, y1, y2 in range of 0 to 1]
+    };
+    if (isLinearGradient(val)) {
+        gradientTag = 'linearGradient';
+        gradientAttrs.x1 = val.x;
+        gradientAttrs.y1 = val.y;
+        gradientAttrs.x2 = val.x2;
+        gradientAttrs.y2 = val.y2;
+    }
+    else if (isRadialGradient(val)) {
+        gradientTag = 'radialGradient';
+        gradientAttrs.cx = retrieve2(val.x, 0.5);
+        gradientAttrs.cy = retrieve2(val.y, 0.5);
+        gradientAttrs.r = retrieve2(val.r, 0.5);
+    }
+    else {
+        if (process.env.NODE_ENV !== 'production') {
+            logError('Illegal gradient type.');
+        }
+        return;
+    }
+
+    const colors = val.colorStops;
+
+    const colorStops = [];
+    for (let i = 0, len = colors.length; i < len; ++i) {
+        const offset = round4(colors[i].offset) * 100 + '%';
+
+        const stopColor = colors[i].color;
+        // Fix Safari bug that stop-color not recognizing alpha #9014
+        const {color, opacity} = normalizeColor(stopColor);
+
+        const stopsAttrs: SVGVNodeAttrs = {
+            'offset': offset
+        };
+        // stop-color cannot be color, since:
+        // The opacity value used for the gradient calculation is the
+        // *product* of the value of stop-opacity and the opacity of the
+        // value of stop-color.
+        // See https://www.w3.org/TR/SVG2/pservers.html#StopOpacityProperty
+
+        stopsAttrs['stop-color'] = color;
+        if (opacity < 1) {
+            stopsAttrs['stop-opacity'] = opacity;
+        }
+        colorStops.push(
+            createVNode('stop', i + '', stopsAttrs)
+        );
+    }
+
+    // Use the whole html as cache key.
+    const gradientVNode = createVNode(gradientTag, '', gradientAttrs, colorStops);
+    const gradientKey = vNodeToString(gradientVNode);
+    const gradientCache = scope.gradientCache;
+    let gradientId = gradientCache[gradientKey];
+    if (!gradientId) {
+        gradientId = scope.zrId + '-g' + scope.gradientIdx++;
+        gradientCache[gradientKey] = gradientId;
+
+        gradientAttrs.id = gradientId;
+        scope.defs[gradientId] = createVNode(
+            gradientTag, gradientId, gradientAttrs, colorStops
+        );
+    }
+
+    attrs[target] = getIdURL(gradientId);
+}
+
+function setPattern(
+    el: Displayable,
+    attrs: SVGVNodeAttrs,
+    target: 'fill' | 'stroke',
+    scope: BrushScope
+) {
+    const val = el.style[target] as ImagePatternObject | SVGPatternObject;
+    const patternAttrs: SVGVNodeAttrs = {
+        'patternUnits': 'userSpaceOnUse'
+    };
+    let child: SVGVNode;
+    if (isImagePattern(val)) {
+        let imageWidth = val.imageWidth;
+        let imageHeight = val.imageHeight;
+        let imageSrc;
+        const patternImage = val.image;
+        if (isString(patternImage)) {
+            imageSrc = patternImage;
+        }
+        else if (isImageLike(patternImage)) {
+            imageSrc = patternImage.src;
+        }
+        else if (isCanvasLike(patternImage)) {
+            imageSrc = patternImage.toDataURL();
+        }
+
+        if (typeof Image === 'undefined') {
+            const errMsg = 'Image width/height must been given explictly in svg-ssr renderer.';
+            assert(imageWidth, errMsg);
+            assert(imageHeight, errMsg);
+        }
+        else if (imageWidth == null || imageHeight == null) {
+            // TODO
+            const setSizeToVNode = (vNode: SVGVNode, img: ImageLike) => {
+                if (vNode) {
+                    const svgEl = vNode.elm as SVGElement;
+                    const width = (vNode.attrs.width = imageWidth || img.width);
+                    const height = (vNode.attrs.height = imageHeight || img.height);
+                    if (svgEl) {
+                        svgEl.setAttribute('width', width as any);
+                        svgEl.setAttribute('height', height as any);
+                    }
+                }
+            };
+            const createdImage = createOrUpdateImage(
+                imageSrc, null, el, (img) => {
+                    setSizeToVNode(patternVNode, img);
+                    setSizeToVNode(child, img);
+                }
+            );
+            if (createdImage && createdImage.width && createdImage.height) {
+                // Loaded before
+                imageWidth = imageWidth || createdImage.width;
+                imageHeight = imageHeight || createdImage.height;
+            }
+        }
+
+        child = createVNode(
+            'image',
+            'img',
+            {
+                href: imageSrc,
+                width: imageWidth,
+                height: imageHeight
+            }
+        );
+        patternAttrs.width = imageWidth;
+        patternAttrs.height = imageHeight;
+    }
+    else if (val.svgElement) {  // Only string supported in SSR.
+        // TODO it's not so good to use textContent as innerHTML
+        child = val.svgElement;
+        patternAttrs.width = val.svgWidth;
+        patternAttrs.height = val.svgHeight;
+    }
+    if (!child) {
+        return;
+    }
+
+    patternAttrs.patternTransform = getSRTTransformString(val);
+
+    // Use the whole html as cache key.
+    let patternVNode = createVNode(
+        'pattern',
+        '',
+        patternAttrs,
+        [child]
+    );
+    const patternKey = vNodeToString(patternVNode);
+    const patternCache = scope.patternCache;
+    let patternId = patternCache[patternKey];
+    if (!patternId) {
+        patternId = scope.zrId + '-p' + scope.patternIdx++;
+        patternCache[patternKey] = patternId;
+        patternAttrs.id = patternId;
+        patternVNode = scope.defs[patternId] = createVNode(
+            'pattern',
+            patternId,
+            patternAttrs,
+            [child]
+        );
+    }
+
+    attrs[target] = getIdURL(patternId);
+}
+
+export function setClipPath(
+    clipPath: Path,
+    attrs: SVGVNodeAttrs,
+    scope: BrushScope
+) {
+    const {clipPathCache, defs} = scope;
+    let clipPathId = clipPathCache[clipPath.id];
+    if (!clipPathId) {
+        clipPathId = scope.zrId + '-c' + scope.clipPathIdx++;
+        const clipPathAttrs: SVGVNodeAttrs = {
+            id: clipPathId
+        };
+
+        clipPathCache[clipPath.id] = clipPathId;
+        defs[clipPathId] = createVNode(
+            'clipPath', clipPathId, clipPathAttrs,
+            [brushSVGPath(clipPath, scope)]
+        );
+    }
+    attrs['clip-path'] = getIdURL(clipPathId);
+}

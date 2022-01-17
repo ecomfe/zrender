@@ -2,19 +2,18 @@ import {devicePixelRatio} from '../config';
 import * as util from '../core/util';
 import Layer, { LayerConfig } from './Layer';
 import requestAnimationFrame from '../animation/requestAnimationFrame';
-import ZRImage from '../graphic/Image';
 import env from '../core/env';
 import Displayable from '../graphic/Displayable';
-import { WXCanvasRenderingContext, ZRCanvasRenderingContext } from '../core/types';
+import { WXCanvasRenderingContext } from '../core/types';
 import { GradientObject } from '../graphic/Gradient';
 import { ImagePatternObject } from '../graphic/Pattern';
 import Storage from '../Storage';
 import { brush, BrushScope, brushSingle } from './graphic';
 import { PainterBase } from '../PainterBase';
 import BoundingRect from '../core/BoundingRect';
-import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
-import Path from '../graphic/Path';
 import { REDRAW_BIT } from '../graphic/constants';
+import { getSize } from './helper';
+import type IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 const CANVAS_ZLEVEL = 314159;
@@ -22,9 +21,6 @@ const CANVAS_ZLEVEL = 314159;
 const EL_AFTER_INCREMENTAL_INC = 0.01;
 const INCREMENTAL_INC = 0.001;
 
-function parseInt10(val: string) {
-    return parseInt(val, 10);
-}
 
 function isLayerValid(layer: Layer) {
     if (!layer) {
@@ -141,11 +137,8 @@ export default class CanvasPainter implements PainterBase {
         const rootStyle = root.style;
 
         if (rootStyle) {
-            rootStyle.webkitTapHighlightColor = 'transparent';
-            rootStyle.webkitUserSelect = 'none';
-            rootStyle.userSelect = 'none';
-            (rootStyle as any)['-webkit-touch-callout'] = 'none';
-
+            // @ts-ignore
+            util.disableUserSelect(root);
             root.innerHTML = '';
         }
 
@@ -161,8 +154,8 @@ export default class CanvasPainter implements PainterBase {
         const layers = this._layers;
 
         if (!singleCanvas) {
-            this._width = this._getSize(0);
-            this._height = this._getSize(1);
+            this._width = getSize(root, 0, opts);
+            this._height = getSize(root, 1, opts);
 
             const domRoot = this._domRoot = createRoot(
                 this._width, this._height
@@ -401,7 +394,7 @@ export default class CanvasPainter implements PainterBase {
             const clearColor = layer.zlevel === this._zlevelList[0]
                 ? this._backgroundColor : null;
 
-            // All elements in this layer are cleared.
+            // All elements in this layer are removed.
             if (layer.__startIndex === layer.__endIndex) {
                 layer.clear(false, clearColor, repaintRects);
             }
@@ -576,12 +569,16 @@ export default class CanvasPainter implements PainterBase {
         let i = -1;
 
         if (layersMap[zlevel]) {
-            util.logError('ZLevel ' + zlevel + ' has been used already');
+            if (process.env.NODE_ENV !== 'production') {
+                util.logError('ZLevel ' + zlevel + ' has been used already');
+            }
             return;
         }
         // Check if is a valid layer
         if (!isLayerValid(layer)) {
-            util.logError('Layer of zlevel ' + zlevel + ' is not valid');
+            if (process.env.NODE_ENV !== 'production') {
+                util.logError('Layer of zlevel ' + zlevel + ' is not valid');
+            }
             return;
         }
 
@@ -860,11 +857,12 @@ export default class CanvasPainter implements PainterBase {
 
             // Save input w/h
             const opts = this._opts;
+            const root = this.root;
             width != null && (opts.width = width);
             height != null && (opts.height = height);
 
-            width = this._getSize(0);
-            height = this._getSize(1);
+            width = getSize(root, 0, opts);
+            height = getSize(root, 1, opts);
 
             domRoot.style.display = '';
 
@@ -975,89 +973,5 @@ export default class CanvasPainter implements PainterBase {
      */
     getHeight() {
         return this._height;
-    }
-
-    _getSize(whIdx: number) {
-        const opts = this._opts;
-        const wh = ['width', 'height'][whIdx] as 'width' | 'height';
-        const cwh = ['clientWidth', 'clientHeight'][whIdx] as 'clientWidth' | 'clientHeight';
-        const plt = ['paddingLeft', 'paddingTop'][whIdx] as 'paddingLeft' | 'paddingTop';
-        const prb = ['paddingRight', 'paddingBottom'][whIdx] as 'paddingRight' | 'paddingBottom';
-
-        if (opts[wh] != null && opts[wh] !== 'auto') {
-            return parseFloat(opts[wh] as string);
-        }
-
-        const root = this.root;
-        // IE8 does not support getComputedStyle, but it use VML.
-        const stl = document.defaultView.getComputedStyle(root);
-
-        return (
-            (root[cwh] || parseInt10(stl[wh]) || parseInt10(root.style[wh]))
-            - (parseInt10(stl[plt]) || 0)
-            - (parseInt10(stl[prb]) || 0)
-        ) | 0;
-    }
-
-    pathToImage(path: Path, dpr?: number): ZRImage {
-        dpr = dpr || this.dpr;
-
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const rect = path.getBoundingRect();
-        const style = path.style;
-        const shadowBlurSize = style.shadowBlur * dpr;
-        const shadowOffsetX = style.shadowOffsetX * dpr;
-        const shadowOffsetY = style.shadowOffsetY * dpr;
-        const lineWidth = path.hasStroke() ? style.lineWidth : 0;
-
-        const leftMargin = Math.max(lineWidth / 2, -shadowOffsetX + shadowBlurSize);
-        const rightMargin = Math.max(lineWidth / 2, shadowOffsetX + shadowBlurSize);
-        const topMargin = Math.max(lineWidth / 2, -shadowOffsetY + shadowBlurSize);
-        const bottomMargin = Math.max(lineWidth / 2, shadowOffsetY + shadowBlurSize);
-        const width = rect.width + leftMargin + rightMargin;
-        const height = rect.height + topMargin + bottomMargin;
-
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
-
-        ctx.scale(dpr, dpr);
-        ctx.clearRect(0, 0, width, height);
-        (ctx as ZRCanvasRenderingContext).dpr = dpr;
-
-        const pathTransform = {
-            x: path.x,
-            y: path.y,
-            scaleX: path.scaleX,
-            scaleY: path.scaleY,
-            rotation: path.rotation,
-            originX: path.originX,
-            originY: path.originY
-        };
-        path.x = leftMargin - rect.x;
-        path.y = topMargin - rect.y;
-        path.rotation = 0;
-        path.scaleX = 1;
-        path.scaleY = 1;
-        path.updateTransform();
-        if (path) {
-            brush(ctx, path, {
-                inHover: false,
-                viewWidth: this._width,
-                viewHeight: this._height
-            }, true);
-        }
-
-        const imgShape = new ZRImage({
-            style: {
-                x: 0,
-                y: 0,
-                image: canvas
-            }
-        });
-
-        util.extend(path, pathTransform);
-
-        return imgShape;
     }
 };

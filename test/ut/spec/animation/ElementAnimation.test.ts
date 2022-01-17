@@ -2,6 +2,34 @@ import {Polyline, Rect, init} from '../zrender';
 import Animation from '../../../../src/animation/Animation';
 
 describe('ElementAnimation', function () {
+
+    it('Undefined value should not be animated.', function () {
+        const polyline = new Polyline();
+        polyline.animateTo({
+            shape: {
+                foo: 2
+            } as any
+        }, {
+            setToFinal: true
+        });
+
+        expect(polyline.animators.length).toEqual(0);
+    });
+
+
+    it('Equal value should not be animated.', function () {
+        const polyline = new Polyline();
+        polyline.x = 100;
+        polyline.animateTo({
+            x: 100
+        }, {
+            setToFinal: true
+        });
+
+        expect(polyline.animators.length).toEqual(0);
+    });
+
+
     it('Should be final state when setToFinal', function () {
         const polyline = new Polyline();
         polyline.animateTo({
@@ -56,7 +84,7 @@ describe('ElementAnimation', function () {
                 duration: 100,
                 done: () => {
                     animation.stop();
-                    resolve();
+                    resolve(undefined);
                 }
             });
             for (let i = 0; i < rect.animators.length; i++) {

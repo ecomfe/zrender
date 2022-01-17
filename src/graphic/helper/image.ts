@@ -1,5 +1,6 @@
 
 import LRU from '../../core/LRU';
+import { platformApi } from '../../core/platform';
 import { ImageLike } from '../../core/types';
 
 const globalImageCache = new LRU<CachedImageObj>(50);
@@ -64,8 +65,10 @@ export function createOrUpdateImage<T>(
             !isImageReady(image) && cachedImgObj.pending.push(pendingWrap);
         }
         else {
-            image = new Image();
-            image.onload = image.onerror = imageOnLoad;
+            const image = platformApi.loadImage(
+                newImageOrSrc, imageOnLoad, imageOnLoad
+            );
+            (image as any).__zrImageSrc = newImageOrSrc;
 
             globalImageCache.put(
                 newImageOrSrc,
@@ -74,8 +77,6 @@ export function createOrUpdateImage<T>(
                     pending: [pendingWrap]
                 }
             );
-
-            image.src = (image as any).__zrImageSrc = newImageOrSrc;
         }
 
         return image;

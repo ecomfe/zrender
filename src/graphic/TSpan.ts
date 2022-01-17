@@ -1,9 +1,10 @@
 import Displayable, { DisplayableProps, DisplayableStatePropNames } from './Displayable';
-import { getBoundingRect, DEFAULT_FONT } from '../contain/text';
+import { getBoundingRect } from '../contain/text';
 import BoundingRect from '../core/BoundingRect';
 import { PathStyleProps, DEFAULT_PATH_STYLE } from './Path';
 import { createObject, defaults } from '../core/util';
-import { TextAlign, TextVerticalAlign } from '../core/types';
+import { FontStyle, FontWeight, TextAlign, TextVerticalAlign } from '../core/types';
+import { DEFAULT_FONT } from '../core/platform';
 
 export interface TSpanStyleProps extends PathStyleProps {
 
@@ -13,7 +14,17 @@ export interface TSpanStyleProps extends PathStyleProps {
     // TODO Text is assigned inside zrender
     text?: string
 
+    // Final generated font string
+    // Used in canvas, and when developers specified it.
     font?: string
+
+    // Value for each part of font
+    // Used in svg.
+    // NOTE: font should always been sync with these 4 properties.
+    fontSize?: number
+    fontWeight?: FontWeight
+    fontStyle?: FontStyle
+    fontFamily?: string
 
     textAlign?: CanvasTextAlign
 

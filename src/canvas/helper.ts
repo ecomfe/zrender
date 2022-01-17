@@ -87,3 +87,31 @@ export function isClipPathChanged(clipPaths: Path[], prevClipPaths: Path[]): boo
     }
     return false;
 }
+
+function parseInt10(val: string) {
+    return parseInt(val, 10);
+}
+export function getSize(
+    root: HTMLElement,
+    whIdx: number,
+    opts: { width?: number | string, height?: number | string}
+) {
+
+    const wh = ['width', 'height'][whIdx] as 'width' | 'height';
+    const cwh = ['clientWidth', 'clientHeight'][whIdx] as 'clientWidth' | 'clientHeight';
+    const plt = ['paddingLeft', 'paddingTop'][whIdx] as 'paddingLeft' | 'paddingTop';
+    const prb = ['paddingRight', 'paddingBottom'][whIdx] as 'paddingRight' | 'paddingBottom';
+
+    if (opts[wh] != null && opts[wh] !== 'auto') {
+        return parseFloat(opts[wh] as string);
+    }
+
+    // IE8 does not support getComputedStyle, but it use VML.
+    const stl = document.defaultView.getComputedStyle(root);
+
+    return (
+        (root[cwh] || parseInt10(stl[wh]) || parseInt10(root.style[wh]))
+        - (parseInt10(stl[plt]) || 0)
+        - (parseInt10(stl[prb]) || 0)
+    ) | 0;
+}

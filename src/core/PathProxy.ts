@@ -11,7 +11,7 @@ import * as vec2 from './vector';
 import BoundingRect from './BoundingRect';
 import {devicePixelRatio as dpr} from '../config';
 import { fromLine, fromCubic, fromQuadratic, fromArc } from './bbox';
-import { cubicAt, cubicLength, cubicSubdivide, quadraticLength, quadraticSubdivide } from './curve';
+import { cubicLength, cubicSubdivide, quadraticLength, quadraticSubdivide } from './curve';
 
 const CMD = {
     M: 1,
@@ -49,7 +49,6 @@ const mathMin = Math.min;
 const mathMax = Math.max;
 const mathCos = Math.cos;
 const mathSin = Math.sin;
-const mathSqrt = Math.sqrt;
 const mathAbs = Math.abs;
 
 const PI = Math.PI;
@@ -147,13 +146,6 @@ export default class PathProxy {
     private _ux: number
     private _uy: number
 
-    // For dash shim.
-    private _lineDash: number[]
-    private _needsDash: boolean
-    private _dashOffset: number
-    private _dashIdx: number
-    private _dashSum: number
-
     static CMD = CMD
 
     constructor(notSaveData?: boolean) {
@@ -217,11 +209,6 @@ export default class PathProxy {
             this._len = 0;
         }
 
-        if (this._lineDash) {
-            this._lineDash = null;
-            this._dashOffset = 0;
-        }
-
         if (this._pathSegLen) {
             this._pathSegLen = null;
             this._pathLen = 0;
@@ -259,8 +246,7 @@ export default class PathProxy {
         this.addData(CMD.L, x, y);
 
         if (this._ctx && exceedUnit) {
-            this._needsDash ? this._dashedLineTo(x, y)
-                : this._ctx.lineTo(x, y);
+            this._ctx.lineTo(x, y);
         }
         if (exceedUnit) {
             this._xi = x;
@@ -285,8 +271,7 @@ export default class PathProxy {
 
         this.addData(CMD.C, x1, y1, x2, y2, x3, y3);
         if (this._ctx) {
-            this._needsDash ? this._dashedBezierTo(x1, y1, x2, y2, x3, y3)
-                : this._ctx.bezierCurveTo(x1, y1, x2, y2, x3, y3);
+            this._ctx.bezierCurveTo(x1, y1, x2, y2, x3, y3);
         }
         this._xi = x3;
         this._yi = y3;
@@ -298,8 +283,7 @@ export default class PathProxy {
 
         this.addData(CMD.Q, x1, y1, x2, y2);
         if (this._ctx) {
-            this._needsDash ? this._dashedQuadraticTo(x1, y1, x2, y2)
-                : this._ctx.quadraticCurveTo(x1, y1, x2, y2);
+            this._ctx.quadraticCurveTo(x1, y1, x2, y2);
         }
         this._xi = x2;
         this._yi = y2;
@@ -358,7 +342,6 @@ export default class PathProxy {
         const x0 = this._x0;
         const y0 = this._y0;
         if (ctx) {
-            this._needsDash && this._dashedLineTo(x0, y0);
             ctx.closePath();
         }
 
@@ -375,41 +358,6 @@ export default class PathProxy {
     stroke(ctx: CanvasRenderingContext2D) {
         ctx && ctx.stroke();
         this.toStatic();
-    }
-
-    /**
-     * 必须在其它绘制命令前调用
-     * Must be invoked before all other path drawing methods
-     */
-    setLineDash(lineDash: number[] | false) {
-        if (lineDash instanceof Array) {
-            this._lineDash = lineDash;
-
-            this._dashIdx = 0;
-
-            let lineDashSum = 0;
-            for (let i = 0; i < lineDash.length; i++) {
-                lineDashSum += lineDash[i];
-            }
-            this._dashSum = lineDashSum;
-
-            this._needsDash = true;
-        }
-        else {
-            // Clear
-            this._lineDash = null;
-            this._needsDash = false;
-        }
-        return this;
-    }
-
-    /**
-     * 必须在其它绘制命令前调用
-     * Must be invoked before all other path drawing methods
-     */
-    setLineDashOffset(offset: number) {
-        this._dashOffset = offset;
-        return this;
     }
 
     len() {
@@ -500,135 +448,6 @@ export default class PathProxy {
             }
             this.data = newData;
         }
-    }
-
-    private _dashedLineTo(x1: number, y1: number) {
-        const dashSum = this._dashSum;
-        const lineDash = this._lineDash;
-        const ctx = this._ctx;
-        let offset = this._dashOffset;
-
-        let x0 = this._xi;
-        let y0 = this._yi;
-        let dx = x1 - x0;
-        let dy = y1 - y0;
-        let dist = mathSqrt(dx * dx + dy * dy);
-        let x = x0;
-        let y = y0;
-        let nDash = lineDash.length;
-        let dash;
-        let idx;
-        dx /= dist;
-        dy /= dist;
-
-        if (offset < 0) {
-            // Convert to positive offset
-            offset = dashSum + offset;
-        }
-        offset %= dashSum;
-        x -= offset * dx;
-        y -= offset * dy;
-
-        while ((dx > 0 && x <= x1) || (dx < 0 && x >= x1)
-        || (dx === 0 && ((dy > 0 && y <= y1) || (dy < 0 && y >= y1)))) {
-            idx = this._dashIdx;
-            dash = lineDash[idx];
-            x += dx * dash;
-            y += dy * dash;
-            this._dashIdx = (idx + 1) % nDash;
-            // Skip positive offset
-            if ((dx > 0 && x < x0) || (dx < 0 && x > x0) || (dy > 0 && y < y0) || (dy < 0 && y > y0)) {
-                continue;
-            }
-            ctx[idx % 2 ? 'moveTo' : 'lineTo'](
-                dx >= 0 ? mathMin(x, x1) : mathMax(x, x1),
-                dy >= 0 ? mathMin(y, y1) : mathMax(y, y1)
-            );
-        }
-        // Offset for next lineTo
-        dx = x - x1;
-        dy = y - y1;
-        this._dashOffset = -mathSqrt(dx * dx + dy * dy);
-    }
-
-    // Not accurate dashed line to
-    private _dashedBezierTo(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
-        const ctx = this._ctx;
-
-        let dashSum = this._dashSum;
-        let offset = this._dashOffset;
-        let lineDash = this._lineDash;
-
-        let x0 = this._xi;
-        let y0 = this._yi;
-        let bezierLen = 0;
-        let idx = this._dashIdx;
-        let nDash = lineDash.length;
-
-        let t;
-        let dx;
-        let dy;
-
-        let x;
-        let y;
-
-        let tmpLen = 0;
-
-        if (offset < 0) {
-            // Convert to positive offset
-            offset = dashSum + offset;
-        }
-        offset %= dashSum;
-        // Bezier approx length
-        for (t = 0; t < 1; t += 0.1) {
-            dx = cubicAt(x0, x1, x2, x3, t + 0.1)
-                - cubicAt(x0, x1, x2, x3, t);
-            dy = cubicAt(y0, y1, y2, y3, t + 0.1)
-                - cubicAt(y0, y1, y2, y3, t);
-            bezierLen += mathSqrt(dx * dx + dy * dy);
-        }
-
-        // Find idx after add offset
-        for (; idx < nDash; idx++) {
-            tmpLen += lineDash[idx];
-            if (tmpLen > offset) {
-                break;
-            }
-        }
-        t = (tmpLen - offset) / bezierLen;
-
-        while (t <= 1) {
-
-            x = cubicAt(x0, x1, x2, x3, t);
-            y = cubicAt(y0, y1, y2, y3, t);
-
-            // Use line to approximate dashed bezier
-            // Bad result if dash is long
-            idx % 2 ? ctx.moveTo(x, y)
-                : ctx.lineTo(x, y);
-
-            t += lineDash[idx] / bezierLen;
-
-            idx = (idx + 1) % nDash;
-        }
-
-        // Finish the last segment and calculate the new offset
-        (idx % 2 !== 0) && ctx.lineTo(x3, y3);
-        dx = x3 - x;
-        dy = y3 - y;
-        this._dashOffset = -mathSqrt(dx * dx + dy * dy);
-    }
-
-    private _dashedQuadraticTo(x1: number, y1: number, x2: number, y2: number) {
-        // Convert quadratic to cubic using degree elevation
-        const x3 = x2;
-        const y3 = y2;
-        x2 = (x2 + 2 * x1) / 3;
-        y2 = (y2 + 2 * y1) / 3;
-        x1 = (this._xi + 2 * x1) / 3;
-        y1 = (this._yi + 2 * y1) / 3;
-
-        this._dashedBezierTo(x1, y1, x2, y2, x3, y3);
     }
 
     /**
@@ -1156,10 +975,6 @@ export default class PathProxy {
     private static initDefaultProps = (function () {
         const proto = PathProxy.prototype;
         proto._saveData = true;
-        proto._needsDash = false;
-        proto._dashOffset = 0;
-        proto._dashIdx = 0;
-        proto._dashSum = 0;
         proto._ux = 0;
         proto._uy = 0;
         proto._pendingPtDist = 0;

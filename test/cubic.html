@@ -3,14 +3,19 @@
 <head>
     <meta charset="utf-8" />
     <title>cubic 函数测试</title>
-    <script src="lib/rollup.browser.js"></script>
-    <script src="lib/requireES.js"></script>
     <script src="lib/config.js"></script>
 </head>
 <body style="margin:0px;">
-    <script type="text/javascript">
-
-    requireES(["zrender/lib/core/curve"], function(curve){
+    <script type="importmap">
+        {
+            "imports": {
+              "zrender/": "../",
+              "tslib": "../node_modules/tslib/tslib.es6.js"
+            }
+          }
+    </script>
+    <script type="module">
+        import * as curve from 'zrender/lib/core/curve.js';
 
         function initCubic() {
             var dom = document.getElementById('cubic');
@@ -98,7 +103,6 @@
 
         initCubic();
         initQuadratic();
-    });
     </script>
     <canvas id="cubic" width="500" height="300"></canvas>
     <canvas id="quadratic" width="500" height="300"></canvas>

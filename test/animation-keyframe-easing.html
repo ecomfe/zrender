@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation Keyframe Easing</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="main"></div>
+    <script type="text/javascript">
+        var main = document.getElementById('main');
+        // 初始化zrender
+        var zr = zrender.init(main);
+
+        for (let i = 0; i < 10; i++) {
+            var circle = new zrender.Circle({
+                x: 100,
+                y: i * 80,
+                shape: {
+                    cx: 30,
+                    cy: 30,
+                    r: 30
+                },
+                style: {
+                    fill: 'red',
+                    lineWidth: 5
+                },
+            });
+            zr.add(circle);
+
+            circle.animate('', true)
+                .when(500, {
+                    x: 800
+                }, 'sinusoidalInOut')
+                .when(1000, {
+                    x: 100
+                }, 'sinusoidalInOut')
+                .delay(i * 100)
+                .start();
+        }
+    </script>
+</body>
+</html>

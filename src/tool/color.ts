@@ -559,9 +559,9 @@ export function lum(color: string, backgroundLum: number) {
  * Generate a random color
  */
 export function random(): string {
-    let r = Math.round(Math.random() * 255);
-    let g = Math.round(Math.random() * 255);
-    let b = Math.round(Math.random() * 255);
-
-    return 'rgb(' + r + ',' + g + ',' + b + ')';
+    return stringify([
+        Math.round(Math.random() * 255),
+        Math.round(Math.random() * 255),
+        Math.round(Math.random() * 255)
+    ], 'rgb');
 }

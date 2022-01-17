@@ -23,6 +23,12 @@
         gradient.addColorStop(0, 'red');
         gradient.addColorStop(1, 'black');
 
+
+        var gradient2 = new zrender.LinearGradient();
+        gradient2.addColorStop(0, 'black');
+        gradient2.addColorStop(0.5, 'blue');
+        gradient2.addColorStop(1, 'white');
+
         var circle = new zrender.Circle({
             position: [100, 100],
             scale: [1, 1],
@@ -50,6 +56,11 @@
         circle.animate('')
             .when(200, {
                 position: [200, 0]
+            })
+            .start();
+        circle.animate('style', true)
+            .when(1000, {
+                fill: gradient2
             })
             .start();
         circle.animate('', true)

@@ -25,19 +25,6 @@
             points.push([Math.random() * 300 + 100, Math.random() * 300 + 100]);
         }
 
-        var splineSmoothedPolyline = new zrender.Polyline({
-            x: 100,
-            y: 100,
-            style : {
-                stroke: 'rgba(220, 20, 60, 0.8)',
-                lineWidth: 2
-            },
-            shape: {
-                smooth: 'spline',
-                points: points
-            }
-        });
-
         var polygon = new zrender.Polygon({
             x: 100,
             y: 100,
@@ -61,7 +48,6 @@
         });
         zr.add(polygon);
         zr.add(polygonOutline);
-        zr.add(splineSmoothedPolyline);
 
         function update() {
             polygon.setShape({
@@ -71,10 +57,6 @@
                 smooth: config.smooth
             });
             polygonOutline.setStyle({
-                strokePercent: config.percent
-            });
-
-            splineSmoothedPolyline.setStyle({
                 strokePercent: config.percent
             });
         }

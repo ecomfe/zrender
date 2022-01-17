@@ -11,15 +11,16 @@ import requestAnimationFrame from './requestAnimationFrame';
 import Animator from './Animator';
 import Clip from './Clip';
 
+export function getTime() {
+    return new Date().getTime();
+}
 
 interface Stage {
     update?: () => void
 }
-type OnframeCallback = (deltaTime: number) => void
 
 interface AnimationOption {
     stage?: Stage
-    onframe?: OnframeCallback
 }
 /**
  * @example
@@ -37,24 +38,22 @@ interface AnimationOption {
  *             x: 100,
  *             y: 100
  *         })
- *         .start('spline');
+ *         .start();
  */
 
 export default class Animation extends Eventful {
 
     stage: Stage
 
-    onframe: OnframeCallback
-
     // Use linked list to store clip
-    private _clipsHead: Clip
-    private _clipsTail: Clip
+    private _head: Clip
+    private _tail: Clip
 
-    private _running: boolean = false
+    private _running = false
 
-    private _time: number = 0
-    private _pausedTime: number = 0
-    private _pauseStart: number = 0
+    private _time = 0
+    private _pausedTime = 0
+    private _pauseStart = 0
 
     private _paused = false;
 
@@ -64,8 +63,6 @@ export default class Animation extends Eventful {
         opts = opts || {};
 
         this.stage = opts.stage || {};
-
-        this.onframe = opts.onframe || function () {};
     }
 
     /**
@@ -77,14 +74,14 @@ export default class Animation extends Eventful {
             this.removeClip(clip);
         }
 
-        if (!this._clipsHead) {
-            this._clipsHead = this._clipsTail = clip;
+        if (!this._head) {
+            this._head = this._tail = clip;
         }
         else {
-            this._clipsTail.next = clip;
-            clip.prev = this._clipsTail;
+            this._tail.next = clip;
+            clip.prev = this._tail;
             clip.next = null;
-            this._clipsTail = clip;
+            this._tail = clip;
         }
         clip.animation = this;
     }
@@ -112,14 +109,14 @@ export default class Animation extends Eventful {
         }
         else {
             // Is head
-            this._clipsHead = next;
+            this._head = next;
         }
         if (next) {
             next.prev = prev;
         }
         else {
             // Is tail
-            this._clipsTail = prev;
+            this._tail = prev;
         }
         clip.next = clip.prev = clip.animation = null;
     }
@@ -136,9 +133,9 @@ export default class Animation extends Eventful {
     }
 
     update(notTriggerFrameAndStageUpdate?: boolean) {
-        const time = new Date().getTime() - this._pausedTime;
+        const time = getTime() - this._pausedTime;
         const delta = time - this._time;
-        let clip = this._clipsHead;
+        let clip = this._head;
 
         while (clip) {
             // Save the nextClip before step.
@@ -146,7 +143,7 @@ export default class Animation extends Eventful {
             const nextClip = clip.next;
             let finished = clip.step(time, delta);
             if (finished) {
-                clip.ondestroy && clip.ondestroy();
+                clip.ondestroy();
                 this.removeClip(clip);
                 clip = nextClip;
             }
@@ -158,7 +155,6 @@ export default class Animation extends Eventful {
         this._time = time;
 
         if (!notTriggerFrameAndStageUpdate) {
-            this.onframe(delta);
 
             // 'frame' should be triggered before stage, because upper application
             // depends on the sequence (e.g., echarts-stream and finish
@@ -176,9 +172,7 @@ export default class Animation extends Eventful {
 
         function step() {
             if (self._running) {
-
                 requestAnimationFrame(step);
-
                 !self._paused && self.update();
             }
         }
@@ -194,7 +188,7 @@ export default class Animation extends Eventful {
             return;
         }
 
-        this._time = new Date().getTime();
+        this._time = getTime();
         this._pausedTime = 0;
 
         this._startLoop();
@@ -212,7 +206,7 @@ export default class Animation extends Eventful {
      */
     pause() {
         if (!this._paused) {
-            this._pauseStart = new Date().getTime();
+            this._pauseStart = getTime();
             this._paused = true;
         }
     }
@@ -222,7 +216,7 @@ export default class Animation extends Eventful {
      */
     resume() {
         if (this._paused) {
-            this._pausedTime += (new Date().getTime()) - this._pauseStart;
+            this._pausedTime += getTime() - this._pauseStart;
             this._paused = false;
         }
     }
@@ -231,7 +225,7 @@ export default class Animation extends Eventful {
      * Clear animation.
      */
     clear() {
-        let clip = this._clipsHead;
+        let clip = this._head;
 
         while (clip) {
             let nextClip = clip.next;
@@ -239,14 +233,14 @@ export default class Animation extends Eventful {
             clip = nextClip;
         }
 
-        this._clipsHead = this._clipsTail = null;
+        this._head = this._tail = null;
     }
 
     /**
      * Whether animation finished.
      */
     isFinished() {
-        return this._clipsHead == null;
+        return this._head == null;
     }
 
     /**
@@ -254,7 +248,7 @@ export default class Animation extends Eventful {
      */
     // TODO Gap
     animate<T>(target: T, options: {
-        loop?: boolean  // Whether loop animation.
+        loop?: boolean  // Whether loop animation
     }) {
         options = options || {};
 

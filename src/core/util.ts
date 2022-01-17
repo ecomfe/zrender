@@ -2,32 +2,38 @@
 import { Dictionary, ArrayLike, KeyOfDistributive } from './types';
 import { GradientObject } from '../graphic/Gradient';
 import { ImagePatternObject } from '../graphic/Pattern';
-
+import { platformApi } from './platform';
 
 // 用于处理merge时无法遍历Date等对象的问题
-const BUILTIN_OBJECT: {[key: string]: boolean} = {
-    '[object Function]': true,
-    '[object RegExp]': true,
-    '[object Date]': true,
-    '[object Error]': true,
-    '[object CanvasGradient]': true,
-    '[object CanvasPattern]': true,
+const BUILTIN_OBJECT: Record<string, boolean> = reduce([
+    'Function',
+    'RegExp',
+    'Date',
+    'Error',
+    'CanvasGradient',
+    'CanvasPattern',
     // For node-canvas
-    '[object Image]': true,
-    '[object Canvas]': true
-};
+    'Image',
+    'Canvas'
+], (obj, val) => {
+    obj['[object ' + val + ']'] = true;
+    return obj;
+}, {} as Record<string, boolean>);
 
-const TYPED_ARRAY: {[key: string]: boolean} = {
-    '[object Int8Array]': true,
-    '[object Uint8Array]': true,
-    '[object Uint8ClampedArray]': true,
-    '[object Int16Array]': true,
-    '[object Uint16Array]': true,
-    '[object Int32Array]': true,
-    '[object Uint32Array]': true,
-    '[object Float32Array]': true,
-    '[object Float64Array]': true
-};
+const TYPED_ARRAY: Record<string, boolean> = reduce([
+    'Int8',
+    'Uint8',
+    'Uint8Clamped',
+    'Int16',
+    'Uint16',
+    'Int32',
+    'Uint32',
+    'Float32',
+    'Float64'
+], (obj, val) => {
+    obj['[object ' + val + 'Array]'] = true;
+    return obj;
+}, {} as Record<string, boolean>);
 
 const objToString = Object.prototype.toString;
 
@@ -41,12 +47,6 @@ const ctorFunction = function () {}.constructor;
 const protoFunction = ctorFunction ? ctorFunction.prototype : null;
 const protoKey = '__proto__';
 
-// Avoid assign to an exported constiable, for transforming to cjs.
-const methods: {[key: string]: Function} = {};
-
-export function $override(name: string, fn: Function) {
-    methods[name] = fn;
-}
 
 let idStart = 0x0907;
 
@@ -101,7 +101,7 @@ export function clone<T extends any>(source: T): T {
             else {
                 result = new Ctor((source as Float32Array).length);
                 for (let i = 0, len = (source as Float32Array).length; i < len; i++) {
-                    result[i] = clone((source as Float32Array)[i]);
+                    result[i] = (source as Float32Array)[i];
                 }
             }
         }
@@ -212,13 +212,8 @@ export function defaults<
     return target as T & S;
 }
 
-export const createCanvas = function (): HTMLCanvasElement {
-    return methods.createCanvas();
-};
-
-methods.createCanvas = function (): HTMLCanvasElement {
-    return document.createElement('canvas');
-};
+// Expose createCanvas in util for compatibility
+export const createCanvas = platformApi.createCanvas;
 
 /**
  * 查询数组中元素的index
@@ -451,7 +446,6 @@ export function keys<T extends object>(obj: T): (KeyOfDistributive<T> & string)[
     }
     return keyList;
 }
-
 
 // Remove this type in returned function. Or it will conflicts wicth callback with given context. Like Eventful.
 // According to lib.es5.d.ts
@@ -753,8 +747,20 @@ export function createObject<T>(proto?: object, properties?: T): T {
     return obj;
 }
 
+
+export function disableUserSelect(dom: HTMLElement) {
+    const domStyle = dom.style;
+    domStyle.webkitUserSelect = 'none';
+    domStyle.userSelect = 'none';
+    // @ts-ignore
+    domStyle.webkitTapHighlightColor = 'rgba(0,0,0,0)';
+    (domStyle as any)['-webkit-touch-callout'] = 'none';
+}
+
 export function hasOwn(own: object, prop: string): boolean {
     return own.hasOwnProperty(prop);
 }
 
 export function noop() {}
+
+export const RADIAN_TO_DEGREE = 180 / Math.PI;

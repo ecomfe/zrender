@@ -11,13 +11,10 @@ import { createCanvasPattern } from './graphic';
 import Displayable from '../graphic/Displayable';
 import BoundingRect from '../core/BoundingRect';
 import { REDRAW_BIT } from '../graphic/constants';
-
-function returnFalse() {
-    return false;
-}
+import { platformApi } from '../core/platform';
 
 function createDom(id: string, painter: CanvasPainter, dpr: number) {
-    const newDom = util.createCanvas();
+    const newDom = platformApi.createCanvas();
     const width = painter.getWidth();
     const height = painter.getHeight();
 
@@ -127,22 +124,14 @@ export default class Layer extends Eventful {
 
         const domStyle = dom.style;
         if (domStyle) { // Not in node
-            dom.onselectstart = returnFalse; // 避免页面选中的尴尬
-            domStyle.webkitUserSelect = 'none';
-            domStyle.userSelect = 'none';
-            domStyle.webkitTapHighlightColor = 'rgba(0,0,0,0)';
-            (domStyle as any)['-webkit-touch-callout'] = 'none';
+            util.disableUserSelect(dom);
+            dom.onselectstart = () => false;
             domStyle.padding = '0';
             domStyle.margin = '0';
             domStyle.borderWidth = '0';
         }
 
-        this.domBack = null;
-        this.ctxBack = null;
-
         this.painter = painter;
-
-        this.config = null;
 
         this.dpr = dpr;
     }

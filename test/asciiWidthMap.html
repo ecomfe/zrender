@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII width map</title>
+</head>
+<body>
+    <script>
+        const ctx = document.createElement('canvas').getContext('2d');
+        ctx.font = '12px sans-serif';
+        const asciiRange = [32, 126];
+        let mapStr = '';
+        for (let i = asciiRange[0]; i <= asciiRange[1]; i++) {
+            const char = String.fromCharCode(i);
+            const width = ctx.measureText(char).width;
+            const ratio = Math.round(width / 12 * 100);
+            console.log(ratio + 20);
+            mapStr += String.fromCharCode(ratio + 20);
+        }
+        const a = mapStr.replace(/\\/g, '\\\\');
+        document.write(a);
+    </script>
+</body>
+</html>
