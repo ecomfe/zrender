@@ -156,14 +156,22 @@ function estimateLength(
 
 export interface PlainTextContentBlock {
     lineHeight: number
-    contentHeight: number
     // Line height of actual content.
     calculatedLineHeight: number
 
-    height: number
-    outerHeight: number
+    contentWidth: number
+    contentHeight: number
 
     width: number
+    height: number
+
+    /**
+     * Real text width containing padding.
+     * It should be the same as `width` if background is rendered
+     * and `width` is set by user.
+     */
+    outerWidth: number
+    outerHeight: number
 
     lines: string[]
 }
@@ -181,13 +189,14 @@ export function parsePlainText(
     const truncate = overflow === 'truncate';
     const calculatedLineHeight = getLineHeight(font);
     const lineHeight = retrieve2(style.lineHeight, calculatedLineHeight);
+    const bgColorDrawn = !!(style.backgroundColor);
 
     const truncateLineOverflow = style.lineOverflow === 'truncate';
 
     let width = style.width;
     let lines: string[];
 
-    if (width != null && overflow === 'break' || overflow === 'breakAll') {
+    if (width != null && (overflow === 'break' || overflow === 'breakAll')) {
         lines = text ? wrapText(text, style.font, width, overflow === 'breakAll', 0).lines : [];
     }
     else {
@@ -213,17 +222,7 @@ export function parsePlainText(
         // }
     }
 
-    let outerHeight = height;
-    let outerWidth = width;
-    if (padding) {
-        outerHeight += padding[0] + padding[2];
-        if (outerWidth != null) {
-            outerWidth += padding[1] + padding[3];
-        }
-    }
-
-
-    if (text && truncate && outerWidth != null) {
+    if (text && truncate && width != null) {
         const options = prepareTruncateOptions(width, font, style.ellipsis, {
             minChar: style.truncateMinChar,
             placeholder: style.placeholder
@@ -234,21 +233,37 @@ export function parsePlainText(
         }
     }
 
+    // Calculate real text width and height
+    let outerHeight = height;
+    let contentWidth = 0;
+    for (let i = 0; i < lines.length; i++) {
+        contentWidth = Math.max(getWidth(lines[i], font), contentWidth);
+    }
     if (width == null) {
-        let maxWidth = 0;
-        // Calculate width
-        for (let i = 0; i < lines.length; i++) {
-            maxWidth = Math.max(getWidth(lines[i], font), maxWidth);
-        }
-        width = maxWidth;
+        // When width is not explicitly set, use outerWidth as width.
+        width = contentWidth;
+    }
+
+    let outerWidth = contentWidth;
+    if (padding) {
+        outerHeight += padding[0] + padding[2];
+        outerWidth += padding[1] + padding[3];
+        width += padding[1] + padding[3];
+    }
+
+    if (bgColorDrawn) {
+        // When render background, outerWidth should be the same as width.
+        outerWidth = width;
     }
 
     return {
         lines: lines,
         height: height,
+        outerWidth: outerWidth,
         outerHeight: outerHeight,
         lineHeight: lineHeight,
         calculatedLineHeight: calculatedLineHeight,
+        contentWidth: contentWidth,
         contentHeight: contentHeight,
         width: width
     };
@@ -578,7 +593,7 @@ function pushTokens(
 
 function isLatin(ch: string) {
     let code = ch.charCodeAt(0);
-    return code >= 0x21 && code <= 0xFF;
+    return code >= 0x21 && code <= 0x17F;
 }
 
 const breakCharMap = reduce(',&?/;] '.split(''), function (obj, ch) {
@@ -678,7 +693,6 @@ function wrapText(
                     // Append lastWord if have
                     if (currentWord) {
                         line += currentWord;
-                        accumWidth += currentWordWidth;
                         currentWord = '';
                         currentWordWidth = 0;
                     }

@@ -22,6 +22,9 @@ export type TextVerticalAlign = 'top' | 'middle' | 'bottom'
 export type TextAlign = 'left' | 'center' | 'right'
     // | 'middle' // DEPRECATED
 
+export type FontWeight = 'normal' | 'bold' | 'bolder' | 'lighter' | number;
+export type FontStyle = 'normal' | 'italic' | 'oblique';
+
 export type BuiltinTextPosition = 'left' | 'right' | 'top' | 'bottom' | 'inside'
     | 'insideLeft' | 'insideRight' | 'insideTop' | 'insideBottom'
     | 'insideTopLeft' | 'insideTopRight'| 'insideBottomLeft' | 'insideBottomRight';

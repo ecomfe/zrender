@@ -72,3 +72,5 @@ export {morphPathTool as morph};
 export {parseSVG};
 
 export {default as showDebugDirtyRect} from './debug/showDebugDirtyRect';
+
+export {setPlatformAPI} from './core/platform';

@@ -33,6 +33,26 @@
     });
     zr.add(rect);
 
+    var txt1 = new zrender.Text({
+        style: {
+            x: 10,
+            y: 250,
+            text: '切换为SVG 渲染器\n点击导出 Base64 DataURL',
+            width: 50,
+            height: 50,
+            lineHeight: 22,
+            fill: '#c0f',
+            fontSize: 18
+        },
+        draggable: true
+    });
+    txt1.on('click', function () {
+        if (zr.painter.getType() === 'svg') {
+            console.log(zr.painter.toDataURL(true));
+        }
+    });
+    zr.add(txt1);
+
     setTimeout(function () {
         rect.style.fill = {
             type: 'linear',

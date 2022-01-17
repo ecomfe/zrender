@@ -136,8 +136,10 @@ class SVGParser {
 
         const svg = parseXML(xml);
 
-        if (!svg) {
-            throw new Error('Illegal svg');
+        if (process.env.NODE_ENV !== 'production') {
+            if (!svg) {
+                throw new Error('Illegal svg');
+            }
         }
 
         this._defsUsePending = [];

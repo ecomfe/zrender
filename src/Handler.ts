@@ -131,7 +131,6 @@ const handlerNames = [
 type HandlerName = 'click' |'dblclick' |'mousewheel' |'mouseout' |
     'mouseup' |'mousedown' |'mousemove' |'contextmenu';
 
-
 // TODO draggable
 class Handler extends Eventful {
 

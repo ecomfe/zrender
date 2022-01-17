@@ -7,23 +7,14 @@ import Definable from './Definable';
 import * as zrUtil from '../../core/util';
 import Displayable from '../../graphic/Displayable';
 import Path from '../../graphic/Path';
-import {SVGProxy} from '../graphic';
+import {path} from '../graphic';
 import { Dictionary } from '../../core/types';
 import { isClipPathChanged } from '../../canvas/helper';
+import { getClipPathsKey, getIdURL } from '../../svg/helper';
+import { createElement } from '../../svg/core';
 
 type PathExtended = Path & {
     _dom: SVGElement
-}
-
-function generateClipPathsKey(clipPaths: Path[]) {
-    let key: number[] = [];
-    if (clipPaths) {
-        for (let i = 0; i < clipPaths.length; i++) {
-            const clipPath = clipPaths[i];
-            key.push(clipPath.id);
-        }
-    }
-    return key.join(',');
 }
 
 export function hasClipPath(displayable: Displayable) {
@@ -61,7 +52,7 @@ export default class ClippathManager extends Definable {
         const clipPaths = displayable.__clipPaths;
 
         const keyDuplicateCount = this._keyDuplicateCount;
-        let clipPathKey = generateClipPathsKey(clipPaths);
+        let clipPathKey = getClipPathsKey(clipPaths);
         if (isClipPathChanged(clipPaths, prevDisplayable && prevDisplayable.__clipPaths)) {
             keyDuplicateCount[clipPathKey] = keyDuplicateCount[clipPathKey] || 0;
             keyDuplicateCount[clipPathKey] && (clipPathKey += '-' + keyDuplicateCount[clipPathKey]);
@@ -69,7 +60,7 @@ export default class ClippathManager extends Definable {
         }
 
         return this._refGroups[clipPathKey]
-            || (this._refGroups[clipPathKey] = this.createElement('g'));
+            || (this._refGroups[clipPathKey] = createElement('g'));
     }
 
     /**
@@ -115,7 +106,7 @@ export default class ClippathManager extends Definable {
                 // New <clipPath>
                 id = 'zr' + this._zrId + '-clip-' + this.nextId;
                 ++this.nextId;
-                clipPathEl = this.createElement('clipPath');
+                clipPathEl = createElement('clipPath');
                 clipPathEl.setAttribute('id', id);
                 defs.appendChild(clipPathEl);
 
@@ -123,15 +114,14 @@ export default class ClippathManager extends Definable {
             }
 
             // Build path and add to <clipPath>
-            const svgProxy = this.getSvgProxy(clipPath);
-            (svgProxy as SVGProxy<Path>).brush(clipPath);
+            path.brush(clipPath);
 
             const pathEl = this.getSvgElement(clipPath);
 
             clipPathEl.innerHTML = '';
             clipPathEl.appendChild(pathEl);
 
-            parentEl.setAttribute('clip-path', 'url(#' + id + ')');
+            parentEl.setAttribute('clip-path', getIdURL(id));
 
             if (clipPaths.length > 1) {
                 // Make the other clipPaths recursively

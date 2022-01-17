@@ -1,40 +1,9 @@
 import BoundingRect, { RectLike } from '../core/BoundingRect';
-import { createCanvas } from '../core/util';
-import { Dictionary, PropType, TextAlign, TextVerticalAlign, BuiltinTextPosition } from '../core/types';
+import { Dictionary, TextAlign, TextVerticalAlign, BuiltinTextPosition } from '../core/types';
 import LRU from '../core/LRU';
+import { DEFAULT_FONT, platformApi } from '../core/platform';
 
 let textWidthCache: Dictionary<LRU<number>> = {};
-
-export const DEFAULT_FONT = '12px sans-serif';
-
-let _ctx: CanvasRenderingContext2D;
-let _cachedFont: string;
-
-function defaultMeasureText(text: string, font?: string): { width: number } {
-    if (!_ctx) {
-        _ctx = createCanvas().getContext('2d');
-    }
-    if (_cachedFont !== font) {
-        _cachedFont = _ctx.font = font || DEFAULT_FONT;
-    }
-    return _ctx.measureText(text);
-}
-
-let methods: {
-    measureText: (text: string, font?: string) => { width: number }
-} = {
-    measureText: defaultMeasureText
-};
-
-export function $override(
-    name: keyof typeof methods,
-    fn: PropType<typeof methods, keyof typeof methods>
-) {
-    methods[name] = fn;
-}
-
-// let cacheMissCount = 0;
-// let totalCount = 0;
 
 export function getWidth(text: string, font: string): number {
     font = font || DEFAULT_FONT;
@@ -44,11 +13,9 @@ export function getWidth(text: string, font: string): number {
     }
     let width = cacheOfFont.get(text);
     if (width == null) {
-        width = methods.measureText(text, font).width;
+        width = platformApi.measureText(text, font).width;
         cacheOfFont.put(text, width);
-        // cacheMissCount++;
     }
-    // totalCount++;
 
     return width;
 }
@@ -131,7 +98,7 @@ export function getLineHeight(font?: string): number {
 export function measureText(text: string, font?: string): {
     width: number
 } {
-    return methods.measureText(text, font);
+    return platformApi.measureText(text, font);
 }
 
 

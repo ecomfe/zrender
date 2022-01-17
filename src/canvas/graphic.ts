@@ -10,12 +10,12 @@ import { getCanvasGradient, isClipPathChanged } from './helper';
 import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import TSpan, {TSpanStyleProps} from '../graphic/TSpan';
-import { DEFAULT_FONT } from '../contain/text';
 import { MatrixArray } from '../core/matrix';
-import { map } from '../core/util';
-import { normalizeLineDash } from '../graphic/helper/dashStyle';
-import IncrementalDisplayable from '../graphic/IncrementalDisplayable';
+import { RADIAN_TO_DEGREE } from '../core/util';
+import { getLineDash } from './dashStyle';
 import { REDRAW_BIT, SHAPE_CHANGED_BIT } from '../graphic/constants';
+import type IncrementalDisplayable from '../graphic/IncrementalDisplayable';
+import { DEFAULT_FONT } from '../core/platform';
 
 const pathProxyForDraw = new PathProxy(true);
 
@@ -74,12 +74,13 @@ export function createCanvasPattern(
         const canvasPattern = ctx.createPattern(image, pattern.repeat || 'repeat');
         if (
             typeof DOMMatrix === 'function'
+            && canvasPattern                // image may be not ready
             && canvasPattern.setTransform   // setTransform may not be supported in some old devices.
         ) {
             const matrix = new DOMMatrix();
-            matrix.rotateSelf(0, 0, (pattern.rotation || 0) / Math.PI * 180);
-            matrix.scaleSelf((pattern.scaleX || 1), (pattern.scaleY || 1));
             matrix.translateSelf((pattern.x || 0), (pattern.y || 0));
+            matrix.rotateSelf(0, 0, (pattern.rotation || 0) * RADIAN_TO_DEGREE);
+            matrix.scaleSelf((pattern.scaleX || 1), (pattern.scaleY || 1));
             canvasPattern.setTransform(matrix);
         }
         return canvasPattern;
@@ -104,6 +105,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
     }
 
     const path = el.path || pathProxyForDraw;
+    const dirtyFlag = el.__dirty;
 
     if (!inBatch) {
         const fill = style.fill;
@@ -122,9 +124,10 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         if (hasFillGradient || hasStrokeGradient) {
             rect = el.getBoundingRect();
         }
+
         // Update gradient because bounding rect may changed
         if (hasFillGradient) {
-            fillGradient = el.__dirty
+            fillGradient = dirtyFlag
                 ? getCanvasGradient(ctx, fill as (LinearGradientObject | RadialGradientObject), rect)
                 : el.__canvasFillGradient;
             // No need to clear cache when fill is not gradient.
@@ -132,21 +135,21 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
             el.__canvasFillGradient = fillGradient;
         }
         if (hasStrokeGradient) {
-            strokeGradient = el.__dirty
+            strokeGradient = dirtyFlag
                 ? getCanvasGradient(ctx, stroke as (LinearGradientObject | RadialGradientObject), rect)
                 : el.__canvasStrokeGradient;
             el.__canvasStrokeGradient = strokeGradient;
         }
         if (hasFillPattern) {
             // Pattern might be null if image not ready (even created from dataURI)
-            fillPattern = (el.__dirty || !el.__canvasFillPattern)
+            fillPattern = (dirtyFlag || !el.__canvasFillPattern)
                 ? createCanvasPattern(ctx, fill as ImagePatternObject, el)
                 : el.__canvasFillPattern;
             el.__canvasFillPattern = fillPattern;
         }
         if (hasStrokePattern) {
             // Pattern might be null if image not ready (even created from dataURI)
-            strokePattern = (el.__dirty || !el.__canvasStrokePattern)
+            strokePattern = (dirtyFlag || !el.__canvasStrokePattern)
                 ? createCanvasPattern(ctx, stroke as ImagePatternObject, el)
                 : el.__canvasStrokePattern;
             el.__canvasStrokePattern = fillPattern;
@@ -179,34 +182,19 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         }
     }
 
-    let lineDash = style.lineDash && style.lineWidth > 0 && normalizeLineDash(style.lineDash, style.lineWidth);
-    let lineDashOffset = style.lineDashOffset;
-
-    const ctxLineDash = !!ctx.setLineDash;
-
     // Update path sx, sy
     const scale = el.getGlobalScale();
     path.setScale(scale[0], scale[1], el.segmentIgnoreThreshold);
 
-    if (lineDash) {
-        const lineScale = (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1;
-        if (lineScale && lineScale !== 1) {
-            lineDash = map(lineDash, function (rawVal) {
-                return rawVal / lineScale;
-            });
-            lineDashOffset /= lineScale;
-        }
+    let lineDash;
+    let lineDashOffset;
+    if (ctx.setLineDash && style.lineDash) {
+        [lineDash, lineDashOffset] = getLineDash(el);
     }
 
     let needsRebuild = true;
-    // Proxy context
-    // Rebuild path in following 2 cases
-    // 1. Path is dirty
-    // 2. Path needs javascript implemented lineDash stroking.
-    //    In this case, lineDash information will not be saved in PathProxy
-    if (firstDraw || (el.__dirty & SHAPE_CHANGED_BIT)
-        || (lineDash && !ctxLineDash && hasStroke)
-    ) {
+
+    if (firstDraw || (dirtyFlag & SHAPE_CHANGED_BIT)) {
         path.setDPR((ctx as any).dpr);
         if (strokePart) {
             // Use rebuildPath for percent stroke, so no context.
@@ -217,12 +205,6 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
             needsRebuild = false;
         }
         path.reset();
-
-        // Setting line dash before build path
-        if (lineDash && !ctxLineDash) {
-            path.setLineDash(lineDash);
-            path.setLineDashOffset(lineDashOffset);
-        }
 
         el.buildPath(path, el.shape, inBatch);
         path.toStatic();
@@ -236,7 +218,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         path.rebuildPath(ctx, strokePart ? strokePercent : 1);
     }
 
-    if (lineDash && ctxLineDash) {
+    if (lineDash) {
         ctx.setLineDash(lineDash);
         ctx.lineDashOffset = lineDashOffset;
     }
@@ -260,7 +242,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
         }
     }
 
-    if (lineDash && ctxLineDash) {
+    if (lineDash) {
         // PENDING
         // Remove lineDash
         ctx.setLineDash([]);
@@ -334,23 +316,15 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
         ctx.textAlign = style.textAlign;
         ctx.textBaseline = style.textBaseline;
 
-        let hasLineDash;
-        if (ctx.setLineDash) {
-            let lineDash = style.lineDash && style.lineWidth > 0 && normalizeLineDash(style.lineDash, style.lineWidth);
-            let lineDashOffset = style.lineDashOffset;
-            if (lineDash) {
-                const lineScale = (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1;
-                if (lineScale && lineScale !== 1) {
-                    lineDash = map(lineDash, function (rawVal) {
-                        return rawVal / lineScale;
-                    });
-                    lineDashOffset /= lineScale;
-                }
-                ctx.setLineDash(lineDash);
-                ctx.lineDashOffset = lineDashOffset;
+        let lineDash;
+        let lineDashOffset;
+        if (ctx.setLineDash && style.lineDash) {
+            [lineDash, lineDashOffset] = getLineDash(el);
+        }
 
-                hasLineDash = true;
-            }
+        if (lineDash) {
+            ctx.setLineDash(lineDash);
+            ctx.lineDashOffset = lineDashOffset;
         }
 
         if (style.strokeFirst) {
@@ -370,7 +344,7 @@ function brushText(ctx: CanvasRenderingContext2D, el: TSpan, style: TSpanStylePr
             }
         }
 
-        if (hasLineDash) {
+        if (lineDash) {
             // Remove lineDash
             ctx.setLineDash([]);
         }
@@ -406,10 +380,8 @@ function bindCommonProps(
         }
     }
     if (forceSetAll || style.opacity !== prevStyle.opacity) {
-        if (!styleChanged) {
-            flushPathDrawn(ctx, scope);
-            styleChanged = true;
-        }
+        flushPathDrawn(ctx, scope);
+        styleChanged = true;
         // Ensure opacity is between 0 ~ 1. Invalid opacity will lead to a failure set and use the leaked opacity from the previous.
         const opacity = Math.max(Math.min(style.opacity, 1), 0);
         ctx.globalAlpha = isNaN(opacity) ? DEFAULT_COMMON_STYLE.opacity : opacity;
@@ -486,7 +458,7 @@ function bindPathAndTextCommonStyle(
     if (el.hasStroke()) {
         const lineWidth = style.lineWidth;
         const newLineWidth = lineWidth / (
-            (style.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1
+            (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1
         );
         if (ctx.lineWidth !== newLineWidth) {
             if (!styleChanged) {
@@ -771,13 +743,14 @@ export function brush(
             bindImageStyle(ctx, el as ZRImage, prevEl as ZRImage, forceSetStyle, scope);
             brushImage(ctx, el as ZRImage, style);
         }
-        else if (el instanceof IncrementalDisplayable) {
+        // Assume it's a IncrementalDisplayable
+        else if ((el as IncrementalDisplayable).getTemporalDisplayables) {
             if (scope.lastDrawType !== DRAW_TYPE_INCREMENTAL) {
                 forceSetStyle = true;
                 scope.lastDrawType = DRAW_TYPE_INCREMENTAL;
             }
 
-            brushIncremental(ctx, el, scope);
+            brushIncremental(ctx, el as IncrementalDisplayable, scope);
         }
 
     }

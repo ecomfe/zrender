@@ -6,13 +6,11 @@
 import Definable from './Definable';
 import * as zrUtil from '../../core/util';
 import Displayable from '../../graphic/Displayable';
-import {PatternObject, ImagePatternObject, SVGPatternObject} from '../../graphic/Pattern';
+import {PatternObject} from '../../graphic/Pattern';
 import {createOrUpdateImage} from '../../graphic/helper/image';
 import WeakMap from '../../core/WeakMap';
-
-function isPattern(value: PatternObject | string): value is PatternObject {
-    return value && (!!(value as ImagePatternObject).image || !!(value as SVGPatternObject).svgElement);
-}
+import { getIdURL, isPattern, isSVGPattern } from '../../svg/helper';
+import { createElement } from '../../svg/core';
 
 const patternDomMap = new WeakMap<PatternObject, SVGElement>();
 
@@ -63,8 +61,7 @@ export default class PatternManager extends Definable {
 
                     that.markUsed(displayable);
 
-                    const id = dom.getAttribute('id');
-                    svgElement.setAttribute(fillOrStroke, 'url(#' + id + ')');
+                    svgElement.setAttribute(fillOrStroke, getIdURL(dom.getAttribute('id')));
                 }
             });
         }
@@ -81,14 +78,12 @@ export default class PatternManager extends Definable {
             return;
         }
 
-        let dom = this.createElement('pattern');
+        let dom = createElement('pattern');
 
         pattern.id = pattern.id == null ? this.nextId++ : pattern.id;
         dom.setAttribute('id', 'zr' + this._zrId
             + '-pattern-' + pattern.id);
 
-        dom.setAttribute('x', '0');
-        dom.setAttribute('y', '0');
         dom.setAttribute('patternUnits', 'userSpaceOnUse');
 
         this.updateDom(pattern, dom);
@@ -123,22 +118,30 @@ export default class PatternManager extends Definable {
      * @param patternDom DOM to update
      */
     updateDom(pattern: PatternObject, patternDom: SVGElement) {
-        const svgElement = (pattern as SVGPatternObject).svgElement;
+        if (isSVGPattern(pattern)) {
+            // New SVGPattern will not been supported in the legacy SVG renderer.
+            // svg-legacy will been removed soon.
 
-        if (svgElement instanceof SVGElement) {
-            if (svgElement.parentNode !== patternDom) {
-                patternDom.innerHTML = '';
-                patternDom.appendChild(svgElement);
+            // const svgElement = pattern.svgElement;
+            // const isStringSVG = typeof svgElement === 'string';
+            // if (isStringSVG || svgElement.parentNode !== patternDom) {
+            //     if (isStringSVG) {
+            //         patternDom.innerHTML = svgElement;
+            //     }
+            //     else {
+            //         patternDom.innerHTML = '';
+            //         patternDom.appendChild(svgElement);
+            //     }
 
-                patternDom.setAttribute('width', (pattern as SVGPatternObject).svgWidth + '');
-                patternDom.setAttribute('height', (pattern as SVGPatternObject).svgHeight + '');
-            }
+            //     patternDom.setAttribute('width', pattern.svgWidth as any);
+            //     patternDom.setAttribute('height', pattern.svgHeight as any);
+            // }
         }
         else {
             let img: SVGElement;
             const prevImage = patternDom.getElementsByTagName('image');
             if (prevImage.length) {
-                if ((pattern as ImagePatternObject).image) {
+                if (pattern.image) {
                     // Update
                     img = prevImage[0];
                 }
@@ -148,14 +151,14 @@ export default class PatternManager extends Definable {
                     return;
                 }
             }
-            else if ((pattern as ImagePatternObject).image) {
+            else if (pattern.image) {
                 // Create
-                img = this.createElement('image');
+                img = createElement('image');
             }
 
             if (img) {
                 let imageSrc;
-                const patternImage = (pattern as ImagePatternObject).image;
+                const patternImage = pattern.image;
                 if (typeof patternImage === 'string') {
                     imageSrc = patternImage;
                 }
@@ -168,21 +171,20 @@ export default class PatternManager extends Definable {
 
                 if (imageSrc) {
                     img.setAttribute('href', imageSrc);
-                    img.setAttribute('x', '0');
-                    img.setAttribute('y', '0');
 
                     // No need to re-render so dirty is empty
                     const hostEl = {
                         dirty: () => {}
                     };
-                    const createdImage = createOrUpdateImage(imageSrc, img as any, hostEl, img => {
-                        patternDom.setAttribute('width', img.width + '');
-                        patternDom.setAttribute('height', img.height + '');
-                    });
+                    const updateSize = (img: HTMLImageElement) => {
+                        patternDom.setAttribute('width', img.width as any);
+                        patternDom.setAttribute('height', img.height as any);
+                    };
+
+                    const createdImage = createOrUpdateImage(imageSrc, img as any, hostEl, updateSize);
                     if (createdImage && createdImage.width && createdImage.height) {
                         // Loaded before
-                        patternDom.setAttribute('width', createdImage.width + '');
-                        patternDom.setAttribute('height', createdImage.height + '');
+                        updateSize(createdImage as HTMLImageElement);
                     }
 
                     patternDom.appendChild(img);

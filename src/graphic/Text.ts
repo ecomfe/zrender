@@ -2,11 +2,11 @@
  * RichText is a container that manages complex text label.
  * It will parse text string and create sub displayble elements respectively.
  */
-import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, MapToType } from '../core/types';
+import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, MapToType, FontWeight, FontStyle } from '../core/types';
 import { parseRichText, parsePlainText } from './helper/parseText';
 import TSpan, { TSpanStyleProps } from './TSpan';
 import { retrieve2, each, normalizeCssArray, trim, retrieve3, extend, keys, defaults } from '../core/util';
-import { DEFAULT_FONT, adjustTextX, adjustTextY } from '../contain/text';
+import { adjustTextX, adjustTextY } from '../contain/text';
 import ZRImage from './Image';
 import Rect from './shape/Rect';
 import BoundingRect from '../core/BoundingRect';
@@ -21,6 +21,7 @@ import Animator from '../animation/Animator';
 import Transformable from '../core/Transformable';
 import { ElementCommonState } from '../Element';
 import { GroupLike } from './Group';
+import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../core/platform';
 
 type TextContentBlock = ReturnType<typeof parseRichText>
 type TextLine = TextContentBlock['lines'][0]
@@ -33,6 +34,7 @@ export interface TextStylePropsPart {
 
     fill?: string
     stroke?: string
+    strokeNoScale?: boolean
 
     opacity?: number
     fillOpacity?: number
@@ -65,11 +67,11 @@ export interface TextStylePropsPart {
     /**
      * It helps merging respectively, rather than parsing an entire font string.
      */
-    fontStyle?: 'normal' | 'italic' | 'oblique'
+    fontStyle?: FontStyle
     /**
      * It helps merging respectively, rather than parsing an entire font string.
      */
-    fontWeight?: 'normal' | 'bold' | 'bolder' | 'lighter' | number
+    fontWeight?: FontWeight
     /**
      * It helps merging respectively, rather than parsing an entire font string.
      */
@@ -412,7 +414,9 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
     }
 
     setTextContent(textContent: never) {
-        throw new Error('Can\'t attach text on another text');
+        if (process.env.NODE_ENV !== 'production') {
+            throw new Error('Can\'t attach text on another text');
+        }
     }
 
     // getDefaultStyleValue<T extends keyof TextStyleProps>(key: T): TextStyleProps[T] {
@@ -484,7 +488,9 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         const needDrawBg = needDrawBackground(style);
         const bgColorDrawn = !!(style.backgroundColor);
 
-        let outerHeight = contentBlock.outerHeight;
+        const outerHeight = contentBlock.outerHeight;
+        const outerWidth = contentBlock.outerWidth;
+        const contentWidth = contentBlock.contentWidth;
 
         const textLines = contentBlock.lines;
         const lineHeight = contentBlock.lineHeight;
@@ -501,11 +507,8 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
 
         if (needDrawBg || textPadding) {
             // Consider performance, do not call getTextWidth util necessary.
-            let outerWidth = contentBlock.width;
-            textPadding && (outerWidth += textPadding[1] + textPadding[3]);
             const boxX = adjustTextX(baseX, outerWidth, textAlign);
             const boxY = adjustTextY(baseY, outerHeight, verticalAlign);
-
             needDrawBg && this._renderBackground(style, style, boxX, boxY, outerWidth, outerHeight);
         }
 
@@ -582,17 +585,18 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
                 subElStyle.shadowOffsetY = style.textShadowOffsetY || 0;
             }
 
+            // Always override default fill and stroke value.
+            subElStyle.stroke = textStroke as string;
+            subElStyle.fill = textFill as string;
+
             if (textStroke) {
-                subElStyle.stroke = textStroke as string;
                 subElStyle.lineWidth = style.lineWidth || defaultLineWidth;
                 subElStyle.lineDash = style.lineDash;
                 subElStyle.lineDashOffset = style.lineDashOffset || 0;
             }
-            if (textFill) {
-                subElStyle.fill = textFill as string;
-            }
 
             subElStyle.font = textFont;
+            setSeparateFont(subElStyle, style);
 
             textY += lineHeight;
 
@@ -600,7 +604,12 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
                 el.setBoundingRect(new BoundingRect(
                     adjustTextX(subElStyle.x, style.width, subElStyle.textAlign as TextAlign),
                     adjustTextY(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline as TextVerticalAlign),
-                    style.width,
+                    /**
+                     * Text boundary should be the real text width.
+                     * Otherwise, there will be extra space in the
+                     * bounding rect calculated.
+                     */
+                    contentWidth,
                     calculatedLineHeight
                 ));
             }
@@ -763,7 +772,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         );
 
         const hasShadow = tokenStyle.textShadowBlur > 0
-                    || style.textShadowBlur > 0;
+            || style.textShadowBlur > 0;
 
         subElStyle.text = token.text;
         subElStyle.x = x;
@@ -781,6 +790,10 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         subElStyle.textBaseline = 'middle';
         subElStyle.font = token.font || DEFAULT_FONT;
         subElStyle.opacity = retrieve3(tokenStyle.opacity, style.opacity, 1);
+
+
+        // TODO inherit each item from top style in token style?
+        setSeparateFont(subElStyle, tokenStyle);
 
         if (textStroke) {
             subElStyle.lineWidth = retrieve3(tokenStyle.lineWidth, style.lineWidth, defaultLineWidth);
@@ -882,28 +895,11 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         // FIXME in node-canvas fontWeight is before fontStyle
         // Use `fontSize` `fontFamily` to check whether font properties are defined.
         let font = '';
-        if (style.fontSize || style.fontFamily || style.fontWeight) {
-            let fontSize = '';
-            if (
-                typeof style.fontSize === 'string'
-                && (
-                    style.fontSize.indexOf('px') !== -1
-                    || style.fontSize.indexOf('rem') !== -1
-                    || style.fontSize.indexOf('em') !== -1
-                )
-            ) {
-                fontSize = style.fontSize;
-            }
-            else if (!isNaN(+style.fontSize)) {
-                fontSize = style.fontSize + 'px';
-            }
-            else {
-                fontSize = '12px';
-            }
+        if (hasSeparateFont(style)) {
             font = [
                 style.fontStyle,
                 style.fontWeight,
-                fontSize,
+                parseFontSize(style.fontSize),
                 // If font properties are defined, `fontFamily` should not be ignored.
                 style.fontFamily || 'sans-serif'
             ].join(' ');
@@ -916,8 +912,47 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
 const VALID_TEXT_ALIGN = {left: true, right: 1, center: 1};
 const VALID_TEXT_VERTICAL_ALIGN = {top: 1, bottom: 1, middle: 1};
 
+const FONT_PARTS = ['fontStyle', 'fontWeight', 'fontSize', 'fontFamily'] as const;
+
+export function parseFontSize(fontSize: number | string) {
+    if (
+        typeof fontSize === 'string'
+        && (
+            fontSize.indexOf('px') !== -1
+            || fontSize.indexOf('rem') !== -1
+            || fontSize.indexOf('em') !== -1
+        )
+    ) {
+        return fontSize;
+    }
+    else if (!isNaN(+fontSize)) {
+        return fontSize + 'px';
+    }
+    else {
+        return DEFAULT_FONT_SIZE + 'px';
+    }
+}
+
+function setSeparateFont(
+    targetStyle: TSpanStyleProps,
+    sourceStyle: TextStylePropsPart
+) {
+    for (let i = 0; i < FONT_PARTS.length; i++) {
+        const fontProp = FONT_PARTS[i];
+        const val = sourceStyle[fontProp];
+        if (val != null) {
+            (targetStyle as any)[fontProp] = val;
+        }
+    }
+}
+
+export function hasSeparateFont(style: Pick<TextStylePropsPart, 'fontSize' | 'fontFamily' | 'fontWeight'>) {
+    return style.fontSize != null || style.fontFamily || style.fontWeight;
+}
+
 export function normalizeTextStyle(style: TextStyleProps): TextStyleProps {
     normalizeStyle(style);
+    // TODO inherit each item from top style in token style?
     each(style.rich, normalizeStyle);
     return style;
 }
