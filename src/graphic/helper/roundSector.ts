@@ -146,7 +146,10 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     }
 
     const clockwise = !!shape.clockwise;
-    const { startAngle, endAngle, cx, cy, cornerRadius } = shape;
+    const { cx, cy, cornerRadius } = shape;
+    // may be NaN
+    const startAngle = shape.startAngle || 0;
+    const endAngle = shape.endAngle || 0;
 
     let arc = mathAbs(endAngle - startAngle);
     const mod = arc > PI2 && arc % PI2;
