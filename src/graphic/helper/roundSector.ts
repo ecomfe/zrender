@@ -149,8 +149,8 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     const { startAngle, endAngle, cx, cy, cornerRadius } = shape;
 
     let arc = mathAbs(endAngle - startAngle);
-    const mod = arc && arc % PI2;
-    mod && (arc = mod);
+    const mod = arc > PI2 && arc % PI2;
+    mod > e && (arc = mod);
 
     // is a point
     if (!(radius > e)) {
