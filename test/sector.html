@@ -101,6 +101,7 @@
             }
         }));
 
+        // should be collapsed to a line
         zr.add(new zrender.Sector({
             position: [100, 300],
             scale: [1, 1],
@@ -172,6 +173,51 @@
                 endAngle: Math.PI * -20 / 180,
                 r: 140,
                 cornerRadius: [0, 0, 35, 20]
+            }
+        }));
+
+        // should be a circle
+        zr.add(new zrender.Sector({
+            position: [650, 100],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: -1.570796326794896,
+                endAngle: 4.712388980384691,
+                r: 100,
+                // clockwise: false
+            }
+        }));
+
+        // should be collapsed to a line
+        zr.add(new zrender.Sector({
+            position: [650, 250],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: 1.0001,
+                endAngle: 1,
+                r: 100,
+                // clockwise: false
+            }
+        }));
+
+        // should be nearly a circle
+        zr.add(new zrender.Sector({
+            position: [650, 500],
+            scale: [1, 1],
+            style: {
+                stroke: 'black'
+            },
+            shape: {
+                startAngle: 1.0002,
+                endAngle: 1,
+                r: 100,
+                // clockwise: false
             }
         }));
     </script>
