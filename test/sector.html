@@ -220,6 +220,21 @@
                 // clockwise: false
             }
         }));
+
+        // should show nothing
+        zr.add(new zrender.Sector({
+            position: [400, 650],
+            scale: [1, 1],
+            style: {
+                stroke: 'black',
+                lineWidth: 10
+            },
+            shape: {
+                startAngle: NaN,
+                endAngle: NaN,
+                r: 100
+            }
+        }));
     </script>
     <div id="main" style="width:1000px;height:800px;"></div>
 </body>
