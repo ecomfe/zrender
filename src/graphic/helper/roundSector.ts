@@ -145,12 +145,17 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         innerRadius = tmp;
     }
 
+    const { startAngle, endAngle } = shape;
+    if (isNaN(startAngle) || isNaN(endAngle)) {
+        return;
+    }
+
+    const { cx, cy } = shape;
     const clockwise = !!shape.clockwise;
-    const { startAngle, endAngle, cx, cy, cornerRadius } = shape;
 
     let arc = mathAbs(endAngle - startAngle);
-    const mod = arc && arc % PI2;
-    mod && (arc = mod);
+    const mod = arc > PI2 && arc % PI2;
+    mod > e && (arc = mod);
 
     // is a point
     if (!(radius > e)) {
@@ -201,6 +206,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
 
         const hasArc = arc > e;
         if (hasArc) {
+            const cornerRadius = shape.cornerRadius;
             if (cornerRadius) {
                 [icrStart, icrEnd, ocrStart, ocrEnd] = normalizeCornerRadius(cornerRadius);
             }

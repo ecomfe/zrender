@@ -1,5 +1,8 @@
 /doc
 /test
+/benchmark
+.github
+.vscode
 
 npm-debug.log
 .DS_Store
