@@ -29,7 +29,7 @@ import mapStyleToAttrs from './mapStyleToAttrs';
 import { SVGVNodeAttrs, createVNode, SVGVNode, vNodeToString, BrushScope } from './core';
 import { MatrixArray } from '../core/matrix';
 import Displayable from '../graphic/Displayable';
-import { assert, isFunction, isString, logError, map, retrieve2 } from '../core/util';
+import { assert, clone, isFunction, isString, logError, map, retrieve2 } from '../core/util';
 import Polyline from '../graphic/shape/Polyline';
 import Polygon from '../graphic/shape/Polygon';
 import { GradientObject } from '../graphic/Gradient';
@@ -538,7 +538,7 @@ function setPattern(
     }
     else if (val.svgElement) {  // Only string supported in SSR.
         // TODO it's not so good to use textContent as innerHTML
-        child = val.svgElement;
+        child = clone(val.svgElement);
         patternAttrs.width = val.svgWidth;
         patternAttrs.height = val.svgHeight;
     }
