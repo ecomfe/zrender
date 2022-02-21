@@ -195,7 +195,8 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         viewWidth: number,
         viewHeight: number,
         considerClipPath: boolean,
-        considerAncestors: boolean
+        considerAncestors: boolean,
+        considerHostTarget: boolean
     ) {
         const m = this.transform;
         if (
@@ -226,6 +227,23 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
         if (considerAncestors && this.parent) {
             let parent = this.parent;
+            while (parent) {
+                if (parent.ignore) {
+                    return false;
+                }
+                parent = parent.parent;
+            }
+        }
+
+        // consider host target
+        if (
+            considerAncestors
+            && considerHostTarget
+            && this.parent
+            && this.parent.__hostTarget
+        ) {
+            let hostTarget = this.parent.__hostTarget;
+            let parent = hostTarget;
             while (parent) {
                 if (parent.ignore) {
                     return false;

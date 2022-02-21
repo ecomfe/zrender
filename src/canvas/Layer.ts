@@ -269,7 +269,7 @@ export default class Layer extends Eventful {
                  * if it's currently on the canvas and needs repaint this frame
                  * or not painted this frame.
                  */
-                const shouldPaint = el.shouldBePainted(viewWidth, viewHeight, true, true);
+                const shouldPaint = el.shouldBePainted(viewWidth, viewHeight, true, true, true);
                 const prevRect = el.__isRendered && ((el.__dirty & REDRAW_BIT) || !shouldPaint)
                     ? el.getPrevPaintRect()
                     : null;
@@ -311,7 +311,7 @@ export default class Layer extends Eventful {
              * rect if and only if it's not painted this frame and was
              * previously painted on the canvas.
              */
-            const shouldPaint = el.shouldBePainted(viewWidth, viewHeight, true, true);
+            const shouldPaint = el.shouldBePainted(viewWidth, viewHeight, true, true, true);
             if (el && (!shouldPaint || !el.__zr) && el.__isRendered) {
                 // el was removed
                 const prevRect = el.getPrevPaintRect();
