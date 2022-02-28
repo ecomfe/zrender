@@ -4,7 +4,18 @@
 
 import Clip from './Clip';
 import * as color from '../tool/color';
-import {eqNaN, extend, isArrayLike, isFunction, isGradientObject, isNumber, isString, keys, logError, map} from '../core/util';
+import {
+    eqNaN,
+    extend,
+    isArrayLike,
+    isFunction,
+    isGradientObject,
+    isNumber,
+    isString,
+    keys,
+    logError,
+    map
+} from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
 import easingFuncs, { AnimationEasing } from './easing';
 import Animation from './Animation';
