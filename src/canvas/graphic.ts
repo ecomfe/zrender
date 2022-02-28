@@ -615,7 +615,7 @@ export function brush(
 ) {
     const m = el.transform;
 
-    if (!el.shouldBePainted(scope.viewWidth, scope.viewHeight, false, false, false)) {
+    if (!el.shouldBePainted(scope.viewWidth, scope.viewHeight, false, false)) {
         // Needs to mark el rendered.
         // Or this element will always been rendered in progressive rendering.
         // But other dirty bit should not be cleared, otherwise it cause the shape
