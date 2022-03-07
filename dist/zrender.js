@@ -16481,7 +16481,7 @@
             patternAttrs.height = imageHeight_1;
         }
         else if (val.svgElement) {
-            child = val.svgElement;
+            child = clone(val.svgElement);
             patternAttrs.width = val.svgWidth;
             patternAttrs.height = val.svgHeight;
         }
