@@ -12,7 +12,7 @@ describe('Path', function () {
                 cy: 625.5,
                 startAngle: -1.5707963267948966,
                 endAngle: 4.71238898038469,
-                innerCornerRadius: 5,
+                // innerCornerRadius: 5,
                 r: 218.92499999999998,
                 r0: 93.825
             },

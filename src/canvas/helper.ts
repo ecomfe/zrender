@@ -43,9 +43,9 @@ export function createRadialGradient(
     const height = rect.height;
     const min = Math.min(width, height);
 
-    let x = obj.x == null ? 0.5 : obj.x;
-    let y = obj.y == null ? 0.5 : obj.y;
-    let r = obj.r == null ? 0.5 : obj.r;
+    let x = obj.x ? obj.x : 0.5;
+    let y = obj.y ? obj.y : 0.5;
+    let r = obj.r ? obj.r : 0.5;
     if (!obj.global) {
         x = x * width + rect.x;
         y = y * height + rect.y;
