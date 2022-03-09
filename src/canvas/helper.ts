@@ -9,6 +9,9 @@ export function safeNum(num: number, defalutNum: number = 0, negative = false) {
     if (num === null || isNaN(num) || `${num}` === '') {
         return defalutNum;
     }
+    if (!isFinite(num)) {
+        return defalutNum;
+    }
     // non-negative
     if (negative && num < 0) {
         return defalutNum;
