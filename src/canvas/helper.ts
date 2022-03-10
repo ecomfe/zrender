@@ -4,7 +4,7 @@ import { GradientObject } from '../graphic/Gradient';
 import { RectLike } from '../core/BoundingRect';
 import Path from '../graphic/Path';
 
-export function safeNum(num: number, defalutNum: number = 0, negative = false) {
+export function safeNum(num: number, defalutNum: number = 0, nonNegative = false) {
     // null
     if (num === null) {
         return defalutNum;
@@ -14,7 +14,7 @@ export function safeNum(num: number, defalutNum: number = 0, negative = false) {
         return defalutNum;
     }
     // non-negative
-    if (negative && num < 0) {
+    if (nonNegative && num < 0) {
         return defalutNum;
     }
 
