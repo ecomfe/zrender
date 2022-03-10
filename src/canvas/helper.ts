@@ -5,10 +5,11 @@ import { RectLike } from '../core/BoundingRect';
 import Path from '../graphic/Path';
 
 export function safeNum(num: number, defalutNum: number = 0, negative = false) {
-    // null NaN or empty string
-    if (num === null || isNaN(num) || `${num}` === '') {
+    // null
+    if (num === null) {
         return defalutNum;
     }
+    // NaN, Infinity, undefined, 'xx'
     if (!isFinite(num)) {
         return defalutNum;
     }
@@ -16,7 +17,8 @@ export function safeNum(num: number, defalutNum: number = 0, negative = false) {
     if (negative && num < 0) {
         return defalutNum;
     }
-    return +num;
+
+    return num;
 }
 
 export function createLinearGradient(
