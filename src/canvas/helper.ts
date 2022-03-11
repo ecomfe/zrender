@@ -4,21 +4,21 @@ import { GradientObject } from '../graphic/Gradient';
 import { RectLike } from '../core/BoundingRect';
 import Path from '../graphic/Path';
 
-export function safeNum(num: number, defalutNum: number = 0, nonNegative = false) {
+export function isSafeNum(num: number, nonNegative = false) {
     // null
     if (num === null) {
-        return defalutNum;
+        return false;
     }
     // NaN, Infinity, undefined, 'xx'
     if (!isFinite(num)) {
-        return defalutNum;
+        return false;
     }
     // non-negative
     if (nonNegative && num < 0) {
-        return defalutNum;
+        return false;
     }
 
-    return num;
+    return true;
 }
 
 export function createLinearGradient(
@@ -27,17 +27,23 @@ export function createLinearGradient(
     obj: LinearGradientObject,
     rect: RectLike
 ) {
-    let x = safeNum(obj.x, 0);
-    let x2 = safeNum(obj.x2, 1);
-    let y = safeNum(obj.y, 0);
-    let y2 = safeNum(obj.y2, 0);
+    let x = obj.x == null ? 0 : obj.x;
+    let x2 = obj.x2 == null ? 1 : obj.x2;
+    let y = obj.y == null ? 0 : obj.y;
+    let y2 = obj.y2 == null ? 0 : obj.y2;
 
     if (!obj.global) {
-        x = safeNum(x * rect.width + rect.x, 0);
-        x2 = safeNum(x2 * rect.width + rect.x, 1);
-        y = safeNum(y * rect.height + rect.y, 0);
-        y2 = safeNum(y2 * rect.height + rect.y, 0);
+        x = x * rect.width + rect.x;
+        x2 = x2 * rect.width + rect.x;
+        y = y * rect.height + rect.y;
+        y2 = y2 * rect.height + rect.y;
     }
+
+    // Fix NaN when rect is Infinity
+    x = isNaN(x) ? 0 : x;
+    x2 = isNaN(x2) ? 1 : x2;
+    y = isNaN(y) ? 0 : y;
+    y2 = isNaN(y2) ? 0 : y2;
 
     const canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
 
@@ -54,15 +60,19 @@ export function createRadialGradient(
     const height = rect.height;
     const min = Math.min(width, height);
 
-    let x = safeNum(obj.x, 0.5);
-    let y = safeNum(obj.y, 0.5);
-    let r = safeNum(obj.r, 0.5, true);
+    let x = obj.x == null ? 0.5 : obj.x;
+    let y = obj.y == null ? 0.5 : obj.y;
+    let r = obj.r == null ? 0.5 : obj.r;
 
     if (!obj.global) {
-        x = safeNum(x * width + rect.x, 0.5);
-        y = safeNum(y * height + rect.y, 0.5);
-        // r no-negative
-        r = safeNum(r * min, 0.5, true);
+        x = x * width + rect.x;
+        y = y * height + rect.y;
+        r = r * min;
+    }
+
+    if (!isSafeNum(x) || !isSafeNum(y) || !isSafeNum(r, true)) {
+        console.warn('The provided value is non-finite. You must provide x and y.');
+        return;
     }
 
     const canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
