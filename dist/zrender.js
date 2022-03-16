@@ -20,29 +20,26 @@
             this.node = false;
             this.wxa = false;
             this.worker = false;
-            this.canvasSupported = false;
             this.svgSupported = false;
             this.touchEventsSupported = false;
             this.pointerEventsSupported = false;
             this.domSupported = false;
             this.transformSupported = false;
             this.transform3dSupported = false;
+            this.hasGlobalWindow = typeof window !== 'undefined';
         }
         return Env;
     }());
     var env = new Env();
     if (typeof wx === 'object' && typeof wx.getSystemInfoSync === 'function') {
         env.wxa = true;
-        env.canvasSupported = true;
         env.touchEventsSupported = true;
     }
     else if (typeof document === 'undefined' && typeof self !== 'undefined') {
         env.worker = true;
-        env.canvasSupported = true;
     }
     else if (typeof navigator === 'undefined') {
         env.node = true;
-        env.canvasSupported = true;
         env.svgSupported = true;
     }
     else {
@@ -71,7 +68,6 @@
         if (weChat) {
             browser.weChat = true;
         }
-        env.canvasSupported = !!document.createElement('canvas').getContext;
         env.svgSupported = typeof SVGRect !== 'undefined';
         env.touchEventsSupported = 'ontouchstart' in window && !browser.ie && !browser.edge;
         env.pointerEventsSupported = 'onpointerdown' in window
@@ -87,27 +83,106 @@
             || (browser.ie && +browser.version >= 9);
     }
 
-    var BUILTIN_OBJECT = {
-        '[object Function]': true,
-        '[object RegExp]': true,
-        '[object Date]': true,
-        '[object Error]': true,
-        '[object CanvasGradient]': true,
-        '[object CanvasPattern]': true,
-        '[object Image]': true,
-        '[object Canvas]': true
+    var DEFAULT_FONT_SIZE = 12;
+    var DEFAULT_FONT_FAMILY = 'sans-serif';
+    var DEFAULT_FONT = DEFAULT_FONT_SIZE + "px " + DEFAULT_FONT_FAMILY;
+    var OFFSET = 20;
+    var SCALE = 100;
+    var defaultWidthMapStr = "007LLmW'55;N0500LLLLLLLLLL00NNNLzWW\\\\WQb\\0FWLg\\bWb\\WQ\\WrWWQ000CL5LLFLL0LL**F*gLLLL5F0LF\\FFF5.5N";
+    function getTextWidthMap(mapStr) {
+        var map = {};
+        if (typeof JSON === 'undefined') {
+            return map;
+        }
+        for (var i = 0; i < mapStr.length; i++) {
+            var char = String.fromCharCode(i + 32);
+            var size = (mapStr.charCodeAt(i) - OFFSET) / SCALE;
+            map[char] = size;
+        }
+        return map;
+    }
+    var DEFAULT_TEXT_WIDTH_MAP = getTextWidthMap(defaultWidthMapStr);
+    var platformApi = {
+        createCanvas: function () {
+            return typeof document !== 'undefined'
+                && document.createElement('canvas');
+        },
+        measureText: (function () {
+            var _ctx;
+            var _cachedFont;
+            return function (text, font) {
+                if (!_ctx) {
+                    var canvas = platformApi.createCanvas();
+                    _ctx = canvas && canvas.getContext('2d');
+                }
+                if (_ctx) {
+                    if (_cachedFont !== font) {
+                        _cachedFont = _ctx.font = font || DEFAULT_FONT;
+                    }
+                    return _ctx.measureText(text);
+                }
+                else {
+                    text = text || '';
+                    font = font || DEFAULT_FONT;
+                    var res = /^([0-9]*?)px$/.exec(font);
+                    var fontSize = +(res && res[1]) || DEFAULT_FONT_SIZE;
+                    var width = 0;
+                    if (font.indexOf('mono') >= 0) {
+                        width = fontSize * text.length;
+                    }
+                    else {
+                        for (var i = 0; i < text.length; i++) {
+                            var preCalcWidth = DEFAULT_TEXT_WIDTH_MAP[text[i]];
+                            width += preCalcWidth == null ? fontSize : (preCalcWidth * fontSize);
+                        }
+                    }
+                    return { width: width };
+                }
+            };
+        })(),
+        loadImage: function (src, onload, onerror) {
+            var image = new Image();
+            image.onload = onload;
+            image.onerror = onerror;
+            image.src = src;
+            return image;
+        }
     };
-    var TYPED_ARRAY = {
-        '[object Int8Array]': true,
-        '[object Uint8Array]': true,
-        '[object Uint8ClampedArray]': true,
-        '[object Int16Array]': true,
-        '[object Uint16Array]': true,
-        '[object Int32Array]': true,
-        '[object Uint32Array]': true,
-        '[object Float32Array]': true,
-        '[object Float64Array]': true
-    };
+    function setPlatformAPI(newPlatformApis) {
+        for (var key in platformApi) {
+            if (newPlatformApis[key]) {
+                platformApi[key] = newPlatformApis[key];
+            }
+        }
+    }
+
+    var BUILTIN_OBJECT = reduce([
+        'Function',
+        'RegExp',
+        'Date',
+        'Error',
+        'CanvasGradient',
+        'CanvasPattern',
+        'Image',
+        'Canvas'
+    ], function (obj, val) {
+        obj['[object ' + val + ']'] = true;
+        return obj;
+    }, {});
+    var TYPED_ARRAY = reduce([
+        'Int8',
+        'Uint8',
+        'Uint8Clamped',
+        'Int16',
+        'Uint16',
+        'Int32',
+        'Uint32',
+        'Float32',
+        'Float64'
+    ], function (obj, val) {
+        obj['[object ' + val + 'Array]'] = true;
+        return obj;
+    }, {});
     var objToString = Object.prototype.toString;
     var arrayProto = Array.prototype;
     var nativeForEach = arrayProto.forEach;
@@ -117,10 +192,6 @@
     var ctorFunction = function () { }.constructor;
     var protoFunction = ctorFunction ? ctorFunction.prototype : null;
     var protoKey = '__proto__';
-    var methods = {};
-    function $override(name, fn) {
-        methods[name] = fn;
-    }
     var idStart = 0x0907;
     function guid() {
         return idStart++;
@@ -157,7 +228,7 @@
                 else {
                     result = new Ctor(source.length);
                     for (var i = 0, len = source.length; i < len; i++) {
-                        result[i] = clone(source[i]);
+                        result[i] = source[i];
                     }
                 }
             }
@@ -229,12 +300,7 @@
         }
         return target;
     }
-    var createCanvas = function () {
-        return methods.createCanvas();
-    };
-    methods.createCanvas = function () {
-        return document.createElement('canvas');
-    };
+    var createCanvas = platformApi.createCanvas;
     function indexOf(array, value) {
         if (array) {
             if (array.indexOf) {
@@ -575,14 +641,21 @@
         }
         return obj;
     }
+    function disableUserSelect(dom) {
+        var domStyle = dom.style;
+        domStyle.webkitUserSelect = 'none';
+        domStyle.userSelect = 'none';
+        domStyle.webkitTapHighlightColor = 'rgba(0,0,0,0)';
+        domStyle['-webkit-touch-callout'] = 'none';
+    }
     function hasOwn(own, prop) {
         return own.hasOwnProperty(prop);
     }
     function noop() { }
+    var RADIAN_TO_DEGREE = 180 / Math.PI;
 
     var util = /*#__PURE__*/Object.freeze({
         __proto__: null,
-        $override: $override,
         guid: guid,
         logError: logError,
         clone: clone,
@@ -629,8 +702,10 @@
         createHashMap: createHashMap,
         concatArray: concatArray,
         createObject: createObject,
+        disableUserSelect: disableUserSelect,
         hasOwn: hasOwn,
-        noop: noop
+        noop: noop,
+        RADIAN_TO_DEGREE: RADIAN_TO_DEGREE
     });
 
     /*! *****************************************************************************
@@ -821,7 +896,7 @@
         Draggable.prototype._dragStart = function (e) {
             var draggingTarget = e.target;
             while (draggingTarget && !draggingTarget.draggable) {
-                draggingTarget = draggingTarget.parent;
+                draggingTarget = draggingTarget.parent || draggingTarget.__hostTarget;
             }
             if (draggingTarget) {
                 this._draggingTarget = draggingTarget;
@@ -1165,16 +1240,16 @@
         return el.nodeName.toUpperCase() === 'CANVAS';
     }
 
-    var isDomLevel2 = (typeof window !== 'undefined') && !!window.addEventListener;
     var MOUSE_EVENT_REG = /^(?:mouse|pointer|contextmenu|drag|drop)|click/;
     var _calcOut = [];
+    var firefoxNotSupportOffsetXY = env.browser.firefox
+        && +env.browser.version.split('.')[0] < 39;
     function clientToLocal(el, e, out, calculate) {
         out = out || {};
-        if (calculate || !env.canvasSupported) {
+        if (calculate) {
             calculateZrXY(el, e, out);
         }
-        else if (env.browser.firefox
-            && env.browser.version < '39'
+        else if (firefoxNotSupportOffsetXY
             && e.layerX != null
             && e.layerX !== e.offsetX) {
             out.zrX = e.layerX;
@@ -1255,31 +1330,16 @@
         return 3 * delta * sign;
     }
     function addEventListener(el, name, handler, opt) {
-        if (isDomLevel2) {
-            el.addEventListener(name, handler, opt);
-        }
-        else {
-            el.attachEvent('on' + name, handler);
-        }
+        el.addEventListener(name, handler, opt);
     }
     function removeEventListener(el, name, handler, opt) {
-        if (isDomLevel2) {
-            el.removeEventListener(name, handler, opt);
-        }
-        else {
-            el.detachEvent('on' + name, handler);
-        }
+        el.removeEventListener(name, handler, opt);
     }
-    var stop = isDomLevel2
-        ? function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            e.cancelBubble = true;
-        }
-        : function (e) {
-            e.returnValue = false;
-            e.cancelBubble = true;
-        };
+    var stop = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.cancelBubble = true;
+    };
 
     var GestureMgr = (function () {
         function GestureMgr() {
@@ -2181,7 +2241,7 @@
                 this._updateAndAddDisplayable(roots[i], null, includeIgnore);
             }
             displayList.length = this._displayListLen;
-            env.canvasSupported && sort(displayList, shapeCompareFunc);
+            sort(displayList, shapeCompareFunc);
         };
         Storage.prototype._updateAndAddDisplayable = function (el, clipPaths, includeIgnore) {
             if (el.ignore && !includeIgnore) {
@@ -2292,7 +2352,7 @@
     }());
 
     var requestAnimationFrame;
-    requestAnimationFrame = (typeof window !== 'undefined'
+    requestAnimationFrame = (env.hasGlobalWindow
         && ((window.requestAnimationFrame && window.requestAnimationFrame.bind(window))
             || (window.msRequestAnimationFrame && window.msRequestAnimationFrame.bind(window))
             || window.mozRequestAnimationFrame
@@ -2301,7 +2361,7 @@
     };
     var requestAnimationFrame$1 = requestAnimationFrame;
 
-    var easing = {
+    var easingFuncs = {
         linear: function (k) {
             return k;
         },
@@ -2472,7 +2532,7 @@
             return 0.5 * ((k -= 2) * k * ((s + 1) * k + s) + 2);
         },
         bounceIn: function (k) {
-            return 1 - easing.bounceOut(1 - k);
+            return 1 - easingFuncs.bounceOut(1 - k);
         },
         bounceOut: function (k) {
             if (k < (1 / 2.75)) {
@@ -2490,52 +2550,418 @@
         },
         bounceInOut: function (k) {
             if (k < 0.5) {
-                return easing.bounceIn(k * 2) * 0.5;
+                return easingFuncs.bounceIn(k * 2) * 0.5;
             }
-            return easing.bounceOut(k * 2 - 1) * 0.5 + 0.5;
+            return easingFuncs.bounceOut(k * 2 - 1) * 0.5 + 0.5;
         }
     };
 
+    var mathPow = Math.pow;
+    var mathSqrt = Math.sqrt;
+    var EPSILON = 1e-8;
+    var EPSILON_NUMERIC = 1e-4;
+    var THREE_SQRT = mathSqrt(3);
+    var ONE_THIRD = 1 / 3;
+    var _v0 = create();
+    var _v1 = create();
+    var _v2 = create();
+    function isAroundZero(val) {
+        return val > -EPSILON && val < EPSILON;
+    }
+    function isNotAroundZero(val) {
+        return val > EPSILON || val < -EPSILON;
+    }
+    function cubicAt(p0, p1, p2, p3, t) {
+        var onet = 1 - t;
+        return onet * onet * (onet * p0 + 3 * t * p1)
+            + t * t * (t * p3 + 3 * onet * p2);
+    }
+    function cubicDerivativeAt(p0, p1, p2, p3, t) {
+        var onet = 1 - t;
+        return 3 * (((p1 - p0) * onet + 2 * (p2 - p1) * t) * onet
+            + (p3 - p2) * t * t);
+    }
+    function cubicRootAt(p0, p1, p2, p3, val, roots) {
+        var a = p3 + 3 * (p1 - p2) - p0;
+        var b = 3 * (p2 - p1 * 2 + p0);
+        var c = 3 * (p1 - p0);
+        var d = p0 - val;
+        var A = b * b - 3 * a * c;
+        var B = b * c - 9 * a * d;
+        var C = c * c - 3 * b * d;
+        var n = 0;
+        if (isAroundZero(A) && isAroundZero(B)) {
+            if (isAroundZero(b)) {
+                roots[0] = 0;
+            }
+            else {
+                var t1 = -c / b;
+                if (t1 >= 0 && t1 <= 1) {
+                    roots[n++] = t1;
+                }
+            }
+        }
+        else {
+            var disc = B * B - 4 * A * C;
+            if (isAroundZero(disc)) {
+                var K = B / A;
+                var t1 = -b / a + K;
+                var t2 = -K / 2;
+                if (t1 >= 0 && t1 <= 1) {
+                    roots[n++] = t1;
+                }
+                if (t2 >= 0 && t2 <= 1) {
+                    roots[n++] = t2;
+                }
+            }
+            else if (disc > 0) {
+                var discSqrt = mathSqrt(disc);
+                var Y1 = A * b + 1.5 * a * (-B + discSqrt);
+                var Y2 = A * b + 1.5 * a * (-B - discSqrt);
+                if (Y1 < 0) {
+                    Y1 = -mathPow(-Y1, ONE_THIRD);
+                }
+                else {
+                    Y1 = mathPow(Y1, ONE_THIRD);
+                }
+                if (Y2 < 0) {
+                    Y2 = -mathPow(-Y2, ONE_THIRD);
+                }
+                else {
+                    Y2 = mathPow(Y2, ONE_THIRD);
+                }
+                var t1 = (-b - (Y1 + Y2)) / (3 * a);
+                if (t1 >= 0 && t1 <= 1) {
+                    roots[n++] = t1;
+                }
+            }
+            else {
+                var T = (2 * A * b - 3 * a * B) / (2 * mathSqrt(A * A * A));
+                var theta = Math.acos(T) / 3;
+                var ASqrt = mathSqrt(A);
+                var tmp = Math.cos(theta);
+                var t1 = (-b - 2 * ASqrt * tmp) / (3 * a);
+                var t2 = (-b + ASqrt * (tmp + THREE_SQRT * Math.sin(theta))) / (3 * a);
+                var t3 = (-b + ASqrt * (tmp - THREE_SQRT * Math.sin(theta))) / (3 * a);
+                if (t1 >= 0 && t1 <= 1) {
+                    roots[n++] = t1;
+                }
+                if (t2 >= 0 && t2 <= 1) {
+                    roots[n++] = t2;
+                }
+                if (t3 >= 0 && t3 <= 1) {
+                    roots[n++] = t3;
+                }
+            }
+        }
+        return n;
+    }
+    function cubicExtrema(p0, p1, p2, p3, extrema) {
+        var b = 6 * p2 - 12 * p1 + 6 * p0;
+        var a = 9 * p1 + 3 * p3 - 3 * p0 - 9 * p2;
+        var c = 3 * p1 - 3 * p0;
+        var n = 0;
+        if (isAroundZero(a)) {
+            if (isNotAroundZero(b)) {
+                var t1 = -c / b;
+                if (t1 >= 0 && t1 <= 1) {
+                    extrema[n++] = t1;
+                }
+            }
+        }
+        else {
+            var disc = b * b - 4 * a * c;
+            if (isAroundZero(disc)) {
+                extrema[0] = -b / (2 * a);
+            }
+            else if (disc > 0) {
+                var discSqrt = mathSqrt(disc);
+                var t1 = (-b + discSqrt) / (2 * a);
+                var t2 = (-b - discSqrt) / (2 * a);
+                if (t1 >= 0 && t1 <= 1) {
+                    extrema[n++] = t1;
+                }
+                if (t2 >= 0 && t2 <= 1) {
+                    extrema[n++] = t2;
+                }
+            }
+        }
+        return n;
+    }
+    function cubicSubdivide(p0, p1, p2, p3, t, out) {
+        var p01 = (p1 - p0) * t + p0;
+        var p12 = (p2 - p1) * t + p1;
+        var p23 = (p3 - p2) * t + p2;
+        var p012 = (p12 - p01) * t + p01;
+        var p123 = (p23 - p12) * t + p12;
+        var p0123 = (p123 - p012) * t + p012;
+        out[0] = p0;
+        out[1] = p01;
+        out[2] = p012;
+        out[3] = p0123;
+        out[4] = p0123;
+        out[5] = p123;
+        out[6] = p23;
+        out[7] = p3;
+    }
+    function cubicProjectPoint(x0, y0, x1, y1, x2, y2, x3, y3, x, y, out) {
+        var t;
+        var interval = 0.005;
+        var d = Infinity;
+        var prev;
+        var next;
+        var d1;
+        var d2;
+        _v0[0] = x;
+        _v0[1] = y;
+        for (var _t = 0; _t < 1; _t += 0.05) {
+            _v1[0] = cubicAt(x0, x1, x2, x3, _t);
+            _v1[1] = cubicAt(y0, y1, y2, y3, _t);
+            d1 = distSquare(_v0, _v1);
+            if (d1 < d) {
+                t = _t;
+                d = d1;
+            }
+        }
+        d = Infinity;
+        for (var i = 0; i < 32; i++) {
+            if (interval < EPSILON_NUMERIC) {
+                break;
+            }
+            prev = t - interval;
+            next = t + interval;
+            _v1[0] = cubicAt(x0, x1, x2, x3, prev);
+            _v1[1] = cubicAt(y0, y1, y2, y3, prev);
+            d1 = distSquare(_v1, _v0);
+            if (prev >= 0 && d1 < d) {
+                t = prev;
+                d = d1;
+            }
+            else {
+                _v2[0] = cubicAt(x0, x1, x2, x3, next);
+                _v2[1] = cubicAt(y0, y1, y2, y3, next);
+                d2 = distSquare(_v2, _v0);
+                if (next <= 1 && d2 < d) {
+                    t = next;
+                    d = d2;
+                }
+                else {
+                    interval *= 0.5;
+                }
+            }
+        }
+        if (out) {
+            out[0] = cubicAt(x0, x1, x2, x3, t);
+            out[1] = cubicAt(y0, y1, y2, y3, t);
+        }
+        return mathSqrt(d);
+    }
+    function cubicLength(x0, y0, x1, y1, x2, y2, x3, y3, iteration) {
+        var px = x0;
+        var py = y0;
+        var d = 0;
+        var step = 1 / iteration;
+        for (var i = 1; i <= iteration; i++) {
+            var t = i * step;
+            var x = cubicAt(x0, x1, x2, x3, t);
+            var y = cubicAt(y0, y1, y2, y3, t);
+            var dx = x - px;
+            var dy = y - py;
+            d += Math.sqrt(dx * dx + dy * dy);
+            px = x;
+            py = y;
+        }
+        return d;
+    }
+    function quadraticAt(p0, p1, p2, t) {
+        var onet = 1 - t;
+        return onet * (onet * p0 + 2 * t * p1) + t * t * p2;
+    }
+    function quadraticDerivativeAt(p0, p1, p2, t) {
+        return 2 * ((1 - t) * (p1 - p0) + t * (p2 - p1));
+    }
+    function quadraticRootAt(p0, p1, p2, val, roots) {
+        var a = p0 - 2 * p1 + p2;
+        var b = 2 * (p1 - p0);
+        var c = p0 - val;
+        var n = 0;
+        if (isAroundZero(a)) {
+            if (isNotAroundZero(b)) {
+                var t1 = -c / b;
+                if (t1 >= 0 && t1 <= 1) {
+                    roots[n++] = t1;
+                }
+            }
+        }
+        else {
+            var disc = b * b - 4 * a * c;
+            if (isAroundZero(disc)) {
+                var t1 = -b / (2 * a);
+                if (t1 >= 0 && t1 <= 1) {
+                    roots[n++] = t1;
+                }
+            }
+            else if (disc > 0) {
+                var discSqrt = mathSqrt(disc);
+                var t1 = (-b + discSqrt) / (2 * a);
+                var t2 = (-b - discSqrt) / (2 * a);
+                if (t1 >= 0 && t1 <= 1) {
+                    roots[n++] = t1;
+                }
+                if (t2 >= 0 && t2 <= 1) {
+                    roots[n++] = t2;
+                }
+            }
+        }
+        return n;
+    }
+    function quadraticExtremum(p0, p1, p2) {
+        var divider = p0 + p2 - 2 * p1;
+        if (divider === 0) {
+            return 0.5;
+        }
+        else {
+            return (p0 - p1) / divider;
+        }
+    }
+    function quadraticSubdivide(p0, p1, p2, t, out) {
+        var p01 = (p1 - p0) * t + p0;
+        var p12 = (p2 - p1) * t + p1;
+        var p012 = (p12 - p01) * t + p01;
+        out[0] = p0;
+        out[1] = p01;
+        out[2] = p012;
+        out[3] = p012;
+        out[4] = p12;
+        out[5] = p2;
+    }
+    function quadraticProjectPoint(x0, y0, x1, y1, x2, y2, x, y, out) {
+        var t;
+        var interval = 0.005;
+        var d = Infinity;
+        _v0[0] = x;
+        _v0[1] = y;
+        for (var _t = 0; _t < 1; _t += 0.05) {
+            _v1[0] = quadraticAt(x0, x1, x2, _t);
+            _v1[1] = quadraticAt(y0, y1, y2, _t);
+            var d1 = distSquare(_v0, _v1);
+            if (d1 < d) {
+                t = _t;
+                d = d1;
+            }
+        }
+        d = Infinity;
+        for (var i = 0; i < 32; i++) {
+            if (interval < EPSILON_NUMERIC) {
+                break;
+            }
+            var prev = t - interval;
+            var next = t + interval;
+            _v1[0] = quadraticAt(x0, x1, x2, prev);
+            _v1[1] = quadraticAt(y0, y1, y2, prev);
+            var d1 = distSquare(_v1, _v0);
+            if (prev >= 0 && d1 < d) {
+                t = prev;
+                d = d1;
+            }
+            else {
+                _v2[0] = quadraticAt(x0, x1, x2, next);
+                _v2[1] = quadraticAt(y0, y1, y2, next);
+                var d2 = distSquare(_v2, _v0);
+                if (next <= 1 && d2 < d) {
+                    t = next;
+                    d = d2;
+                }
+                else {
+                    interval *= 0.5;
+                }
+            }
+        }
+        if (out) {
+            out[0] = quadraticAt(x0, x1, x2, t);
+            out[1] = quadraticAt(y0, y1, y2, t);
+        }
+        return mathSqrt(d);
+    }
+    function quadraticLength(x0, y0, x1, y1, x2, y2, iteration) {
+        var px = x0;
+        var py = y0;
+        var d = 0;
+        var step = 1 / iteration;
+        for (var i = 1; i <= iteration; i++) {
+            var t = i * step;
+            var x = quadraticAt(x0, x1, x2, t);
+            var y = quadraticAt(y0, y1, y2, t);
+            var dx = x - px;
+            var dy = y - py;
+            d += Math.sqrt(dx * dx + dy * dy);
+            px = x;
+            py = y;
+        }
+        return d;
+    }
+
+    var regexp = /cubic-bezier\(([0-9,\.e ]+)\)/;
+    function createCubicEasingFunc(cubicEasingStr) {
+        var cubic = cubicEasingStr && regexp.exec(cubicEasingStr);
+        if (cubic) {
+            var points = cubic[1].split(',');
+            var a_1 = +trim(points[0]);
+            var b_1 = +trim(points[1]);
+            var c_1 = +trim(points[2]);
+            var d_1 = +trim(points[3]);
+            if (isNaN(a_1 + b_1 + c_1 + d_1)) {
+                return;
+            }
+            var roots_1 = [];
+            return function (p) {
+                return p <= 0
+                    ? 0 : p >= 1
+                    ? 1
+                    : cubicRootAt(0, a_1, c_1, 1, p, roots_1) && cubicAt(0, b_1, d_1, 1, roots_1[0]);
+            };
+        }
+    }
+
     var Clip = (function () {
         function Clip(opts) {
-            this._initialized = false;
+            this._inited = false;
             this._startTime = 0;
             this._pausedTime = 0;
             this._paused = false;
             this._life = opts.life || 1000;
             this._delay = opts.delay || 0;
-            this.loop = opts.loop == null ? false : opts.loop;
-            this.gap = opts.gap || 0;
-            this.easing = opts.easing || 'linear';
-            this.onframe = opts.onframe;
-            this.ondestroy = opts.ondestroy;
-            this.onrestart = opts.onrestart;
+            this.loop = opts.loop || false;
+            this.onframe = opts.onframe || noop;
+            this.ondestroy = opts.ondestroy || noop;
+            this.onrestart = opts.onrestart || noop;
+            opts.easing && this.setEasing(opts.easing);
         }
         Clip.prototype.step = function (globalTime, deltaTime) {
-            if (!this._initialized) {
+            if (!this._inited) {
                 this._startTime = globalTime + this._delay;
-                this._initialized = true;
+                this._inited = true;
             }
             if (this._paused) {
                 this._pausedTime += deltaTime;
                 return;
             }
-            var percent = (globalTime - this._startTime - this._pausedTime) / this._life;
+            var life = this._life;
+            var elapsedTime = globalTime - this._startTime - this._pausedTime;
+            var percent = elapsedTime / life;
             if (percent < 0) {
                 percent = 0;
             }
             percent = Math.min(percent, 1);
-            var easing$1 = this.easing;
-            var easingFunc = typeof easing$1 === 'string'
-                ? easing[easing$1] : easing$1;
-            var schedule = typeof easingFunc === 'function'
-                ? easingFunc(percent)
-                : percent;
-            this.onframe && this.onframe(schedule);
+            var easingFunc = this.easingFunc;
+            var schedule = easingFunc ? easingFunc(percent) : percent;
+            this.onframe(schedule);
             if (percent === 1) {
                 if (this.loop) {
-                    this._restart(globalTime);
-                    this.onrestart && this.onrestart();
+                    var remainder = elapsedTime % life;
+                    this._startTime = globalTime - remainder;
+                    this._pausedTime = 0;
+                    this.onrestart();
                 }
                 else {
                     return true;
@@ -2543,16 +2969,17 @@
             }
             return false;
         };
-        Clip.prototype._restart = function (globalTime) {
-            var remainder = (globalTime - this._startTime - this._pausedTime) % this._life;
-            this._startTime = globalTime - remainder + this.gap;
-            this._pausedTime = 0;
-        };
         Clip.prototype.pause = function () {
             this._paused = true;
         };
         Clip.prototype.resume = function () {
             this._paused = false;
+        };
+        Clip.prototype.setEasing = function (easing) {
+            this.easing = easing;
+            this.easingFunc = isFunction(easing)
+                ? easing
+                : easingFuncs[easing] || createCubicEasingFunc(easing);
         };
         return Clip;
     }());
@@ -3064,10 +3491,11 @@
             : 0;
     }
     function random() {
-        var r = Math.round(Math.random() * 255);
-        var g = Math.round(Math.random() * 255);
-        var b = Math.round(Math.random() * 255);
-        return 'rgb(' + r + ',' + g + ',' + b + ')';
+        return stringify([
+            Math.round(Math.random() * 255),
+            Math.round(Math.random() * 255),
+            Math.round(Math.random() * 255)
+        ], 'rgb');
     }
 
     var color = /*#__PURE__*/Object.freeze({
@@ -3086,18 +3514,154 @@
         random: random
     });
 
+    var mathRound = Math.round;
+    function normalizeColor(color) {
+        var opacity;
+        if (!color || color === 'transparent') {
+            color = 'none';
+        }
+        else if (typeof color === 'string' && color.indexOf('rgba') > -1) {
+            var arr = parse(color);
+            if (arr) {
+                color = 'rgb(' + arr[0] + ',' + arr[1] + ',' + arr[2] + ')';
+                opacity = arr[3];
+            }
+        }
+        return {
+            color: color,
+            opacity: opacity == null ? 1 : opacity
+        };
+    }
+    var EPSILON$1 = 1e-4;
+    function isAroundZero$1(transform) {
+        return transform < EPSILON$1 && transform > -EPSILON$1;
+    }
+    function round3(transform) {
+        return mathRound(transform * 1e3) / 1e3;
+    }
+    function round4(transform) {
+        return mathRound(transform * 1e4) / 1e4;
+    }
+    function getMatrixStr(m) {
+        return 'matrix('
+            + round3(m[0]) + ','
+            + round3(m[1]) + ','
+            + round3(m[2]) + ','
+            + round3(m[3]) + ','
+            + round4(m[4]) + ','
+            + round4(m[5])
+            + ')';
+    }
+    var TEXT_ALIGN_TO_ANCHOR = {
+        left: 'start',
+        right: 'end',
+        center: 'middle',
+        middle: 'middle'
+    };
+    function adjustTextY(y, lineHeight, textBaseline) {
+        if (textBaseline === 'top') {
+            y += lineHeight / 2;
+        }
+        else if (textBaseline === 'bottom') {
+            y -= lineHeight / 2;
+        }
+        return y;
+    }
+    function hasShadow(style) {
+        return style
+            && (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY);
+    }
+    function getShadowKey(displayable) {
+        var style = displayable.style;
+        var globalScale = displayable.getGlobalScale();
+        return [
+            style.shadowColor,
+            (style.shadowBlur || 0).toFixed(2),
+            (style.shadowOffsetX || 0).toFixed(2),
+            (style.shadowOffsetY || 0).toFixed(2),
+            globalScale[0],
+            globalScale[1]
+        ].join(',');
+    }
+    function isImagePattern(val) {
+        return val && (!!val.image);
+    }
+    function isSVGPattern(val) {
+        return val && (!!val.svgElement);
+    }
+    function isPattern(val) {
+        return isImagePattern(val) || isSVGPattern(val);
+    }
+    function isLinearGradient(val) {
+        return val.type === 'linear';
+    }
+    function isRadialGradient(val) {
+        return val.type === 'radial';
+    }
+    function isGradient(val) {
+        return val && (val.type === 'linear'
+            || val.type === 'radial');
+    }
+    function getIdURL(id) {
+        return "url(#" + id + ")";
+    }
+    function getPathPrecision(el) {
+        var scale = el.getGlobalScale();
+        var size = Math.max(scale[0], scale[1]);
+        return Math.max(Math.ceil(Math.log(size) / Math.log(10)), 1);
+    }
+    function getSRTTransformString(transform) {
+        var x = transform.x || 0;
+        var y = transform.y || 0;
+        var rotation = (transform.rotation || 0) * RADIAN_TO_DEGREE;
+        var scaleX = retrieve2(transform.scaleX, 1);
+        var scaleY = retrieve2(transform.scaleY, 1);
+        var skewX = transform.skewX || 0;
+        var skewY = transform.skewY || 0;
+        var res = [];
+        if (x || y) {
+            res.push("translate(" + x + "px," + y + "px)");
+        }
+        if (rotation) {
+            res.push("rotate(" + rotation + ")");
+        }
+        if (scaleX !== 1 || scaleY !== 1) {
+            res.push("scale(" + scaleX + "," + scaleY + ")");
+        }
+        if (skewX || skewY) {
+            res.push("skew(" + mathRound(skewX * RADIAN_TO_DEGREE) + "deg, " + mathRound(skewY * RADIAN_TO_DEGREE) + "deg)");
+        }
+        return res.join(' ');
+    }
+    var encodeBase64 = (function () {
+        if (env.hasGlobalWindow && isFunction(window.btoa)) {
+            return function (str) {
+                return window.btoa(unescape(str));
+            };
+        }
+        if (typeof Buffer !== 'undefined') {
+            return function (str) {
+                return Buffer.from(str).toString('base64');
+            };
+        }
+        return function (str) {
+            {
+                logError('Base64 isn\'t natively supported in the current environment.');
+            }
+            return null;
+        };
+    })();
+
     var arraySlice = Array.prototype.slice;
     function interpolateNumber(p0, p1, percent) {
         return (p1 - p0) * percent + p0;
-    }
-    function step(p0, p1, percent) {
-        return percent > 0.5 ? p1 : p0;
     }
     function interpolate1DArray(out, p0, p1, percent) {
         var len = p0.length;
         for (var i = 0; i < len; i++) {
             out[i] = interpolateNumber(p0[i], p1[i], percent);
         }
+        return out;
     }
     function interpolate2DArray(out, p0, p1, percent) {
         var len = p0.length;
@@ -3110,6 +3674,7 @@
                 out[i][j] = interpolateNumber(p0[i][j], p1[i][j], percent);
             }
         }
+        return out;
     }
     function add1DArray(out, p0, p1, sign) {
         var len = p0.length;
@@ -3130,6 +3695,19 @@
             }
         }
         return out;
+    }
+    function fillColorStops(val0, val1) {
+        var len0 = val0.length;
+        var len1 = val1.length;
+        var shorterArr = len0 > len1 ? val1 : val0;
+        var shorterLen = Math.min(len0, len1);
+        var last = shorterArr[shorterLen - 1] || { color: [0, 0, 0, 0], offset: 0 };
+        for (var i = shorterLen; i < Math.max(len0, len1); i++) {
+            shorterArr.push({
+                offset: last.offset,
+                color: last.color.slice()
+            });
+        }
     }
     function fillArray(val0, val1, arrDim) {
         var arr0 = val0;
@@ -3166,43 +3744,6 @@
             }
         }
     }
-    function is1DArraySame(arr0, arr1) {
-        var len = arr0.length;
-        if (len !== arr1.length) {
-            return false;
-        }
-        for (var i = 0; i < len; i++) {
-            if (arr0[i] !== arr1[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
-    function catmullRomInterpolate(p0, p1, p2, p3, t, t2, t3) {
-        var v0 = (p2 - p0) * 0.5;
-        var v1 = (p3 - p1) * 0.5;
-        return (2 * (p1 - p2) + v0 + v1) * t3
-            + (-3 * (p1 - p2) - 2 * v0 - v1) * t2
-            + v0 * t + p1;
-    }
-    function catmullRomInterpolate1DArray(out, p0, p1, p2, p3, t, t2, t3) {
-        var len = p0.length;
-        for (var i = 0; i < len; i++) {
-            out[i] = catmullRomInterpolate(p0[i], p1[i], p2[i], p3[i], t, t2, t3);
-        }
-    }
-    function catmullRomInterpolate2DArray(out, p0, p1, p2, p3, t, t2, t3) {
-        var len = p0.length;
-        var len2 = p0[0].length;
-        for (var i = 0; i < len; i++) {
-            if (!out[i]) {
-                out[1] = [];
-            }
-            for (var j = 0; j < len2; j++) {
-                out[i][j] = catmullRomInterpolate(p0[i][j], p1[i][j], p2[i][j], p3[i][j], t, t2, t3);
-            }
-        }
-    }
     function cloneValue(value) {
         if (isArrayLike(value)) {
             var len = value.length;
@@ -3218,25 +3759,37 @@
         return value;
     }
     function rgba2String(rgba) {
-        rgba[0] = Math.floor(rgba[0]);
-        rgba[1] = Math.floor(rgba[1]);
-        rgba[2] = Math.floor(rgba[2]);
+        rgba[0] = Math.floor(rgba[0]) || 0;
+        rgba[1] = Math.floor(rgba[1]) || 0;
+        rgba[2] = Math.floor(rgba[2]) || 0;
+        rgba[3] = rgba[3] == null ? 1 : rgba[3];
         return 'rgba(' + rgba.join(',') + ')';
     }
     function guessArrayDim(value) {
         return isArrayLike(value && value[0]) ? 2 : 1;
     }
+    var VALUE_TYPE_NUMBER = 0;
+    var VALUE_TYPE_1D_ARRAY = 1;
+    var VALUE_TYPE_2D_ARRAY = 2;
+    var VALUE_TYPE_COLOR = 3;
+    var VALUE_TYPE_LINEAR_GRADIENT = 4;
+    var VALUE_TYPE_RADIAL_GRADIENT = 5;
+    var VALUE_TYPE_UNKOWN = 6;
+    function isGradientValueType(valType) {
+        return valType === VALUE_TYPE_LINEAR_GRADIENT || valType === VALUE_TYPE_RADIAL_GRADIENT;
+    }
+    function isArrayValueType(valType) {
+        return valType === VALUE_TYPE_1D_ARRAY || valType === VALUE_TYPE_2D_ARRAY;
+    }
     var tmpRgba = [0, 0, 0, 0];
     var Track = (function () {
         function Track(propName) {
             this.keyframes = [];
-            this.maxTime = 0;
-            this.arrDim = 0;
-            this.interpolable = true;
+            this.discrete = false;
+            this._invalid = false;
             this._needsSort = false;
-            this._isAllValueEqual = true;
-            this._lastFrame = 0;
-            this._lastFramePercent = 0;
+            this._lastFr = 0;
+            this._lastFrP = 0;
             this.propName = propName;
         }
         Track.prototype.isFinished = function () {
@@ -3249,127 +3802,127 @@
             }
         };
         Track.prototype.needsAnimate = function () {
-            return !this._isAllValueEqual
-                && this.keyframes.length >= 2
-                && this.interpolable
-                && this.maxTime > 0;
+            return this.keyframes.length >= 1;
         };
         Track.prototype.getAdditiveTrack = function () {
             return this._additiveTrack;
         };
-        Track.prototype.addKeyframe = function (time, value) {
-            if (time >= this.maxTime) {
-                this.maxTime = time;
-            }
-            else {
-                this._needsSort = true;
-            }
+        Track.prototype.addKeyframe = function (time, rawValue, easing) {
+            this._needsSort = true;
             var keyframes = this.keyframes;
             var len = keyframes.length;
-            if (this.interpolable) {
-                if (isArrayLike(value)) {
-                    var arrayDim = guessArrayDim(value);
-                    if (len > 0 && this.arrDim !== arrayDim) {
-                        this.interpolable = false;
-                        return;
-                    }
-                    if (arrayDim === 1 && typeof value[0] !== 'number'
-                        || arrayDim === 2 && typeof value[0][0] !== 'number') {
-                        this.interpolable = false;
-                        return;
-                    }
-                    if (len > 0) {
-                        var lastFrame = keyframes[len - 1];
-                        if (this._isAllValueEqual) {
-                            if (arrayDim === 1) {
-                                if (!is1DArraySame(value, lastFrame.value)) {
-                                    this._isAllValueEqual = false;
-                                }
-                            }
-                            else {
-                                this._isAllValueEqual = false;
-                            }
-                        }
-                    }
-                    this.arrDim = arrayDim;
-                }
-                else {
-                    if (this.arrDim > 0) {
-                        this.interpolable = false;
-                        return;
-                    }
-                    if (typeof value === 'string') {
-                        var colorArray = parse(value);
-                        if (colorArray) {
-                            value = colorArray;
-                            this.isValueColor = true;
-                        }
-                        else {
-                            this.interpolable = false;
-                        }
-                    }
-                    else if (typeof value !== 'number' || isNaN(value)) {
-                        this.interpolable = false;
-                        return;
-                    }
-                    if (this._isAllValueEqual && len > 0) {
-                        var lastFrame = keyframes[len - 1];
-                        if (this.isValueColor && !is1DArraySame(lastFrame.value, value)) {
-                            this._isAllValueEqual = false;
-                        }
-                        else if (lastFrame.value !== value) {
-                            this._isAllValueEqual = false;
-                        }
-                    }
+            var discrete = false;
+            var valType = VALUE_TYPE_UNKOWN;
+            var value = rawValue;
+            if (isArrayLike(rawValue)) {
+                var arrayDim = guessArrayDim(rawValue);
+                valType = arrayDim;
+                if (arrayDim === 1 && !isNumber(rawValue[0])
+                    || arrayDim === 2 && !isNumber(rawValue[0][0])) {
+                    discrete = true;
                 }
             }
+            else {
+                if (isNumber(rawValue) && !eqNaN(rawValue)) {
+                    valType = VALUE_TYPE_NUMBER;
+                }
+                else if (isString(rawValue)) {
+                    if (!isNaN(+rawValue)) {
+                        valType = VALUE_TYPE_NUMBER;
+                    }
+                    else {
+                        var colorArray = parse(rawValue);
+                        if (colorArray) {
+                            value = colorArray;
+                            valType = VALUE_TYPE_COLOR;
+                        }
+                    }
+                }
+                else if (isGradientObject(rawValue)) {
+                    var parsedGradient = extend({}, value);
+                    parsedGradient.colorStops = map(rawValue.colorStops, function (colorStop) { return ({
+                        offset: colorStop.offset,
+                        color: parse(colorStop.color)
+                    }); });
+                    if (isLinearGradient(rawValue)) {
+                        valType = VALUE_TYPE_LINEAR_GRADIENT;
+                    }
+                    else if (isRadialGradient(rawValue)) {
+                        valType = VALUE_TYPE_RADIAL_GRADIENT;
+                    }
+                    value = parsedGradient;
+                }
+            }
+            if (len === 0) {
+                this.valType = valType;
+            }
+            else if (valType !== this.valType || valType === VALUE_TYPE_UNKOWN) {
+                discrete = true;
+            }
+            this.discrete = this.discrete || discrete;
             var kf = {
                 time: time,
                 value: value,
+                rawValue: rawValue,
                 percent: 0
             };
-            this.keyframes.push(kf);
+            if (easing) {
+                kf.easing = easing;
+                kf.easingFunc = isFunction(easing)
+                    ? easing
+                    : easingFuncs[easing] || createCubicEasingFunc(easing);
+            }
+            keyframes.push(kf);
             return kf;
         };
-        Track.prototype.prepare = function (additiveTrack) {
+        Track.prototype.prepare = function (maxTime, additiveTrack) {
             var kfs = this.keyframes;
             if (this._needsSort) {
                 kfs.sort(function (a, b) {
                     return a.time - b.time;
                 });
             }
-            var arrDim = this.arrDim;
+            var valType = this.valType;
             var kfsLen = kfs.length;
             var lastKf = kfs[kfsLen - 1];
+            var isDiscrete = this.discrete;
+            var isArr = isArrayValueType(valType);
+            var isGradient = isGradientValueType(valType);
             for (var i = 0; i < kfsLen; i++) {
-                kfs[i].percent = kfs[i].time / this.maxTime;
-                if (arrDim > 0 && i !== kfsLen - 1) {
-                    fillArray(kfs[i].value, lastKf.value, arrDim);
+                var kf = kfs[i];
+                var value = kf.value;
+                var lastValue = lastKf.value;
+                kf.percent = kf.time / maxTime;
+                if (!isDiscrete) {
+                    if (isArr && i !== kfsLen - 1) {
+                        fillArray(value, lastValue, valType);
+                    }
+                    else if (isGradient) {
+                        fillColorStops(value.colorStops, lastValue.colorStops);
+                    }
                 }
             }
-            if (additiveTrack
+            if (!isDiscrete
+                && valType !== VALUE_TYPE_RADIAL_GRADIENT
+                && additiveTrack
                 && this.needsAnimate()
                 && additiveTrack.needsAnimate()
-                && arrDim === additiveTrack.arrDim
-                && this.isValueColor === additiveTrack.isValueColor
+                && valType === additiveTrack.valType
                 && !additiveTrack._finished) {
                 this._additiveTrack = additiveTrack;
                 var startValue = kfs[0].value;
                 for (var i = 0; i < kfsLen; i++) {
-                    if (arrDim === 0) {
-                        if (this.isValueColor) {
-                            kfs[i].additiveValue =
-                                add1DArray([], kfs[i].value, startValue, -1);
-                        }
-                        else {
-                            kfs[i].additiveValue = kfs[i].value - startValue;
-                        }
+                    if (valType === VALUE_TYPE_NUMBER) {
+                        kfs[i].additiveValue = kfs[i].value - startValue;
                     }
-                    else if (arrDim === 1) {
-                        kfs[i].additiveValue = add1DArray([], kfs[i].value, startValue, -1);
+                    else if (valType === VALUE_TYPE_COLOR) {
+                        kfs[i].additiveValue =
+                            add1DArray([], kfs[i].value, startValue, -1);
                     }
-                    else if (arrDim === 2) {
-                        kfs[i].additiveValue = add2DArray([], kfs[i].value, startValue, -1);
+                    else if (isArrayValueType(valType)) {
+                        kfs[i].additiveValue = valType === VALUE_TYPE_1D_ARRAY
+                            ? add1DArray([], kfs[i].value, startValue, -1)
+                            : add2DArray([], kfs[i].value, startValue, -1);
                     }
                 }
             }
@@ -3383,107 +3936,104 @@
             }
             var isAdditive = this._additiveTrack != null;
             var valueKey = isAdditive ? 'additiveValue' : 'value';
+            var valType = this.valType;
             var keyframes = this.keyframes;
-            var kfsNum = this.keyframes.length;
+            var kfsNum = keyframes.length;
             var propName = this.propName;
-            var arrDim = this.arrDim;
-            var isValueColor = this.isValueColor;
+            var isValueColor = valType === VALUE_TYPE_COLOR;
             var frameIdx;
-            if (percent < 0) {
-                frameIdx = 0;
-            }
-            else if (percent < this._lastFramePercent) {
-                var start = Math.min(this._lastFrame + 1, kfsNum - 1);
-                for (frameIdx = start; frameIdx >= 0; frameIdx--) {
-                    if (keyframes[frameIdx].percent <= percent) {
-                        break;
-                    }
-                }
-                frameIdx = Math.min(frameIdx, kfsNum - 2);
+            var lastFrame = this._lastFr;
+            var mathMin = Math.min;
+            var frame;
+            var nextFrame;
+            if (kfsNum === 1) {
+                frame = nextFrame = keyframes[0];
             }
             else {
-                for (frameIdx = this._lastFrame; frameIdx < kfsNum; frameIdx++) {
-                    if (keyframes[frameIdx].percent > percent) {
-                        break;
-                    }
+                if (percent < 0) {
+                    frameIdx = 0;
                 }
-                frameIdx = Math.min(frameIdx - 1, kfsNum - 2);
+                else if (percent < this._lastFrP) {
+                    var start = mathMin(lastFrame + 1, kfsNum - 1);
+                    for (frameIdx = start; frameIdx >= 0; frameIdx--) {
+                        if (keyframes[frameIdx].percent <= percent) {
+                            break;
+                        }
+                    }
+                    frameIdx = mathMin(frameIdx, kfsNum - 2);
+                }
+                else {
+                    for (frameIdx = lastFrame; frameIdx < kfsNum; frameIdx++) {
+                        if (keyframes[frameIdx].percent > percent) {
+                            break;
+                        }
+                    }
+                    frameIdx = mathMin(frameIdx - 1, kfsNum - 2);
+                }
+                nextFrame = keyframes[frameIdx + 1];
+                frame = keyframes[frameIdx];
             }
-            var nextFrame = keyframes[frameIdx + 1];
-            var frame = keyframes[frameIdx];
             if (!(frame && nextFrame)) {
                 return;
             }
-            this._lastFrame = frameIdx;
-            this._lastFramePercent = percent;
-            var range = (nextFrame.percent - frame.percent);
-            if (range === 0) {
-                return;
+            this._lastFr = frameIdx;
+            this._lastFrP = percent;
+            var interval = (nextFrame.percent - frame.percent);
+            var w = interval === 0 ? 1 : mathMin((percent - frame.percent) / interval, 1);
+            if (nextFrame.easingFunc) {
+                w = nextFrame.easingFunc(w);
             }
-            var w = (percent - frame.percent) / range;
             var targetArr = isAdditive ? this._additiveValue
                 : (isValueColor ? tmpRgba : target[propName]);
-            if ((arrDim > 0 || isValueColor) && !targetArr) {
+            if ((isArrayValueType(valType) || isValueColor) && !targetArr) {
                 targetArr = this._additiveValue = [];
             }
-            if (this.useSpline) {
-                var p1 = keyframes[frameIdx][valueKey];
-                var p0 = keyframes[frameIdx === 0 ? frameIdx : frameIdx - 1][valueKey];
-                var p2 = keyframes[frameIdx > kfsNum - 2 ? kfsNum - 1 : frameIdx + 1][valueKey];
-                var p3 = keyframes[frameIdx > kfsNum - 3 ? kfsNum - 1 : frameIdx + 2][valueKey];
-                if (arrDim > 0) {
-                    arrDim === 1
-                        ? catmullRomInterpolate1DArray(targetArr, p0, p1, p2, p3, w, w * w, w * w * w)
-                        : catmullRomInterpolate2DArray(targetArr, p0, p1, p2, p3, w, w * w, w * w * w);
-                }
-                else if (isValueColor) {
-                    catmullRomInterpolate1DArray(targetArr, p0, p1, p2, p3, w, w * w, w * w * w);
-                    if (!isAdditive) {
-                        target[propName] = rgba2String(targetArr);
-                    }
+            if (this.discrete) {
+                target[propName] = w < 1 ? frame.rawValue : nextFrame.rawValue;
+            }
+            else if (isArrayValueType(valType)) {
+                valType === VALUE_TYPE_1D_ARRAY
+                    ? interpolate1DArray(targetArr, frame[valueKey], nextFrame[valueKey], w)
+                    : interpolate2DArray(targetArr, frame[valueKey], nextFrame[valueKey], w);
+            }
+            else if (isGradientValueType(valType)) {
+                var val = frame[valueKey];
+                var nextVal_1 = nextFrame[valueKey];
+                var isLinearGradient_1 = valType === VALUE_TYPE_LINEAR_GRADIENT;
+                target[propName] = {
+                    type: isLinearGradient_1 ? 'linear' : 'radial',
+                    x: interpolateNumber(val.x, nextVal_1.x, w),
+                    y: interpolateNumber(val.y, nextVal_1.y, w),
+                    colorStops: map(val.colorStops, function (colorStop, idx) {
+                        var nextColorStop = nextVal_1.colorStops[idx];
+                        return {
+                            offset: interpolateNumber(colorStop.offset, nextColorStop.offset, w),
+                            color: rgba2String(interpolate1DArray([], colorStop.color, nextColorStop.color, w))
+                        };
+                    }),
+                    global: nextVal_1.global
+                };
+                if (isLinearGradient_1) {
+                    target[propName].x2 = interpolateNumber(val.x2, nextVal_1.x2, w);
+                    target[propName].y2 = interpolateNumber(val.y2, nextVal_1.y2, w);
                 }
                 else {
-                    var value = void 0;
-                    if (!this.interpolable) {
-                        value = p2;
-                    }
-                    else {
-                        value = catmullRomInterpolate(p0, p1, p2, p3, w, w * w, w * w * w);
-                    }
-                    if (isAdditive) {
-                        this._additiveValue = value;
-                    }
-                    else {
-                        target[propName] = value;
-                    }
+                    target[propName].r = interpolateNumber(val.r, nextVal_1.r, w);
+                }
+            }
+            else if (isValueColor) {
+                interpolate1DArray(targetArr, frame[valueKey], nextFrame[valueKey], w);
+                if (!isAdditive) {
+                    target[propName] = rgba2String(targetArr);
                 }
             }
             else {
-                if (arrDim > 0) {
-                    arrDim === 1
-                        ? interpolate1DArray(targetArr, frame[valueKey], nextFrame[valueKey], w)
-                        : interpolate2DArray(targetArr, frame[valueKey], nextFrame[valueKey], w);
-                }
-                else if (isValueColor) {
-                    interpolate1DArray(targetArr, frame[valueKey], nextFrame[valueKey], w);
-                    if (!isAdditive) {
-                        target[propName] = rgba2String(targetArr);
-                    }
+                var value = interpolateNumber(frame[valueKey], nextFrame[valueKey], w);
+                if (isAdditive) {
+                    this._additiveValue = value;
                 }
                 else {
-                    var value = void 0;
-                    if (!this.interpolable) {
-                        value = step(frame[valueKey], nextFrame[valueKey], w);
-                    }
-                    else {
-                        value = interpolateNumber(frame[valueKey], nextFrame[valueKey], w);
-                    }
-                    if (isAdditive) {
-                        this._additiveValue = value;
-                    }
-                    else {
-                        target[propName] = value;
-                    }
+                    target[propName] = value;
                 }
             }
             if (isAdditive) {
@@ -3491,35 +4041,31 @@
             }
         };
         Track.prototype._addToTarget = function (target) {
-            var arrDim = this.arrDim;
+            var valType = this.valType;
             var propName = this.propName;
             var additiveValue = this._additiveValue;
-            if (arrDim === 0) {
-                if (this.isValueColor) {
-                    parse(target[propName], tmpRgba);
-                    add1DArray(tmpRgba, tmpRgba, additiveValue, 1);
-                    target[propName] = rgba2String(tmpRgba);
-                }
-                else {
-                    target[propName] = target[propName] + additiveValue;
-                }
+            if (valType === VALUE_TYPE_NUMBER) {
+                target[propName] = target[propName] + additiveValue;
             }
-            else if (arrDim === 1) {
+            else if (valType === VALUE_TYPE_COLOR) {
+                parse(target[propName], tmpRgba);
+                add1DArray(tmpRgba, tmpRgba, additiveValue, 1);
+                target[propName] = rgba2String(tmpRgba);
+            }
+            else if (valType === VALUE_TYPE_1D_ARRAY) {
                 add1DArray(target[propName], target[propName], additiveValue, 1);
             }
-            else if (arrDim === 2) {
+            else if (valType === VALUE_TYPE_2D_ARRAY) {
                 add2DArray(target[propName], target[propName], additiveValue, 1);
             }
         };
         return Track;
     }());
     var Animator = (function () {
-        function Animator(target, loop, additiveTo) {
+        function Animator(target, loop, allowDiscreteAnimation, additiveTo) {
             this._tracks = {};
             this._trackKeys = [];
-            this._delay = 0;
             this._maxTime = 0;
-            this._paused = false;
             this._started = 0;
             this._clip = null;
             this._target = target;
@@ -3529,17 +4075,27 @@
                 return;
             }
             this._additiveAnimators = additiveTo;
+            this._allowDiscrete = allowDiscreteAnimation;
         }
+        Animator.prototype.getMaxTime = function () {
+            return this._maxTime;
+        };
+        Animator.prototype.getDelay = function () {
+            return this._delay;
+        };
+        Animator.prototype.getLoop = function () {
+            return this._loop;
+        };
         Animator.prototype.getTarget = function () {
             return this._target;
         };
         Animator.prototype.changeTarget = function (target) {
             this._target = target;
         };
-        Animator.prototype.when = function (time, props) {
-            return this.whenWithKeys(time, props, keys(props));
+        Animator.prototype.when = function (time, props, easing) {
+            return this.whenWithKeys(time, props, keys(props), easing);
         };
-        Animator.prototype.whenWithKeys = function (time, props, propNames) {
+        Animator.prototype.whenWithKeys = function (time, props, propNames, easing) {
             var tracks = this._tracks;
             for (var i = 0; i < propNames.length; i++) {
                 var propName = propNames[i];
@@ -3549,9 +4105,10 @@
                     var initialValue = void 0;
                     var additiveTrack = this._getAdditiveTrack(propName);
                     if (additiveTrack) {
-                        var lastFinalKf = additiveTrack.keyframes[additiveTrack.keyframes.length - 1];
+                        var addtiveTrackKfs = additiveTrack.keyframes;
+                        var lastFinalKf = addtiveTrackKfs[addtiveTrackKfs.length - 1];
                         initialValue = lastFinalKf && lastFinalKf.value;
-                        if (additiveTrack.isValueColor && initialValue) {
+                        if (additiveTrack.valType === VALUE_TYPE_COLOR && initialValue) {
                             initialValue = rgba2String(initialValue);
                         }
                     }
@@ -3561,12 +4118,12 @@
                     if (initialValue == null) {
                         continue;
                     }
-                    if (time !== 0) {
-                        track.addKeyframe(0, cloneValue(initialValue));
+                    if (time > 0) {
+                        track.addKeyframe(0, cloneValue(initialValue), easing);
                     }
                     this._trackKeys.push(propName);
                 }
-                track.addKeyframe(time, cloneValue(props[propName]));
+                track.addKeyframe(time, cloneValue(props[propName]), easing);
             }
             this._maxTime = Math.max(this._maxTime, time);
             return this;
@@ -3581,6 +4138,11 @@
         };
         Animator.prototype.isPaused = function () {
             return !!this._paused;
+        };
+        Animator.prototype.duration = function (duration) {
+            this._maxTime = duration;
+            this._force = true;
+            return this;
         };
         Animator.prototype._doneCallback = function () {
             this._setTracksFinished();
@@ -3627,34 +4189,39 @@
             }
             return additiveTrack;
         };
-        Animator.prototype.start = function (easing, forceAnimate) {
+        Animator.prototype.start = function (easing) {
             if (this._started > 0) {
                 return;
             }
             this._started = 1;
             var self = this;
             var tracks = [];
+            var maxTime = this._maxTime || 0;
             for (var i = 0; i < this._trackKeys.length; i++) {
                 var propName = this._trackKeys[i];
                 var track = this._tracks[propName];
                 var additiveTrack = this._getAdditiveTrack(propName);
                 var kfs = track.keyframes;
-                track.prepare(additiveTrack);
+                var kfsNum = kfs.length;
+                track.prepare(maxTime, additiveTrack);
                 if (track.needsAnimate()) {
-                    tracks.push(track);
-                }
-                else if (!track.interpolable) {
-                    var lastKf = kfs[kfs.length - 1];
-                    if (lastKf) {
-                        self._target[track.propName] = lastKf.value;
+                    if (!this._allowDiscrete && track.discrete) {
+                        var lastKf = kfs[kfsNum - 1];
+                        if (lastKf) {
+                            self._target[track.propName] = lastKf.rawValue;
+                        }
+                        track.setFinished();
+                    }
+                    else {
+                        tracks.push(track);
                     }
                 }
             }
-            if (tracks.length || forceAnimate) {
+            if (tracks.length || this._force) {
                 var clip = new Clip({
-                    life: this._maxTime,
+                    life: maxTime,
                     loop: this._loop,
-                    delay: this._delay,
+                    delay: this._delay || 0,
                     onframe: function (percent) {
                         self._started = 2;
                         var additiveAnimators = self._additiveAnimators;
@@ -3688,8 +4255,8 @@
                 if (this.animation) {
                     this.animation.addClip(clip);
                 }
-                if (easing && easing !== 'spline') {
-                    clip.easing = easing;
+                if (easing) {
+                    clip.setEasing(easing);
                 }
             }
             else {
@@ -3744,6 +4311,10 @@
         Animator.prototype.getTrack = function (propName) {
             return this._tracks[propName];
         };
+        Animator.prototype.getTracks = function () {
+            var _this = this;
+            return map(this._trackKeys, function (key) { return _this._tracks[key]; });
+        };
         Animator.prototype.stopTracks = function (propNames, forwardToLast) {
             if (!propNames.length || !this._clip) {
                 return true;
@@ -3752,7 +4323,7 @@
             var tracksKeys = this._trackKeys;
             for (var i = 0; i < propNames.length; i++) {
                 var track = tracks[propNames[i]];
-                if (track) {
+                if (track && !track.isFinished()) {
                     if (forwardToLast) {
                         track.step(this._target, 1);
                     }
@@ -3774,7 +4345,7 @@
             }
             return allAborted;
         };
-        Animator.prototype.saveFinalToTarget = function (target, trackKeys) {
+        Animator.prototype.saveTo = function (target, trackKeys, firstOrLast) {
             if (!target) {
                 return;
             }
@@ -3786,13 +4357,9 @@
                     continue;
                 }
                 var kfs = track.keyframes;
-                var lastKf = kfs[kfs.length - 1];
-                if (lastKf) {
-                    var val = cloneValue(lastKf.value);
-                    if (track.isValueColor) {
-                        val = rgba2String(val);
-                    }
-                    target[propName] = val;
+                var kf = kfs[firstOrLast ? 0 : kfs.length - 1];
+                if (kf) {
+                    target[propName] = cloneValue(kf.rawValue);
                 }
             }
         };
@@ -3808,13 +4375,16 @@
                 if (kfs.length > 1) {
                     var lastKf = kfs.pop();
                     track.addKeyframe(lastKf.time, finalProps[propName]);
-                    track.prepare(track.getAdditiveTrack());
+                    track.prepare(this._maxTime, track.getAdditiveTrack());
                 }
             }
         };
         return Animator;
     }());
 
+    function getTime() {
+        return new Date().getTime();
+    }
     var Animation = (function (_super) {
         __extends(Animation, _super);
         function Animation(opts) {
@@ -3826,21 +4396,20 @@
             _this._paused = false;
             opts = opts || {};
             _this.stage = opts.stage || {};
-            _this.onframe = opts.onframe || function () { };
             return _this;
         }
         Animation.prototype.addClip = function (clip) {
             if (clip.animation) {
                 this.removeClip(clip);
             }
-            if (!this._clipsHead) {
-                this._clipsHead = this._clipsTail = clip;
+            if (!this._head) {
+                this._head = this._tail = clip;
             }
             else {
-                this._clipsTail.next = clip;
-                clip.prev = this._clipsTail;
+                this._tail.next = clip;
+                clip.prev = this._tail;
                 clip.next = null;
-                this._clipsTail = clip;
+                this._tail = clip;
             }
             clip.animation = this;
         };
@@ -3861,13 +4430,13 @@
                 prev.next = next;
             }
             else {
-                this._clipsHead = next;
+                this._head = next;
             }
             if (next) {
                 next.prev = prev;
             }
             else {
-                this._clipsTail = prev;
+                this._tail = prev;
             }
             clip.next = clip.prev = clip.animation = null;
         };
@@ -3879,14 +4448,14 @@
             animator.animation = null;
         };
         Animation.prototype.update = function (notTriggerFrameAndStageUpdate) {
-            var time = new Date().getTime() - this._pausedTime;
+            var time = getTime() - this._pausedTime;
             var delta = time - this._time;
-            var clip = this._clipsHead;
+            var clip = this._head;
             while (clip) {
                 var nextClip = clip.next;
                 var finished = clip.step(time, delta);
                 if (finished) {
-                    clip.ondestroy && clip.ondestroy();
+                    clip.ondestroy();
                     this.removeClip(clip);
                     clip = nextClip;
                 }
@@ -3896,7 +4465,6 @@
             }
             this._time = time;
             if (!notTriggerFrameAndStageUpdate) {
-                this.onframe(delta);
                 this.trigger('frame', delta);
                 this.stage.update && this.stage.update();
             }
@@ -3916,7 +4484,7 @@
             if (this._running) {
                 return;
             }
-            this._time = new Date().getTime();
+            this._time = getTime();
             this._pausedTime = 0;
             this._startLoop();
         };
@@ -3925,27 +4493,27 @@
         };
         Animation.prototype.pause = function () {
             if (!this._paused) {
-                this._pauseStart = new Date().getTime();
+                this._pauseStart = getTime();
                 this._paused = true;
             }
         };
         Animation.prototype.resume = function () {
             if (this._paused) {
-                this._pausedTime += (new Date().getTime()) - this._pauseStart;
+                this._pausedTime += getTime() - this._pauseStart;
                 this._paused = false;
             }
         };
         Animation.prototype.clear = function () {
-            var clip = this._clipsHead;
+            var clip = this._head;
             while (clip) {
                 var nextClip = clip.next;
                 clip.prev = clip.next = clip.animation = null;
                 clip = nextClip;
             }
-            this._clipsHead = this._clipsTail = null;
+            this._head = this._tail = null;
         };
         Animation.prototype.isFinished = function () {
-            return this._clipsHead == null;
+            return this._head == null;
         };
         Animation.prototype.animate = function (target, options) {
             options = options || {};
@@ -4246,7 +4814,7 @@
     }(Eventful));
 
     var dpr = 1;
-    if (typeof window !== 'undefined') {
+    if (env.hasGlobalWindow) {
         dpr = Math.max(window.devicePixelRatio
             || (window.screen && window.screen.deviceXDPI / window.screen.logicalXDPI)
             || 1, 1);
@@ -4370,9 +4938,9 @@
     });
 
     var mIdentity = identity;
-    var EPSILON = 5e-5;
-    function isNotAroundZero(val) {
-        return val > EPSILON || val < -EPSILON;
+    var EPSILON$2 = 5e-5;
+    function isNotAroundZero$1(val) {
+        return val > EPSILON$2 || val < -EPSILON$2;
     }
     var scaleTmp = [];
     var tmpTransform = [];
@@ -4401,11 +4969,13 @@
             this.originY = arr[1];
         };
         Transformable.prototype.needLocalTransform = function () {
-            return isNotAroundZero(this.rotation)
-                || isNotAroundZero(this.x)
-                || isNotAroundZero(this.y)
-                || isNotAroundZero(this.scaleX - 1)
-                || isNotAroundZero(this.scaleY - 1);
+            return isNotAroundZero$1(this.rotation)
+                || isNotAroundZero$1(this.x)
+                || isNotAroundZero$1(this.y)
+                || isNotAroundZero$1(this.scaleX - 1)
+                || isNotAroundZero$1(this.scaleY - 1)
+                || isNotAroundZero$1(this.skewX)
+                || isNotAroundZero$1(this.skewY);
         };
         Transformable.prototype.updateTransform = function () {
             var parentTransform = this.parent && this.parent.transform;
@@ -4544,11 +5114,7 @@
                 : 1;
         };
         Transformable.prototype.copyTransform = function (source) {
-            var target = this;
-            for (var i = 0; i < TRANSFORMABLE_PROPS.length; i++) {
-                var propName = TRANSFORMABLE_PROPS[i];
-                target[propName] = source[propName];
-            }
+            copyTransform(this, source);
         };
         Transformable.getLocalTransform = function (target, m) {
             m = m || [];
@@ -4556,14 +5122,18 @@
             var oy = target.originY || 0;
             var sx = target.scaleX;
             var sy = target.scaleY;
+            var ax = target.anchorX;
+            var ay = target.anchorY;
             var rotation = target.rotation || 0;
             var x = target.x;
             var y = target.y;
             var skewX = target.skewX ? Math.tan(target.skewX) : 0;
             var skewY = target.skewY ? Math.tan(-target.skewY) : 0;
-            if (ox || oy) {
-                m[4] = -ox * sx - skewX * oy * sy;
-                m[5] = -oy * sy - skewY * ox * sx;
+            if (ox || oy || ax || ay) {
+                var dx = ox + ax;
+                var dy = oy + ay;
+                m[4] = -dx * sx - skewX * dy * sy;
+                m[5] = -dy * sy - skewY * dx * sx;
             }
             else {
                 m[4] = m[5] = 0;
@@ -4579,22 +5149,30 @@
         };
         Transformable.initDefaultProps = (function () {
             var proto = Transformable.prototype;
-            proto.x = 0;
-            proto.y = 0;
-            proto.scaleX = 1;
-            proto.scaleY = 1;
-            proto.originX = 0;
-            proto.originY = 0;
-            proto.skewX = 0;
-            proto.skewY = 0;
-            proto.rotation = 0;
-            proto.globalScaleRatio = 1;
+            proto.scaleX =
+                proto.scaleY =
+                    proto.globalScaleRatio = 1;
+            proto.x =
+                proto.y =
+                    proto.originX =
+                        proto.originY =
+                            proto.skewX =
+                                proto.skewY =
+                                    proto.rotation =
+                                        proto.anchorX =
+                                            proto.anchorY = 0;
         })();
         return Transformable;
     }());
     var TRANSFORMABLE_PROPS = [
-        'x', 'y', 'originX', 'originY', 'rotation', 'scaleX', 'scaleY', 'skewX', 'skewY'
+        'x', 'y', 'originX', 'originY', 'anchorX', 'anchorY', 'rotation', 'scaleX', 'scaleY', 'skewX', 'skewY'
     ];
+    function copyTransform(target, source) {
+        for (var i = 0; i < TRANSFORMABLE_PROPS.length; i++) {
+            var propName = TRANSFORMABLE_PROPS[i];
+            target[propName] = source[propName];
+        }
+    }
 
     var Point = (function () {
         function Point(x, y) {
@@ -4939,21 +5517,6 @@
     }());
 
     var textWidthCache = {};
-    var DEFAULT_FONT = '12px sans-serif';
-    var _ctx;
-    var _cachedFont;
-    function defaultMeasureText(text, font) {
-        if (!_ctx) {
-            _ctx = createCanvas().getContext('2d');
-        }
-        if (_cachedFont !== font) {
-            _cachedFont = _ctx.font = font || DEFAULT_FONT;
-        }
-        return _ctx.measureText(text);
-    }
-    var methods$1 = {
-        measureText: defaultMeasureText
-    };
     function getWidth(text, font) {
         font = font || DEFAULT_FONT;
         var cacheOfFont = textWidthCache[font];
@@ -4962,7 +5525,7 @@
         }
         var width = cacheOfFont.get(text);
         if (width == null) {
-            width = methods$1.measureText(text, font).width;
+            width = platformApi.measureText(text, font).width;
             cacheOfFont.put(text, width);
         }
         return width;
@@ -4971,7 +5534,7 @@
         var width = getWidth(text, font);
         var height = getLineHeight(font);
         var x = adjustTextX(0, width, textAlign);
-        var y = adjustTextY(0, height, textBaseline);
+        var y = adjustTextY$1(0, height, textBaseline);
         var rect = new BoundingRect(x, y, width, height);
         return rect;
     }
@@ -4999,7 +5562,7 @@
         }
         return x;
     }
-    function adjustTextY(y, height, verticalAlign) {
+    function adjustTextY$1(y, height, verticalAlign) {
         if (verticalAlign === 'middle') {
             y -= height / 2;
         }
@@ -5119,17 +5682,11 @@
     }
 
     var PRESERVED_NORMAL_STATE = '__zr_normal__';
-    var PRIMARY_STATES_KEYS = ['x', 'y', 'scaleX', 'scaleY', 'originX', 'originY', 'rotation', 'ignore'];
-    var DEFAULT_ANIMATABLE_MAP = {
-        x: true,
-        y: true,
-        scaleX: true,
-        scaleY: true,
-        originX: true,
-        originY: true,
-        rotation: true,
-        ignore: false
-    };
+    var PRIMARY_STATES_KEYS = TRANSFORMABLE_PROPS.concat(['ignore']);
+    var DEFAULT_ANIMATABLE_MAP = reduce(TRANSFORMABLE_PROPS, function (obj, key) {
+        obj[key] = true;
+        return obj;
+    }, { ignore: false });
     var tmpTextPosCalcRes = {};
     var tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
     var Element = (function () {
@@ -5357,13 +5914,13 @@
             for (var i = 0; i < this.animators.length; i++) {
                 var animator = this.animators[i];
                 var fromStateTransition = animator.__fromStateTransition;
-                if (fromStateTransition && fromStateTransition !== PRESERVED_NORMAL_STATE) {
+                if (animator.getLoop() || fromStateTransition && fromStateTransition !== PRESERVED_NORMAL_STATE) {
                     continue;
                 }
                 var targetName = animator.targetName;
                 var target = targetName
                     ? normalState[targetName] : normalState;
-                animator.saveFinalToTarget(target);
+                animator.saveTo(target);
             }
         };
         Element.prototype._innerSaveToNormal = function (toState) {
@@ -5615,9 +6172,11 @@
                 for (var i = 0; i < this.animators.length; i++) {
                     var animator = this.animators[i];
                     var targetName = animator.targetName;
-                    animator.__changeFinalValue(targetName
-                        ? (state || normalState)[targetName]
-                        : (state || normalState));
+                    if (!animator.getLoop()) {
+                        animator.__changeFinalValue(targetName
+                            ? (state || normalState)[targetName]
+                            : (state || normalState));
+                    }
                 }
             }
             if (hasTransition) {
@@ -5626,10 +6185,14 @@
         };
         Element.prototype._attachComponent = function (componentEl) {
             if (componentEl.__zr && !componentEl.__hostTarget) {
-                throw new Error('Text element has been added to zrender.');
+                {
+                    throw new Error('Text element has been added to zrender.');
+                }
             }
             if (componentEl === this) {
-                throw new Error('Recursive component attachment.');
+                {
+                    throw new Error('Recursive component attachment.');
+                }
             }
             var zr = this.__zr;
             if (zr) {
@@ -5675,8 +6238,10 @@
             if (previousTextContent && previousTextContent !== textEl) {
                 this.removeTextContent();
             }
-            if (textEl.__zr && !textEl.__hostTarget) {
-                throw new Error('Text element has been added to zrender.');
+            {
+                if (textEl.__zr && !textEl.__hostTarget) {
+                    throw new Error('Text element has been added to zrender.');
+                }
             }
             textEl.innerTransformable = new Transformable();
             this._attachComponent(textEl);
@@ -5794,16 +6359,19 @@
                 this._textGuide.removeSelfFromZr(zr);
             }
         };
-        Element.prototype.animate = function (key, loop) {
+        Element.prototype.animate = function (key, loop, allowDiscreteAnimation) {
             var target = key ? this[key] : this;
-            if (!target) {
-                logError('Property "'
-                    + key
-                    + '" is not existed in element '
-                    + this.id);
-                return;
+            {
+                if (!target) {
+                    logError('Property "'
+                        + key
+                        + '" is not existed in element '
+                        + this.id);
+                    return;
+                }
             }
-            var animator = new Animator(target, loop);
+            var animator = new Animator(target, loop, allowDiscreteAnimation);
+            key && (animator.targetName = key);
             this.addAnimator(animator, key);
             return animator;
         };
@@ -5866,13 +6434,13 @@
             var elProto = Element.prototype;
             elProto.type = 'element';
             elProto.name = '';
-            elProto.ignore = false;
-            elProto.silent = false;
-            elProto.isGroup = false;
-            elProto.draggable = false;
-            elProto.dragging = false;
-            elProto.ignoreClip = false;
-            elProto.__inHover = false;
+            elProto.ignore =
+                elProto.silent =
+                    elProto.isGroup =
+                        elProto.draggable =
+                            elProto.dragging =
+                                elProto.ignoreClip =
+                                    elProto.__inHover = false;
             elProto.__dirty = REDRAW_BIT;
             var logs = {};
             function logDeprecatedError(key, xKey, yKey) {
@@ -5884,7 +6452,9 @@
             function createLegacyProperty(key, privateKey, xKey, yKey) {
                 Object.defineProperty(elProto, key, {
                     get: function () {
-                        logDeprecatedError(key, xKey, yKey);
+                        {
+                            logDeprecatedError(key, xKey, yKey);
+                        }
                         if (!this[privateKey]) {
                             var pos = this[privateKey] = [];
                             enhanceArray(this, pos);
@@ -5892,7 +6462,9 @@
                         return this[privateKey];
                     },
                     set: function (pos) {
-                        logDeprecatedError(key, xKey, yKey);
+                        {
+                            logDeprecatedError(key, xKey, yKey);
+                        }
                         this[xKey] = pos[0];
                         this[yKey] = pos[1];
                         this[privateKey] = pos;
@@ -5918,7 +6490,7 @@
                     });
                 }
             }
-            if (Object.defineProperty && (!env.browser.ie || env.browser.version > 8)) {
+            if (Object.defineProperty) {
                 createLegacyProperty('position', '_legacyPos', 'x', 'y');
                 createLegacyProperty('scale', '_legacyScale', 'scaleX', 'scaleY');
                 createLegacyProperty('origin', '_legacyOrigin', 'originX', 'originY');
@@ -5969,7 +6541,10 @@
             if (abortedCb) {
                 animator.aborted(abortedCb);
             }
-            animator.start(cfg.easing, cfg.force);
+            if (cfg.force) {
+                animator.duration(cfg.duration);
+            }
+            animator.start(cfg.easing);
         }
         return animators;
     }
@@ -6018,60 +6593,77 @@
             target[key] = source[key];
         }
     }
-    function animateToShallow(animatable, topKey, source, target, cfg, animationProps, animators, reverse) {
-        var animatableKeys = [];
-        var changedKeys = [];
+    function isValueSame(val1, val2) {
+        return val1 === val2
+            || isArrayLike(val1) && isArrayLike(val2) && is1DArraySame(val1, val2);
+    }
+    function is1DArraySame(arr0, arr1) {
+        var len = arr0.length;
+        if (len !== arr1.length) {
+            return false;
+        }
+        for (var i = 0; i < len; i++) {
+            if (arr0[i] !== arr1[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    function animateToShallow(animatable, topKey, animateObj, target, cfg, animationProps, animators, reverse) {
         var targetKeys = keys(target);
         var duration = cfg.duration;
         var delay = cfg.delay;
         var additive = cfg.additive;
         var setToFinal = cfg.setToFinal;
         var animateAll = !isObject(animationProps);
+        var existsAnimators = animatable.animators;
+        var animationKeys = [];
         for (var k = 0; k < targetKeys.length; k++) {
             var innerKey = targetKeys[k];
-            if (source[innerKey] != null
-                && target[innerKey] != null
+            var targetVal = target[innerKey];
+            if (targetVal != null && animateObj[innerKey] != null
                 && (animateAll || animationProps[innerKey])) {
-                if (isObject(target[innerKey]) && !isArrayLike(target[innerKey])) {
+                if (isObject(targetVal)
+                    && !isArrayLike(targetVal)
+                    && !isGradientObject(targetVal)) {
                     if (topKey) {
                         if (!reverse) {
-                            source[innerKey] = target[innerKey];
+                            animateObj[innerKey] = targetVal;
                             animatable.updateDuringAnimation(topKey);
                         }
                         continue;
                     }
-                    animateToShallow(animatable, innerKey, source[innerKey], target[innerKey], cfg, animationProps && animationProps[innerKey], animators, reverse);
+                    animateToShallow(animatable, innerKey, animateObj[innerKey], targetVal, cfg, animationProps && animationProps[innerKey], animators, reverse);
                 }
                 else {
-                    animatableKeys.push(innerKey);
-                    changedKeys.push(innerKey);
+                    animationKeys.push(innerKey);
                 }
             }
             else if (!reverse) {
-                source[innerKey] = target[innerKey];
+                animateObj[innerKey] = targetVal;
                 animatable.updateDuringAnimation(topKey);
-                changedKeys.push(innerKey);
+                animationKeys.push(innerKey);
             }
         }
-        var keyLen = animatableKeys.length;
-        if (keyLen > 0
-            || (cfg.force && !animators.length)) {
-            var existsAnimators = animatable.animators;
-            var existsAnimatorsOnSameTarget = [];
+        var keyLen = animationKeys.length;
+        if (!additive && keyLen) {
             for (var i = 0; i < existsAnimators.length; i++) {
-                if (existsAnimators[i].targetName === topKey) {
-                    existsAnimatorsOnSameTarget.push(existsAnimators[i]);
-                }
-            }
-            if (!additive && existsAnimatorsOnSameTarget.length) {
-                for (var i = 0; i < existsAnimatorsOnSameTarget.length; i++) {
-                    var allAborted = existsAnimatorsOnSameTarget[i].stopTracks(changedKeys);
+                var animator = existsAnimators[i];
+                if (animator.targetName === topKey) {
+                    var allAborted = animator.stopTracks(animationKeys);
                     if (allAborted) {
-                        var idx = indexOf(existsAnimators, existsAnimatorsOnSameTarget[i]);
+                        var idx = indexOf(existsAnimators, animator);
                         existsAnimators.splice(idx, 1);
                     }
                 }
             }
+        }
+        if (!cfg.force) {
+            animationKeys = filter(animationKeys, function (key) { return !isValueSame(target[key], animateObj[key]); });
+            keyLen = animationKeys.length;
+        }
+        if (keyLen > 0
+            || (cfg.force && !animators.length)) {
             var revertedSource = void 0;
             var reversedTarget = void 0;
             var sourceClone = void 0;
@@ -6081,36 +6673,36 @@
                     revertedSource = {};
                 }
                 for (var i = 0; i < keyLen; i++) {
-                    var innerKey = animatableKeys[i];
-                    reversedTarget[innerKey] = source[innerKey];
+                    var innerKey = animationKeys[i];
+                    reversedTarget[innerKey] = animateObj[innerKey];
                     if (setToFinal) {
                         revertedSource[innerKey] = target[innerKey];
                     }
                     else {
-                        source[innerKey] = target[innerKey];
+                        animateObj[innerKey] = target[innerKey];
                     }
                 }
             }
             else if (setToFinal) {
                 sourceClone = {};
                 for (var i = 0; i < keyLen; i++) {
-                    var innerKey = animatableKeys[i];
-                    sourceClone[innerKey] = cloneValue(source[innerKey]);
-                    copyValue(source, target, innerKey);
+                    var innerKey = animationKeys[i];
+                    sourceClone[innerKey] = cloneValue(animateObj[innerKey]);
+                    copyValue(animateObj, target, innerKey);
                 }
             }
-            var animator = new Animator(source, false, additive ? existsAnimatorsOnSameTarget : null);
+            var animator = new Animator(animateObj, false, false, additive ? filter(existsAnimators, function (animator) { return animator.targetName === topKey; }) : null);
             animator.targetName = topKey;
             if (cfg.scope) {
                 animator.scope = cfg.scope;
             }
             if (setToFinal && revertedSource) {
-                animator.whenWithKeys(0, revertedSource, animatableKeys);
+                animator.whenWithKeys(0, revertedSource, animationKeys);
             }
             if (sourceClone) {
-                animator.whenWithKeys(0, sourceClone, animatableKeys);
+                animator.whenWithKeys(0, sourceClone, animationKeys);
             }
-            animator.whenWithKeys(duration == null ? 500 : duration, reverse ? reversedTarget : target, animatableKeys).delay(delay || 0);
+            animator.whenWithKeys(duration == null ? 500 : duration, reverse ? reversedTarget : target, animationKeys).delay(delay || 0);
             animatable.addAnimator(animator, topKey);
             animators.push(animator);
         }
@@ -6151,8 +6743,10 @@
                     this._children.push(child);
                     this._doAdd(child);
                 }
-                if (child.__hostTarget) {
-                    throw 'This elemenet has been used as an attachment';
+                {
+                    if (child.__hostTarget) {
+                        throw 'This elemenet has been used as an attachment';
+                    }
                 }
             }
             return this;
@@ -6298,7 +6892,6 @@
     * LICENSE
     * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
     */
-    var useVML = !env.canvasSupported;
     var painterCtors = {};
     var instances = {};
     function delInstance(id) {
@@ -6336,31 +6929,33 @@
             this.id = id;
             var storage = new Storage();
             var rendererType = opts.renderer || 'canvas';
-            if (useVML) {
-                throw new Error('IE8 support has been dropped since 5.0');
-            }
             if (!painterCtors[rendererType]) {
                 rendererType = keys(painterCtors)[0];
             }
-            if (!painterCtors[rendererType]) {
-                throw new Error("Renderer '" + rendererType + "' is not imported. Please import it first.");
+            {
+                if (!painterCtors[rendererType]) {
+                    throw new Error("Renderer '" + rendererType + "' is not imported. Please import it first.");
+                }
             }
             opts.useDirtyRect = opts.useDirtyRect == null
                 ? false
                 : opts.useDirtyRect;
             var painter = new painterCtors[rendererType](dom, storage, opts, id);
+            var ssrMode = opts.ssr || painter.ssrOnly;
             this.storage = storage;
             this.painter = painter;
-            var handerProxy = (!env.node && !env.worker)
+            var handerProxy = (!env.node && !env.worker && !ssrMode)
                 ? new HandlerDomProxy(painter.getViewportRoot(), painter.root)
                 : null;
             this.handler = new Handler(storage, painter, handerProxy, painter.root);
             this.animation = new Animation({
                 stage: {
-                    update: function () { return _this._flush(true); }
+                    update: ssrMode ? null : function () { return _this._flush(true); }
                 }
             });
-            this.animation.start();
+            if (!ssrMode) {
+                this.animation.start();
+            }
         }
         ZRender.prototype.add = function (el) {
             if (!el) {
@@ -6418,7 +7013,7 @@
         };
         ZRender.prototype._flush = function (fromInside) {
             var triggerRendered;
-            var start = new Date().getTime();
+            var start = getTime();
             if (this._needsRefresh) {
                 triggerRendered = true;
                 this.refreshImmediately(fromInside);
@@ -6427,7 +7022,7 @@
                 triggerRendered = true;
                 this.refreshHoverImmediately();
             }
-            var end = new Date().getTime();
+            var end = getTime();
             if (triggerRendered) {
                 this._stillFrameAccum = 0;
                 this.trigger('rendered', {
@@ -6447,12 +7042,6 @@
         ZRender.prototype.wakeUp = function () {
             this.animation.start();
             this._stillFrameAccum = 0;
-        };
-        ZRender.prototype.addHover = function (el) {
-        };
-        ZRender.prototype.removeHover = function (el) {
-        };
-        ZRender.prototype.clearHover = function () {
         };
         ZRender.prototype.refreshHover = function () {
             this._needsRefreshHover = true;
@@ -6476,11 +7065,6 @@
         };
         ZRender.prototype.getHeight = function () {
             return this.painter.getHeight();
-        };
-        ZRender.prototype.pathToImage = function (e, dpr) {
-            if (this.painter.pathToImage) {
-                return this.painter.pathToImage(e, dpr);
-            }
         };
         ZRender.prototype.setCursorStyle = function (cursorStyle) {
             this.handler.setCursorStyle(cursorStyle);
@@ -6544,7 +7128,7 @@
     function registerPainter(name, Ctor) {
         painterCtors[name] = Ctor;
     }
-    var version = '5.2.1';
+    var version = '5.3.0';
 
     var STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
     var DEFAULT_COMMON_STYLE = {
@@ -6865,351 +7449,6 @@
         return !tmpRect.intersect(viewRect);
     }
 
-    var mathPow = Math.pow;
-    var mathSqrt = Math.sqrt;
-    var EPSILON$1 = 1e-8;
-    var EPSILON_NUMERIC = 1e-4;
-    var THREE_SQRT = mathSqrt(3);
-    var ONE_THIRD = 1 / 3;
-    var _v0 = create();
-    var _v1 = create();
-    var _v2 = create();
-    function isAroundZero(val) {
-        return val > -EPSILON$1 && val < EPSILON$1;
-    }
-    function isNotAroundZero$1(val) {
-        return val > EPSILON$1 || val < -EPSILON$1;
-    }
-    function cubicAt(p0, p1, p2, p3, t) {
-        var onet = 1 - t;
-        return onet * onet * (onet * p0 + 3 * t * p1)
-            + t * t * (t * p3 + 3 * onet * p2);
-    }
-    function cubicDerivativeAt(p0, p1, p2, p3, t) {
-        var onet = 1 - t;
-        return 3 * (((p1 - p0) * onet + 2 * (p2 - p1) * t) * onet
-            + (p3 - p2) * t * t);
-    }
-    function cubicRootAt(p0, p1, p2, p3, val, roots) {
-        var a = p3 + 3 * (p1 - p2) - p0;
-        var b = 3 * (p2 - p1 * 2 + p0);
-        var c = 3 * (p1 - p0);
-        var d = p0 - val;
-        var A = b * b - 3 * a * c;
-        var B = b * c - 9 * a * d;
-        var C = c * c - 3 * b * d;
-        var n = 0;
-        if (isAroundZero(A) && isAroundZero(B)) {
-            if (isAroundZero(b)) {
-                roots[0] = 0;
-            }
-            else {
-                var t1 = -c / b;
-                if (t1 >= 0 && t1 <= 1) {
-                    roots[n++] = t1;
-                }
-            }
-        }
-        else {
-            var disc = B * B - 4 * A * C;
-            if (isAroundZero(disc)) {
-                var K = B / A;
-                var t1 = -b / a + K;
-                var t2 = -K / 2;
-                if (t1 >= 0 && t1 <= 1) {
-                    roots[n++] = t1;
-                }
-                if (t2 >= 0 && t2 <= 1) {
-                    roots[n++] = t2;
-                }
-            }
-            else if (disc > 0) {
-                var discSqrt = mathSqrt(disc);
-                var Y1 = A * b + 1.5 * a * (-B + discSqrt);
-                var Y2 = A * b + 1.5 * a * (-B - discSqrt);
-                if (Y1 < 0) {
-                    Y1 = -mathPow(-Y1, ONE_THIRD);
-                }
-                else {
-                    Y1 = mathPow(Y1, ONE_THIRD);
-                }
-                if (Y2 < 0) {
-                    Y2 = -mathPow(-Y2, ONE_THIRD);
-                }
-                else {
-                    Y2 = mathPow(Y2, ONE_THIRD);
-                }
-                var t1 = (-b - (Y1 + Y2)) / (3 * a);
-                if (t1 >= 0 && t1 <= 1) {
-                    roots[n++] = t1;
-                }
-            }
-            else {
-                var T = (2 * A * b - 3 * a * B) / (2 * mathSqrt(A * A * A));
-                var theta = Math.acos(T) / 3;
-                var ASqrt = mathSqrt(A);
-                var tmp = Math.cos(theta);
-                var t1 = (-b - 2 * ASqrt * tmp) / (3 * a);
-                var t2 = (-b + ASqrt * (tmp + THREE_SQRT * Math.sin(theta))) / (3 * a);
-                var t3 = (-b + ASqrt * (tmp - THREE_SQRT * Math.sin(theta))) / (3 * a);
-                if (t1 >= 0 && t1 <= 1) {
-                    roots[n++] = t1;
-                }
-                if (t2 >= 0 && t2 <= 1) {
-                    roots[n++] = t2;
-                }
-                if (t3 >= 0 && t3 <= 1) {
-                    roots[n++] = t3;
-                }
-            }
-        }
-        return n;
-    }
-    function cubicExtrema(p0, p1, p2, p3, extrema) {
-        var b = 6 * p2 - 12 * p1 + 6 * p0;
-        var a = 9 * p1 + 3 * p3 - 3 * p0 - 9 * p2;
-        var c = 3 * p1 - 3 * p0;
-        var n = 0;
-        if (isAroundZero(a)) {
-            if (isNotAroundZero$1(b)) {
-                var t1 = -c / b;
-                if (t1 >= 0 && t1 <= 1) {
-                    extrema[n++] = t1;
-                }
-            }
-        }
-        else {
-            var disc = b * b - 4 * a * c;
-            if (isAroundZero(disc)) {
-                extrema[0] = -b / (2 * a);
-            }
-            else if (disc > 0) {
-                var discSqrt = mathSqrt(disc);
-                var t1 = (-b + discSqrt) / (2 * a);
-                var t2 = (-b - discSqrt) / (2 * a);
-                if (t1 >= 0 && t1 <= 1) {
-                    extrema[n++] = t1;
-                }
-                if (t2 >= 0 && t2 <= 1) {
-                    extrema[n++] = t2;
-                }
-            }
-        }
-        return n;
-    }
-    function cubicSubdivide(p0, p1, p2, p3, t, out) {
-        var p01 = (p1 - p0) * t + p0;
-        var p12 = (p2 - p1) * t + p1;
-        var p23 = (p3 - p2) * t + p2;
-        var p012 = (p12 - p01) * t + p01;
-        var p123 = (p23 - p12) * t + p12;
-        var p0123 = (p123 - p012) * t + p012;
-        out[0] = p0;
-        out[1] = p01;
-        out[2] = p012;
-        out[3] = p0123;
-        out[4] = p0123;
-        out[5] = p123;
-        out[6] = p23;
-        out[7] = p3;
-    }
-    function cubicProjectPoint(x0, y0, x1, y1, x2, y2, x3, y3, x, y, out) {
-        var t;
-        var interval = 0.005;
-        var d = Infinity;
-        var prev;
-        var next;
-        var d1;
-        var d2;
-        _v0[0] = x;
-        _v0[1] = y;
-        for (var _t = 0; _t < 1; _t += 0.05) {
-            _v1[0] = cubicAt(x0, x1, x2, x3, _t);
-            _v1[1] = cubicAt(y0, y1, y2, y3, _t);
-            d1 = distSquare(_v0, _v1);
-            if (d1 < d) {
-                t = _t;
-                d = d1;
-            }
-        }
-        d = Infinity;
-        for (var i = 0; i < 32; i++) {
-            if (interval < EPSILON_NUMERIC) {
-                break;
-            }
-            prev = t - interval;
-            next = t + interval;
-            _v1[0] = cubicAt(x0, x1, x2, x3, prev);
-            _v1[1] = cubicAt(y0, y1, y2, y3, prev);
-            d1 = distSquare(_v1, _v0);
-            if (prev >= 0 && d1 < d) {
-                t = prev;
-                d = d1;
-            }
-            else {
-                _v2[0] = cubicAt(x0, x1, x2, x3, next);
-                _v2[1] = cubicAt(y0, y1, y2, y3, next);
-                d2 = distSquare(_v2, _v0);
-                if (next <= 1 && d2 < d) {
-                    t = next;
-                    d = d2;
-                }
-                else {
-                    interval *= 0.5;
-                }
-            }
-        }
-        if (out) {
-            out[0] = cubicAt(x0, x1, x2, x3, t);
-            out[1] = cubicAt(y0, y1, y2, y3, t);
-        }
-        return mathSqrt(d);
-    }
-    function cubicLength(x0, y0, x1, y1, x2, y2, x3, y3, iteration) {
-        var px = x0;
-        var py = y0;
-        var d = 0;
-        var step = 1 / iteration;
-        for (var i = 1; i <= iteration; i++) {
-            var t = i * step;
-            var x = cubicAt(x0, x1, x2, x3, t);
-            var y = cubicAt(y0, y1, y2, y3, t);
-            var dx = x - px;
-            var dy = y - py;
-            d += Math.sqrt(dx * dx + dy * dy);
-            px = x;
-            py = y;
-        }
-        return d;
-    }
-    function quadraticAt(p0, p1, p2, t) {
-        var onet = 1 - t;
-        return onet * (onet * p0 + 2 * t * p1) + t * t * p2;
-    }
-    function quadraticDerivativeAt(p0, p1, p2, t) {
-        return 2 * ((1 - t) * (p1 - p0) + t * (p2 - p1));
-    }
-    function quadraticRootAt(p0, p1, p2, val, roots) {
-        var a = p0 - 2 * p1 + p2;
-        var b = 2 * (p1 - p0);
-        var c = p0 - val;
-        var n = 0;
-        if (isAroundZero(a)) {
-            if (isNotAroundZero$1(b)) {
-                var t1 = -c / b;
-                if (t1 >= 0 && t1 <= 1) {
-                    roots[n++] = t1;
-                }
-            }
-        }
-        else {
-            var disc = b * b - 4 * a * c;
-            if (isAroundZero(disc)) {
-                var t1 = -b / (2 * a);
-                if (t1 >= 0 && t1 <= 1) {
-                    roots[n++] = t1;
-                }
-            }
-            else if (disc > 0) {
-                var discSqrt = mathSqrt(disc);
-                var t1 = (-b + discSqrt) / (2 * a);
-                var t2 = (-b - discSqrt) / (2 * a);
-                if (t1 >= 0 && t1 <= 1) {
-                    roots[n++] = t1;
-                }
-                if (t2 >= 0 && t2 <= 1) {
-                    roots[n++] = t2;
-                }
-            }
-        }
-        return n;
-    }
-    function quadraticExtremum(p0, p1, p2) {
-        var divider = p0 + p2 - 2 * p1;
-        if (divider === 0) {
-            return 0.5;
-        }
-        else {
-            return (p0 - p1) / divider;
-        }
-    }
-    function quadraticSubdivide(p0, p1, p2, t, out) {
-        var p01 = (p1 - p0) * t + p0;
-        var p12 = (p2 - p1) * t + p1;
-        var p012 = (p12 - p01) * t + p01;
-        out[0] = p0;
-        out[1] = p01;
-        out[2] = p012;
-        out[3] = p012;
-        out[4] = p12;
-        out[5] = p2;
-    }
-    function quadraticProjectPoint(x0, y0, x1, y1, x2, y2, x, y, out) {
-        var t;
-        var interval = 0.005;
-        var d = Infinity;
-        _v0[0] = x;
-        _v0[1] = y;
-        for (var _t = 0; _t < 1; _t += 0.05) {
-            _v1[0] = quadraticAt(x0, x1, x2, _t);
-            _v1[1] = quadraticAt(y0, y1, y2, _t);
-            var d1 = distSquare(_v0, _v1);
-            if (d1 < d) {
-                t = _t;
-                d = d1;
-            }
-        }
-        d = Infinity;
-        for (var i = 0; i < 32; i++) {
-            if (interval < EPSILON_NUMERIC) {
-                break;
-            }
-            var prev = t - interval;
-            var next = t + interval;
-            _v1[0] = quadraticAt(x0, x1, x2, prev);
-            _v1[1] = quadraticAt(y0, y1, y2, prev);
-            var d1 = distSquare(_v1, _v0);
-            if (prev >= 0 && d1 < d) {
-                t = prev;
-                d = d1;
-            }
-            else {
-                _v2[0] = quadraticAt(x0, x1, x2, next);
-                _v2[1] = quadraticAt(y0, y1, y2, next);
-                var d2 = distSquare(_v2, _v0);
-                if (next <= 1 && d2 < d) {
-                    t = next;
-                    d = d2;
-                }
-                else {
-                    interval *= 0.5;
-                }
-            }
-        }
-        if (out) {
-            out[0] = quadraticAt(x0, x1, x2, t);
-            out[1] = quadraticAt(y0, y1, y2, t);
-        }
-        return mathSqrt(d);
-    }
-    function quadraticLength(x0, y0, x1, y1, x2, y2, iteration) {
-        var px = x0;
-        var py = y0;
-        var d = 0;
-        var step = 1 / iteration;
-        for (var i = 1; i <= iteration; i++) {
-            var t = i * step;
-            var x = quadraticAt(x0, x1, x2, t);
-            var y = quadraticAt(y0, y1, y2, t);
-            var dx = x - px;
-            var dy = y - py;
-            d += Math.sqrt(dx * dx + dy * dy);
-            px = x;
-            py = y;
-        }
-        return d;
-    }
-
     var mathMin$1 = Math.min;
     var mathMax$1 = Math.max;
     var mathSin = Math.sin;
@@ -7352,7 +7591,6 @@
     var mathMax$2 = Math.max;
     var mathCos$1 = Math.cos;
     var mathSin$1 = Math.sin;
-    var mathSqrt$1 = Math.sqrt;
     var mathAbs = Math.abs;
     var PI = Math.PI;
     var PI2$1 = PI * 2;
@@ -7431,10 +7669,6 @@
             if (this._saveData) {
                 this._len = 0;
             }
-            if (this._lineDash) {
-                this._lineDash = null;
-                this._dashOffset = 0;
-            }
             if (this._pathSegLen) {
                 this._pathSegLen = null;
                 this._pathLen = 0;
@@ -7457,8 +7691,7 @@
             var exceedUnit = dx > this._ux || dy > this._uy;
             this.addData(CMD.L, x, y);
             if (this._ctx && exceedUnit) {
-                this._needsDash ? this._dashedLineTo(x, y)
-                    : this._ctx.lineTo(x, y);
+                this._ctx.lineTo(x, y);
             }
             if (exceedUnit) {
                 this._xi = x;
@@ -7479,8 +7712,7 @@
             this._drawPendingPt();
             this.addData(CMD.C, x1, y1, x2, y2, x3, y3);
             if (this._ctx) {
-                this._needsDash ? this._dashedBezierTo(x1, y1, x2, y2, x3, y3)
-                    : this._ctx.bezierCurveTo(x1, y1, x2, y2, x3, y3);
+                this._ctx.bezierCurveTo(x1, y1, x2, y2, x3, y3);
             }
             this._xi = x3;
             this._yi = y3;
@@ -7490,8 +7722,7 @@
             this._drawPendingPt();
             this.addData(CMD.Q, x1, y1, x2, y2);
             if (this._ctx) {
-                this._needsDash ? this._dashedQuadraticTo(x1, y1, x2, y2)
-                    : this._ctx.quadraticCurveTo(x1, y1, x2, y2);
+                this._ctx.quadraticCurveTo(x1, y1, x2, y2);
             }
             this._xi = x2;
             this._yi = y2;
@@ -7531,7 +7762,6 @@
             var x0 = this._x0;
             var y0 = this._y0;
             if (ctx) {
-                this._needsDash && this._dashedLineTo(x0, y0);
                 ctx.closePath();
             }
             this._xi = x0;
@@ -7545,27 +7775,6 @@
         PathProxy.prototype.stroke = function (ctx) {
             ctx && ctx.stroke();
             this.toStatic();
-        };
-        PathProxy.prototype.setLineDash = function (lineDash) {
-            if (lineDash instanceof Array) {
-                this._lineDash = lineDash;
-                this._dashIdx = 0;
-                var lineDashSum = 0;
-                for (var i = 0; i < lineDash.length; i++) {
-                    lineDashSum += lineDash[i];
-                }
-                this._dashSum = lineDashSum;
-                this._needsDash = true;
-            }
-            else {
-                this._lineDash = null;
-                this._needsDash = false;
-            }
-            return this;
-        };
-        PathProxy.prototype.setLineDashOffset = function (offset) {
-            this._dashOffset = offset;
-            return this;
         };
         PathProxy.prototype.len = function () {
             return this._len;
@@ -7628,101 +7837,6 @@
                 }
                 this.data = newData;
             }
-        };
-        PathProxy.prototype._dashedLineTo = function (x1, y1) {
-            var dashSum = this._dashSum;
-            var lineDash = this._lineDash;
-            var ctx = this._ctx;
-            var offset = this._dashOffset;
-            var x0 = this._xi;
-            var y0 = this._yi;
-            var dx = x1 - x0;
-            var dy = y1 - y0;
-            var dist = mathSqrt$1(dx * dx + dy * dy);
-            var x = x0;
-            var y = y0;
-            var nDash = lineDash.length;
-            var dash;
-            var idx;
-            dx /= dist;
-            dy /= dist;
-            if (offset < 0) {
-                offset = dashSum + offset;
-            }
-            offset %= dashSum;
-            x -= offset * dx;
-            y -= offset * dy;
-            while ((dx > 0 && x <= x1) || (dx < 0 && x >= x1)
-                || (dx === 0 && ((dy > 0 && y <= y1) || (dy < 0 && y >= y1)))) {
-                idx = this._dashIdx;
-                dash = lineDash[idx];
-                x += dx * dash;
-                y += dy * dash;
-                this._dashIdx = (idx + 1) % nDash;
-                if ((dx > 0 && x < x0) || (dx < 0 && x > x0) || (dy > 0 && y < y0) || (dy < 0 && y > y0)) {
-                    continue;
-                }
-                ctx[idx % 2 ? 'moveTo' : 'lineTo'](dx >= 0 ? mathMin$2(x, x1) : mathMax$2(x, x1), dy >= 0 ? mathMin$2(y, y1) : mathMax$2(y, y1));
-            }
-            dx = x - x1;
-            dy = y - y1;
-            this._dashOffset = -mathSqrt$1(dx * dx + dy * dy);
-        };
-        PathProxy.prototype._dashedBezierTo = function (x1, y1, x2, y2, x3, y3) {
-            var ctx = this._ctx;
-            var dashSum = this._dashSum;
-            var offset = this._dashOffset;
-            var lineDash = this._lineDash;
-            var x0 = this._xi;
-            var y0 = this._yi;
-            var bezierLen = 0;
-            var idx = this._dashIdx;
-            var nDash = lineDash.length;
-            var t;
-            var dx;
-            var dy;
-            var x;
-            var y;
-            var tmpLen = 0;
-            if (offset < 0) {
-                offset = dashSum + offset;
-            }
-            offset %= dashSum;
-            for (t = 0; t < 1; t += 0.1) {
-                dx = cubicAt(x0, x1, x2, x3, t + 0.1)
-                    - cubicAt(x0, x1, x2, x3, t);
-                dy = cubicAt(y0, y1, y2, y3, t + 0.1)
-                    - cubicAt(y0, y1, y2, y3, t);
-                bezierLen += mathSqrt$1(dx * dx + dy * dy);
-            }
-            for (; idx < nDash; idx++) {
-                tmpLen += lineDash[idx];
-                if (tmpLen > offset) {
-                    break;
-                }
-            }
-            t = (tmpLen - offset) / bezierLen;
-            while (t <= 1) {
-                x = cubicAt(x0, x1, x2, x3, t);
-                y = cubicAt(y0, y1, y2, y3, t);
-                idx % 2 ? ctx.moveTo(x, y)
-                    : ctx.lineTo(x, y);
-                t += lineDash[idx] / bezierLen;
-                idx = (idx + 1) % nDash;
-            }
-            (idx % 2 !== 0) && ctx.lineTo(x3, y3);
-            dx = x3 - x;
-            dy = y3 - y;
-            this._dashOffset = -mathSqrt$1(dx * dx + dy * dy);
-        };
-        PathProxy.prototype._dashedQuadraticTo = function (x1, y1, x2, y2) {
-            var x3 = x2;
-            var y3 = y2;
-            x2 = (x2 + 2 * x1) / 3;
-            y2 = (y2 + 2 * y1) / 3;
-            x1 = (this._xi + 2 * x1) / 3;
-            y1 = (this._yi + 2 * y1) / 3;
-            this._dashedBezierTo(x1, y1, x2, y2, x3, y3);
         };
         PathProxy.prototype.toStatic = function () {
             if (!this._saveData) {
@@ -8143,10 +8257,6 @@
         PathProxy.initDefaultProps = (function () {
             var proto = PathProxy.prototype;
             proto._saveData = true;
-            proto._needsDash = false;
-            proto._dashOffset = 0;
-            proto._dashIdx = 0;
-            proto._dashSum = 0;
             proto._ux = 0;
             proto._uy = 0;
             proto._pendingPtDist = 0;
@@ -8272,9 +8382,9 @@
 
     var CMD$1 = PathProxy.CMD;
     var PI2$4 = Math.PI * 2;
-    var EPSILON$2 = 1e-4;
+    var EPSILON$3 = 1e-4;
     function isAroundEqual(a, b) {
-        return Math.abs(a - b) < EPSILON$2;
+        return Math.abs(a - b) < EPSILON$3;
     }
     var roots = [-1, -1, -1];
     var extrema = [-1, -1];
@@ -8596,10 +8706,9 @@
             miterLimit: true
         }, DEFAULT_COMMON_ANIMATION_PROPS.style)
     };
-    var pathCopyParams = [
-        'x', 'y', 'rotation', 'scaleX', 'scaleY', 'originX', 'originY', 'invisible',
+    var pathCopyParams = TRANSFORMABLE_PROPS.concat(['invisible',
         'culling', 'z', 'z2', 'zlevel', 'parent'
-    ];
+    ]);
     var Path = (function (_super) {
         __extends(Path, _super);
         function Path(opts) {
@@ -8750,9 +8859,9 @@
             }
             this._rect = rect;
             if (this.hasStroke() && this.path && this.path.len() > 0) {
-                var rectWithStroke = this._rectWithStroke || (this._rectWithStroke = rect.clone());
+                var rectStroke = this._rectStroke || (this._rectStroke = rect.clone());
                 if (this.__dirty || needsUpdateRect) {
-                    rectWithStroke.copy(rect);
+                    rectStroke.copy(rect);
                     var lineScale = style.strokeNoScale ? this.getLineScale() : 1;
                     var w = style.lineWidth;
                     if (!this.hasFill()) {
@@ -8760,13 +8869,13 @@
                         w = Math.max(w, strokeContainThreshold == null ? 4 : strokeContainThreshold);
                     }
                     if (lineScale > 1e-10) {
-                        rectWithStroke.width += w / lineScale;
-                        rectWithStroke.height += w / lineScale;
-                        rectWithStroke.x -= w / lineScale / 2;
-                        rectWithStroke.y -= w / lineScale / 2;
+                        rectStroke.width += w / lineScale;
+                        rectStroke.height += w / lineScale;
+                        rectStroke.x -= w / lineScale / 2;
+                        rectStroke.y -= w / lineScale / 2;
                     }
                 }
-                return rectWithStroke;
+                return rectStroke;
             }
             return rect;
         };
@@ -8963,7 +9072,7 @@
 
     var CMD$2 = PathProxy.CMD;
     var points = [[], [], []];
-    var mathSqrt$2 = Math.sqrt;
+    var mathSqrt$1 = Math.sqrt;
     var mathAtan2 = Math.atan2;
     function transformPath(path, m) {
         if (!m) {
@@ -9003,8 +9112,8 @@
                 case A:
                     var x = m[4];
                     var y = m[5];
-                    var sx = mathSqrt$2(m[0] * m[0] + m[1] * m[1]);
-                    var sy = mathSqrt$2(m[2] * m[2] + m[3] * m[3]);
+                    var sx = mathSqrt$1(m[0] * m[0] + m[1] * m[1]);
+                    var sy = mathSqrt$1(m[2] * m[2] + m[3] * m[3]);
                     var angle = mathAtan2(-m[1] / sy, m[0] / sx);
                     data[i] *= sx;
                     data[i++] += x;
@@ -9041,7 +9150,7 @@
         path.increaseVersion();
     }
 
-    var mathSqrt$3 = Math.sqrt;
+    var mathSqrt$2 = Math.sqrt;
     var mathSin$2 = Math.sin;
     var mathCos$2 = Math.cos;
     var PI$1 = Math.PI;
@@ -9063,11 +9172,11 @@
             + mathCos$2(psi) * (y1 - y2) / 2.0;
         var lambda = (xp * xp) / (rx * rx) + (yp * yp) / (ry * ry);
         if (lambda > 1) {
-            rx *= mathSqrt$3(lambda);
-            ry *= mathSqrt$3(lambda);
+            rx *= mathSqrt$2(lambda);
+            ry *= mathSqrt$2(lambda);
         }
         var f = (fa === fs ? -1 : 1)
-            * mathSqrt$3((((rx * rx) * (ry * ry))
+            * mathSqrt$2((((rx * rx) * (ry * ry))
                 - ((rx * rx) * (yp * yp))
                 - ((ry * ry) * (xp * xp))) / ((rx * rx) * (yp * yp)
                 + (ry * ry) * (xp * xp))) || 0;
@@ -9499,10 +9608,8 @@
         Circle.prototype.getDefaultShape = function () {
             return new CircleShape();
         };
-        Circle.prototype.buildPath = function (ctx, shape, inBundle) {
-            if (inBundle) {
-                ctx.moveTo(shape.cx + shape.r, shape.cy);
-            }
+        Circle.prototype.buildPath = function (ctx, shape) {
+            ctx.moveTo(shape.cx + shape.r, shape.cy);
             ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2);
         };
         return Circle;
@@ -9795,50 +9902,6 @@
     }(Path));
     Line.prototype.type = 'line';
 
-    function interpolate(p0, p1, p2, p3, t, t2, t3) {
-        var v0 = (p2 - p0) * 0.5;
-        var v1 = (p3 - p1) * 0.5;
-        return (2 * (p1 - p2) + v0 + v1) * t3
-            + (-3 * (p1 - p2) - 2 * v0 - v1) * t2
-            + v0 * t + p1;
-    }
-    function smoothSpline(points, isLoop) {
-        var len = points.length;
-        var ret = [];
-        var distance$1 = 0;
-        for (var i = 1; i < len; i++) {
-            distance$1 += distance(points[i - 1], points[i]);
-        }
-        var segs = distance$1 / 2;
-        segs = segs < len ? len : segs;
-        for (var i = 0; i < segs; i++) {
-            var pos = i / (segs - 1) * (isLoop ? len : len - 1);
-            var idx = Math.floor(pos);
-            var w = pos - idx;
-            var p0 = void 0;
-            var p1 = points[idx % len];
-            var p2 = void 0;
-            var p3 = void 0;
-            if (!isLoop) {
-                p0 = points[idx === 0 ? idx : idx - 1];
-                p2 = points[idx > len - 2 ? len - 1 : idx + 1];
-                p3 = points[idx > len - 3 ? len - 1 : idx + 2];
-            }
-            else {
-                p0 = points[(idx - 1 + len) % len];
-                p2 = points[(idx + 1) % len];
-                p3 = points[(idx + 2) % len];
-            }
-            var w2 = w * w;
-            var w3 = w * w2;
-            ret.push([
-                interpolate(p0[0], p1[0], p2[0], p3[0], w, w2, w3),
-                interpolate(p0[1], p1[1], p2[1], p3[1], w, w2, w3)
-            ]);
-        }
-        return ret;
-    }
-
     function smoothBezier(points, smooth, isLoop, constraint) {
         var cps = [];
         var v = [];
@@ -9906,7 +9969,7 @@
         var smooth = shape.smooth;
         var points = shape.points;
         if (points && points.length >= 2) {
-            if (smooth && smooth !== 'spline') {
+            if (smooth) {
                 var controlPoints = smoothBezier(points, smooth, closePath, shape.smoothConstraint);
                 ctx.moveTo(points[0][0], points[0][1]);
                 var len = points.length;
@@ -9918,9 +9981,6 @@
                 }
             }
             else {
-                if (smooth === 'spline') {
-                    points = smoothSpline(points, closePath);
-                }
                 ctx.moveTo(points[0][0], points[0][1]);
                 for (var i = 1, l = points.length; i < l; i++) {
                     ctx.lineTo(points[i][0], points[i][1]);
@@ -10132,8 +10192,10 @@
         SVGParser.prototype.parse = function (xml, opt) {
             opt = opt || {};
             var svg = parseXML(xml);
-            if (!svg) {
-                throw new Error('Illegal svg');
+            {
+                if (!svg) {
+                    throw new Error('Illegal svg');
+                }
             }
             this._defsUsePending = [];
             var root = new Group();
@@ -10720,26 +10782,26 @@
     var mathACos = Math.acos;
     var mathATan2 = Math.atan2;
     var mathAbs$1 = Math.abs;
-    var mathSqrt$4 = Math.sqrt;
+    var mathSqrt$3 = Math.sqrt;
     var mathMax$3 = Math.max;
     var mathMin$3 = Math.min;
     var e = 1e-4;
     function intersect(x0, y0, x1, y1, x2, y2, x3, y3) {
-        var x10 = x1 - x0;
-        var y10 = y1 - y0;
-        var x32 = x3 - x2;
-        var y32 = y3 - y2;
-        var t = y32 * x10 - x32 * y10;
+        var dx10 = x1 - x0;
+        var dy10 = y1 - y0;
+        var dx32 = x3 - x2;
+        var dy32 = y3 - y2;
+        var t = dy32 * dx10 - dx32 * dy10;
         if (t * t < e) {
             return;
         }
-        t = (x32 * (y0 - y2) - y32 * (x0 - x2)) / t;
-        return [x0 + t * x10, y0 + t * y10];
+        t = (dx32 * (y0 - y2) - dy32 * (x0 - x2)) / t;
+        return [x0 + t * dx10, y0 + t * dy10];
     }
     function computeCornerTangents(x0, y0, x1, y1, radius, cr, clockwise) {
         var x01 = x0 - x1;
         var y01 = y0 - y1;
-        var lo = (clockwise ? cr : -cr) / mathSqrt$4(x01 * x01 + y01 * y01);
+        var lo = (clockwise ? cr : -cr) / mathSqrt$3(x01 * x01 + y01 * y01);
         var ox = lo * y01;
         var oy = -lo * x01;
         var x11 = x0 + ox;
@@ -10753,7 +10815,7 @@
         var d2 = dx * dx + dy * dy;
         var r = radius - cr;
         var s = x11 * y10 - x10 * y11;
-        var d = (dy < 0 ? -1 : 1) * mathSqrt$4(mathMax$3(0, r * r * d2 - s * s));
+        var d = (dy < 0 ? -1 : 1) * mathSqrt$3(mathMax$3(0, r * r * d2 - s * s));
         var cx0 = (s * dy - dx * d) / d2;
         var cy0 = (-s * dx - dy * d) / d2;
         var cx1 = (s * dy + dx * d) / d2;
@@ -10769,13 +10831,39 @@
         return {
             cx: cx0,
             cy: cy0,
-            x01: -ox,
-            y01: -oy,
-            x11: cx0 * (radius / r - 1),
-            y11: cy0 * (radius / r - 1)
+            x0: -ox,
+            y0: -oy,
+            x1: cx0 * (radius / r - 1),
+            y1: cy0 * (radius / r - 1)
         };
     }
+    function normalizeCornerRadius(cr) {
+        var arr;
+        if (isArray(cr)) {
+            var len = cr.length;
+            if (!len) {
+                return cr;
+            }
+            if (len === 1) {
+                arr = [cr[0], cr[0], 0, 0];
+            }
+            else if (len === 2) {
+                arr = [cr[0], cr[0], cr[1], cr[1]];
+            }
+            else if (len === 3) {
+                arr = cr.concat(cr[2]);
+            }
+            else {
+                arr = cr;
+            }
+        }
+        else {
+            arr = [cr, cr, cr, cr];
+        }
+        return arr;
+    }
     function buildPath$2(ctx, shape) {
+        var _a;
         var radius = mathMax$3(shape.r, 0);
         var innerRadius = mathMax$3(shape.r0 || 0, 0);
         var hasRadius = radius > 0;
@@ -10792,105 +10880,123 @@
             radius = innerRadius;
             innerRadius = tmp;
         }
+        var startAngle = shape.startAngle, endAngle = shape.endAngle;
+        if (isNaN(startAngle) || isNaN(endAngle)) {
+            return;
+        }
+        var cx = shape.cx, cy = shape.cy;
         var clockwise = !!shape.clockwise;
-        var startAngle = shape.startAngle;
-        var endAngle = shape.endAngle;
-        var arc;
-        if (startAngle === endAngle) {
-            arc = 0;
-        }
-        else {
-            var tmpAngles = [startAngle, endAngle];
-            normalizeArcAngles(tmpAngles, !clockwise);
-            arc = mathAbs$1(tmpAngles[0] - tmpAngles[1]);
-        }
-        var x = shape.cx;
-        var y = shape.cy;
-        var cornerRadius = shape.cornerRadius || 0;
-        var innerCornerRadius = shape.innerCornerRadius || 0;
+        var arc = mathAbs$1(endAngle - startAngle);
+        var mod = arc > PI2$5 && arc % PI2$5;
+        mod > e && (arc = mod);
         if (!(radius > e)) {
-            ctx.moveTo(x, y);
+            ctx.moveTo(cx, cy);
         }
         else if (arc > PI2$5 - e) {
-            ctx.moveTo(x + radius * mathCos$3(startAngle), y + radius * mathSin$3(startAngle));
-            ctx.arc(x, y, radius, startAngle, endAngle, !clockwise);
+            ctx.moveTo(cx + radius * mathCos$3(startAngle), cy + radius * mathSin$3(startAngle));
+            ctx.arc(cx, cy, radius, startAngle, endAngle, !clockwise);
             if (innerRadius > e) {
-                ctx.moveTo(x + innerRadius * mathCos$3(endAngle), y + innerRadius * mathSin$3(endAngle));
-                ctx.arc(x, y, innerRadius, endAngle, startAngle, clockwise);
+                ctx.moveTo(cx + innerRadius * mathCos$3(endAngle), cy + innerRadius * mathSin$3(endAngle));
+                ctx.arc(cx, cy, innerRadius, endAngle, startAngle, clockwise);
             }
         }
         else {
-            var halfRd = mathAbs$1(radius - innerRadius) / 2;
-            var cr = mathMin$3(halfRd, cornerRadius);
-            var icr = mathMin$3(halfRd, innerCornerRadius);
-            var cr0 = icr;
-            var cr1 = cr;
-            var xrs = radius * mathCos$3(startAngle);
-            var yrs = radius * mathSin$3(startAngle);
-            var xire = innerRadius * mathCos$3(endAngle);
-            var yire = innerRadius * mathSin$3(endAngle);
+            var icrStart = void 0;
+            var icrEnd = void 0;
+            var ocrStart = void 0;
+            var ocrEnd = void 0;
+            var ocrs = void 0;
+            var ocre = void 0;
+            var icrs = void 0;
+            var icre = void 0;
+            var ocrMax = void 0;
+            var icrMax = void 0;
+            var limitedOcrMax = void 0;
+            var limitedIcrMax = void 0;
             var xre = void 0;
             var yre = void 0;
             var xirs = void 0;
             var yirs = void 0;
-            if (cr > e || icr > e) {
-                xre = radius * mathCos$3(endAngle);
-                yre = radius * mathSin$3(endAngle);
-                xirs = innerRadius * mathCos$3(startAngle);
-                yirs = innerRadius * mathSin$3(startAngle);
-                if (arc < PI$2) {
-                    var it_1 = intersect(xrs, yrs, xirs, yirs, xre, yre, xire, yire);
-                    if (it_1) {
-                        var x0 = xrs - it_1[0];
-                        var y0 = yrs - it_1[1];
-                        var x1 = xre - it_1[0];
-                        var y1 = yre - it_1[1];
-                        var a = 1 / mathSin$3(mathACos((x0 * x1 + y0 * y1) / (mathSqrt$4(x0 * x0 + y0 * y0) * mathSqrt$4(x1 * x1 + y1 * y1))) / 2);
-                        var b = mathSqrt$4(it_1[0] * it_1[0] + it_1[1] * it_1[1]);
-                        cr0 = mathMin$3(icr, (innerRadius - b) / (a - 1));
-                        cr1 = mathMin$3(cr, (radius - b) / (a + 1));
+            var xrs = radius * mathCos$3(startAngle);
+            var yrs = radius * mathSin$3(startAngle);
+            var xire = innerRadius * mathCos$3(endAngle);
+            var yire = innerRadius * mathSin$3(endAngle);
+            var hasArc = arc > e;
+            if (hasArc) {
+                var cornerRadius = shape.cornerRadius;
+                if (cornerRadius) {
+                    _a = normalizeCornerRadius(cornerRadius), icrStart = _a[0], icrEnd = _a[1], ocrStart = _a[2], ocrEnd = _a[3];
+                }
+                var halfRd = mathAbs$1(radius - innerRadius) / 2;
+                ocrs = mathMin$3(halfRd, ocrStart);
+                ocre = mathMin$3(halfRd, ocrEnd);
+                icrs = mathMin$3(halfRd, icrStart);
+                icre = mathMin$3(halfRd, icrEnd);
+                limitedOcrMax = ocrMax = mathMax$3(ocrs, ocre);
+                limitedIcrMax = icrMax = mathMax$3(icrs, icre);
+                if (ocrMax > e || icrMax > e) {
+                    xre = radius * mathCos$3(endAngle);
+                    yre = radius * mathSin$3(endAngle);
+                    xirs = innerRadius * mathCos$3(startAngle);
+                    yirs = innerRadius * mathSin$3(startAngle);
+                    if (arc < PI$2) {
+                        var it_1 = intersect(xrs, yrs, xirs, yirs, xre, yre, xire, yire);
+                        if (it_1) {
+                            var x0 = xrs - it_1[0];
+                            var y0 = yrs - it_1[1];
+                            var x1 = xre - it_1[0];
+                            var y1 = yre - it_1[1];
+                            var a = 1 / mathSin$3(mathACos((x0 * x1 + y0 * y1) / (mathSqrt$3(x0 * x0 + y0 * y0) * mathSqrt$3(x1 * x1 + y1 * y1))) / 2);
+                            var b = mathSqrt$3(it_1[0] * it_1[0] + it_1[1] * it_1[1]);
+                            limitedOcrMax = mathMin$3(ocrMax, (radius - b) / (a + 1));
+                            limitedIcrMax = mathMin$3(icrMax, (innerRadius - b) / (a - 1));
+                        }
                     }
                 }
             }
-            if (!(arc > e)) {
-                ctx.moveTo(x + xrs, y + yrs);
+            if (!hasArc) {
+                ctx.moveTo(cx + xrs, cy + yrs);
             }
-            else if (cr1 > e) {
-                var ct0 = computeCornerTangents(xirs, yirs, xrs, yrs, radius, cr1, clockwise);
-                var ct1 = computeCornerTangents(xre, yre, xire, yire, radius, cr1, clockwise);
-                ctx.moveTo(x + ct0.cx + ct0.x01, y + ct0.cy + ct0.y01);
-                if (cr1 < cr) {
-                    ctx.arc(x + ct0.cx, y + ct0.cy, cr1, mathATan2(ct0.y01, ct0.x01), mathATan2(ct1.y01, ct1.x01), !clockwise);
+            else if (limitedOcrMax > e) {
+                var crStart = mathMin$3(ocrStart, limitedOcrMax);
+                var crEnd = mathMin$3(ocrEnd, limitedOcrMax);
+                var ct0 = computeCornerTangents(xirs, yirs, xrs, yrs, radius, crStart, clockwise);
+                var ct1 = computeCornerTangents(xre, yre, xire, yire, radius, crEnd, clockwise);
+                ctx.moveTo(cx + ct0.cx + ct0.x0, cy + ct0.cy + ct0.y0);
+                if (limitedOcrMax < ocrMax && crStart === crEnd) {
+                    ctx.arc(cx + ct0.cx, cy + ct0.cy, limitedOcrMax, mathATan2(ct0.y0, ct0.x0), mathATan2(ct1.y0, ct1.x0), !clockwise);
                 }
                 else {
-                    ctx.arc(x + ct0.cx, y + ct0.cy, cr1, mathATan2(ct0.y01, ct0.x01), mathATan2(ct0.y11, ct0.x11), !clockwise);
-                    ctx.arc(x, y, radius, mathATan2(ct0.cy + ct0.y11, ct0.cx + ct0.x11), mathATan2(ct1.cy + ct1.y11, ct1.cx + ct1.x11), !clockwise);
-                    ctx.arc(x + ct1.cx, y + ct1.cy, cr1, mathATan2(ct1.y11, ct1.x11), mathATan2(ct1.y01, ct1.x01), !clockwise);
+                    crStart > 0 && ctx.arc(cx + ct0.cx, cy + ct0.cy, crStart, mathATan2(ct0.y0, ct0.x0), mathATan2(ct0.y1, ct0.x1), !clockwise);
+                    ctx.arc(cx, cy, radius, mathATan2(ct0.cy + ct0.y1, ct0.cx + ct0.x1), mathATan2(ct1.cy + ct1.y1, ct1.cx + ct1.x1), !clockwise);
+                    crEnd > 0 && ctx.arc(cx + ct1.cx, cy + ct1.cy, crEnd, mathATan2(ct1.y1, ct1.x1), mathATan2(ct1.y0, ct1.x0), !clockwise);
                 }
             }
             else {
-                ctx.moveTo(x + xrs, y + yrs);
-                ctx.arc(x, y, radius, startAngle, endAngle, !clockwise);
+                ctx.moveTo(cx + xrs, cy + yrs);
+                ctx.arc(cx, cy, radius, startAngle, endAngle, !clockwise);
             }
-            if (!(innerRadius > e) || !(arc > e)) {
-                ctx.lineTo(x + xire, y + yire);
+            if (!(innerRadius > e) || !hasArc) {
+                ctx.lineTo(cx + xire, cy + yire);
             }
-            else if (cr0 > e) {
-                var ct0 = computeCornerTangents(xire, yire, xre, yre, innerRadius, -cr0, clockwise);
-                var ct1 = computeCornerTangents(xrs, yrs, xirs, yirs, innerRadius, -cr0, clockwise);
-                ctx.lineTo(x + ct0.cx + ct0.x01, y + ct0.cy + ct0.y01);
-                if (cr0 < icr) {
-                    ctx.arc(x + ct0.cx, y + ct0.cy, cr0, mathATan2(ct0.y01, ct0.x01), mathATan2(ct1.y01, ct1.x01), !clockwise);
+            else if (limitedIcrMax > e) {
+                var crStart = mathMin$3(icrStart, limitedIcrMax);
+                var crEnd = mathMin$3(icrEnd, limitedIcrMax);
+                var ct0 = computeCornerTangents(xire, yire, xre, yre, innerRadius, -crEnd, clockwise);
+                var ct1 = computeCornerTangents(xrs, yrs, xirs, yirs, innerRadius, -crStart, clockwise);
+                ctx.lineTo(cx + ct0.cx + ct0.x0, cy + ct0.cy + ct0.y0);
+                if (limitedIcrMax < icrMax && crStart === crEnd) {
+                    ctx.arc(cx + ct0.cx, cy + ct0.cy, limitedIcrMax, mathATan2(ct0.y0, ct0.x0), mathATan2(ct1.y0, ct1.x0), !clockwise);
                 }
                 else {
-                    ctx.arc(x + ct0.cx, y + ct0.cy, cr0, mathATan2(ct0.y01, ct0.x01), mathATan2(ct0.y11, ct0.x11), !clockwise);
-                    ctx.arc(x, y, innerRadius, mathATan2(ct0.cy + ct0.y11, ct0.cx + ct0.x11), mathATan2(ct1.cy + ct1.y11, ct1.cx + ct1.x11), clockwise);
-                    ctx.arc(x + ct1.cx, y + ct1.cy, cr0, mathATan2(ct1.y11, ct1.x11), mathATan2(ct1.y01, ct1.x01), !clockwise);
+                    crEnd > 0 && ctx.arc(cx + ct0.cx, cy + ct0.cy, crEnd, mathATan2(ct0.y0, ct0.x0), mathATan2(ct0.y1, ct0.x1), !clockwise);
+                    ctx.arc(cx, cy, innerRadius, mathATan2(ct0.cy + ct0.y1, ct0.cx + ct0.x1), mathATan2(ct1.cy + ct1.y1, ct1.cx + ct1.x1), clockwise);
+                    crStart > 0 && ctx.arc(cx + ct1.cx, cy + ct1.cy, crStart, mathATan2(ct1.y1, ct1.x1), mathATan2(ct1.y0, ct1.x0), !clockwise);
                 }
             }
             else {
-                ctx.lineTo(x + xire, y + yire);
-                ctx.arc(x, y, innerRadius, endAngle, startAngle, clockwise);
+                ctx.lineTo(cx + xire, cy + yire);
+                ctx.arc(cx, cy, innerRadius, endAngle, startAngle, clockwise);
             }
         }
         ctx.closePath();
@@ -10906,7 +11012,6 @@
             this.endAngle = Math.PI * 2;
             this.clockwise = true;
             this.cornerRadius = 0;
-            this.innerCornerRadius = 0;
         }
         return SectorShape;
     }());
@@ -12206,13 +12311,12 @@
                 !isImageReady(image) && cachedImgObj.pending.push(pendingWrap);
             }
             else {
-                image = new Image();
-                image.onload = image.onerror = imageOnLoad;
-                globalImageCache.put(newImageOrSrc, image.__cachedImgObj = {
-                    image: image,
+                var image_1 = platformApi.loadImage(newImageOrSrc, imageOnLoad, imageOnLoad);
+                image_1.__zrImageSrc = newImageOrSrc;
+                globalImageCache.put(newImageOrSrc, image_1.__cachedImgObj = {
+                    image: image_1,
                     pending: [pendingWrap]
                 });
-                image.src = image.__zrImageSrc = newImageOrSrc;
             }
             return image;
         }
@@ -12319,10 +12423,11 @@
         var truncate = overflow === 'truncate';
         var calculatedLineHeight = getLineHeight(font);
         var lineHeight = retrieve2(style.lineHeight, calculatedLineHeight);
+        var bgColorDrawn = !!(style.backgroundColor);
         var truncateLineOverflow = style.lineOverflow === 'truncate';
         var width = style.width;
         var lines;
-        if (width != null && overflow === 'break' || overflow === 'breakAll') {
+        if (width != null && (overflow === 'break' || overflow === 'breakAll')) {
             lines = text ? wrapText(text, style.font, width, overflow === 'breakAll', 0).lines : [];
         }
         else {
@@ -12334,15 +12439,7 @@
             var lineCount = Math.floor(height / lineHeight);
             lines = lines.slice(0, lineCount);
         }
-        var outerHeight = height;
-        var outerWidth = width;
-        if (padding) {
-            outerHeight += padding[0] + padding[2];
-            if (outerWidth != null) {
-                outerWidth += padding[1] + padding[3];
-            }
-        }
-        if (text && truncate && outerWidth != null) {
+        if (text && truncate && width != null) {
             var options = prepareTruncateOptions(width, font, style.ellipsis, {
                 minChar: style.truncateMinChar,
                 placeholder: style.placeholder
@@ -12351,19 +12448,31 @@
                 lines[i] = truncateSingleLine(lines[i], options);
             }
         }
+        var outerHeight = height;
+        var contentWidth = 0;
+        for (var i = 0; i < lines.length; i++) {
+            contentWidth = Math.max(getWidth(lines[i], font), contentWidth);
+        }
         if (width == null) {
-            var maxWidth = 0;
-            for (var i = 0; i < lines.length; i++) {
-                maxWidth = Math.max(getWidth(lines[i], font), maxWidth);
-            }
-            width = maxWidth;
+            width = contentWidth;
+        }
+        var outerWidth = contentWidth;
+        if (padding) {
+            outerHeight += padding[0] + padding[2];
+            outerWidth += padding[1] + padding[3];
+            width += padding[1] + padding[3];
+        }
+        if (bgColorDrawn) {
+            outerWidth = width;
         }
         return {
             lines: lines,
             height: height,
+            outerWidth: outerWidth,
             outerHeight: outerHeight,
             lineHeight: lineHeight,
             calculatedLineHeight: calculatedLineHeight,
+            contentWidth: contentWidth,
             contentHeight: contentHeight,
             width: width
         };
@@ -12574,7 +12683,7 @@
     }
     function isLatin(ch) {
         var code = ch.charCodeAt(0);
-        return code >= 0x21 && code <= 0xFF;
+        return code >= 0x21 && code <= 0x17F;
     }
     var breakCharMap = reduce(',&?/;] '.split(''), function (obj, ch) {
         obj[ch] = true;
@@ -12646,7 +12755,6 @@
                     else {
                         if (currentWord) {
                             line += currentWord;
-                            accumWidth += currentWordWidth;
                             currentWord = '';
                             currentWordWidth = 0;
                         }
@@ -12826,7 +12934,9 @@
             this._defaultStyle = defaultTextStyle || DEFAULT_RICH_TEXT_COLOR;
         };
         ZRText.prototype.setTextContent = function (textContent) {
-            throw new Error('Can\'t attach text on another text');
+            {
+                throw new Error('Can\'t attach text on another text');
+            }
         };
         ZRText.prototype._mergeStyle = function (targetStyle, sourceStyle) {
             if (!sourceStyle) {
@@ -12874,6 +12984,8 @@
             var needDrawBg = needDrawBackground(style);
             var bgColorDrawn = !!(style.backgroundColor);
             var outerHeight = contentBlock.outerHeight;
+            var outerWidth = contentBlock.outerWidth;
+            var contentWidth = contentBlock.contentWidth;
             var textLines = contentBlock.lines;
             var lineHeight = contentBlock.lineHeight;
             var defaultStyle = this._defaultStyle;
@@ -12882,13 +12994,11 @@
             var textAlign = style.align || defaultStyle.align || 'left';
             var verticalAlign = style.verticalAlign || defaultStyle.verticalAlign || 'top';
             var textX = baseX;
-            var textY = adjustTextY(baseY, contentBlock.contentHeight, verticalAlign);
+            var textY = adjustTextY$1(baseY, contentBlock.contentHeight, verticalAlign);
             if (needDrawBg || textPadding) {
-                var outerWidth_1 = contentBlock.width;
-                textPadding && (outerWidth_1 += textPadding[1] + textPadding[3]);
-                var boxX = adjustTextX(baseX, outerWidth_1, textAlign);
-                var boxY = adjustTextY(baseY, outerHeight, verticalAlign);
-                needDrawBg && this._renderBackground(style, style, boxX, boxY, outerWidth_1, outerHeight);
+                var boxX = adjustTextX(baseX, outerWidth, textAlign);
+                var boxY = adjustTextY$1(baseY, outerHeight, verticalAlign);
+                needDrawBg && this._renderBackground(style, style, boxX, boxY, outerWidth, outerHeight);
             }
             textY += lineHeight / 2;
             if (textPadding) {
@@ -12934,19 +13044,18 @@
                     subElStyle.shadowOffsetX = style.textShadowOffsetX || 0;
                     subElStyle.shadowOffsetY = style.textShadowOffsetY || 0;
                 }
+                subElStyle.stroke = textStroke;
+                subElStyle.fill = textFill;
                 if (textStroke) {
-                    subElStyle.stroke = textStroke;
                     subElStyle.lineWidth = style.lineWidth || defaultLineWidth;
                     subElStyle.lineDash = style.lineDash;
                     subElStyle.lineDashOffset = style.lineDashOffset || 0;
                 }
-                if (textFill) {
-                    subElStyle.fill = textFill;
-                }
                 subElStyle.font = textFont;
+                setSeparateFont(subElStyle, style);
                 textY += lineHeight;
                 if (fixedBoundingRect) {
-                    el.setBoundingRect(new BoundingRect(adjustTextX(subElStyle.x, style.width, subElStyle.textAlign), adjustTextY(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline), style.width, calculatedLineHeight));
+                    el.setBoundingRect(new BoundingRect(adjustTextX(subElStyle.x, style.width, subElStyle.textAlign), adjustTextY$1(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline), contentWidth, calculatedLineHeight));
                 }
             }
         };
@@ -12964,7 +13073,7 @@
             var textAlign = style.align || defaultStyle.align;
             var verticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
             var boxX = adjustTextX(baseX, outerWidth, textAlign);
-            var boxY = adjustTextY(baseY, outerHeight, verticalAlign);
+            var boxY = adjustTextY$1(baseY, outerHeight, verticalAlign);
             var xLeft = boxX;
             var lineTop = boxY;
             if (textPadding) {
@@ -13064,6 +13173,7 @@
             subElStyle.textBaseline = 'middle';
             subElStyle.font = token.font || DEFAULT_FONT;
             subElStyle.opacity = retrieve3(tokenStyle.opacity, style.opacity, 1);
+            setSeparateFont(subElStyle, tokenStyle);
             if (textStroke) {
                 subElStyle.lineWidth = retrieve3(tokenStyle.lineWidth, style.lineWidth, defaultLineWidth);
                 subElStyle.lineDash = retrieve2(tokenStyle.lineDash, style.lineDash);
@@ -13075,7 +13185,7 @@
             }
             var textWidth = token.contentWidth;
             var textHeight = token.contentHeight;
-            el.setBoundingRect(new BoundingRect(adjustTextX(subElStyle.x, textWidth, subElStyle.textAlign), adjustTextY(subElStyle.y, textHeight, subElStyle.textBaseline), textWidth, textHeight));
+            el.setBoundingRect(new BoundingRect(adjustTextX(subElStyle.x, textWidth, subElStyle.textAlign), adjustTextY$1(subElStyle.y, textHeight, subElStyle.textBaseline), textWidth, textHeight));
         };
         ZRText.prototype._renderBackground = function (style, topStyle, x, y, width, height) {
             var textBackgroundColor = style.backgroundColor;
@@ -13138,24 +13248,11 @@
         };
         ZRText.makeFont = function (style) {
             var font = '';
-            if (style.fontSize || style.fontFamily || style.fontWeight) {
-                var fontSize = '';
-                if (typeof style.fontSize === 'string'
-                    && (style.fontSize.indexOf('px') !== -1
-                        || style.fontSize.indexOf('rem') !== -1
-                        || style.fontSize.indexOf('em') !== -1)) {
-                    fontSize = style.fontSize;
-                }
-                else if (!isNaN(+style.fontSize)) {
-                    fontSize = style.fontSize + 'px';
-                }
-                else {
-                    fontSize = '12px';
-                }
+            if (hasSeparateFont(style)) {
                 font = [
                     style.fontStyle,
                     style.fontWeight,
-                    fontSize,
+                    parseFontSize(style.fontSize),
                     style.fontFamily || 'sans-serif'
                 ].join(' ');
             }
@@ -13165,6 +13262,33 @@
     }(Displayable));
     var VALID_TEXT_ALIGN = { left: true, right: 1, center: 1 };
     var VALID_TEXT_VERTICAL_ALIGN = { top: 1, bottom: 1, middle: 1 };
+    var FONT_PARTS = ['fontStyle', 'fontWeight', 'fontSize', 'fontFamily'];
+    function parseFontSize(fontSize) {
+        if (typeof fontSize === 'string'
+            && (fontSize.indexOf('px') !== -1
+                || fontSize.indexOf('rem') !== -1
+                || fontSize.indexOf('em') !== -1)) {
+            return fontSize;
+        }
+        else if (!isNaN(+fontSize)) {
+            return fontSize + 'px';
+        }
+        else {
+            return DEFAULT_FONT_SIZE + 'px';
+        }
+    }
+    function setSeparateFont(targetStyle, sourceStyle) {
+        for (var i = 0; i < FONT_PARTS.length; i++) {
+            var fontProp = FONT_PARTS[i];
+            var val = sourceStyle[fontProp];
+            if (val != null) {
+                targetStyle[fontProp] = val;
+            }
+        }
+    }
+    function hasSeparateFont(style) {
+        return style.fontSize != null || style.fontFamily || style.fontWeight;
+    }
     function normalizeTextStyle(style) {
         normalizeStyle(style);
         each(style.rich, normalizeStyle);
@@ -13274,7 +13398,7 @@
     function someVectorAt(shape, t, isTangent) {
         var cpx2 = shape.cpx2;
         var cpy2 = shape.cpy2;
-        if (cpx2 === null || cpy2 === null) {
+        if (cpx2 != null || cpy2 != null) {
             return [
                 (isTangent ? cubicDerivativeAt : cubicAt)(shape.x1, shape.cpx1, shape.cpx2, shape.x2, t),
                 (isTangent ? cubicDerivativeAt : cubicAt)(shape.y1, shape.cpy1, shape.cpy2, shape.y2, t)
@@ -13931,18 +14055,48 @@
         }
         return false;
     }
+    function parseInt10(val) {
+        return parseInt(val, 10);
+    }
+    function getSize(root, whIdx, opts) {
+        var wh = ['width', 'height'][whIdx];
+        var cwh = ['clientWidth', 'clientHeight'][whIdx];
+        var plt = ['paddingLeft', 'paddingTop'][whIdx];
+        var prb = ['paddingRight', 'paddingBottom'][whIdx];
+        if (opts[wh] != null && opts[wh] !== 'auto') {
+            return parseFloat(opts[wh]);
+        }
+        var stl = document.defaultView.getComputedStyle(root);
+        return ((root[cwh] || parseInt10(stl[wh]) || parseInt10(root.style[wh]))
+            - (parseInt10(stl[plt]) || 0)
+            - (parseInt10(stl[prb]) || 0)) | 0;
+    }
 
     function normalizeLineDash(lineType, lineWidth) {
         if (!lineType || lineType === 'solid' || !(lineWidth > 0)) {
             return null;
         }
-        lineWidth = lineWidth || 1;
         return lineType === 'dashed'
             ? [4 * lineWidth, 2 * lineWidth]
             : lineType === 'dotted'
                 ? [lineWidth]
                 : isNumber(lineType)
                     ? [lineType] : isArray(lineType) ? lineType : null;
+    }
+    function getLineDash(el) {
+        var style = el.style;
+        var lineDash = style.lineDash && style.lineWidth > 0 && normalizeLineDash(style.lineDash, style.lineWidth);
+        var lineDashOffset = style.lineDashOffset;
+        if (lineDash) {
+            var lineScale_1 = (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1;
+            if (lineScale_1 && lineScale_1 !== 1) {
+                lineDash = map(lineDash, function (rawVal) {
+                    return rawVal / lineScale_1;
+                });
+                lineDashOffset /= lineScale_1;
+            }
+        }
+        return [lineDash, lineDashOffset];
     }
 
     var pathProxyForDraw = new PathProxy(true);
@@ -13984,17 +14138,19 @@
         if (isImageReady(image)) {
             var canvasPattern = ctx.createPattern(image, pattern.repeat || 'repeat');
             if (typeof DOMMatrix === 'function'
+                && canvasPattern
                 && canvasPattern.setTransform) {
                 var matrix = new DOMMatrix();
-                matrix.rotateSelf(0, 0, (pattern.rotation || 0) / Math.PI * 180);
-                matrix.scaleSelf((pattern.scaleX || 1), (pattern.scaleY || 1));
                 matrix.translateSelf((pattern.x || 0), (pattern.y || 0));
+                matrix.rotateSelf(0, 0, (pattern.rotation || 0) * RADIAN_TO_DEGREE);
+                matrix.scaleSelf((pattern.scaleX || 1), (pattern.scaleY || 1));
                 canvasPattern.setTransform(matrix);
             }
             return canvasPattern;
         }
     }
     function brushPath(ctx, el, style, inBatch) {
+        var _a;
         var hasStroke = styleHasStroke(style);
         var hasFill = styleHasFill(style);
         var strokePercent = style.strokePercent;
@@ -14004,6 +14160,7 @@
             el.createPathProxy();
         }
         var path = el.path || pathProxyForDraw;
+        var dirtyFlag = el.__dirty;
         if (!inBatch) {
             var fill = style.fill;
             var stroke = style.stroke;
@@ -14020,25 +14177,25 @@
                 rect = el.getBoundingRect();
             }
             if (hasFillGradient) {
-                fillGradient = el.__dirty
+                fillGradient = dirtyFlag
                     ? getCanvasGradient(ctx, fill, rect)
                     : el.__canvasFillGradient;
                 el.__canvasFillGradient = fillGradient;
             }
             if (hasStrokeGradient) {
-                strokeGradient = el.__dirty
+                strokeGradient = dirtyFlag
                     ? getCanvasGradient(ctx, stroke, rect)
                     : el.__canvasStrokeGradient;
                 el.__canvasStrokeGradient = strokeGradient;
             }
             if (hasFillPattern) {
-                fillPattern = (el.__dirty || !el.__canvasFillPattern)
+                fillPattern = (dirtyFlag || !el.__canvasFillPattern)
                     ? createCanvasPattern(ctx, fill, el)
                     : el.__canvasFillPattern;
                 el.__canvasFillPattern = fillPattern;
             }
             if (hasStrokePattern) {
-                strokePattern = (el.__dirty || !el.__canvasStrokePattern)
+                strokePattern = (dirtyFlag || !el.__canvasStrokePattern)
                     ? createCanvasPattern(ctx, stroke, el)
                     : el.__canvasStrokePattern;
                 el.__canvasStrokePattern = fillPattern;
@@ -14066,23 +14223,15 @@
                 }
             }
         }
-        var lineDash = style.lineDash && style.lineWidth > 0 && normalizeLineDash(style.lineDash, style.lineWidth);
-        var lineDashOffset = style.lineDashOffset;
-        var ctxLineDash = !!ctx.setLineDash;
         var scale = el.getGlobalScale();
         path.setScale(scale[0], scale[1], el.segmentIgnoreThreshold);
-        if (lineDash) {
-            var lineScale_1 = (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1;
-            if (lineScale_1 && lineScale_1 !== 1) {
-                lineDash = map(lineDash, function (rawVal) {
-                    return rawVal / lineScale_1;
-                });
-                lineDashOffset /= lineScale_1;
-            }
+        var lineDash;
+        var lineDashOffset;
+        if (ctx.setLineDash && style.lineDash) {
+            _a = getLineDash(el), lineDash = _a[0], lineDashOffset = _a[1];
         }
         var needsRebuild = true;
-        if (firstDraw || (el.__dirty & SHAPE_CHANGED_BIT)
-            || (lineDash && !ctxLineDash && hasStroke)) {
+        if (firstDraw || (dirtyFlag & SHAPE_CHANGED_BIT)) {
             path.setDPR(ctx.dpr);
             if (strokePart) {
                 path.setContext(null);
@@ -14092,10 +14241,6 @@
                 needsRebuild = false;
             }
             path.reset();
-            if (lineDash && !ctxLineDash) {
-                path.setLineDash(lineDash);
-                path.setLineDashOffset(lineDashOffset);
-            }
             el.buildPath(path, el.shape, inBatch);
             path.toStatic();
             el.pathUpdated();
@@ -14103,7 +14248,7 @@
         if (needsRebuild) {
             path.rebuildPath(ctx, strokePart ? strokePercent : 1);
         }
-        if (lineDash && ctxLineDash) {
+        if (lineDash) {
             ctx.setLineDash(lineDash);
             ctx.lineDashOffset = lineDashOffset;
         }
@@ -14125,7 +14270,7 @@
                 }
             }
         }
-        if (lineDash && ctxLineDash) {
+        if (lineDash) {
             ctx.setLineDash([]);
         }
     }
@@ -14166,28 +14311,21 @@
         }
     }
     function brushText(ctx, el, style) {
+        var _a;
         var text = style.text;
         text != null && (text += '');
         if (text) {
             ctx.font = style.font || DEFAULT_FONT;
             ctx.textAlign = style.textAlign;
             ctx.textBaseline = style.textBaseline;
-            var hasLineDash = void 0;
-            if (ctx.setLineDash) {
-                var lineDash = style.lineDash && style.lineWidth > 0 && normalizeLineDash(style.lineDash, style.lineWidth);
-                var lineDashOffset = style.lineDashOffset;
-                if (lineDash) {
-                    var lineScale_2 = (style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1;
-                    if (lineScale_2 && lineScale_2 !== 1) {
-                        lineDash = map(lineDash, function (rawVal) {
-                            return rawVal / lineScale_2;
-                        });
-                        lineDashOffset /= lineScale_2;
-                    }
-                    ctx.setLineDash(lineDash);
-                    ctx.lineDashOffset = lineDashOffset;
-                    hasLineDash = true;
-                }
+            var lineDash = void 0;
+            var lineDashOffset = void 0;
+            if (ctx.setLineDash && style.lineDash) {
+                _a = getLineDash(el), lineDash = _a[0], lineDashOffset = _a[1];
+            }
+            if (lineDash) {
+                ctx.setLineDash(lineDash);
+                ctx.lineDashOffset = lineDashOffset;
             }
             if (style.strokeFirst) {
                 if (styleHasStroke(style)) {
@@ -14205,7 +14343,7 @@
                     ctx.strokeText(text, style.x, style.y);
                 }
             }
-            if (hasLineDash) {
+            if (lineDash) {
                 ctx.setLineDash([]);
             }
         }
@@ -14223,10 +14361,8 @@
             }
         }
         if (forceSetAll || style.opacity !== prevStyle.opacity) {
-            if (!styleChanged) {
-                flushPathDrawn(ctx, scope);
-                styleChanged = true;
-            }
+            flushPathDrawn(ctx, scope);
+            styleChanged = true;
             var opacity = Math.max(Math.min(style.opacity, 1), 0);
             ctx.globalAlpha = isNaN(opacity) ? DEFAULT_COMMON_STYLE.opacity : opacity;
         }
@@ -14288,7 +14424,7 @@
         }
         if (el.hasStroke()) {
             var lineWidth = style.lineWidth;
-            var newLineWidth = lineWidth / ((style.strokeNoScale && el && el.getLineScale) ? el.getLineScale() : 1);
+            var newLineWidth = lineWidth / ((style.strokeNoScale && el.getLineScale) ? el.getLineScale() : 1);
             if (ctx.lineWidth !== newLineWidth) {
                 if (!styleChanged) {
                     flushPathDrawn(ctx, scope);
@@ -14457,7 +14593,7 @@
                 bindImageStyle(ctx, el, prevEl, forceSetStyle, scope);
                 brushImage(ctx, el, style);
             }
-            else if (el instanceof IncrementalDisplayable) {
+            else if (el.getTemporalDisplayables) {
                 if (scope.lastDrawType !== DRAW_TYPE_INCREMENTAL) {
                     forceSetStyle = true;
                     scope.lastDrawType = DRAW_TYPE_INCREMENTAL;
@@ -14511,11 +14647,8 @@
         ctx.restore();
     }
 
-    function returnFalse() {
-        return false;
-    }
     function createDom(id, painter, dpr) {
-        var newDom = createCanvas();
+        var newDom = platformApi.createCanvas();
         var width = painter.getWidth();
         var height = painter.getHeight();
         var newDomStyle = newDom.style;
@@ -14564,19 +14697,13 @@
             _this.dom = dom;
             var domStyle = dom.style;
             if (domStyle) {
-                dom.onselectstart = returnFalse;
-                domStyle.webkitUserSelect = 'none';
-                domStyle.userSelect = 'none';
-                domStyle.webkitTapHighlightColor = 'rgba(0,0,0,0)';
-                domStyle['-webkit-touch-callout'] = 'none';
+                disableUserSelect(dom);
+                dom.onselectstart = function () { return false; };
                 domStyle.padding = '0';
                 domStyle.margin = '0';
                 domStyle.borderWidth = '0';
             }
-            _this.domBack = null;
-            _this.ctxBack = null;
             _this.painter = painter;
-            _this.config = null;
             _this.dpr = dpr;
             return _this;
         }
@@ -14803,9 +14930,6 @@
     var CANVAS_ZLEVEL = 314159;
     var EL_AFTER_INCREMENTAL_INC = 0.01;
     var INCREMENTAL_INC = 0.001;
-    function parseInt10(val) {
-        return parseInt(val, 10);
-    }
     function isLayerValid(layer) {
         if (!layer) {
             return false;
@@ -14848,10 +14972,7 @@
             this.root = root;
             var rootStyle = root.style;
             if (rootStyle) {
-                rootStyle.webkitTapHighlightColor = 'transparent';
-                rootStyle.webkitUserSelect = 'none';
-                rootStyle.userSelect = 'none';
-                rootStyle['-webkit-touch-callout'] = 'none';
+                disableUserSelect(root);
                 root.innerHTML = '';
             }
             this.storage = storage;
@@ -14859,8 +14980,8 @@
             this._prevDisplayList = [];
             var layers = this._layers;
             if (!singleCanvas) {
-                this._width = this._getSize(0);
-                this._height = this._getSize(1);
+                this._width = getSize(root, 0, opts);
+                this._height = getSize(root, 1, opts);
                 var domRoot = this._domRoot = createRoot(this._width, this._height);
                 root.appendChild(domRoot);
             }
@@ -15151,11 +15272,15 @@
             var prevLayer = null;
             var i = -1;
             if (layersMap[zlevel]) {
-                logError('ZLevel ' + zlevel + ' has been used already');
+                {
+                    logError('ZLevel ' + zlevel + ' has been used already');
+                }
                 return;
             }
             if (!isLayerValid(layer)) {
-                logError('Layer of zlevel ' + zlevel + ' is not valid');
+                {
+                    logError('Layer of zlevel ' + zlevel + ' is not valid');
+                }
                 return;
             }
             if (len > 0 && zlevel > zlevelList[0]) {
@@ -15352,10 +15477,11 @@
                 var domRoot = this._domRoot;
                 domRoot.style.display = 'none';
                 var opts = this._opts;
+                var root = this.root;
                 width != null && (opts.width = width);
                 height != null && (opts.height = height);
-                width = this._getSize(0);
-                height = this._getSize(1);
+                width = getSize(root, 0, opts);
+                height = getSize(root, 1, opts);
                 domRoot.style.display = '';
                 if (this._width !== width || height !== this._height) {
                     domRoot.style.width = width + 'px';
@@ -15429,348 +15555,22 @@
         CanvasPainter.prototype.getHeight = function () {
             return this._height;
         };
-        CanvasPainter.prototype._getSize = function (whIdx) {
-            var opts = this._opts;
-            var wh = ['width', 'height'][whIdx];
-            var cwh = ['clientWidth', 'clientHeight'][whIdx];
-            var plt = ['paddingLeft', 'paddingTop'][whIdx];
-            var prb = ['paddingRight', 'paddingBottom'][whIdx];
-            if (opts[wh] != null && opts[wh] !== 'auto') {
-                return parseFloat(opts[wh]);
-            }
-            var root = this.root;
-            var stl = document.defaultView.getComputedStyle(root);
-            return ((root[cwh] || parseInt10(stl[wh]) || parseInt10(root.style[wh]))
-                - (parseInt10(stl[plt]) || 0)
-                - (parseInt10(stl[prb]) || 0)) | 0;
-        };
-        CanvasPainter.prototype.pathToImage = function (path, dpr) {
-            dpr = dpr || this.dpr;
-            var canvas = document.createElement('canvas');
-            var ctx = canvas.getContext('2d');
-            var rect = path.getBoundingRect();
-            var style = path.style;
-            var shadowBlurSize = style.shadowBlur * dpr;
-            var shadowOffsetX = style.shadowOffsetX * dpr;
-            var shadowOffsetY = style.shadowOffsetY * dpr;
-            var lineWidth = path.hasStroke() ? style.lineWidth : 0;
-            var leftMargin = Math.max(lineWidth / 2, -shadowOffsetX + shadowBlurSize);
-            var rightMargin = Math.max(lineWidth / 2, shadowOffsetX + shadowBlurSize);
-            var topMargin = Math.max(lineWidth / 2, -shadowOffsetY + shadowBlurSize);
-            var bottomMargin = Math.max(lineWidth / 2, shadowOffsetY + shadowBlurSize);
-            var width = rect.width + leftMargin + rightMargin;
-            var height = rect.height + topMargin + bottomMargin;
-            canvas.width = width * dpr;
-            canvas.height = height * dpr;
-            ctx.scale(dpr, dpr);
-            ctx.clearRect(0, 0, width, height);
-            ctx.dpr = dpr;
-            var pathTransform = {
-                x: path.x,
-                y: path.y,
-                scaleX: path.scaleX,
-                scaleY: path.scaleY,
-                rotation: path.rotation,
-                originX: path.originX,
-                originY: path.originY
-            };
-            path.x = leftMargin - rect.x;
-            path.y = topMargin - rect.y;
-            path.rotation = 0;
-            path.scaleX = 1;
-            path.scaleY = 1;
-            path.updateTransform();
-            if (path) {
-                brush(ctx, path, {
-                    inHover: false,
-                    viewWidth: this._width,
-                    viewHeight: this._height
-                }, true);
-            }
-            var imgShape = new ZRImage({
-                style: {
-                    x: 0,
-                    y: 0,
-                    image: canvas
-                }
-            });
-            extend(path, pathTransform);
-            return imgShape;
-        };
         return CanvasPainter;
     }());
 
-    function createElement(name) {
-        return document.createElementNS('http://www.w3.org/2000/svg', name);
-    }
-    function normalizeColor(color) {
-        var opacity;
-        if (!color || color === 'transparent') {
-            color = 'none';
-        }
-        else if (typeof color === 'string' && color.indexOf('rgba') > -1) {
-            var arr = parse(color);
-            if (arr) {
-                color = 'rgb(' + arr[0] + ',' + arr[1] + ',' + arr[2] + ')';
-                opacity = arr[3];
-            }
-        }
-        return {
-            color: color,
-            opacity: opacity == null ? 1 : opacity
-        };
-    }
-
-    function diff(oldArr, newArr, equals) {
-        if (!equals) {
-            equals = function (a, b) {
-                return a === b;
-            };
-        }
-        oldArr = oldArr.slice();
-        newArr = newArr.slice();
-        var newLen = newArr.length;
-        var oldLen = oldArr.length;
-        var editLength = 1;
-        var maxEditLength = newLen + oldLen;
-        var bestPath = [{ newPos: -1, components: [] }];
-        var oldPos = extractCommon(bestPath[0], newArr, oldArr, 0, equals);
-        if (bestPath[0].newPos + 1 >= newLen && oldPos + 1 >= oldLen) {
-            var indices = [];
-            for (var i = 0; i < newArr.length; i++) {
-                indices.push(i);
-            }
-            return [{
-                    indices: indices,
-                    count: newArr.length,
-                    added: false,
-                    removed: false
-                }];
-        }
-        function execEditLength() {
-            for (var diagonalPath = -1 * editLength; diagonalPath <= editLength; diagonalPath += 2) {
-                var basePath;
-                var addPath = bestPath[diagonalPath - 1];
-                var removePath = bestPath[diagonalPath + 1];
-                var oldPos = (removePath ? removePath.newPos : 0) - diagonalPath;
-                if (addPath) {
-                    bestPath[diagonalPath - 1] = undefined;
-                }
-                var canAdd = addPath && addPath.newPos + 1 < newLen;
-                var canRemove = removePath && 0 <= oldPos && oldPos < oldLen;
-                if (!canAdd && !canRemove) {
-                    bestPath[diagonalPath] = undefined;
-                    continue;
-                }
-                if (!canAdd || (canRemove && addPath.newPos < removePath.newPos)) {
-                    basePath = clonePath$1(removePath);
-                    pushComponent(basePath.components, false, true);
-                }
-                else {
-                    basePath = addPath;
-                    basePath.newPos++;
-                    pushComponent(basePath.components, true, false);
-                }
-                oldPos = extractCommon(basePath, newArr, oldArr, diagonalPath, equals);
-                if (basePath.newPos + 1 >= newLen && oldPos + 1 >= oldLen) {
-                    return buildValues(basePath.components);
-                }
-                else {
-                    bestPath[diagonalPath] = basePath;
-                }
-            }
-            editLength++;
-        }
-        while (editLength <= maxEditLength) {
-            var ret = execEditLength();
-            if (ret) {
-                return ret;
-            }
-        }
-    }
-    function extractCommon(basePath, newArr, oldArr, diagonalPath, equals) {
-        var newLen = newArr.length;
-        var oldLen = oldArr.length;
-        var newPos = basePath.newPos;
-        var oldPos = newPos - diagonalPath;
-        var commonCount = 0;
-        while (newPos + 1 < newLen && oldPos + 1 < oldLen && equals(newArr[newPos + 1], oldArr[oldPos + 1])) {
-            newPos++;
-            oldPos++;
-            commonCount++;
-        }
-        if (commonCount) {
-            basePath.components.push({
-                count: commonCount,
-                added: false,
-                removed: false,
-                indices: []
-            });
-        }
-        basePath.newPos = newPos;
-        return oldPos;
-    }
-    function pushComponent(components, added, removed) {
-        var last = components[components.length - 1];
-        if (last && last.added === added && last.removed === removed) {
-            components[components.length - 1] = {
-                count: last.count + 1,
-                added: added,
-                removed: removed,
-                indices: []
-            };
-        }
-        else {
-            components.push({
-                count: 1,
-                added: added,
-                removed: removed,
-                indices: []
-            });
-        }
-    }
-    function buildValues(components) {
-        var componentPos = 0;
-        var componentLen = components.length;
-        var newPos = 0;
-        var oldPos = 0;
-        for (; componentPos < componentLen; componentPos++) {
-            var component = components[componentPos];
-            if (!component.removed) {
-                var indices = [];
-                for (var i = newPos; i < newPos + component.count; i++) {
-                    indices.push(i);
-                }
-                component.indices = indices;
-                newPos += component.count;
-                if (!component.added) {
-                    oldPos += component.count;
-                }
-            }
-            else {
-                for (var i = oldPos; i < oldPos + component.count; i++) {
-                    component.indices.push(i);
-                }
-                oldPos += component.count;
-            }
-        }
-        return components;
-    }
-    function clonePath$1(path) {
-        return { newPos: path.newPos, components: path.components.slice(0) };
-    }
-    function arrayDiff(oldArr, newArr, equal) {
-        return diff(oldArr, newArr, equal);
-    }
-
-    var NONE = 'none';
-    var mathRound = Math.round;
     var mathSin$4 = Math.sin;
     var mathCos$4 = Math.cos;
     var PI$5 = Math.PI;
     var PI2$6 = Math.PI * 2;
     var degree = 180 / PI$5;
-    var EPSILON$3 = 1e-4;
-    function round3(val) {
-        return mathRound(val * 1e3) / 1e3;
-    }
-    function round4(val) {
-        return mathRound(val * 1e4) / 1e4;
-    }
-    function isAroundZero$1(val) {
-        return val < EPSILON$3 && val > -EPSILON$3;
-    }
-    function pathHasFill(style) {
-        var fill = style.fill;
-        return fill != null && fill !== NONE;
-    }
-    function pathHasStroke(style) {
-        var stroke = style.stroke;
-        return stroke != null && stroke !== NONE;
-    }
-    function setTransform(svgEl, m) {
-        if (m) {
-            attr(svgEl, 'transform', 'matrix('
-                + round3(m[0]) + ','
-                + round3(m[1]) + ','
-                + round3(m[2]) + ','
-                + round3(m[3]) + ','
-                + round4(m[4]) + ','
-                + round4(m[5])
-                + ')');
-        }
-    }
-    function attr(el, key, val) {
-        if (!val || val.type !== 'linear' && val.type !== 'radial') {
-            el.setAttribute(key, val);
-        }
-    }
-    function attrXLink(el, key, val) {
-        el.setAttributeNS('http://www.w3.org/1999/xlink', key, val);
-    }
-    function attrXML(el, key, val) {
-        el.setAttributeNS('http://www.w3.org/XML/1998/namespace', key, val);
-    }
-    function bindStyle(svgEl, style, el) {
-        var opacity = style.opacity == null ? 1 : style.opacity;
-        if (el instanceof ZRImage) {
-            attr(svgEl, 'opacity', opacity + '');
-            return;
-        }
-        if (pathHasFill(style)) {
-            var fill = normalizeColor(style.fill);
-            attr(svgEl, 'fill', fill.color);
-            attr(svgEl, 'fill-opacity', (style.fillOpacity != null
-                ? style.fillOpacity * fill.opacity * opacity
-                : fill.opacity * opacity) + '');
-        }
-        else {
-            attr(svgEl, 'fill', NONE);
-        }
-        if (pathHasStroke(style)) {
-            var stroke = normalizeColor(style.stroke);
-            attr(svgEl, 'stroke', stroke.color);
-            var strokeWidth = style.lineWidth;
-            var strokeScale_1 = style.strokeNoScale
-                ? el.getLineScale()
-                : 1;
-            attr(svgEl, 'stroke-width', (strokeScale_1 ? strokeWidth / strokeScale_1 : 0) + '');
-            attr(svgEl, 'paint-order', style.strokeFirst ? 'stroke' : 'fill');
-            attr(svgEl, 'stroke-opacity', (style.strokeOpacity != null
-                ? style.strokeOpacity * stroke.opacity * opacity
-                : stroke.opacity * opacity) + '');
-            var lineDash = style.lineDash && strokeWidth > 0 && normalizeLineDash(style.lineDash, strokeWidth);
-            if (lineDash) {
-                var lineDashOffset = style.lineDashOffset;
-                if (strokeScale_1 && strokeScale_1 !== 1) {
-                    lineDash = map(lineDash, function (rawVal) {
-                        return rawVal / strokeScale_1;
-                    });
-                    if (lineDashOffset) {
-                        lineDashOffset /= strokeScale_1;
-                        lineDashOffset = mathRound(lineDashOffset);
-                    }
-                }
-                attr(svgEl, 'stroke-dasharray', lineDash.join(','));
-                attr(svgEl, 'stroke-dashoffset', (lineDashOffset || 0) + '');
-            }
-            else {
-                attr(svgEl, 'stroke-dasharray', NONE);
-            }
-            style.lineCap && attr(svgEl, 'stroke-linecap', style.lineCap);
-            style.lineJoin && attr(svgEl, 'stroke-linejoin', style.lineJoin);
-            style.miterLimit && attr(svgEl, 'stroke-miterlimit', style.miterLimit + '');
-        }
-        else {
-            attr(svgEl, 'stroke', NONE);
-        }
-    }
     var SVGPathRebuilder = (function () {
         function SVGPathRebuilder() {
         }
-        SVGPathRebuilder.prototype.reset = function () {
+        SVGPathRebuilder.prototype.reset = function (precision) {
+            this._start = true;
             this._d = [];
             this._str = '';
+            this._p = Math.pow(10, precision || 4);
         };
         SVGPathRebuilder.prototype.moveTo = function (x, y) {
             this._add('M', x, y);
@@ -15788,7 +15588,6 @@
             this.ellipse(cx, cy, r, r, 0, startAngle, endAngle, anticlockwise);
         };
         SVGPathRebuilder.prototype.ellipse = function (cx, cy, rx, ry, psi, startAngle, endAngle, anticlockwise) {
-            var firstCmd = this._d.length === 0;
             var dTheta = endAngle - startAngle;
             var clockwise = !anticlockwise;
             var dThetaPositive = Math.abs(dTheta);
@@ -15805,33 +15604,31 @@
             else {
                 large = (unifiedTheta >= PI$5) === !!clockwise;
             }
-            var x0 = round4(cx + rx * mathCos$4(startAngle));
-            var y0 = round4(cy + ry * mathSin$4(startAngle));
+            var x0 = cx + rx * mathCos$4(startAngle);
+            var y0 = cy + ry * mathSin$4(startAngle);
+            if (this._start) {
+                this._add('M', x0, y0);
+            }
+            var xRot = Math.round(psi * degree);
             if (isCircle) {
-                if (clockwise) {
-                    dTheta = PI2$6 - 1e-4;
-                }
-                else {
-                    dTheta = -PI2$6 + 1e-4;
-                }
-                large = true;
-                if (firstCmd) {
-                    this._d.push('M', x0, y0);
+                var p = 1 / this._p;
+                var dTheta_1 = (clockwise ? 1 : -1) * (PI2$6 - p);
+                this._add('A', rx, ry, xRot, 1, +clockwise, cx + rx * mathCos$4(startAngle + dTheta_1), cy + ry * mathSin$4(startAngle + dTheta_1));
+                if (p > 1e-2) {
+                    this._add('A', rx, ry, xRot, 0, +clockwise, x0, y0);
                 }
             }
-            var x = round4(cx + rx * mathCos$4(startAngle + dTheta));
-            var y = round4(cy + ry * mathSin$4(startAngle + dTheta));
-            if (isNaN(x0) || isNaN(y0) || isNaN(rx) || isNaN(ry) || isNaN(psi) || isNaN(degree) || isNaN(x) || isNaN(y)) {
-                return '';
+            else {
+                var x = cx + rx * mathCos$4(endAngle);
+                var y = cy + ry * mathSin$4(endAngle);
+                this._add('A', rx, ry, xRot, +large, +clockwise, x, y);
             }
-            this._d.push('A', round4(rx), round4(ry), mathRound(psi * degree), +large, +clockwise, x, y);
         };
         SVGPathRebuilder.prototype.rect = function (x, y, w, h) {
             this._add('M', x, y);
-            this._add('L', x + w, y);
-            this._add('L', x + w, y + h);
-            this._add('L', x, y + h);
-            this._add('L', x, y);
+            this._add('l', w, 0);
+            this._add('l', 0, h);
+            this._add('l', -w, 0);
             this._add('Z');
         };
         SVGPathRebuilder.prototype.closePath = function () {
@@ -15840,18 +15637,21 @@
             }
         };
         SVGPathRebuilder.prototype._add = function (cmd, a, b, c, d, e, f, g, h) {
-            this._d.push(cmd);
+            var vals = [];
+            var p = this._p;
             for (var i = 1; i < arguments.length; i++) {
                 var val = arguments[i];
                 if (isNaN(val)) {
                     this._invalid = true;
                     return;
                 }
-                this._d.push(round4(val));
+                vals.push(Math.round(val * p) / p);
             }
+            this._d.push(cmd + vals.join(' '));
+            this._start = cmd === 'Z';
         };
         SVGPathRebuilder.prototype.generateStr = function () {
-            this._str = this._invalid ? '' : this._d.join(' ');
+            this._str = this._invalid ? '' : this._d.join('');
             this._d = [];
         };
         SVGPathRebuilder.prototype.getStr = function () {
@@ -15859,14 +15659,551 @@
         };
         return SVGPathRebuilder;
     }());
-    var svgPath = {
-        brush: function (el) {
-            var style = el.style;
-            var svgEl = el.__svgEl;
-            if (!svgEl) {
-                svgEl = createElement('path');
-                el.__svgEl = svgEl;
+
+    var NONE = 'none';
+    var mathRound$1 = Math.round;
+    function pathHasFill(style) {
+        var fill = style.fill;
+        return fill != null && fill !== NONE;
+    }
+    function pathHasStroke(style) {
+        var stroke = style.stroke;
+        return stroke != null && stroke !== NONE;
+    }
+    var strokeProps = ['lineCap', 'miterLimit', 'lineJoin'];
+    var svgStrokeProps = map(strokeProps, function (prop) { return "stroke-" + prop.toLowerCase(); });
+    function mapStyleToAttrs(updateAttr, style, el, forceUpdate) {
+        var opacity = style.opacity == null ? 1 : style.opacity;
+        if (el instanceof ZRImage) {
+            updateAttr('opacity', opacity);
+            return;
+        }
+        if (pathHasFill(style)) {
+            var fill = normalizeColor(style.fill);
+            updateAttr('fill', fill.color);
+            var fillOpacity = style.fillOpacity != null
+                ? style.fillOpacity * fill.opacity * opacity
+                : fill.opacity * opacity;
+            if (forceUpdate || fillOpacity < 1) {
+                updateAttr('fill-opacity', fillOpacity);
             }
+        }
+        else {
+            updateAttr('fill', NONE);
+        }
+        if (pathHasStroke(style)) {
+            var stroke = normalizeColor(style.stroke);
+            updateAttr('stroke', stroke.color);
+            var strokeScale = style.strokeNoScale
+                ? el.getLineScale()
+                : 1;
+            var strokeWidth = (strokeScale ? (style.lineWidth || 0) / strokeScale : 0);
+            var strokeOpacity = style.strokeOpacity != null
+                ? style.strokeOpacity * stroke.opacity * opacity
+                : stroke.opacity * opacity;
+            var strokeFirst = style.strokeFirst;
+            if (forceUpdate || strokeWidth !== 1) {
+                updateAttr('stroke-width', strokeWidth);
+            }
+            if (forceUpdate || strokeFirst) {
+                updateAttr('paint-order', strokeFirst ? 'stroke' : 'fill');
+            }
+            if (forceUpdate || strokeOpacity < 1) {
+                updateAttr('stroke-opacity', strokeOpacity);
+            }
+            if (style.lineDash) {
+                var _a = getLineDash(el), lineDash = _a[0], lineDashOffset = _a[1];
+                if (lineDash) {
+                    lineDashOffset = mathRound$1(lineDashOffset || 0);
+                    updateAttr('stroke-dasharray', lineDash.join(','));
+                    if (lineDashOffset || forceUpdate) {
+                        updateAttr('stroke-dashoffset', lineDashOffset);
+                    }
+                }
+            }
+            else if (forceUpdate) {
+                updateAttr('stroke-dasharray', NONE);
+            }
+            for (var i = 0; i < strokeProps.length; i++) {
+                var propName = strokeProps[i];
+                if (forceUpdate || style[propName] !== DEFAULT_PATH_STYLE[propName]) {
+                    var val = style[propName] || DEFAULT_PATH_STYLE[propName];
+                    val && updateAttr(svgStrokeProps[i], val);
+                }
+            }
+        }
+        else if (forceUpdate) {
+            updateAttr('stroke', NONE);
+        }
+    }
+
+    var SVGNS = 'http://www.w3.org/2000/svg';
+    var XLINKNS = 'http://www.w3.org/1999/xlink';
+    var XMLNS = 'http://www.w3.org/2000/xmlns/';
+    var XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
+    function createElement(name) {
+        return document.createElementNS(SVGNS, name);
+    }
+    function createVNode(tag, key, attrs, children, text) {
+        return {
+            tag: tag,
+            attrs: attrs || {},
+            children: children,
+            text: text,
+            key: key
+        };
+    }
+    function createElementOpen(name, attrs) {
+        var attrsStr = [];
+        if (attrs) {
+            for (var key in attrs) {
+                var val = attrs[key];
+                var part = key;
+                if (val === false) {
+                    continue;
+                }
+                else if (val !== true && val != null) {
+                    part += "=\"" + val + "\"";
+                }
+                attrsStr.push(part);
+            }
+        }
+        return "<" + name + " " + attrsStr.join(' ') + ">";
+    }
+    function createElementClose(name) {
+        return "</" + name + ">";
+    }
+    function vNodeToString(el, opts) {
+        opts = opts || {};
+        var S = opts.newline ? '\n' : '';
+        function convertElToString(el) {
+            var children = el.children, tag = el.tag, attrs = el.attrs;
+            return createElementOpen(tag, attrs)
+                + (el.text || '')
+                + (children ? "" + S + map(children, function (child) { return convertElToString(child); }).join(S) + S : '')
+                + createElementClose(tag);
+        }
+        return convertElToString(el);
+    }
+    function getCssString(selectorNodes, animationNodes, opts) {
+        opts = opts || {};
+        var S = opts.newline ? '\n' : '';
+        var bracketBegin = " {" + S;
+        var bracketEnd = S + "}";
+        var selectors = map(keys(selectorNodes), function (className) {
+            return className + bracketBegin + map(keys(selectorNodes[className]), function (attrName) {
+                return attrName + ":" + selectorNodes[className][attrName] + ";";
+            }).join(S) + bracketEnd;
+        }).join(S);
+        var animations = map(keys(animationNodes), function (animationName) {
+            return "@keyframes " + animationName + bracketBegin + map(keys(animationNodes[animationName]), function (percent) {
+                return percent + bracketBegin + map(keys(animationNodes[animationName][percent]), function (attrName) {
+                    var val = animationNodes[animationName][percent][attrName];
+                    if (attrName === 'd') {
+                        val = "path(\"" + val + "\")";
+                    }
+                    return attrName + ":" + val + ";";
+                }).join(S) + bracketEnd;
+            }).join(S) + bracketEnd;
+        }).join(S);
+        if (!selectors && !animations) {
+            return '';
+        }
+        return ['<![CDATA[', selectors, animations, ']]>'].join(S);
+    }
+    function createBrushScope(zrId) {
+        return {
+            zrId: zrId,
+            shadowCache: {},
+            patternCache: {},
+            gradientCache: {},
+            clipPathCache: {},
+            defs: {},
+            cssNodes: {},
+            cssAnims: {},
+            cssClassIdx: 0,
+            cssAnimIdx: 0,
+            shadowIdx: 0,
+            gradientIdx: 0,
+            patternIdx: 0,
+            clipPathIdx: 0
+        };
+    }
+    function createSVGVNode(width, height, children, useViewBox) {
+        return createVNode('svg', 'root', {
+            'width': width,
+            'height': height,
+            'xmlns': SVGNS,
+            'xmlns:xlink': XLINKNS,
+            'version': '1.1',
+            'baseProfile': 'full',
+            'viewBox': useViewBox ? "0 0 " + width + " " + height : false
+        }, children);
+    }
+
+    var EASING_MAP = {
+        cubicIn: '0.32,0,0.67,0',
+        cubicOut: '0.33,1,0.68,1',
+        cubicInOut: '0.65,0,0.35,1',
+        quadraticIn: '0.11,0,0.5,0',
+        quadraticOut: '0.5,1,0.89,1',
+        quadraticInOut: '0.45,0,0.55,1',
+        quarticIn: '0.5,0,0.75,0',
+        quarticOut: '0.25,1,0.5,1',
+        quarticInOut: '0.76,0,0.24,1',
+        quinticIn: '0.64,0,0.78,0',
+        quinticOut: '0.22,1,0.36,1',
+        quinticInOut: '0.83,0,0.17,1',
+        sinusoidalIn: '0.12,0,0.39,0',
+        sinusoidalOut: '0.61,1,0.88,1',
+        sinusoidalInOut: '0.37,0,0.63,1',
+        exponentialIn: '0.7,0,0.84,0',
+        exponentialOut: '0.16,1,0.3,1',
+        exponentialInOut: '0.87,0,0.13,1',
+        circularIn: '0.55,0,1,0.45',
+        circularOut: '0,0.55,0.45,1',
+        circularInOut: '0.85,0,0.15,1'
+    };
+    var transformOriginKey = 'transform-origin';
+    function buildPathString(el, kfShape, path) {
+        var shape = extend({}, el.shape);
+        extend(shape, kfShape);
+        el.buildPath(path, shape);
+        var svgPathBuilder = new SVGPathRebuilder();
+        svgPathBuilder.reset(getPathPrecision(el));
+        path.rebuildPath(svgPathBuilder, 1);
+        svgPathBuilder.generateStr();
+        return svgPathBuilder.getStr();
+    }
+    function setTransformOrigin(target, transform) {
+        var originX = transform.originX, originY = transform.originY;
+        if (originX || originY) {
+            target[transformOriginKey] = originX + "px " + originY + "px";
+        }
+    }
+    var ANIMATE_STYLE_MAP = {
+        fill: 'fill',
+        opacity: 'opacity',
+        lineWidth: 'stroke-width',
+        lineDashOffset: 'stroke-dashoffset'
+    };
+    function addAnimation(cssAnim, scope) {
+        var animationName = scope.zrId + '-ani-' + scope.cssAnimIdx++;
+        scope.cssAnims[animationName] = cssAnim;
+        return animationName;
+    }
+    function createCompoundPathCSSAnimation(el, attrs, scope) {
+        var paths = el.shape.paths;
+        var composedAnim = {};
+        var cssAnimationCfg;
+        var cssAnimationName;
+        each(paths, function (path) {
+            var subScope = createBrushScope(scope.zrId);
+            subScope.animation = true;
+            createCSSAnimation(path, {}, subScope, true);
+            var cssAnims = subScope.cssAnims;
+            var cssNodes = subScope.cssNodes;
+            var animNames = keys(cssAnims);
+            var len = animNames.length;
+            if (!len) {
+                return;
+            }
+            cssAnimationName = animNames[len - 1];
+            var lastAnim = cssAnims[cssAnimationName];
+            for (var percent in lastAnim) {
+                var kf = lastAnim[percent];
+                composedAnim[percent] = composedAnim[percent] || { d: '' };
+                composedAnim[percent].d += kf.d || '';
+            }
+            for (var className in cssNodes) {
+                var val = cssNodes[className].animation;
+                if (val.indexOf(cssAnimationName) >= 0) {
+                    cssAnimationCfg = val;
+                }
+            }
+        });
+        if (!cssAnimationCfg) {
+            return;
+        }
+        attrs.d = false;
+        var animationName = addAnimation(composedAnim, scope);
+        return cssAnimationCfg.replace(cssAnimationName, animationName);
+    }
+    function getEasingFunc(easing) {
+        return isString(easing)
+            ? EASING_MAP[easing]
+                ? "cubic-bezier(" + EASING_MAP[easing] + ")"
+                : createCubicEasingFunc(easing) ? easing : ''
+            : '';
+    }
+    function createCSSAnimation(el, attrs, scope, onlyShape) {
+        var animators = el.animators;
+        var len = animators.length;
+        var cssAnimations = [];
+        if (el instanceof CompoundPath) {
+            var animationCfg = createCompoundPathCSSAnimation(el, attrs, scope);
+            if (animationCfg) {
+                cssAnimations.push(animationCfg);
+            }
+            else if (!len) {
+                return;
+            }
+        }
+        else if (!len) {
+            return;
+        }
+        var groupAnimators = {};
+        for (var i = 0; i < len; i++) {
+            var animator = animators[i];
+            var cfgArr = [animator.getMaxTime() / 1000 + 's'];
+            var easing = getEasingFunc(animator.getClip().easing);
+            var delay = animator.getDelay();
+            if (easing) {
+                cfgArr.push(easing);
+            }
+            else {
+                cfgArr.push('linear');
+            }
+            if (delay) {
+                cfgArr.push(delay / 1000 + 's');
+            }
+            if (animator.getLoop()) {
+                cfgArr.push('infinite');
+            }
+            var cfg = cfgArr.join(' ');
+            groupAnimators[cfg] = groupAnimators[cfg] || [cfg, []];
+            groupAnimators[cfg][1].push(animator);
+        }
+        function createSingleCSSAnimation(groupAnimator) {
+            var animators = groupAnimator[1];
+            var len = animators.length;
+            var transformKfs = {};
+            var shapeKfs = {};
+            var finalKfs = {};
+            var animationTimingFunctionAttrName = 'animation-timing-function';
+            function saveAnimatorTrackToCssKfs(animator, cssKfs, toCssAttrName) {
+                var tracks = animator.getTracks();
+                var maxTime = animator.getMaxTime();
+                for (var k = 0; k < tracks.length; k++) {
+                    var track = tracks[k];
+                    if (track.needsAnimate()) {
+                        var kfs = track.keyframes;
+                        var attrName = track.propName;
+                        toCssAttrName && (attrName = toCssAttrName(attrName));
+                        if (attrName) {
+                            for (var i = 0; i < kfs.length; i++) {
+                                var kf = kfs[i];
+                                var percent = Math.round(kf.time / maxTime * 100) + '%';
+                                var kfEasing = getEasingFunc(kf.easing);
+                                var rawValue = kf.rawValue;
+                                if (isString(rawValue) || isNumber(rawValue)) {
+                                    cssKfs[percent] = cssKfs[percent] || {};
+                                    cssKfs[percent][attrName] = kf.rawValue;
+                                    if (kfEasing) {
+                                        cssKfs[percent][animationTimingFunctionAttrName] = kfEasing;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            for (var i = 0; i < len; i++) {
+                var animator = animators[i];
+                var targetProp = animator.targetName;
+                if (!targetProp) {
+                    !onlyShape && saveAnimatorTrackToCssKfs(animator, transformKfs);
+                }
+                else if (targetProp === 'shape') {
+                    saveAnimatorTrackToCssKfs(animator, shapeKfs);
+                }
+            }
+            for (var percent in transformKfs) {
+                var transform = {};
+                copyTransform(transform, el);
+                extend(transform, transformKfs[percent]);
+                var str = getSRTTransformString(transform);
+                var timingFunction = transformKfs[percent][animationTimingFunctionAttrName];
+                finalKfs[percent] = str ? {
+                    transform: str
+                } : {};
+                setTransformOrigin(finalKfs[percent], transform);
+                if (timingFunction) {
+                    finalKfs[percent][animationTimingFunctionAttrName] = timingFunction;
+                }
+            }
+            var path;
+            var canAnimateShape = true;
+            for (var percent in shapeKfs) {
+                finalKfs[percent] = finalKfs[percent] || {};
+                var isFirst = !path;
+                var timingFunction = shapeKfs[percent][animationTimingFunctionAttrName];
+                if (isFirst) {
+                    path = new PathProxy();
+                }
+                var len_1 = path.len();
+                path.reset();
+                finalKfs[percent].d = buildPathString(el, shapeKfs[percent], path);
+                var newLen = path.len();
+                if (!isFirst && len_1 !== newLen) {
+                    canAnimateShape = false;
+                    break;
+                }
+                if (timingFunction) {
+                    finalKfs[percent][animationTimingFunctionAttrName] = timingFunction;
+                }
+            }
+            if (!canAnimateShape) {
+                for (var percent in finalKfs) {
+                    delete finalKfs[percent].d;
+                }
+            }
+            if (!onlyShape) {
+                for (var i = 0; i < len; i++) {
+                    var animator = animators[i];
+                    var targetProp = animator.targetName;
+                    if (targetProp === 'style') {
+                        saveAnimatorTrackToCssKfs(animator, finalKfs, function (propName) { return ANIMATE_STYLE_MAP[propName]; });
+                    }
+                }
+            }
+            var percents = keys(finalKfs);
+            var allTransformOriginSame = true;
+            var transformOrigin;
+            for (var i = 1; i < percents.length; i++) {
+                var p0 = percents[i - 1];
+                var p1 = percents[i];
+                if (finalKfs[p0][transformOriginKey] !== finalKfs[p1][transformOriginKey]) {
+                    allTransformOriginSame = false;
+                    break;
+                }
+                transformOrigin = finalKfs[p0][transformOriginKey];
+            }
+            if (allTransformOriginSame && transformOrigin) {
+                for (var percent in finalKfs) {
+                    if (finalKfs[percent][transformOriginKey]) {
+                        delete finalKfs[percent][transformOriginKey];
+                    }
+                }
+                attrs[transformOriginKey] = transformOrigin;
+            }
+            if (filter(percents, function (percent) { return keys(finalKfs[percent]).length > 0; }).length) {
+                var animationName = addAnimation(finalKfs, scope);
+                return animationName + " " + groupAnimator[0] + " both";
+            }
+        }
+        for (var key in groupAnimators) {
+            var animationCfg = createSingleCSSAnimation(groupAnimators[key]);
+            if (animationCfg) {
+                cssAnimations.push(animationCfg);
+            }
+        }
+        if (cssAnimations.length) {
+            var className = scope.zrId + '-cls-' + scope.cssClassIdx++;
+            scope.cssNodes['.' + className] = {
+                animation: cssAnimations.join(',')
+            };
+            attrs["class"] = className;
+        }
+    }
+
+    var round$1 = Math.round;
+    function isImageLike$1(val) {
+        return val && isString(val.src);
+    }
+    function isCanvasLike(val) {
+        return val && isFunction(val.toDataURL);
+    }
+    function setStyleAttrs(attrs, style, el, scope) {
+        mapStyleToAttrs(function (key, val) {
+            var isFillStroke = key === 'fill' || key === 'stroke';
+            if (isFillStroke && isGradient(val)) {
+                setGradient(style, attrs, key, scope);
+            }
+            else if (isFillStroke && isPattern(val)) {
+                setPattern(el, attrs, key, scope);
+            }
+            else {
+                attrs[key] = val;
+            }
+        }, style, el, false);
+        setShadow(el, attrs, scope);
+    }
+    function noRotateScale(m) {
+        return isAroundZero$1(m[0] - 1)
+            && isAroundZero$1(m[1])
+            && isAroundZero$1(m[2])
+            && isAroundZero$1(m[3] - 1);
+    }
+    function noTranslate(m) {
+        return isAroundZero$1(m[4]) && isAroundZero$1(m[5]);
+    }
+    function setTransform(attrs, m, compress) {
+        if (m && !(noTranslate(m) && noRotateScale(m))) {
+            var mul = compress ? 10 : 1e4;
+            attrs.transform = noRotateScale(m)
+                ? "translate(" + round$1(m[4] * mul) / mul + " " + round$1(m[5] * mul) / mul + ")" : getMatrixStr(m);
+        }
+    }
+    function convertPolyShape(shape, attrs, mul) {
+        var points = shape.points;
+        var strArr = [];
+        for (var i = 0; i < points.length; i++) {
+            strArr.push(round$1(points[i][0] * mul) / mul);
+            strArr.push(round$1(points[i][1] * mul) / mul);
+        }
+        attrs.points = strArr.join(' ');
+    }
+    function validatePolyShape(shape) {
+        return !shape.smooth;
+    }
+    function createAttrsConvert(desc) {
+        var normalizedDesc = map(desc, function (item) {
+            return (typeof item === 'string' ? [item, item] : item);
+        });
+        return function (shape, attrs, mul) {
+            for (var i = 0; i < normalizedDesc.length; i++) {
+                var item = normalizedDesc[i];
+                var val = shape[item[0]];
+                if (val != null) {
+                    attrs[item[1]] = round$1(val * mul) / mul;
+                }
+            }
+        };
+    }
+    var buitinShapesDef = {
+        circle: [createAttrsConvert(['cx', 'cy', 'r'])],
+        polyline: [convertPolyShape, validatePolyShape],
+        polygon: [convertPolyShape, validatePolyShape]
+    };
+    function hasShapeAnimation(el) {
+        var animators = el.animators;
+        for (var i = 0; i < animators.length; i++) {
+            if (animators[i].targetName === 'shape') {
+                return true;
+            }
+        }
+        return false;
+    }
+    function brushSVGPath(el, scope) {
+        var style = el.style;
+        var shape = el.shape;
+        var builtinShpDef = buitinShapesDef[el.type];
+        var attrs = {};
+        var needsAnimate = scope.animation;
+        var svgElType = 'path';
+        var strokePercent = el.style.strokePercent;
+        var precision = (scope.compress && getPathPrecision(el)) || 4;
+        if (builtinShpDef
+            && !scope.willUpdate
+            && !(builtinShpDef[1] && !builtinShpDef[1](shape))
+            && !(needsAnimate && hasShapeAnimation(el))
+            && !(strokePercent < 1)) {
+            svgElType = el.type;
+            var mul = Math.pow(10, precision);
+            builtinShpDef[0](shape, attrs, mul);
+        }
+        else {
             if (!el.path) {
                 el.createPathProxy();
             }
@@ -15879,871 +16216,601 @@
             var pathVersion = path.getVersion();
             var elExt = el;
             var svgPathBuilder = elExt.__svgPathBuilder;
-            if (elExt.__svgPathVersion !== pathVersion || !svgPathBuilder || el.style.strokePercent < 1) {
+            if (elExt.__svgPathVersion !== pathVersion
+                || !svgPathBuilder
+                || strokePercent !== elExt.__svgPathStrokePercent) {
                 if (!svgPathBuilder) {
                     svgPathBuilder = elExt.__svgPathBuilder = new SVGPathRebuilder();
                 }
-                svgPathBuilder.reset();
-                path.rebuildPath(svgPathBuilder, el.style.strokePercent);
+                svgPathBuilder.reset(precision);
+                path.rebuildPath(svgPathBuilder, strokePercent);
                 svgPathBuilder.generateStr();
                 elExt.__svgPathVersion = pathVersion;
+                elExt.__svgPathStrokePercent = strokePercent;
             }
-            attr(svgEl, 'd', svgPathBuilder.getStr());
-            bindStyle(svgEl, style, el);
-            setTransform(svgEl, el.transform);
+            attrs.d = svgPathBuilder.getStr();
         }
-    };
-    var svgImage = {
-        brush: function (el) {
-            var style = el.style;
-            var image = style.image;
-            if (image instanceof HTMLImageElement) {
+        setTransform(attrs, el.transform);
+        setStyleAttrs(attrs, style, el, scope);
+        scope.animation && createCSSAnimation(el, attrs, scope);
+        return createVNode(svgElType, el.id + '', attrs);
+    }
+    function brushSVGImage(el, scope) {
+        var style = el.style;
+        var image = style.image;
+        if (image && !isString(image)) {
+            if (isImageLike$1(image)) {
                 image = image.src;
             }
-            else if (image instanceof HTMLCanvasElement) {
+            else if (isCanvasLike(image)) {
                 image = image.toDataURL();
             }
-            if (!image) {
-                return;
-            }
-            var x = style.x || 0;
-            var y = style.y || 0;
-            var dw = style.width;
-            var dh = style.height;
-            var svgEl = el.__svgEl;
-            if (!svgEl) {
-                svgEl = createElement('image');
-                el.__svgEl = svgEl;
-            }
-            if (image !== el.__imageSrc) {
-                attrXLink(svgEl, 'href', image);
-                el.__imageSrc = image;
-            }
-            attr(svgEl, 'width', dw + '');
-            attr(svgEl, 'height', dh + '');
-            attr(svgEl, 'x', x + '');
-            attr(svgEl, 'y', y + '');
-            bindStyle(svgEl, style, el);
-            setTransform(svgEl, el.transform);
         }
-    };
-    var TEXT_ALIGN_TO_ANCHOR = {
-        left: 'start',
-        right: 'end',
-        center: 'middle',
-        middle: 'middle'
-    };
-    function adjustTextY$1(y, lineHeight, textBaseline) {
-        if (textBaseline === 'top') {
-            y += lineHeight / 2;
+        if (!image) {
+            return;
         }
-        else if (textBaseline === 'bottom') {
-            y -= lineHeight / 2;
+        var x = style.x || 0;
+        var y = style.y || 0;
+        var dw = style.width;
+        var dh = style.height;
+        var attrs = {
+            href: image,
+            width: dw,
+            height: dh
+        };
+        if (x) {
+            attrs.x = x;
         }
-        return y;
+        if (y) {
+            attrs.y = y;
+        }
+        setTransform(attrs, el.transform);
+        setStyleAttrs(attrs, style, el, scope);
+        scope.animation && createCSSAnimation(el, attrs, scope);
+        return createVNode('image', el.id + '', attrs);
     }
-    var svgText = {
-        brush: function (el) {
-            var style = el.style;
-            var text = style.text;
-            text != null && (text += '');
-            if (!text || isNaN(style.x) || isNaN(style.y)) {
+    function brushSVGTSpan(el, scope) {
+        var style = el.style;
+        var text = style.text;
+        text != null && (text += '');
+        if (!text || isNaN(style.x) || isNaN(style.y)) {
+            return;
+        }
+        var font = style.font || DEFAULT_FONT;
+        var x = style.x || 0;
+        var y = adjustTextY(style.y || 0, getLineHeight(font), style.textBaseline);
+        var textAlign = TEXT_ALIGN_TO_ANCHOR[style.textAlign]
+            || style.textAlign;
+        var attrs = {
+            'dominant-baseline': 'central',
+            'text-anchor': textAlign
+        };
+        if (hasSeparateFont(style)) {
+            var separatedFontStr = '';
+            var fontStyle = style.fontStyle;
+            var fontSize = parseFontSize(style.fontSize);
+            if (!parseFloat(fontSize)) {
                 return;
             }
-            var textSvgEl = el.__svgEl;
-            if (!textSvgEl) {
-                textSvgEl = createElement('text');
-                attrXML(textSvgEl, 'xml:space', 'preserve');
-                el.__svgEl = textSvgEl;
+            var fontFamily = style.fontFamily || DEFAULT_FONT_FAMILY;
+            var fontWeight = style.fontWeight;
+            separatedFontStr += "font-size:" + fontSize + ";font-family:" + fontFamily + ";";
+            if (fontStyle && fontStyle !== 'normal') {
+                separatedFontStr += "font-style:" + fontStyle + ";";
             }
-            var font = style.font || DEFAULT_FONT;
-            var textSvgElStyle = textSvgEl.style;
-            textSvgElStyle.font = font;
-            textSvgEl.textContent = text;
-            bindStyle(textSvgEl, style, el);
-            setTransform(textSvgEl, el.transform);
-            var x = style.x || 0;
-            var y = adjustTextY$1(style.y || 0, getLineHeight(font), style.textBaseline);
-            var textAlign = TEXT_ALIGN_TO_ANCHOR[style.textAlign]
-                || style.textAlign;
-            attr(textSvgEl, 'dominant-baseline', 'central');
-            attr(textSvgEl, 'text-anchor', textAlign);
-            attr(textSvgEl, 'x', x + '');
-            attr(textSvgEl, 'y', y + '');
-        }
-    };
-
-    var MARK_UNUSED = '0';
-    var MARK_USED = '1';
-    var Definable = (function () {
-        function Definable(zrId, svgRoot, tagNames, markLabel, domName) {
-            this.nextId = 0;
-            this._domName = '_dom';
-            this.createElement = createElement;
-            this._zrId = zrId;
-            this._svgRoot = svgRoot;
-            this._tagNames = typeof tagNames === 'string' ? [tagNames] : tagNames;
-            this._markLabel = markLabel;
-            if (domName) {
-                this._domName = domName;
+            if (fontWeight && fontWeight !== 'normal') {
+                separatedFontStr += "font-weight:" + fontWeight + ";";
             }
-        }
-        Definable.prototype.getDefs = function (isForceCreating) {
-            var svgRoot = this._svgRoot;
-            var defs = this._svgRoot.getElementsByTagName('defs');
-            if (defs.length === 0) {
-                if (isForceCreating) {
-                    var defs_1 = svgRoot.insertBefore(this.createElement('defs'), svgRoot.firstChild);
-                    if (!defs_1.contains) {
-                        defs_1.contains = function (el) {
-                            var children = defs_1.children;
-                            if (!children) {
-                                return false;
-                            }
-                            for (var i = children.length - 1; i >= 0; --i) {
-                                if (children[i] === el) {
-                                    return true;
-                                }
-                            }
-                            return false;
-                        };
-                    }
-                    return defs_1;
-                }
-                else {
-                    return null;
-                }
-            }
-            else {
-                return defs[0];
-            }
-        };
-        Definable.prototype.doUpdate = function (target, onUpdate) {
-            if (!target) {
-                return;
-            }
-            var defs = this.getDefs(false);
-            if (target[this._domName] && defs.contains(target[this._domName])) {
-                if (typeof onUpdate === 'function') {
-                    onUpdate(target);
-                }
-            }
-            else {
-                var dom = this.add(target);
-                if (dom) {
-                    target[this._domName] = dom;
-                }
-            }
-        };
-        Definable.prototype.add = function (target) {
-            return null;
-        };
-        Definable.prototype.addDom = function (dom) {
-            var defs = this.getDefs(true);
-            if (dom.parentNode !== defs) {
-                defs.appendChild(dom);
-            }
-        };
-        Definable.prototype.removeDom = function (target) {
-            var defs = this.getDefs(false);
-            if (defs && target[this._domName]) {
-                defs.removeChild(target[this._domName]);
-                target[this._domName] = null;
-            }
-        };
-        Definable.prototype.getDoms = function () {
-            var defs = this.getDefs(false);
-            if (!defs) {
-                return [];
-            }
-            var doms = [];
-            each(this._tagNames, function (tagName) {
-                var tags = defs.getElementsByTagName(tagName);
-                for (var i = 0; i < tags.length; i++) {
-                    doms.push(tags[i]);
-                }
-            });
-            return doms;
-        };
-        Definable.prototype.markAllUnused = function () {
-            var doms = this.getDoms();
-            var that = this;
-            each(doms, function (dom) {
-                dom[that._markLabel] = MARK_UNUSED;
-            });
-        };
-        Definable.prototype.markDomUsed = function (dom) {
-            dom && (dom[this._markLabel] = MARK_USED);
-        };
-        Definable.prototype.markDomUnused = function (dom) {
-            dom && (dom[this._markLabel] = MARK_UNUSED);
-        };
-        Definable.prototype.isDomUnused = function (dom) {
-            return dom && dom[this._markLabel] !== MARK_USED;
-        };
-        Definable.prototype.removeUnused = function () {
-            var _this = this;
-            var defs = this.getDefs(false);
-            if (!defs) {
-                return;
-            }
-            var doms = this.getDoms();
-            each(doms, function (dom) {
-                if (_this.isDomUnused(dom)) {
-                    defs.removeChild(dom);
-                }
-            });
-        };
-        Definable.prototype.getSvgProxy = function (displayable) {
-            if (displayable instanceof Path) {
-                return svgPath;
-            }
-            else if (displayable instanceof ZRImage) {
-                return svgImage;
-            }
-            else if (displayable instanceof TSpan) {
-                return svgText;
-            }
-            else {
-                return svgPath;
-            }
-        };
-        Definable.prototype.getSvgElement = function (displayable) {
-            return displayable.__svgEl;
-        };
-        return Definable;
-    }());
-
-    function isLinearGradient(value) {
-        return value.type === 'linear';
-    }
-    function isRadialGradient(value) {
-        return value.type === 'radial';
-    }
-    function isGradient(value) {
-        return value && (value.type === 'linear'
-            || value.type === 'radial');
-    }
-    var GradientManager = (function (_super) {
-        __extends(GradientManager, _super);
-        function GradientManager(zrId, svgRoot) {
-            return _super.call(this, zrId, svgRoot, ['linearGradient', 'radialGradient'], '__gradient_in_use__') || this;
-        }
-        GradientManager.prototype.addWithoutUpdate = function (svgElement, displayable) {
-            if (displayable && displayable.style) {
-                var that_1 = this;
-                each(['fill', 'stroke'], function (fillOrStroke) {
-                    var value = displayable.style[fillOrStroke];
-                    if (isGradient(value)) {
-                        var gradient = value;
-                        var defs = that_1.getDefs(true);
-                        var dom = void 0;
-                        if (gradient.__dom) {
-                            dom = gradient.__dom;
-                            if (!defs.contains(gradient.__dom)) {
-                                that_1.addDom(dom);
-                            }
-                        }
-                        else {
-                            dom = that_1.add(gradient);
-                        }
-                        that_1.markUsed(displayable);
-                        var id = dom.getAttribute('id');
-                        svgElement.setAttribute(fillOrStroke, 'url(#' + id + ')');
-                    }
-                });
-            }
-        };
-        GradientManager.prototype.add = function (gradient) {
-            var dom;
-            if (isLinearGradient(gradient)) {
-                dom = this.createElement('linearGradient');
-            }
-            else if (isRadialGradient(gradient)) {
-                dom = this.createElement('radialGradient');
-            }
-            else {
-                logError('Illegal gradient type.');
-                return null;
-            }
-            gradient.id = gradient.id || this.nextId++;
-            dom.setAttribute('id', 'zr' + this._zrId
-                + '-gradient-' + gradient.id);
-            this.updateDom(gradient, dom);
-            this.addDom(dom);
-            return dom;
-        };
-        GradientManager.prototype.update = function (gradient) {
-            if (!isGradient(gradient)) {
-                return;
-            }
-            var that = this;
-            this.doUpdate(gradient, function () {
-                var dom = gradient.__dom;
-                if (!dom) {
-                    return;
-                }
-                var tagName = dom.tagName;
-                var type = gradient.type;
-                if (type === 'linear' && tagName === 'linearGradient'
-                    || type === 'radial' && tagName === 'radialGradient') {
-                    that.updateDom(gradient, gradient.__dom);
-                }
-                else {
-                    that.removeDom(gradient);
-                    that.add(gradient);
-                }
-            });
-        };
-        GradientManager.prototype.updateDom = function (gradient, dom) {
-            if (isLinearGradient(gradient)) {
-                dom.setAttribute('x1', gradient.x + '');
-                dom.setAttribute('y1', gradient.y + '');
-                dom.setAttribute('x2', gradient.x2 + '');
-                dom.setAttribute('y2', gradient.y2 + '');
-            }
-            else if (isRadialGradient(gradient)) {
-                dom.setAttribute('cx', gradient.x + '');
-                dom.setAttribute('cy', gradient.y + '');
-                dom.setAttribute('r', gradient.r + '');
-            }
-            else {
-                logError('Illegal gradient type.');
-                return;
-            }
-            if (gradient.global) {
-                dom.setAttribute('gradientUnits', 'userSpaceOnUse');
-            }
-            else {
-                dom.setAttribute('gradientUnits', 'objectBoundingBox');
-            }
-            dom.innerHTML = '';
-            var colors = gradient.colorStops;
-            for (var i = 0, len = colors.length; i < len; ++i) {
-                var stop_1 = this.createElement('stop');
-                stop_1.setAttribute('offset', colors[i].offset * 100 + '%');
-                var color$1 = colors[i].color;
-                if (color$1.indexOf('rgba') > -1) {
-                    var opacity = parse(color$1)[3];
-                    var hex = toHex(color$1);
-                    stop_1.setAttribute('stop-color', '#' + hex);
-                    stop_1.setAttribute('stop-opacity', opacity + '');
-                }
-                else {
-                    stop_1.setAttribute('stop-color', colors[i].color);
-                }
-                dom.appendChild(stop_1);
-            }
-            gradient.__dom = dom;
-        };
-        GradientManager.prototype.markUsed = function (displayable) {
-            if (displayable.style) {
-                var gradient = displayable.style.fill;
-                if (gradient && gradient.__dom) {
-                    _super.prototype.markDomUsed.call(this, gradient.__dom);
-                }
-                gradient = displayable.style.stroke;
-                if (gradient && gradient.__dom) {
-                    _super.prototype.markDomUsed.call(this, gradient.__dom);
-                }
-            }
-        };
-        return GradientManager;
-    }(Definable));
-
-    var wmUniqueIndex = Math.round(Math.random() * 9);
-    var supportDefineProperty = typeof Object.defineProperty === 'function';
-    var WeakMap = (function () {
-        function WeakMap() {
-            this._id = '__ec_inner_' + wmUniqueIndex++;
-        }
-        WeakMap.prototype.get = function (key) {
-            return this._guard(key)[this._id];
-        };
-        WeakMap.prototype.set = function (key, value) {
-            var target = this._guard(key);
-            if (supportDefineProperty) {
-                Object.defineProperty(target, this._id, {
-                    value: value,
-                    enumerable: false,
-                    configurable: true
-                });
-            }
-            else {
-                target[this._id] = value;
-            }
-            return this;
-        };
-        WeakMap.prototype["delete"] = function (key) {
-            if (this.has(key)) {
-                delete this._guard(key)[this._id];
-                return true;
-            }
-            return false;
-        };
-        WeakMap.prototype.has = function (key) {
-            return !!this._guard(key)[this._id];
-        };
-        WeakMap.prototype._guard = function (key) {
-            if (key !== Object(key)) {
-                throw TypeError('Value of WeakMap is not a non-null object.');
-            }
-            return key;
-        };
-        return WeakMap;
-    }());
-
-    function isPattern(value) {
-        return value && (!!value.image || !!value.svgElement);
-    }
-    var patternDomMap = new WeakMap();
-    var PatternManager = (function (_super) {
-        __extends(PatternManager, _super);
-        function PatternManager(zrId, svgRoot) {
-            return _super.call(this, zrId, svgRoot, ['pattern'], '__pattern_in_use__') || this;
-        }
-        PatternManager.prototype.addWithoutUpdate = function (svgElement, displayable) {
-            if (displayable && displayable.style) {
-                var that_1 = this;
-                each(['fill', 'stroke'], function (fillOrStroke) {
-                    var pattern = displayable.style[fillOrStroke];
-                    if (isPattern(pattern)) {
-                        var defs = that_1.getDefs(true);
-                        var dom = patternDomMap.get(pattern);
-                        if (dom) {
-                            if (!defs.contains(dom)) {
-                                that_1.addDom(dom);
-                            }
-                        }
-                        else {
-                            dom = that_1.add(pattern);
-                        }
-                        that_1.markUsed(displayable);
-                        var id = dom.getAttribute('id');
-                        svgElement.setAttribute(fillOrStroke, 'url(#' + id + ')');
-                    }
-                });
-            }
-        };
-        PatternManager.prototype.add = function (pattern) {
-            if (!isPattern(pattern)) {
-                return;
-            }
-            var dom = this.createElement('pattern');
-            pattern.id = pattern.id == null ? this.nextId++ : pattern.id;
-            dom.setAttribute('id', 'zr' + this._zrId
-                + '-pattern-' + pattern.id);
-            dom.setAttribute('x', '0');
-            dom.setAttribute('y', '0');
-            dom.setAttribute('patternUnits', 'userSpaceOnUse');
-            this.updateDom(pattern, dom);
-            this.addDom(dom);
-            return dom;
-        };
-        PatternManager.prototype.update = function (pattern) {
-            if (!isPattern(pattern)) {
-                return;
-            }
-            var that = this;
-            this.doUpdate(pattern, function () {
-                var dom = patternDomMap.get(pattern);
-                that.updateDom(pattern, dom);
-            });
-        };
-        PatternManager.prototype.updateDom = function (pattern, patternDom) {
-            var svgElement = pattern.svgElement;
-            if (svgElement instanceof SVGElement) {
-                if (svgElement.parentNode !== patternDom) {
-                    patternDom.innerHTML = '';
-                    patternDom.appendChild(svgElement);
-                    patternDom.setAttribute('width', pattern.svgWidth + '');
-                    patternDom.setAttribute('height', pattern.svgHeight + '');
-                }
-            }
-            else {
-                var img = void 0;
-                var prevImage = patternDom.getElementsByTagName('image');
-                if (prevImage.length) {
-                    if (pattern.image) {
-                        img = prevImage[0];
-                    }
-                    else {
-                        patternDom.removeChild(prevImage[0]);
-                        return;
-                    }
-                }
-                else if (pattern.image) {
-                    img = this.createElement('image');
-                }
-                if (img) {
-                    var imageSrc = void 0;
-                    var patternImage = pattern.image;
-                    if (typeof patternImage === 'string') {
-                        imageSrc = patternImage;
-                    }
-                    else if (patternImage instanceof HTMLImageElement) {
-                        imageSrc = patternImage.src;
-                    }
-                    else if (patternImage instanceof HTMLCanvasElement) {
-                        imageSrc = patternImage.toDataURL();
-                    }
-                    if (imageSrc) {
-                        img.setAttribute('href', imageSrc);
-                        img.setAttribute('x', '0');
-                        img.setAttribute('y', '0');
-                        var hostEl = {
-                            dirty: function () { }
-                        };
-                        var createdImage = createOrUpdateImage(imageSrc, img, hostEl, function (img) {
-                            patternDom.setAttribute('width', img.width + '');
-                            patternDom.setAttribute('height', img.height + '');
-                        });
-                        if (createdImage && createdImage.width && createdImage.height) {
-                            patternDom.setAttribute('width', createdImage.width + '');
-                            patternDom.setAttribute('height', createdImage.height + '');
-                        }
-                        patternDom.appendChild(img);
-                    }
-                }
-            }
-            var x = pattern.x || 0;
-            var y = pattern.y || 0;
-            var rotation = (pattern.rotation || 0) / Math.PI * 180;
-            var scaleX = pattern.scaleX || 1;
-            var scaleY = pattern.scaleY || 1;
-            var transform = "translate(" + x + ", " + y + ") rotate(" + rotation + ") scale(" + scaleX + ", " + scaleY + ")";
-            patternDom.setAttribute('patternTransform', transform);
-            patternDomMap.set(pattern, patternDom);
-        };
-        PatternManager.prototype.markUsed = function (displayable) {
-            if (displayable.style) {
-                if (isPattern(displayable.style.fill)) {
-                    _super.prototype.markDomUsed.call(this, patternDomMap.get(displayable.style.fill));
-                }
-                if (isPattern(displayable.style.stroke)) {
-                    _super.prototype.markDomUsed.call(this, patternDomMap.get(displayable.style.stroke));
-                }
-            }
-        };
-        return PatternManager;
-    }(Definable));
-
-    function generateClipPathsKey(clipPaths) {
-        var key = [];
-        if (clipPaths) {
-            for (var i = 0; i < clipPaths.length; i++) {
-                var clipPath = clipPaths[i];
-                key.push(clipPath.id);
-            }
-        }
-        return key.join(',');
-    }
-    function hasClipPath(displayable) {
-        var clipPaths = displayable.__clipPaths;
-        return clipPaths && clipPaths.length > 0;
-    }
-    var ClippathManager = (function (_super) {
-        __extends(ClippathManager, _super);
-        function ClippathManager(zrId, svgRoot) {
-            var _this = _super.call(this, zrId, svgRoot, 'clipPath', '__clippath_in_use__') || this;
-            _this._refGroups = {};
-            _this._keyDuplicateCount = {};
-            return _this;
-        }
-        ClippathManager.prototype.markAllUnused = function () {
-            _super.prototype.markAllUnused.call(this);
-            var refGroups = this._refGroups;
-            for (var key in refGroups) {
-                if (refGroups.hasOwnProperty(key)) {
-                    this.markDomUnused(refGroups[key]);
-                }
-            }
-            this._keyDuplicateCount = {};
-        };
-        ClippathManager.prototype._getClipPathGroup = function (displayable, prevDisplayable) {
-            if (!hasClipPath(displayable)) {
-                return;
-            }
-            var clipPaths = displayable.__clipPaths;
-            var keyDuplicateCount = this._keyDuplicateCount;
-            var clipPathKey = generateClipPathsKey(clipPaths);
-            if (isClipPathChanged(clipPaths, prevDisplayable && prevDisplayable.__clipPaths)) {
-                keyDuplicateCount[clipPathKey] = keyDuplicateCount[clipPathKey] || 0;
-                keyDuplicateCount[clipPathKey] && (clipPathKey += '-' + keyDuplicateCount[clipPathKey]);
-                keyDuplicateCount[clipPathKey]++;
-            }
-            return this._refGroups[clipPathKey]
-                || (this._refGroups[clipPathKey] = this.createElement('g'));
-        };
-        ClippathManager.prototype.update = function (displayable, prevDisplayable) {
-            var clipGroup = this._getClipPathGroup(displayable, prevDisplayable);
-            if (clipGroup) {
-                this.markDomUsed(clipGroup);
-                this.updateDom(clipGroup, displayable.__clipPaths);
-            }
-            return clipGroup;
-        };
-        ClippathManager.prototype.updateDom = function (parentEl, clipPaths) {
-            if (clipPaths && clipPaths.length > 0) {
-                var defs = this.getDefs(true);
-                var clipPath = clipPaths[0];
-                var clipPathEl = void 0;
-                var id = void 0;
-                if (clipPath._dom) {
-                    id = clipPath._dom.getAttribute('id');
-                    clipPathEl = clipPath._dom;
-                    if (!defs.contains(clipPathEl)) {
-                        defs.appendChild(clipPathEl);
-                    }
-                }
-                else {
-                    id = 'zr' + this._zrId + '-clip-' + this.nextId;
-                    ++this.nextId;
-                    clipPathEl = this.createElement('clipPath');
-                    clipPathEl.setAttribute('id', id);
-                    defs.appendChild(clipPathEl);
-                    clipPath._dom = clipPathEl;
-                }
-                var svgProxy = this.getSvgProxy(clipPath);
-                svgProxy.brush(clipPath);
-                var pathEl = this.getSvgElement(clipPath);
-                clipPathEl.innerHTML = '';
-                clipPathEl.appendChild(pathEl);
-                parentEl.setAttribute('clip-path', 'url(#' + id + ')');
-                if (clipPaths.length > 1) {
-                    this.updateDom(clipPathEl, clipPaths.slice(1));
-                }
-            }
-            else {
-                if (parentEl) {
-                    parentEl.setAttribute('clip-path', 'none');
-                }
-            }
-        };
-        ClippathManager.prototype.markUsed = function (displayable) {
-            var _this = this;
-            if (displayable.__clipPaths) {
-                each(displayable.__clipPaths, function (clipPath) {
-                    if (clipPath._dom) {
-                        _super.prototype.markDomUsed.call(_this, clipPath._dom);
-                    }
-                });
-            }
-        };
-        ClippathManager.prototype.removeUnused = function () {
-            _super.prototype.removeUnused.call(this);
-            var newRefGroupsMap = {};
-            var refGroups = this._refGroups;
-            for (var key in refGroups) {
-                if (refGroups.hasOwnProperty(key)) {
-                    var group = refGroups[key];
-                    if (!this.isDomUnused(group)) {
-                        newRefGroupsMap[key] = group;
-                    }
-                    else if (group.parentNode) {
-                        group.parentNode.removeChild(group);
-                    }
-                }
-            }
-            this._refGroups = newRefGroupsMap;
-        };
-        return ClippathManager;
-    }(Definable));
-
-    var ShadowManager = (function (_super) {
-        __extends(ShadowManager, _super);
-        function ShadowManager(zrId, svgRoot) {
-            var _this = _super.call(this, zrId, svgRoot, ['filter'], '__filter_in_use__', '_shadowDom') || this;
-            _this._shadowDomMap = {};
-            _this._shadowDomPool = [];
-            return _this;
-        }
-        ShadowManager.prototype._getFromPool = function () {
-            var shadowDom = this._shadowDomPool.pop();
-            if (!shadowDom) {
-                shadowDom = this.createElement('filter');
-                shadowDom.setAttribute('id', 'zr' + this._zrId + '-shadow-' + this.nextId++);
-                var domChild = this.createElement('feDropShadow');
-                shadowDom.appendChild(domChild);
-                this.addDom(shadowDom);
-            }
-            return shadowDom;
-        };
-        ShadowManager.prototype.update = function (svgElement, displayable) {
-            var style = displayable.style;
-            if (hasShadow(style)) {
-                var shadowKey = getShadowKey(displayable);
-                var shadowDom = displayable._shadowDom = this._shadowDomMap[shadowKey];
-                if (!shadowDom) {
-                    shadowDom = this._getFromPool();
-                    this._shadowDomMap[shadowKey] = shadowDom;
-                }
-                this.updateDom(svgElement, displayable, shadowDom);
-            }
-            else {
-                this.remove(svgElement, displayable);
-            }
-        };
-        ShadowManager.prototype.remove = function (svgElement, displayable) {
-            if (displayable._shadowDom != null) {
-                displayable._shadowDom = null;
-                svgElement.removeAttribute('filter');
-            }
-        };
-        ShadowManager.prototype.updateDom = function (svgElement, displayable, shadowDom) {
-            var domChild = shadowDom.children[0];
-            var style = displayable.style;
-            var globalScale = displayable.getGlobalScale();
-            var scaleX = globalScale[0];
-            var scaleY = globalScale[1];
-            if (!scaleX || !scaleY) {
-                return;
-            }
-            var offsetX = style.shadowOffsetX || 0;
-            var offsetY = style.shadowOffsetY || 0;
-            var blur = style.shadowBlur;
-            var normalizedColor = normalizeColor(style.shadowColor);
-            domChild.setAttribute('dx', offsetX / scaleX + '');
-            domChild.setAttribute('dy', offsetY / scaleY + '');
-            domChild.setAttribute('flood-color', normalizedColor.color);
-            domChild.setAttribute('flood-opacity', normalizedColor.opacity + '');
-            var stdDx = blur / 2 / scaleX;
-            var stdDy = blur / 2 / scaleY;
-            var stdDeviation = stdDx + ' ' + stdDy;
-            domChild.setAttribute('stdDeviation', stdDeviation);
-            shadowDom.setAttribute('x', '-100%');
-            shadowDom.setAttribute('y', '-100%');
-            shadowDom.setAttribute('width', '300%');
-            shadowDom.setAttribute('height', '300%');
-            displayable._shadowDom = shadowDom;
-            var id = shadowDom.getAttribute('id');
-            svgElement.setAttribute('filter', 'url(#' + id + ')');
-        };
-        ShadowManager.prototype.removeUnused = function () {
-            var defs = this.getDefs(false);
-            if (!defs) {
-                return;
-            }
-            var shadowDomsPool = this._shadowDomPool;
-            var shadowDomMap = this._shadowDomMap;
-            for (var key in shadowDomMap) {
-                if (shadowDomMap.hasOwnProperty(key)) {
-                    shadowDomsPool.push(shadowDomMap[key]);
-                }
-            }
-            this._shadowDomMap = {};
-        };
-        return ShadowManager;
-    }(Definable));
-    function hasShadow(style) {
-        return style
-            && (style.shadowBlur || style.shadowOffsetX || style.shadowOffsetY);
-    }
-    function getShadowKey(displayable) {
-        var style = displayable.style;
-        var globalScale = displayable.getGlobalScale();
-        return [
-            style.shadowColor,
-            (style.shadowBlur || 0).toFixed(2),
-            (style.shadowOffsetX || 0).toFixed(2),
-            (style.shadowOffsetY || 0).toFixed(2),
-            globalScale[0],
-            globalScale[1]
-        ].join(',');
-    }
-
-    function parseInt10$1(val) {
-        return parseInt(val, 10);
-    }
-    function getSvgProxy(el) {
-        if (el instanceof Path) {
-            return svgPath;
-        }
-        else if (el instanceof ZRImage) {
-            return svgImage;
-        }
-        else if (el instanceof TSpan) {
-            return svgText;
+            attrs.style = separatedFontStr;
         }
         else {
-            return svgPath;
+            attrs.style = "font: " + font;
+        }
+        if (text.match(/\s/)) {
+            attrs['xml:space'] = 'preserve';
+        }
+        if (x) {
+            attrs.x = x;
+        }
+        if (y) {
+            attrs.y = y;
+        }
+        setTransform(attrs, el.transform);
+        setStyleAttrs(attrs, style, el, scope);
+        scope.animation && createCSSAnimation(el, attrs, scope);
+        return createVNode('text', el.id + '', attrs, undefined, text);
+    }
+    function brush$1(el, scope) {
+        if (el instanceof Path) {
+            return brushSVGPath(el, scope);
+        }
+        else if (el instanceof ZRImage) {
+            return brushSVGImage(el, scope);
+        }
+        else if (el instanceof TSpan) {
+            return brushSVGTSpan(el, scope);
         }
     }
-    function checkParentAvailable(parent, child) {
-        return child && parent && child.parentNode !== parent;
-    }
-    function insertAfter(parent, child, prevSibling) {
-        if (checkParentAvailable(parent, child) && prevSibling) {
-            var nextSibling = prevSibling.nextSibling;
-            nextSibling ? parent.insertBefore(child, nextSibling)
-                : parent.appendChild(child);
+    function setShadow(el, attrs, scope) {
+        var style = el.style;
+        if (hasShadow(style)) {
+            var shadowKey = getShadowKey(el);
+            var shadowCache = scope.shadowCache;
+            var shadowId = shadowCache[shadowKey];
+            if (!shadowId) {
+                var globalScale = el.getGlobalScale();
+                var scaleX = globalScale[0];
+                var scaleY = globalScale[1];
+                if (!scaleX || !scaleY) {
+                    return;
+                }
+                var offsetX = style.shadowOffsetX || 0;
+                var offsetY = style.shadowOffsetY || 0;
+                var blur_1 = style.shadowBlur;
+                var _a = normalizeColor(style.shadowColor), opacity = _a.opacity, color = _a.color;
+                var stdDx = blur_1 / 2 / scaleX;
+                var stdDy = blur_1 / 2 / scaleY;
+                var stdDeviation = stdDx + ' ' + stdDy;
+                shadowId = scope.zrId + '-s' + scope.shadowIdx++;
+                scope.defs[shadowId] = createVNode('filter', shadowId, {
+                    'id': shadowId,
+                    'x': '-100%',
+                    'y': '-100%',
+                    'width': '300%',
+                    'height': '300%'
+                }, [
+                    createVNode('feDropShadow', '', {
+                        'dx': offsetX / scaleX,
+                        'dy': offsetY / scaleY,
+                        'stdDeviation': stdDeviation,
+                        'flood-color': color,
+                        'flood-opacity': opacity
+                    })
+                ]);
+                shadowCache[shadowKey] = shadowId;
+            }
+            attrs.filter = getIdURL(shadowId);
         }
     }
-    function prepend(parent, child) {
-        if (checkParentAvailable(parent, child)) {
-            var firstChild = parent.firstChild;
-            firstChild ? parent.insertBefore(child, firstChild)
-                : parent.appendChild(child);
+    function setGradient(style, attrs, target, scope) {
+        var val = style[target];
+        var gradientTag;
+        var gradientAttrs = {
+            'gradientUnits': val.global
+                ? 'userSpaceOnUse'
+                : 'objectBoundingBox'
+        };
+        if (isLinearGradient(val)) {
+            gradientTag = 'linearGradient';
+            gradientAttrs.x1 = val.x;
+            gradientAttrs.y1 = val.y;
+            gradientAttrs.x2 = val.x2;
+            gradientAttrs.y2 = val.y2;
+        }
+        else if (isRadialGradient(val)) {
+            gradientTag = 'radialGradient';
+            gradientAttrs.cx = retrieve2(val.x, 0.5);
+            gradientAttrs.cy = retrieve2(val.y, 0.5);
+            gradientAttrs.r = retrieve2(val.r, 0.5);
+        }
+        else {
+            {
+                logError('Illegal gradient type.');
+            }
+            return;
+        }
+        var colors = val.colorStops;
+        var colorStops = [];
+        for (var i = 0, len = colors.length; i < len; ++i) {
+            var offset = round4(colors[i].offset) * 100 + '%';
+            var stopColor = colors[i].color;
+            var _a = normalizeColor(stopColor), color = _a.color, opacity = _a.opacity;
+            var stopsAttrs = {
+                'offset': offset
+            };
+            stopsAttrs['stop-color'] = color;
+            if (opacity < 1) {
+                stopsAttrs['stop-opacity'] = opacity;
+            }
+            colorStops.push(createVNode('stop', i + '', stopsAttrs));
+        }
+        var gradientVNode = createVNode(gradientTag, '', gradientAttrs, colorStops);
+        var gradientKey = vNodeToString(gradientVNode);
+        var gradientCache = scope.gradientCache;
+        var gradientId = gradientCache[gradientKey];
+        if (!gradientId) {
+            gradientId = scope.zrId + '-g' + scope.gradientIdx++;
+            gradientCache[gradientKey] = gradientId;
+            gradientAttrs.id = gradientId;
+            scope.defs[gradientId] = createVNode(gradientTag, gradientId, gradientAttrs, colorStops);
+        }
+        attrs[target] = getIdURL(gradientId);
+    }
+    function setPattern(el, attrs, target, scope) {
+        var val = el.style[target];
+        var patternAttrs = {
+            'patternUnits': 'userSpaceOnUse'
+        };
+        var child;
+        if (isImagePattern(val)) {
+            var imageWidth_1 = val.imageWidth;
+            var imageHeight_1 = val.imageHeight;
+            var imageSrc = void 0;
+            var patternImage = val.image;
+            if (isString(patternImage)) {
+                imageSrc = patternImage;
+            }
+            else if (isImageLike$1(patternImage)) {
+                imageSrc = patternImage.src;
+            }
+            else if (isCanvasLike(patternImage)) {
+                imageSrc = patternImage.toDataURL();
+            }
+            if (typeof Image === 'undefined') {
+                var errMsg = 'Image width/height must been given explictly in svg-ssr renderer.';
+                assert(imageWidth_1, errMsg);
+                assert(imageHeight_1, errMsg);
+            }
+            else if (imageWidth_1 == null || imageHeight_1 == null) {
+                var setSizeToVNode_1 = function (vNode, img) {
+                    if (vNode) {
+                        var svgEl = vNode.elm;
+                        var width = (vNode.attrs.width = imageWidth_1 || img.width);
+                        var height = (vNode.attrs.height = imageHeight_1 || img.height);
+                        if (svgEl) {
+                            svgEl.setAttribute('width', width);
+                            svgEl.setAttribute('height', height);
+                        }
+                    }
+                };
+                var createdImage = createOrUpdateImage(imageSrc, null, el, function (img) {
+                    setSizeToVNode_1(patternVNode, img);
+                    setSizeToVNode_1(child, img);
+                });
+                if (createdImage && createdImage.width && createdImage.height) {
+                    imageWidth_1 = imageWidth_1 || createdImage.width;
+                    imageHeight_1 = imageHeight_1 || createdImage.height;
+                }
+            }
+            child = createVNode('image', 'img', {
+                href: imageSrc,
+                width: imageWidth_1,
+                height: imageHeight_1
+            });
+            patternAttrs.width = imageWidth_1;
+            patternAttrs.height = imageHeight_1;
+        }
+        else if (val.svgElement) {
+            child = clone(val.svgElement);
+            patternAttrs.width = val.svgWidth;
+            patternAttrs.height = val.svgHeight;
+        }
+        if (!child) {
+            return;
+        }
+        patternAttrs.patternTransform = getSRTTransformString(val);
+        var patternVNode = createVNode('pattern', '', patternAttrs, [child]);
+        var patternKey = vNodeToString(patternVNode);
+        var patternCache = scope.patternCache;
+        var patternId = patternCache[patternKey];
+        if (!patternId) {
+            patternId = scope.zrId + '-p' + scope.patternIdx++;
+            patternCache[patternKey] = patternId;
+            patternAttrs.id = patternId;
+            patternVNode = scope.defs[patternId] = createVNode('pattern', patternId, patternAttrs, [child]);
+        }
+        attrs[target] = getIdURL(patternId);
+    }
+    function setClipPath(clipPath, attrs, scope) {
+        var clipPathCache = scope.clipPathCache, defs = scope.defs;
+        var clipPathId = clipPathCache[clipPath.id];
+        if (!clipPathId) {
+            clipPathId = scope.zrId + '-c' + scope.clipPathIdx++;
+            var clipPathAttrs = {
+                id: clipPathId
+            };
+            clipPathCache[clipPath.id] = clipPathId;
+            defs[clipPathId] = createVNode('clipPath', clipPathId, clipPathAttrs, [brushSVGPath(clipPath, scope)]);
+        }
+        attrs['clip-path'] = getIdURL(clipPathId);
+    }
+
+    function createTextNode(text) {
+        return document.createTextNode(text);
+    }
+    function insertBefore(parentNode, newNode, referenceNode) {
+        parentNode.insertBefore(newNode, referenceNode);
+    }
+    function removeChild(node, child) {
+        node.removeChild(child);
+    }
+    function appendChild(node, child) {
+        node.appendChild(child);
+    }
+    function parentNode(node) {
+        return node.parentNode;
+    }
+    function nextSibling(node) {
+        return node.nextSibling;
+    }
+    function setTextContent(node, text) {
+        node.textContent = text;
+    }
+
+    var colonChar = 58;
+    var xChar = 120;
+    var emptyNode = createVNode('', '');
+    function isUndef(s) {
+        return s === undefined;
+    }
+    function isDef(s) {
+        return s !== undefined;
+    }
+    function createKeyToOldIdx(children, beginIdx, endIdx) {
+        var map = {};
+        for (var i = beginIdx; i <= endIdx; ++i) {
+            var key = children[i].key;
+            if (key !== undefined) {
+                {
+                    if (map[key] != null) {
+                        console.error("Duplicate key " + key);
+                    }
+                }
+                map[key] = i;
+            }
+        }
+        return map;
+    }
+    function sameVnode(vnode1, vnode2) {
+        var isSameKey = vnode1.key === vnode2.key;
+        var isSameTag = vnode1.tag === vnode2.tag;
+        return isSameTag && isSameKey;
+    }
+    function createElm(vnode) {
+        var i;
+        var children = vnode.children;
+        var tag = vnode.tag;
+        if (isDef(tag)) {
+            var elm = (vnode.elm = createElement(tag));
+            updateAttrs(emptyNode, vnode);
+            if (isArray(children)) {
+                for (i = 0; i < children.length; ++i) {
+                    var ch = children[i];
+                    if (ch != null) {
+                        appendChild(elm, createElm(ch));
+                    }
+                }
+            }
+            else if (isDef(vnode.text) && !isObject(vnode.text)) {
+                appendChild(elm, createTextNode(vnode.text));
+            }
+        }
+        else {
+            vnode.elm = createTextNode(vnode.text);
+        }
+        return vnode.elm;
+    }
+    function addVnodes(parentElm, before, vnodes, startIdx, endIdx) {
+        for (; startIdx <= endIdx; ++startIdx) {
+            var ch = vnodes[startIdx];
+            if (ch != null) {
+                insertBefore(parentElm, createElm(ch), before);
+            }
         }
     }
-    function remove(parent, child) {
-        if (child && parent && child.parentNode === parent) {
-            parent.removeChild(child);
+    function removeVnodes(parentElm, vnodes, startIdx, endIdx) {
+        for (; startIdx <= endIdx; ++startIdx) {
+            var ch = vnodes[startIdx];
+            if (ch != null) {
+                if (isDef(ch.tag)) {
+                    var parent_1 = parentNode(ch.elm);
+                    removeChild(parent_1, ch.elm);
+                }
+                else {
+                    removeChild(parentElm, ch.elm);
+                }
+            }
         }
     }
-    function removeFromMyParent(child) {
-        if (child && child.parentNode) {
-            child.parentNode.removeChild(child);
+    function updateAttrs(oldVnode, vnode) {
+        var key;
+        var elm = vnode.elm;
+        var oldAttrs = oldVnode && oldVnode.attrs || {};
+        var attrs = vnode.attrs || {};
+        if (oldAttrs === attrs) {
+            return;
+        }
+        for (key in attrs) {
+            var cur = attrs[key];
+            var old = oldAttrs[key];
+            if (old !== cur) {
+                if (cur === true) {
+                    elm.setAttribute(key, '');
+                }
+                else if (cur === false) {
+                    elm.removeAttribute(key);
+                }
+                else {
+                    if (key.charCodeAt(0) !== xChar) {
+                        elm.setAttribute(key, cur);
+                    }
+                    else if (key === 'xmlns:xlink' || key === 'xmlns') {
+                        elm.setAttributeNS(XMLNS, key, cur);
+                    }
+                    else if (key.charCodeAt(3) === colonChar) {
+                        elm.setAttributeNS(XML_NAMESPACE, key, cur);
+                    }
+                    else if (key.charCodeAt(5) === colonChar) {
+                        elm.setAttributeNS(XLINKNS, key, cur);
+                    }
+                    else {
+                        elm.setAttribute(key, cur);
+                    }
+                }
+            }
+        }
+        for (key in oldAttrs) {
+            if (!(key in attrs)) {
+                elm.removeAttribute(key);
+            }
         }
     }
-    function getSvgElement(displayable) {
-        return displayable.__svgEl;
+    function updateChildren(parentElm, oldCh, newCh) {
+        var oldStartIdx = 0;
+        var newStartIdx = 0;
+        var oldEndIdx = oldCh.length - 1;
+        var oldStartVnode = oldCh[0];
+        var oldEndVnode = oldCh[oldEndIdx];
+        var newEndIdx = newCh.length - 1;
+        var newStartVnode = newCh[0];
+        var newEndVnode = newCh[newEndIdx];
+        var oldKeyToIdx;
+        var idxInOld;
+        var elmToMove;
+        var before;
+        while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+            if (oldStartVnode == null) {
+                oldStartVnode = oldCh[++oldStartIdx];
+            }
+            else if (oldEndVnode == null) {
+                oldEndVnode = oldCh[--oldEndIdx];
+            }
+            else if (newStartVnode == null) {
+                newStartVnode = newCh[++newStartIdx];
+            }
+            else if (newEndVnode == null) {
+                newEndVnode = newCh[--newEndIdx];
+            }
+            else if (sameVnode(oldStartVnode, newStartVnode)) {
+                patchVnode(oldStartVnode, newStartVnode);
+                oldStartVnode = oldCh[++oldStartIdx];
+                newStartVnode = newCh[++newStartIdx];
+            }
+            else if (sameVnode(oldEndVnode, newEndVnode)) {
+                patchVnode(oldEndVnode, newEndVnode);
+                oldEndVnode = oldCh[--oldEndIdx];
+                newEndVnode = newCh[--newEndIdx];
+            }
+            else if (sameVnode(oldStartVnode, newEndVnode)) {
+                patchVnode(oldStartVnode, newEndVnode);
+                insertBefore(parentElm, oldStartVnode.elm, nextSibling(oldEndVnode.elm));
+                oldStartVnode = oldCh[++oldStartIdx];
+                newEndVnode = newCh[--newEndIdx];
+            }
+            else if (sameVnode(oldEndVnode, newStartVnode)) {
+                patchVnode(oldEndVnode, newStartVnode);
+                insertBefore(parentElm, oldEndVnode.elm, oldStartVnode.elm);
+                oldEndVnode = oldCh[--oldEndIdx];
+                newStartVnode = newCh[++newStartIdx];
+            }
+            else {
+                if (isUndef(oldKeyToIdx)) {
+                    oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
+                }
+                idxInOld = oldKeyToIdx[newStartVnode.key];
+                if (isUndef(idxInOld)) {
+                    insertBefore(parentElm, createElm(newStartVnode), oldStartVnode.elm);
+                }
+                else {
+                    elmToMove = oldCh[idxInOld];
+                    if (elmToMove.tag !== newStartVnode.tag) {
+                        insertBefore(parentElm, createElm(newStartVnode), oldStartVnode.elm);
+                    }
+                    else {
+                        patchVnode(elmToMove, newStartVnode);
+                        oldCh[idxInOld] = undefined;
+                        insertBefore(parentElm, elmToMove.elm, oldStartVnode.elm);
+                    }
+                }
+                newStartVnode = newCh[++newStartIdx];
+            }
+        }
+        if (oldStartIdx <= oldEndIdx || newStartIdx <= newEndIdx) {
+            if (oldStartIdx > oldEndIdx) {
+                before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].elm;
+                addVnodes(parentElm, before, newCh, newStartIdx, newEndIdx);
+            }
+            else {
+                removeVnodes(parentElm, oldCh, oldStartIdx, oldEndIdx);
+            }
+        }
     }
+    function patchVnode(oldVnode, vnode) {
+        var elm = (vnode.elm = oldVnode.elm);
+        var oldCh = oldVnode.children;
+        var ch = vnode.children;
+        if (oldVnode === vnode) {
+            return;
+        }
+        updateAttrs(oldVnode, vnode);
+        if (isUndef(vnode.text)) {
+            if (isDef(oldCh) && isDef(ch)) {
+                if (oldCh !== ch) {
+                    updateChildren(elm, oldCh, ch);
+                }
+            }
+            else if (isDef(ch)) {
+                if (isDef(oldVnode.text)) {
+                    setTextContent(elm, '');
+                }
+                addVnodes(elm, null, ch, 0, ch.length - 1);
+            }
+            else if (isDef(oldCh)) {
+                removeVnodes(elm, oldCh, 0, oldCh.length - 1);
+            }
+            else if (isDef(oldVnode.text)) {
+                setTextContent(elm, '');
+            }
+        }
+        else if (oldVnode.text !== vnode.text) {
+            if (isDef(oldCh)) {
+                removeVnodes(elm, oldCh, 0, oldCh.length - 1);
+            }
+            setTextContent(elm, vnode.text);
+        }
+    }
+    function patch(oldVnode, vnode) {
+        if (sameVnode(oldVnode, vnode)) {
+            patchVnode(oldVnode, vnode);
+        }
+        else {
+            var elm = oldVnode.elm;
+            var parent_2 = parentNode(elm);
+            createElm(vnode);
+            if (parent_2 !== null) {
+                insertBefore(parent_2, vnode.elm, nextSibling(elm));
+                removeVnodes(parent_2, [oldVnode], 0, 0);
+            }
+        }
+        return vnode;
+    }
+
+    var svgId = 0;
     var SVGPainter = (function () {
-        function SVGPainter(root, storage, opts, zrId) {
+        function SVGPainter(root, storage, opts) {
             this.type = 'svg';
             this.refreshHover = createMethodNotSupport('refreshHover');
-            this.pathToImage = createMethodNotSupport('pathToImage');
             this.configLayer = createMethodNotSupport('configLayer');
-            this.root = root;
             this.storage = storage;
-            this._opts = opts = extend({}, opts || {});
-            var svgDom = createElement('svg');
-            svgDom.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns', 'http://www.w3.org/2000/svg');
-            svgDom.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xlink', 'http://www.w3.org/1999/xlink');
-            svgDom.setAttribute('version', '1.1');
-            svgDom.setAttribute('baseProfile', 'full');
-            svgDom.style.cssText = 'user-select:none;position:absolute;left:0;top:0;';
-            var bgRoot = createElement('g');
-            svgDom.appendChild(bgRoot);
-            var svgRoot = createElement('g');
-            svgDom.appendChild(svgRoot);
-            this._gradientManager = new GradientManager(zrId, svgRoot);
-            this._patternManager = new PatternManager(zrId, svgRoot);
-            this._clipPathManager = new ClippathManager(zrId, svgRoot);
-            this._shadowManager = new ShadowManager(zrId, svgRoot);
-            var viewport = document.createElement('div');
-            viewport.style.cssText = 'overflow:hidden;position:relative';
-            this._svgDom = svgDom;
-            this._svgRoot = svgRoot;
-            this._backgroundRoot = bgRoot;
-            this._viewport = viewport;
-            root.appendChild(viewport);
-            viewport.appendChild(svgDom);
+            this._opts = opts = extend({}, opts);
+            this.root = root;
+            this._id = 'zr' + svgId++;
+            this._oldVNode = createSVGVNode(opts.width, opts.height);
+            if (root && !opts.ssr) {
+                var viewport = this._viewport = document.createElement('div');
+                viewport.style.cssText = 'position:relative;overflow:hidden';
+                var svgDom = this._svgDom = this._oldVNode.elm = createElement('svg');
+                updateAttrs(null, this._oldVNode);
+                viewport.appendChild(svgDom);
+                root.appendChild(viewport);
+            }
             this.resize(opts.width, opts.height);
-            this._visibleList = [];
         }
         SVGPainter.prototype.getType = function () {
-            return 'svg';
+            return this.type;
         };
         SVGPainter.prototype.getViewportRoot = function () {
             return this._viewport;
-        };
-        SVGPainter.prototype.getSvgDom = function () {
-            return this._svgDom;
-        };
-        SVGPainter.prototype.getSvgRoot = function () {
-            return this._svgRoot;
         };
         SVGPainter.prototype.getViewportRootOffset = function () {
             var viewportRoot = this.getViewportRoot();
@@ -16754,147 +16821,154 @@
                 };
             }
         };
+        SVGPainter.prototype.getSvgDom = function () {
+            return this._svgDom;
+        };
         SVGPainter.prototype.refresh = function () {
+            if (this.root) {
+                var vnode = this.renderToVNode({
+                    willUpdate: true
+                });
+                vnode.attrs.style = 'position:absolute;left:0;top:0;user-select:none';
+                patch(this._oldVNode, vnode);
+                this._oldVNode = vnode;
+            }
+        };
+        SVGPainter.prototype.renderOneToVNode = function (el) {
+            return brush$1(el, createBrushScope(this._id));
+        };
+        SVGPainter.prototype.renderToVNode = function (opts) {
+            opts = opts || {};
             var list = this.storage.getDisplayList(true);
-            this._paintList(list);
+            var bgColor = this._backgroundColor;
+            var width = this._width;
+            var height = this._height;
+            var scope = createBrushScope(this._id);
+            scope.animation = opts.animation;
+            scope.willUpdate = opts.willUpdate;
+            scope.compress = opts.compress;
+            var children = [];
+            if (bgColor && bgColor !== 'none') {
+                var _a = normalizeColor(bgColor), color = _a.color, opacity = _a.opacity;
+                this._bgVNode = createVNode('rect', 'bg', {
+                    width: width,
+                    height: height,
+                    x: '0',
+                    y: '0',
+                    id: '0',
+                    fill: color,
+                    'fill-opacity': opacity
+                });
+                children.push(this._bgVNode);
+            }
+            else {
+                this._bgVNode = null;
+            }
+            var mainVNode = !opts.compress
+                ? (this._mainVNode = createVNode('g', 'main', {}, [])) : null;
+            this._paintList(list, scope, mainVNode ? mainVNode.children : children);
+            mainVNode && children.push(mainVNode);
+            var defs = map(keys(scope.defs), function (id) { return scope.defs[id]; });
+            if (defs.length) {
+                children.push(createVNode('defs', 'defs', {}, defs));
+            }
+            if (opts.animation) {
+                var animationCssStr = getCssString(scope.cssNodes, scope.cssAnims, { newline: true });
+                if (animationCssStr) {
+                    var styleNode = createVNode('style', 'stl', {}, [], animationCssStr);
+                    children.push(styleNode);
+                }
+            }
+            return createSVGVNode(width, height, children, opts.useViewBox);
+        };
+        SVGPainter.prototype.renderToString = function (opts) {
+            opts = opts || {};
+            return vNodeToString(this.renderToVNode({
+                animation: retrieve2(opts.cssAnimation, true),
+                willUpdate: false,
+                compress: true,
+                useViewBox: retrieve2(opts.useViewBox, true)
+            }), { newline: true });
         };
         SVGPainter.prototype.setBackgroundColor = function (backgroundColor) {
-            if (this._backgroundRoot && this._backgroundNode) {
-                this._backgroundRoot.removeChild(this._backgroundNode);
+            this._backgroundColor = backgroundColor;
+            var bgVNode = this._bgVNode;
+            if (bgVNode && bgVNode.elm) {
+                var _a = normalizeColor(backgroundColor), color = _a.color, opacity = _a.opacity;
+                bgVNode.elm.setAttribute('fill', color);
+                if (opacity < 1) {
+                    bgVNode.elm.setAttribute('fill-opacity', opacity);
+                }
             }
-            var bgNode = createElement('rect');
-            bgNode.setAttribute('width', this.getWidth());
-            bgNode.setAttribute('height', this.getHeight());
-            bgNode.setAttribute('x', 0);
-            bgNode.setAttribute('y', 0);
-            bgNode.setAttribute('id', 0);
-            var _a = normalizeColor(backgroundColor), color = _a.color, opacity = _a.opacity;
-            bgNode.setAttribute('fill', color);
-            bgNode.setAttribute('fill-opacity', opacity);
-            this._backgroundRoot.appendChild(bgNode);
-            this._backgroundNode = bgNode;
         };
-        SVGPainter.prototype.createSVGElement = function (tag) {
-            return createElement(tag);
+        SVGPainter.prototype.getSvgRoot = function () {
+            return this._mainVNode && this._mainVNode.elm;
         };
-        SVGPainter.prototype.paintOne = function (el) {
-            var svgProxy = getSvgProxy(el);
-            svgProxy && svgProxy.brush(el);
-            return getSvgElement(el);
-        };
-        SVGPainter.prototype._paintList = function (list) {
-            var gradientManager = this._gradientManager;
-            var patternManager = this._patternManager;
-            var clipPathManager = this._clipPathManager;
-            var shadowManager = this._shadowManager;
-            gradientManager.markAllUnused();
-            patternManager.markAllUnused();
-            clipPathManager.markAllUnused();
-            shadowManager.markAllUnused();
-            var svgRoot = this._svgRoot;
-            var visibleList = this._visibleList;
+        SVGPainter.prototype._paintList = function (list, scope, out) {
             var listLen = list.length;
-            var newVisibleList = [];
+            var clipPathsGroupsStack = [];
+            var clipPathsGroupsStackDepth = 0;
+            var currentClipPathGroup;
+            var prevClipPaths;
+            var clipGroupNodeIdx = 0;
             for (var i = 0; i < listLen; i++) {
                 var displayable = list[i];
-                var svgProxy = getSvgProxy(displayable);
-                var svgElement = getSvgElement(displayable);
                 if (!displayable.invisible) {
-                    if (displayable.__dirty || !svgElement) {
-                        svgProxy && svgProxy.brush(displayable);
-                        svgElement = getSvgElement(displayable);
-                        if (svgElement && displayable.style) {
-                            gradientManager.update(displayable.style.fill);
-                            gradientManager.update(displayable.style.stroke);
-                            patternManager.update(displayable.style.fill);
-                            patternManager.update(displayable.style.stroke);
-                            shadowManager.update(svgElement, displayable);
+                    var clipPaths = displayable.__clipPaths;
+                    var len = clipPaths && clipPaths.length || 0;
+                    var prevLen = prevClipPaths && prevClipPaths.length || 0;
+                    var lca = void 0;
+                    for (lca = Math.max(len - 1, prevLen - 1); lca >= 0; lca--) {
+                        if (clipPaths && prevClipPaths
+                            && clipPaths[lca] === prevClipPaths[lca]) {
+                            break;
                         }
-                        displayable.__dirty = 0;
                     }
-                    if (svgElement) {
-                        newVisibleList.push(displayable);
+                    for (var i_1 = prevLen - 1; i_1 > lca; i_1--) {
+                        clipPathsGroupsStackDepth--;
+                        currentClipPathGroup = clipPathsGroupsStack[clipPathsGroupsStackDepth - 1];
+                    }
+                    for (var i_2 = lca + 1; i_2 < len; i_2++) {
+                        var groupAttrs = {};
+                        setClipPath(clipPaths[i_2], groupAttrs, scope);
+                        var g = createVNode('g', 'clip-g-' + clipGroupNodeIdx++, groupAttrs, []);
+                        (currentClipPathGroup ? currentClipPathGroup.children : out).push(g);
+                        clipPathsGroupsStack[clipPathsGroupsStackDepth++] = g;
+                        currentClipPathGroup = g;
+                    }
+                    prevClipPaths = clipPaths;
+                    var ret = brush$1(displayable, scope);
+                    if (ret) {
+                        (currentClipPathGroup ? currentClipPathGroup.children : out).push(ret);
                     }
                 }
             }
-            var diff = arrayDiff(visibleList, newVisibleList);
-            var prevSvgElement;
-            var topPrevSvgElement;
-            for (var i = 0; i < diff.length; i++) {
-                var item = diff[i];
-                if (item.removed) {
-                    for (var k = 0; k < item.count; k++) {
-                        var displayable = visibleList[item.indices[k]];
-                        var svgElement = getSvgElement(displayable);
-                        hasClipPath(displayable) ? removeFromMyParent(svgElement)
-                            : remove(svgRoot, svgElement);
-                    }
-                }
-            }
-            var prevDisplayable;
-            var currentClipGroup;
-            for (var i = 0; i < diff.length; i++) {
-                var item = diff[i];
-                if (item.removed) {
-                    continue;
-                }
-                for (var k = 0; k < item.count; k++) {
-                    var displayable = newVisibleList[item.indices[k]];
-                    var clipGroup = clipPathManager.update(displayable, prevDisplayable);
-                    if (clipGroup !== currentClipGroup) {
-                        prevSvgElement = topPrevSvgElement;
-                        if (clipGroup) {
-                            prevSvgElement ? insertAfter(svgRoot, clipGroup, prevSvgElement)
-                                : prepend(svgRoot, clipGroup);
-                            topPrevSvgElement = clipGroup;
-                            prevSvgElement = null;
-                        }
-                        currentClipGroup = clipGroup;
-                    }
-                    var svgElement = getSvgElement(displayable);
-                    prevSvgElement
-                        ? insertAfter(currentClipGroup || svgRoot, svgElement, prevSvgElement)
-                        : prepend(currentClipGroup || svgRoot, svgElement);
-                    prevSvgElement = svgElement || prevSvgElement;
-                    if (!currentClipGroup) {
-                        topPrevSvgElement = prevSvgElement;
-                    }
-                    gradientManager.markUsed(displayable);
-                    gradientManager.addWithoutUpdate(svgElement, displayable);
-                    patternManager.markUsed(displayable);
-                    patternManager.addWithoutUpdate(svgElement, displayable);
-                    clipPathManager.markUsed(displayable);
-                    prevDisplayable = displayable;
-                }
-            }
-            gradientManager.removeUnused();
-            patternManager.removeUnused();
-            clipPathManager.removeUnused();
-            shadowManager.removeUnused();
-            this._visibleList = newVisibleList;
         };
         SVGPainter.prototype.resize = function (width, height) {
-            var viewport = this._viewport;
-            viewport.style.display = 'none';
             var opts = this._opts;
+            var root = this.root;
+            var viewport = this._viewport;
             width != null && (opts.width = width);
             height != null && (opts.height = height);
-            width = this._getSize(0);
-            height = this._getSize(1);
-            viewport.style.display = '';
+            if (root && viewport) {
+                viewport.style.display = 'none';
+                width = getSize(root, 0, opts);
+                height = getSize(root, 1, opts);
+                viewport.style.display = '';
+            }
             if (this._width !== width || this._height !== height) {
                 this._width = width;
                 this._height = height;
-                var viewportStyle = viewport.style;
-                viewportStyle.width = width + 'px';
-                viewportStyle.height = height + 'px';
-                var svgRoot = this._svgDom;
-                svgRoot.setAttribute('width', width + '');
-                svgRoot.setAttribute('height', height + '');
-            }
-            if (this._backgroundNode) {
-                this._backgroundNode.setAttribute('width', width);
-                this._backgroundNode.setAttribute('height', height);
+                if (viewport) {
+                    var viewportStyle = viewport.style;
+                    viewportStyle.width = width + 'px';
+                    viewportStyle.height = height + 'px';
+                }
+                var svgDom = this._svgDom;
+                if (svgDom) {
+                    svgDom.setAttribute('width', width);
+                    svgDom.setAttribute('height', height);
+                }
             }
         };
         SVGPainter.prototype.getWidth = function () {
@@ -16903,48 +16977,39 @@
         SVGPainter.prototype.getHeight = function () {
             return this._height;
         };
-        SVGPainter.prototype._getSize = function (whIdx) {
-            var opts = this._opts;
-            var wh = ['width', 'height'][whIdx];
-            var cwh = ['clientWidth', 'clientHeight'][whIdx];
-            var plt = ['paddingLeft', 'paddingTop'][whIdx];
-            var prb = ['paddingRight', 'paddingBottom'][whIdx];
-            if (opts[wh] != null && opts[wh] !== 'auto') {
-                return parseFloat(opts[wh]);
-            }
-            var root = this.root;
-            var stl = document.defaultView.getComputedStyle(root);
-            return ((root[cwh] || parseInt10$1(stl[wh]) || parseInt10$1(root.style[wh]))
-                - (parseInt10$1(stl[plt]) || 0)
-                - (parseInt10$1(stl[prb]) || 0)) | 0;
-        };
         SVGPainter.prototype.dispose = function () {
-            this.root.innerHTML = '';
-            this._svgRoot =
-                this._backgroundRoot =
-                    this._svgDom =
-                        this._backgroundNode =
-                            this._viewport = this.storage = null;
+            if (this.root) {
+                this.root.innerHTML = '';
+            }
+            this._svgDom =
+                this._viewport =
+                    this.storage =
+                        this._oldVNode =
+                            this._bgVNode =
+                                this._mainVNode = null;
         };
         SVGPainter.prototype.clear = function () {
-            var viewportNode = this._viewport;
-            if (viewportNode && viewportNode.parentNode) {
-                viewportNode.parentNode.removeChild(viewportNode);
+            if (this._svgDom) {
+                this._svgDom.innerHTML = null;
             }
+            this._oldVNode = null;
         };
-        SVGPainter.prototype.toDataURL = function () {
-            this.refresh();
-            var svgDom = this._svgDom;
-            var outerHTML = svgDom.outerHTML
-                || (svgDom.parentNode && svgDom.parentNode).innerHTML;
-            var html = encodeURIComponent(outerHTML.replace(/></g, '>\n\r<'));
-            return 'data:image/svg+xml;charset=UTF-8,' + html;
+        SVGPainter.prototype.toDataURL = function (base64) {
+            var str = encodeURIComponent(this.renderToString());
+            var prefix = 'data:image/svg+xml;';
+            if (base64) {
+                str = encodeBase64(str);
+                return str && prefix + 'base64,' + str;
+            }
+            return prefix + 'charset=UTF-8,' + str;
         };
         return SVGPainter;
     }());
     function createMethodNotSupport(method) {
         return function () {
-            logError('In SVG mode painter not support method "' + method + '"');
+            {
+                logError('In SVG mode painter not support method "' + method + '"');
+            }
         };
     }
 
@@ -17008,6 +17073,7 @@
     exports.parseSVG = parseSVG;
     exports.path = path;
     exports.registerPainter = registerPainter;
+    exports.setPlatformAPI = setPlatformAPI;
     exports.showDebugDirtyRect = showDebugDirtyRect;
     exports.util = util;
     exports.vector = vector;

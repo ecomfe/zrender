@@ -1,5 +1,4 @@
 import * as util from './core/util';
-import env from './core/env';
 import Group, { GroupLike } from './graphic/Group';
 import Element from './Element';
 

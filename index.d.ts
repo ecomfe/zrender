@@ -1,2 +1,2 @@
-export * from './src/zrender';
-export * from './src/export';
+export * from './lib/zrender';
+export * from './lib/export';

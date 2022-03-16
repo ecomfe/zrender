@@ -97,20 +97,22 @@ else {
     rollup.rollup({
         ...createInputOption('development', false)
     }).then(bundle => {
-        bundle.write(outputOption);
-    });
-    // Minified
-    if (process.argv.indexOf('--minify') >= 0) {
-        rollup.rollup({
-            ...createInputOption('production', false)
-        }).then(bundle => {
-            const file = outputOption.file.replace(/.js$/, '.min.js');
-            bundle.write(Object.assign(outputOption, {
-                file,
-                sourcemap: false
-            })).then(function () {
-                minify(file);
+        bundle.write(outputOption)
+            .then(() => {
+                // Minified
+                if (process.argv.indexOf('--minify') >= 0) {
+                    rollup.rollup({
+                        ...createInputOption('production', false)
+                    }).then(bundle => {
+                        const file = outputOption.file.replace(/.js$/, '.min.js');
+                        bundle.write(Object.assign(outputOption, {
+                            file,
+                            sourcemap: false
+                        })).then(function () {
+                            minify(file);
+                        });
+                    });
+                }
             });
-        });
-    }
+    });
 }
