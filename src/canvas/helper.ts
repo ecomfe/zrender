@@ -5,20 +5,8 @@ import { RectLike } from '../core/BoundingRect';
 import Path from '../graphic/Path';
 
 export function isSafeNum(num: number, nonNegative = false) {
-    // null
-    if (num === null) {
-        return false;
-    }
-    // NaN, Infinity, undefined, 'xx'
-    if (!isFinite(num)) {
-        return false;
-    }
-    // non-negative
-    if (nonNegative && num < 0) {
-        return false;
-    }
-
-    return true;
+    // NaN、Infinity、undefined、'xx'，non-negative
+    return !(!isFinite(num) || nonNegative && num < 0);
 }
 
 export function createLinearGradient(
@@ -40,10 +28,10 @@ export function createLinearGradient(
     }
 
     // Fix NaN when rect is Infinity
-    x = isNaN(x) ? 0 : x;
-    x2 = isNaN(x2) ? 1 : x2;
-    y = isNaN(y) ? 0 : y;
-    y2 = isNaN(y2) ? 0 : y2;
+    x = isSafeNum(x) ? x : 0;
+    x2 = isSafeNum(x2) ? x2 : 1;
+    y = isSafeNum(y) ? y : 0;
+    y2 = isSafeNum(y2) ? y2 : 0;
 
     const canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
 
@@ -70,10 +58,9 @@ export function createRadialGradient(
         r = r * min;
     }
 
-    if (!isSafeNum(x) || !isSafeNum(y) || !isSafeNum(r, true)) {
-        console.warn('The provided value is non-finite. You must provide x and y.');
-        return;
-    }
+    x = isSafeNum(x) ? x : 0.5;
+    y = isSafeNum(y) ? y : 0.5;
+    r = isSafeNum(r, true) ? r : 0.5;
 
     const canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
 
