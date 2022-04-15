@@ -4,9 +4,9 @@ import { GradientObject } from '../graphic/Gradient';
 import { RectLike } from '../core/BoundingRect';
 import Path from '../graphic/Path';
 
-export function isSafeNum(num: number, nonNegative = false) {
-    // NaN、Infinity、undefined、'xx'，non-negative
-    return !(!isFinite(num) || nonNegative && num < 0);
+function isSafeNum(num: number) {
+    // NaN、Infinity、undefined、'xx'
+    return !isFinite(num);
 }
 
 export function createLinearGradient(
@@ -60,7 +60,7 @@ export function createRadialGradient(
 
     x = isSafeNum(x) ? x : 0.5;
     y = isSafeNum(y) ? y : 0.5;
-    r = isSafeNum(r, true) ? r : 0.5;
+    r = r >= 0 && isSafeNum(r) ? r : 0.5;
 
     const canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
 
