@@ -65,7 +65,7 @@ export function createOrUpdateImage<T>(
             !isImageReady(image) && cachedImgObj.pending.push(pendingWrap);
         }
         else {
-            const image = platformApi.loadImage(
+            image = platformApi.loadImage(
                 newImageOrSrc, imageOnLoad, imageOnLoad
             );
             (image as any).__zrImageSrc = newImageOrSrc;

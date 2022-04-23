@@ -12311,10 +12311,10 @@
                 !isImageReady(image) && cachedImgObj.pending.push(pendingWrap);
             }
             else {
-                var image_1 = platformApi.loadImage(newImageOrSrc, imageOnLoad, imageOnLoad);
-                image_1.__zrImageSrc = newImageOrSrc;
-                globalImageCache.put(newImageOrSrc, image_1.__cachedImgObj = {
-                    image: image_1,
+                image = platformApi.loadImage(newImageOrSrc, imageOnLoad, imageOnLoad);
+                image.__zrImageSrc = newImageOrSrc;
+                globalImageCache.put(newImageOrSrc, image.__cachedImgObj = {
+                    image: image,
                     pending: [pendingWrap]
                 });
             }
