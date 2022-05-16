@@ -240,6 +240,7 @@ class Handler extends Eventful {
             // FIXME: if the pointer moving from the extra doms to realy "outside",
             // the `globalout` should have been triggered. But currently not.
             this.trigger('globalout', {type: 'globalout', event: event});
+            this._hovered = new HoveredResult(0, 0);
         }
     }
 
