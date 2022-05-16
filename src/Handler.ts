@@ -11,6 +11,7 @@ import { ZRRawEvent, ZRPinchEvent, ElementEventName, ElementEventNameWithOn, ZRR
 import Storage from './Storage';
 import Element, {ElementEvent} from './Element';
 import CanvasPainter from './canvas/Painter';
+import { BoundingRect } from './export';
 
 
 /**
@@ -349,6 +350,27 @@ class Handler extends Eventful {
                 if (hoverCheckResult !== SILENT) {
                     out.target = list[i];
                     break;
+                }
+            }
+        }
+
+        if (!out.target) {
+            // If no element at pointer position, increase targetSize
+            const targetSize = 44;
+            let minSize = Number.MAX_VALUE;
+            for (let i = list.length - 1; i >= 0; i--) {
+                const rect = list[i].getBoundingRect();
+                const size = Math.min(rect.width, rect.height);
+                if (
+                    list[i] !== exclude
+                    && !list[i].ignore
+                    && !list[i].silent
+                    && size < targetSize
+                    && size < minSize
+                    && list[i].targetSizeContain(x, y, targetSize)
+                ) {
+                    out.target = list[i];
+                    minSize = size;
                 }
             }
         }
