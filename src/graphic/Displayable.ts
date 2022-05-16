@@ -260,6 +260,29 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         return rect.contain(coord[0], coord[1]);
     }
 
+    /**
+     * If a given targetSize is set, does the element contain the coord x, y
+     *
+     * @param x global x position
+     * @param y global y position
+     * @param targetSize tolerance of the touch position
+     * @returns true if the element contains the coord x, y
+     */
+    targetSizeContain(x: number, y: number, targetSize: number): boolean {
+        const rect = this.getBoundingRect().clone();
+        if (rect.width === 0 || rect.height === 0) {
+            return false;
+        }
+
+        rect.applyTransform(this.transform);
+        return rect.intersect(new BoundingRect(
+            x - targetSize / 2,
+            y - targetSize / 2,
+            targetSize,
+            targetSize
+        ));
+    }
+
     getPaintRect(): BoundingRect {
         let rect = this._paintRect;
         if (!this._paintRect || this.__dirty) {
