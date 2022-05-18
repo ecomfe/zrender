@@ -354,26 +354,51 @@ class Handler extends Eventful {
             }
         }
 
+        // console.time('targetSize');
         if (!out.target) {
-            // If no element at pointer position, increase targetSize
+            /**
+             * If no element at pointer position, check intersection with
+             * elements with pointer enlarged by target size.
+             */
+            const candidates = [];
             const targetSize = 44;
-            let minSize = Number.MAX_VALUE;
+            const targetSizeHalf = targetSize / 2;
+            const pointerRect = new BoundingRect(x - targetSizeHalf, y - targetSizeHalf, targetSize, targetSize);
             for (let i = list.length - 1; i >= 0; i--) {
-                const rect = list[i].getBoundingRect();
-                const size = Math.min(rect.width, rect.height);
-                if (
-                    list[i] !== exclude
+                if (list[i] !== exclude
                     && !list[i].ignore
                     && !list[i].silent
-                    && size < targetSize
-                    && size < minSize
-                    && list[i].targetSizeContain(x, y, targetSize)
                 ) {
-                    out.target = list[i];
-                    minSize = size;
+                    const rect = list[i].getBoundingRect().clone();
+                    rect.applyTransform(list[i].transform);
+                    if (rect.intersect(pointerRect)) {
+                        candidates.push(list[i]);
+                    }
+                }
+            }
+
+            if (candidates.length) {
+                const rStep = 4;
+                const thetaStep = Math.PI / 12;
+                for (let r = 0; r < targetSizeHalf && !out.target; r += rStep) {
+                    for (let theta = 0; theta < Math.PI * 2 && !out.target; theta += thetaStep) {
+                        const x1 = x + r * Math.cos(theta);
+                        const y1 = y + r * Math.sin(theta);
+                        for (let i = 0; i < candidates.length; i++) {
+                            const hoverCheckResult = isHover(candidates[i], x1, y1);
+                            if (hoverCheckResult) {
+                                !out.topTarget && (out.topTarget = list[i]);
+                                if (hoverCheckResult !== SILENT) {
+                                    out.target = list[i];
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+        // console.timeEnd('targetSize');
 
         return out;
     }
