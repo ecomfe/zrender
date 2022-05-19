@@ -387,9 +387,9 @@ class Handler extends Eventful {
                         for (let i = 0; i < candidates.length; i++) {
                             const hoverCheckResult = isHover(candidates[i], x1, y1);
                             if (hoverCheckResult) {
-                                !out.topTarget && (out.topTarget = list[i]);
+                                !out.topTarget && (out.topTarget = candidates[i]);
                                 if (hoverCheckResult !== SILENT) {
-                                    out.target = list[i];
+                                    out.target = candidates[i];
                                     break;
                                 }
                             }
