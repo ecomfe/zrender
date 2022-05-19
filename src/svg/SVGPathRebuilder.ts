@@ -71,7 +71,7 @@ export default class SVGPathRebuilder implements PathRebuilder {
         const x0 = cx + rx * mathCos(startAngle);
         const y0 = cy + ry * mathSin(startAngle);
 
-        if (this._start) {
+        if (this._start && !isCircle) {
             // Move to (x0, y0) only when CMD.A comes at the
             // first position of a shape.
             // For instance, when drawing a ring, CMD.A comes
@@ -81,25 +81,11 @@ export default class SVGPathRebuilder implements PathRebuilder {
         }
 
         const xRot = Math.round(psi * degree);
-        // It will not draw if start point and end point are exactly the same
-        // We need to add two arcs
+      
         if (isCircle) {
-            const p = 1 / this._p;
-            const dTheta = (clockwise ? 1 : -1) * (PI2 - p);
-            this._add(
-                'A', rx, ry, xRot, 1, +clockwise,
-                cx + rx * mathCos(startAngle + dTheta),
-                cy + ry * mathSin(startAngle + dTheta)
-            );
-            // TODO.
-            // Usually we can simply divide the circle into two halfs arcs.
-            // But it will cause slightly diff with previous screenshot.
-            // We can't tell it but visual regression test can. To avoid too much breaks.
-            // We keep the logic on the browser as before.
-            // But in SSR mode wich has lower precision. We close the circle by adding another arc.
-            if (p > 1e-2) {
-                this._add('A', rx, ry, xRot, 0, +clockwise, x0, y0);
-            }
+            this._add('M', cx - rx, cy);
+            this._add('a', rx, ry, xRot, 1, +clockwise, rx * 2, 0);
+            this._add('a', rx, ry, xRot, 1, +clockwise, -rx * 2, 0);
         }
         else {
             const x = cx + rx * mathCos(endAngle);
