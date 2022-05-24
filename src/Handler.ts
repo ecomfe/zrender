@@ -354,7 +354,6 @@ class Handler extends Eventful {
             }
         }
 
-        // console.time('targetSize');
         if (!out.target) {
             /**
              * If no element at pointer position, check intersection with
@@ -367,7 +366,7 @@ class Handler extends Eventful {
             for (let i = list.length - 1; i >= 0; i--) {
                 if (list[i] !== exclude
                     && !list[i].ignore
-                    && !list[i].silent
+                    && !list[i].ignoreTargetSize
                 ) {
                     const rect = list[i].getBoundingRect().clone();
                     rect.applyTransform(list[i].transform);
@@ -398,7 +397,6 @@ class Handler extends Eventful {
                 }
             }
         }
-        // console.timeEnd('targetSize');
 
         return out;
     }
