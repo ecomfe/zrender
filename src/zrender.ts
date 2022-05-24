@@ -25,6 +25,7 @@ import Displayable from './graphic/Displayable';
 import { lum } from './tool/color';
 import { DARK_MODE_THRESHOLD } from './config';
 import Group from './graphic/Group';
+import { isTouchDevice } from './core/event';
 
 
 type PainterBaseCtor = {
@@ -126,7 +127,16 @@ class ZRender {
         const handerProxy = (!env.node && !env.worker && !ssrMode)
             ? new HandlerProxy(painter.getViewportRoot(), painter.root)
             : null;
-        this.handler = new Handler(storage, painter, handerProxy, painter.root);
+
+        const useTargetSize = (opts.useTargetSize == null || opts.useTargetSize === 'auto')
+            ? isTouchDevice()
+            : !!opts.useTargetSize;
+        const defaultTargetSize = 44;
+        const targetSize = useTargetSize
+            ? (opts.targetSize == null ? defaultTargetSize : opts.targetSize)
+            : 0;
+
+        this.handler = new Handler(storage, painter, handerProxy, painter.root, targetSize);
 
         this.animation = new Animation({
             stage: {
@@ -425,6 +435,8 @@ export interface ZRenderInitOpt {
     width?: number | string // 10, 10px, 'auto'
     height?: number | string
     useDirtyRect?: boolean
+    useTargetSize?: 'auto' | boolean
+    targetSize?: number
     ssr?: boolean   // If enable ssr mode.
 }
 

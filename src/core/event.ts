@@ -309,6 +309,9 @@ export function isMiddleOrRightButtonOnMouseUpDown(e: { which: number }) {
     return e.which === 2 || e.which === 3;
 }
 
+export function isTouchDevice() {
+    return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+}
 
 // For backward compatibility
 export {Eventful as Dispatcher};
