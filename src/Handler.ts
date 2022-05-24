@@ -147,6 +147,8 @@ class Handler extends Eventful {
 
     private _draggingMgr: Draggable
 
+    private _targetSize: number
+
     _downEl: Element
     _upEl: Element
     _downPoint: [number, number]
@@ -155,7 +157,8 @@ class Handler extends Eventful {
         storage: Storage,
         painter: PainterBase,
         proxy: HandlerProxyInterface,
-        painterRoot: HTMLElement
+        painterRoot: HTMLElement,
+        targetSize: number
     ) {
         super();
 
@@ -164,6 +167,8 @@ class Handler extends Eventful {
         this.painter = painter;
 
         this.painterRoot = painterRoot;
+
+        this._targetSize = targetSize;
 
         proxy = proxy || new EmptyProxy();
 
@@ -354,13 +359,13 @@ class Handler extends Eventful {
             }
         }
 
-        if (!out.target) {
+        if (this._targetSize && !out.target) {
             /**
              * If no element at pointer position, check intersection with
              * elements with pointer enlarged by target size.
              */
             const candidates = [];
-            const targetSize = 44;
+            const targetSize = this._targetSize;
             const targetSizeHalf = targetSize / 2;
             const pointerRect = new BoundingRect(x - targetSizeHalf, y - targetSizeHalf, targetSize, targetSize);
             for (let i = list.length - 1; i >= 0; i--) {
