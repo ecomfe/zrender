@@ -160,7 +160,7 @@ class Handler extends Eventful {
         painter: PainterBase,
         proxy: HandlerProxyInterface,
         painterRoot: HTMLElement,
-        targetSize: number
+        pointerSize: number
     ) {
         super();
 
@@ -170,7 +170,7 @@ class Handler extends Eventful {
 
         this.painterRoot = painterRoot;
 
-        this._pointerSize = targetSize;
+        this._pointerSize = pointerSize;
 
         proxy = proxy || new EmptyProxy();
 
@@ -386,6 +386,10 @@ class Handler extends Eventful {
                 }
             }
 
+            /**
+             * If there are elements whose bounding boxes are near the pointer,
+             * use the most top one that intersects with the enlarged pointer.
+             */
             if (candidates.length) {
                 const rStep = 4;
                 const thetaStep = Math.PI / 12;
