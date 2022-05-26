@@ -132,6 +132,8 @@ const handlerNames = [
 type HandlerName = 'click' |'dblclick' |'mousewheel' |'mouseout' |
     'mouseup' |'mousedown' |'mousemove' |'contextmenu';
 
+const tmpRect = new BoundingRect(0, 0, 0, 0);
+
 // TODO draggable
 class Handler extends Eventful {
 
@@ -368,14 +370,17 @@ class Handler extends Eventful {
             const pointerSize = this._pointerSize;
             const targetSizeHalf = pointerSize / 2;
             const pointerRect = new BoundingRect(x - targetSizeHalf, y - targetSizeHalf, pointerSize, pointerSize);
+
             for (let i = list.length - 1; i >= 0; i--) {
                 if (list[i] !== exclude
                     && !list[i].ignore
                     && !list[i].ignoreTargetSize
                 ) {
-                    const rect = list[i].getBoundingRect().clone();
-                    rect.applyTransform(list[i].transform);
-                    if (rect.intersect(pointerRect)) {
+                    tmpRect.copy(list[i].getBoundingRect());
+                    if (list[i].transform) {
+                        tmpRect.applyTransform(list[i].transform);
+                    }
+                    if (tmpRect.intersect(pointerRect)) {
                         candidates.push(list[i]);
                     }
                 }
