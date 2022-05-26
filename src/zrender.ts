@@ -128,12 +128,12 @@ class ZRender {
             ? new HandlerProxy(painter.getViewportRoot(), painter.root)
             : null;
 
-        const useTargetSize = (opts.useTargetSize == null || opts.useTargetSize === 'auto')
+        const useTargetSize = (opts.useCoarsePointer == null || opts.useCoarsePointer === 'auto')
             ? isTouchDevice()
-            : !!opts.useTargetSize;
+            : !!opts.useCoarsePointer;
         const defaultTargetSize = 44;
         const targetSize = useTargetSize
-            ? (opts.targetSize == null ? defaultTargetSize : opts.targetSize)
+            ? (opts.pointerSize == null ? defaultTargetSize : opts.pointerSize)
             : 0;
 
         this.handler = new Handler(storage, painter, handerProxy, painter.root, targetSize);
@@ -435,8 +435,8 @@ export interface ZRenderInitOpt {
     width?: number | string // 10, 10px, 'auto'
     height?: number | string
     useDirtyRect?: boolean
-    useTargetSize?: 'auto' | boolean
-    targetSize?: number
+    useCoarsePointer?: 'auto' | boolean
+    pointerSize?: number
     ssr?: boolean   // If enable ssr mode.
 }
 
