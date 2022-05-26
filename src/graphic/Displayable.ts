@@ -66,7 +66,7 @@ export interface DisplayableProps extends ElementProps {
 
     incremental?: boolean
 
-    ignoreTargetSize?: boolean
+    ignoreCoarsePointer?: boolean
 
     batch?: boolean
     invisible?: boolean
@@ -132,7 +132,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     /**
      * Never increase to target size
      */
-    ignoreTargetSize?: boolean
+    ignoreCoarsePointer?: boolean
 
     style: Dictionary<any>
 

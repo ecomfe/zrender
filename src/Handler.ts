@@ -374,7 +374,7 @@ class Handler extends Eventful {
             for (let i = list.length - 1; i >= 0; i--) {
                 if (list[i] !== exclude
                     && !list[i].ignore
-                    && !list[i].ignoreTargetSize
+                    && !list[i].ignoreCoarsePointer
                 ) {
                     tmpRect.copy(list[i].getBoundingRect());
                     if (list[i].transform) {
