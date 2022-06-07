@@ -6,7 +6,7 @@ import Path from '../graphic/Path';
 
 function isSafeNum(num: number) {
     // NaN、Infinity、undefined、'xx'
-    return !isFinite(num);
+    return isFinite(num);
 }
 
 export function createLinearGradient(
