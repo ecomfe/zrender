@@ -4,6 +4,11 @@ import { GradientObject } from '../graphic/Gradient';
 import { RectLike } from '../core/BoundingRect';
 import Path from '../graphic/Path';
 
+function isSafeNum(num: number) {
+    // NaN、Infinity、undefined、'xx'
+    return isFinite(num);
+}
+
 export function createLinearGradient(
     this: void,
     ctx: CanvasRenderingContext2D,
@@ -23,10 +28,10 @@ export function createLinearGradient(
     }
 
     // Fix NaN when rect is Infinity
-    x = isNaN(x) ? 0 : x;
-    x2 = isNaN(x2) ? 1 : x2;
-    y = isNaN(y) ? 0 : y;
-    y2 = isNaN(y2) ? 0 : y2;
+    x = isSafeNum(x) ? x : 0;
+    x2 = isSafeNum(x2) ? x2 : 1;
+    y = isSafeNum(y) ? y : 0;
+    y2 = isSafeNum(y2) ? y2 : 0;
 
     const canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
 
@@ -46,11 +51,16 @@ export function createRadialGradient(
     let x = obj.x == null ? 0.5 : obj.x;
     let y = obj.y == null ? 0.5 : obj.y;
     let r = obj.r == null ? 0.5 : obj.r;
+
     if (!obj.global) {
         x = x * width + rect.x;
         y = y * height + rect.y;
         r = r * min;
     }
+
+    x = isSafeNum(x) ? x : 0.5;
+    y = isSafeNum(y) ? y : 0.5;
+    r = r >= 0 && isSafeNum(r) ? r : 0.5;
 
     const canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
 
