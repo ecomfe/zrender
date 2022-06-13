@@ -7128,7 +7128,7 @@
     function registerPainter(name, Ctor) {
         painterCtors[name] = Ctor;
     }
-    var version = '5.3.0';
+    var version = '5.3.2';
 
     var STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
     var DEFAULT_COMMON_STYLE = {
@@ -12311,10 +12311,10 @@
                 !isImageReady(image) && cachedImgObj.pending.push(pendingWrap);
             }
             else {
-                var image_1 = platformApi.loadImage(newImageOrSrc, imageOnLoad, imageOnLoad);
-                image_1.__zrImageSrc = newImageOrSrc;
-                globalImageCache.put(newImageOrSrc, image_1.__cachedImgObj = {
-                    image: image_1,
+                image = platformApi.loadImage(newImageOrSrc, imageOnLoad, imageOnLoad);
+                image.__zrImageSrc = newImageOrSrc;
+                globalImageCache.put(newImageOrSrc, image.__cachedImgObj = {
+                    image: image,
                     pending: [pendingWrap]
                 });
             }
@@ -13998,6 +13998,9 @@
         });
     }
 
+    function isSafeNum(num) {
+        return isFinite(num);
+    }
     function createLinearGradient(ctx, obj, rect) {
         var x = obj.x == null ? 0 : obj.x;
         var x2 = obj.x2 == null ? 1 : obj.x2;
@@ -14009,10 +14012,10 @@
             y = y * rect.height + rect.y;
             y2 = y2 * rect.height + rect.y;
         }
-        x = isNaN(x) ? 0 : x;
-        x2 = isNaN(x2) ? 1 : x2;
-        y = isNaN(y) ? 0 : y;
-        y2 = isNaN(y2) ? 0 : y2;
+        x = isSafeNum(x) ? x : 0;
+        x2 = isSafeNum(x2) ? x2 : 1;
+        y = isSafeNum(y) ? y : 0;
+        y2 = isSafeNum(y2) ? y2 : 0;
         var canvasGradient = ctx.createLinearGradient(x, y, x2, y2);
         return canvasGradient;
     }
@@ -14028,6 +14031,9 @@
             y = y * height + rect.y;
             r = r * min;
         }
+        x = isSafeNum(x) ? x : 0.5;
+        y = isSafeNum(y) ? y : 0.5;
+        r = r >= 0 && isSafeNum(r) ? r : 0.5;
         var canvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
         return canvasGradient;
     }
