@@ -1,5 +1,4 @@
 import * as colorTool from '../../../../src/tool/color';
-import { color } from '../../../../src/export';
 
 describe('colorTool', function () {
 
@@ -7,6 +6,7 @@ describe('colorTool', function () {
 		['rgba(17, 163, 69)', [17, 163, 69, 1]],
 		['rgba(17, 163, 69, 0.5)', [17, 163, 69, 0.5]],
 		['rgb(17, 163, 69)', [17, 163, 69, 1]],
+		['rgb(2, 163, 254, 1)', [2, 163, 254, 1]],
 		['#14c4ba00', [20, 196, 186, 0]],
 		['#14c4ba', [20, 196, 186, 1]],
 		['#07f0', [0, 119, 255, 0]],

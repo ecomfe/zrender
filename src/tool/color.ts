@@ -245,7 +245,8 @@ export function parse(colorStr: string, rgbaArr?: number[]): number[] {
                     );
                     putToCache(colorStr, rgbaArr);
                     return rgbaArr;
-                } else {
+                }
+                else {
                     setRgba(rgbaArr, 0, 0, 0, 1);
                     return;
                 }
