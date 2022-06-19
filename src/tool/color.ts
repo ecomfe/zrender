@@ -236,18 +236,20 @@ export function parse(colorStr: string, rgbaArr?: number[]): number[] {
                 alpha = parseCssFloat(params.pop() as string); // jshint ignore:line
             // Fall through.
             case 'rgb':
-                if (params.length !== 3) {
+                if (params.length === 3 || params.length === 4) {
+                    setRgba(rgbaArr,
+                        parseCssInt(params[0]),
+                        parseCssInt(params[1]),
+                        parseCssInt(params[2]),
+                        alpha
+                    );
+                    putToCache(colorStr, rgbaArr);
+                    return rgbaArr;
+                }
+                else {
                     setRgba(rgbaArr, 0, 0, 0, 1);
                     return;
                 }
-                setRgba(rgbaArr,
-                    parseCssInt(params[0]),
-                    parseCssInt(params[1]),
-                    parseCssInt(params[2]),
-                    alpha
-                );
-                putToCache(colorStr, rgbaArr);
-                return rgbaArr;
             case 'hsla':
                 if (params.length !== 4) {
                     setRgba(rgbaArr, 0, 0, 0, 1);
