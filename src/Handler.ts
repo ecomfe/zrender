@@ -375,6 +375,10 @@ class Handler extends Eventful {
                 if (list[i] !== exclude
                     && !list[i].ignore
                     && !list[i].ignoreCoarsePointer
+                    // If an element ignores, its textContent should also ignore.
+                    // TSpan's parent is not a Group but a ZRText.
+                    // See Text.js _getOrCreateChild
+                    && (!list[i].parent || !(list[i].parent as any).ignoreCoarsePointer)
                 ) {
                     tmpRect.copy(list[i].getBoundingRect());
                     if (list[i].transform) {
