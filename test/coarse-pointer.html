@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="../dist/zrender.js"></script>
+    <script src="lib/config.js"></script>
 </head>
 <body>
     <style>
@@ -31,14 +32,16 @@
     <h1>
         Open mobile debug mode and then touch. The green circles should make a color to be lighter while the red circles should not.
     </h1>
+
+    Open this case with <a href="?__COARSE__POINTER__=true">?__COARSE__POINTER__=true</a>.
+
     <div id="main0" class="chart"></div>
 
 
     <script type="text/javascript">
     (function () {
         var zr = zrender.init(document.getElementById('main0'), {
-            useCoarsePointer: 'auto',
-            pointerSize: 44
+            useCoarsePointer: window.__ZRENDER__DEFAULT__COARSE_POINTER
         });
 
         var rect = new zrender.Rect({
@@ -77,7 +80,7 @@
             },
             textContent: new zrender.Text({
                 style: {
-                    text: '1. Enable mobile debugging mode in your browser.\n2. Touch around the green circles.\n3. Expect the blue shape to be a lighter blue.',
+                    text: '1. Touch around the green circles.\n2. Expect the blue shape to be a lighter blue.',
                     fontSize: 12
                 }
             }),
@@ -99,7 +102,7 @@
             },
             textContent: new zrender.Text({
                 style: {
-                    text: '4. Touch around the red circles.\n5. Expect the blue shape not to change.',
+                    text: '3. Touch around the red circles.\n4. Expect the blue shape not to change.',
                     fontSize: 12
                 }
             }),

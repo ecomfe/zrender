@@ -131,6 +131,7 @@ class ZRender {
         const useTargetSize = (opts.useCoarsePointer == null || opts.useCoarsePointer === 'auto')
             ? isTouchDevice()
             : !!opts.useCoarsePointer;
+        console.log(useTargetSize)
         const defaultTargetSize = 44;
         const targetSize = useTargetSize
             ? (opts.pointerSize == null ? defaultTargetSize : opts.pointerSize)
