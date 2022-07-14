@@ -347,15 +347,16 @@ class Handler extends Eventful {
         const out = new HoveredResult(x, y);
 
         for (let i = list.length - 1; i >= 0; i--) {
+            const el = list[i];
             let hoverCheckResult;
-            if (list[i] !== exclude
+            if (el !== exclude
                 // getDisplayList may include ignored item in VML mode
-                && !list[i].ignore
-                && (hoverCheckResult = isHover(list[i], x, y))
+                && !el.ignore
+                && (hoverCheckResult = isHover(el, x, y))
             ) {
-                !out.topTarget && (out.topTarget = list[i]);
+                !out.topTarget && (out.topTarget = el);
                 if (hoverCheckResult !== SILENT) {
-                    out.target = list[i];
+                    out.target = el;
                     break;
                 }
             }
@@ -372,20 +373,21 @@ class Handler extends Eventful {
             const pointerRect = new BoundingRect(x - targetSizeHalf, y - targetSizeHalf, pointerSize, pointerSize);
 
             for (let i = list.length - 1; i >= 0; i--) {
-                if (list[i] !== exclude
-                    && !list[i].ignore
-                    && !list[i].ignoreCoarsePointer
+                const el = list[i];
+                if (el !== exclude
+                    && !el.ignore
+                    && !el.ignoreCoarsePointer
                     // If an element ignores, its textContent should also ignore.
                     // TSpan's parent is not a Group but a ZRText.
                     // See Text.js _getOrCreateChild
-                    && (!list[i].parent || !(list[i].parent as any).ignoreCoarsePointer)
+                    && (!el.parent || !(el.parent as any).ignoreCoarsePointer)
                 ) {
-                    tmpRect.copy(list[i].getBoundingRect());
-                    if (list[i].transform) {
-                        tmpRect.applyTransform(list[i].transform);
+                    tmpRect.copy(el.getBoundingRect());
+                    if (el.transform) {
+                        tmpRect.applyTransform(el.transform);
                     }
                     if (tmpRect.intersect(pointerRect)) {
-                        candidates.push(list[i]);
+                        candidates.push(el);
                     }
                 }
             }
