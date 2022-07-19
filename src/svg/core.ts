@@ -1,4 +1,5 @@
 import { keys, map } from '../core/util';
+import { encodeHTML } from '../core/dom';
 
 export type CSSSelectorVNode = Record<string, string>
 export type CSSAnimationVNode = Record<string, Record<string, string>>
@@ -71,7 +72,7 @@ export function vNodeToString(el: SVGVNode, opts?: {
     function convertElToString(el: SVGVNode): string {
         const {children, tag, attrs} = el;
         return createElementOpen(tag, attrs)
-            + (el.text || '')
+            + encodeHTML(el.text)
             + (children ? `${S}${map(children, child => convertElToString(child)).join(S)}${S}` : '')
             + createElementClose(tag);
     }
