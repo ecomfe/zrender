@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>SVG BackgroundColor</title>
+    <script src="./lib/config.js"></script>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+    <div id="main" style="width:100vw;height:100vh;"></div>
+    <script type="text/javascript">
+    var zr = zrender.init(document.getElementById('main'), {
+        renderer: 'svg'
+    });
+
+    var txt = new zrender.Text({
+        x: 100,
+        y: 100,
+        style: {
+            text: '',
+            fill: '#fff',
+            stroke: '#000',
+            lineWidth: 2,
+            fontSize: '2rem'
+        }
+    });
+    zr.add(txt);
+    
+    var linearGradient = new zrender.LinearGradient();
+    linearGradient.addColorStop(0, '#a598e1');
+    linearGradient.addColorStop(1, '#14c4ba');
+
+    var radialGradient = new zrender.RadialGradient();
+    radialGradient.addColorStop(0, '#a598e1');
+    radialGradient.addColorStop(1, '#14c4ba');
+
+    var imageDom = document.createElement('img');
+    imageDom.src = `https://picsum.photos/seed/picsum/${zr.getWidth()}/${zr.getHeight()}`
+    var pattern = {
+        image: imageDom,
+        repeat: 'no-repeat'
+    };
+
+    var i = 1;
+
+    function updateBg() {
+        var text;
+        var bg;
+        var mod = i % 5;
+        if (mod === 0) {
+            text = 'pattern';
+            bg = pattern;
+        }
+        else if (mod === 1) {
+            text = 'radial gradient';
+            bg = radialGradient;
+        }
+        else if (mod === 2) {
+            text = 'linear gradient';
+            bg = linearGradient;
+        }
+        else if (mod === 3) {
+            bg = text = '#a598e1';
+        }
+        else {
+            bg = text = 'none';
+        }
+        console.log(text);
+        zr.setBackgroundColor(bg);
+        txt.setStyle({ text: 'SVG BackgroundColor: ' + text });
+        i++;
+    }
+
+    updateBg();
+
+    setInterval(updateBg, 3e3);
+
+    window.addEventListener('resize', function() {
+        zr.resize();
+    });
+    </script>
+
+</body>
+</html>
