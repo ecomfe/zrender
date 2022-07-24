@@ -388,7 +388,7 @@ function setShadow(
     }
 }
 
-function setGradient(
+export function setGradient(
     style: PathStyleProps,
     attrs: SVGVNodeAttrs,
     target: 'fill' | 'stroke',
@@ -467,16 +467,19 @@ function setGradient(
     attrs[target] = getIdURL(gradientId);
 }
 
-function setPattern(
+export function setPattern(
     el: Displayable,
     attrs: SVGVNodeAttrs,
     target: 'fill' | 'stroke',
     scope: BrushScope
 ) {
     const val = el.style[target] as ImagePatternObject | SVGPatternObject;
-    const patternAttrs: SVGVNodeAttrs = {
-        'patternUnits': 'userSpaceOnUse'
-    };
+    // TODO: support repeat-x & repeat-y
+    const noRepeat = (val as ImagePatternObject).repeat === 'no-repeat';
+    const patternAttrs: SVGVNodeAttrs = {};
+    if (!noRepeat) {
+        patternAttrs.patternUnits = 'userSpaceOnUse';
+    }
     let child: SVGVNode;
     if (isImagePattern(val)) {
         let imageWidth = val.imageWidth;
@@ -513,7 +516,7 @@ function setPattern(
             };
             const createdImage = createOrUpdateImage(
                 imageSrc, null, el, (img) => {
-                    setSizeToVNode(patternVNode, img);
+                    noRepeat || setSizeToVNode(patternVNode, img);
                     setSizeToVNode(child, img);
                 }
             );
@@ -533,14 +536,14 @@ function setPattern(
                 height: imageHeight
             }
         );
-        patternAttrs.width = imageWidth;
-        patternAttrs.height = imageHeight;
+        patternAttrs.width = noRepeat ? 1 : imageWidth;
+        patternAttrs.height = noRepeat ? 1 : imageHeight;
     }
     else if (val.svgElement) {  // Only string supported in SSR.
         // TODO it's not so good to use textContent as innerHTML
         child = clone(val.svgElement);
-        patternAttrs.width = val.svgWidth;
-        patternAttrs.height = val.svgHeight;
+        patternAttrs.width = noRepeat ? 1 : val.svgWidth;
+        patternAttrs.height = noRepeat ? 1 : val.svgHeight;
     }
     if (!child) {
         return;
