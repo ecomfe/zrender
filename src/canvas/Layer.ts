@@ -436,8 +436,8 @@ export default class Layer extends Eventful {
                 // Pattern
                 else if (util.isImagePatternObject(clearColor)) {
                     // scale pattern by dpr
-                    clearColor.scaleX = util.retrieve2(clearColor.scaleX, dpr);
-                    clearColor.scaleY = util.retrieve2(clearColor.scaleY, dpr);
+                    clearColor.scaleX = clearColor.scaleX || dpr;
+                    clearColor.scaleY = clearColor.scaleY || dpr;
                     clearColorGradientOrPattern = createCanvasPattern(
                         ctx, clearColor, {
                             dirty() {
