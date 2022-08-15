@@ -384,11 +384,14 @@ class Handler extends Eventful {
             if (candidates.length) {
                 const rStep = 4;
                 const thetaStep = Math.PI / 12;
-                for (let r = 0; r < targetSizeHalf && !out.target; r += rStep) {
-                    for (let theta = 0; theta < Math.PI * 2 && !out.target; theta += thetaStep) {
+                for (let r = 0; r < targetSizeHalf; r += rStep) {
+                    for (let theta = 0; theta < Math.PI * 2; theta += thetaStep) {
                         const x1 = x + r * Math.cos(theta);
                         const y1 = y + r * Math.sin(theta);
                         setHoverTarget(candidates, out, x1, y1, exclude);
+                        if (out.target) {
+                            return out;
+                        }
                     }
                 }
             }
