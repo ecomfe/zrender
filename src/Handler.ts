@@ -345,29 +345,14 @@ class Handler extends Eventful {
     findHover(x: number, y: number, exclude?: Displayable): HoveredResult {
         const list = this.storage.getDisplayList();
         const out = new HoveredResult(x, y);
-
-        for (let i = list.length - 1; i >= 0; i--) {
-            const el = list[i];
-            let hoverCheckResult;
-            if (el !== exclude
-                // getDisplayList may include ignored item in VML mode
-                && !el.ignore
-                && (hoverCheckResult = isHover(el, x, y))
-            ) {
-                !out.topTarget && (out.topTarget = el);
-                if (hoverCheckResult !== SILENT) {
-                    out.target = el;
-                    break;
-                }
-            }
-        }
+        setHoverTarget(list, out, x, y, exclude);
 
         if (this._pointerSize && !out.target) {
             /**
              * If no element at pointer position, check intersection with
              * elements with pointer enlarged by target size.
              */
-            const candidates = [];
+            const candidates: Displayable[] = [];
             const pointerSize = this._pointerSize;
             const targetSizeHalf = pointerSize / 2;
             const pointerRect = new BoundingRect(x - targetSizeHalf, y - targetSizeHalf, pointerSize, pointerSize);
@@ -403,16 +388,7 @@ class Handler extends Eventful {
                     for (let theta = 0; theta < Math.PI * 2 && !out.target; theta += thetaStep) {
                         const x1 = x + r * Math.cos(theta);
                         const y1 = y + r * Math.sin(theta);
-                        for (let i = 0; i < candidates.length; i++) {
-                            const hoverCheckResult = isHover(candidates[i], x1, y1);
-                            if (hoverCheckResult) {
-                                !out.topTarget && (out.topTarget = candidates[i]);
-                                if (hoverCheckResult !== SILENT) {
-                                    out.target = candidates[i];
-                                    break;
-                                }
-                            }
-                        }
+                        setHoverTarget(candidates, out, x1, y1, exclude);
                     }
                 }
             }
@@ -531,6 +507,30 @@ function isHover(displayable: Displayable, x: number, y: number) {
     }
 
     return false;
+}
+
+function setHoverTarget(
+    list: Displayable[],
+    out: HoveredResult,
+    x: number,
+    y: number,
+    exclude: Displayable
+) {
+    for (let i = list.length - 1; i >= 0; i--) {
+        const el = list[i];
+        let hoverCheckResult;
+        if (el !== exclude
+            // getDisplayList may include ignored item in VML mode
+            && !el.ignore
+            && (hoverCheckResult = isHover(el, x, y))
+        ) {
+            !out.topTarget && (out.topTarget = el);
+            if (hoverCheckResult !== SILENT) {
+                out.target = el;
+                break;
+            }
+        }
+    }
 }
 
 /**

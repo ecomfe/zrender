@@ -310,7 +310,8 @@ export function isMiddleOrRightButtonOnMouseUpDown(e: { which: number }) {
 }
 
 export function isTouchDevice() {
-    return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    return (typeof window === 'object' && 'ontouchstart' in window)
+        || (typeof navigator === 'object' && navigator.maxTouchPoints > 0);
 }
 
 // For backward compatibility
