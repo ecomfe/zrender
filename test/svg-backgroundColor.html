@@ -36,13 +36,14 @@
     radialGradient.addColorStop(1, '#14c4ba');
 
     var imageDom = document.createElement('img');
-    imageDom.src = `https://picsum.photos/seed/picsum/${zr.getWidth()}/${zr.getHeight()}`
+    // imageDom.src = `https://picsum.photos/seed/picsum/${zr.getWidth()}/${zr.getHeight()}`
+    imageDom.src = `https://picsum.photos/seed/picsum/400/200`
     var pattern = {
         image: imageDom,
-        repeat: 'no-repeat'
+        repeat: 'repeat-x'
     };
 
-    var i = 1;
+    var i = 0;
 
     function updateBg() {
         var text;
@@ -74,10 +75,11 @@
 
     updateBg();
 
-    setInterval(updateBg, 3e3);
+    // setInterval(updateBg, 3e3);
 
     window.addEventListener('resize', function() {
         zr.resize();
+        // zr.setBackgroundColor(pattern);
     });
     </script>
 

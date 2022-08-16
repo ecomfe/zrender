@@ -330,13 +330,13 @@ class SVGPainter implements PainterBase {
         this._oldVNode = null;
     }
     toDataURL(base64?: boolean) {
-        let str = encodeURIComponent(this.renderToString());
+        let str = this.renderToString();
         const prefix = 'data:image/svg+xml;';
         if (base64) {
             str = encodeBase64(str);
             return str && prefix + 'base64,' + str;
         }
-        return prefix + 'charset=UTF-8,' + str;
+        return prefix + 'charset=UTF-8,' + encodeURIComponent(str);
     }
 
     refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];
@@ -380,7 +380,9 @@ function createBackgroundVNode(
                 style: {
                     fill: backgroundColor
                 },
-                dirty: noop
+                dirty: noop,
+                // FIXME: resize
+                getBoundingRect: () => ({ width, height })
             } as any, bgVNode.attrs, 'fill', scope);
         }
         else {

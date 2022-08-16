@@ -123,7 +123,7 @@ function createAttrsConvert(desc: ShapeMapDesc): ConvertShapeToAttr {
     };
 }
 
-const buitinShapesDef: Record<string, [ConvertShapeToAttr, ShapeValidator?]> = {
+const builtinShapesDef: Record<string, [ConvertShapeToAttr, ShapeValidator?]> = {
     circle: [createAttrsConvert(['cx', 'cy', 'r'])],
     polyline: [convertPolyShape, validatePolyShape],
     polygon: [convertPolyShape, validatePolyShape]
@@ -149,7 +149,7 @@ function hasShapeAnimation(el: Displayable) {
 export function brushSVGPath(el: Path, scope: BrushScope) {
     const style = el.style;
     const shape = el.shape;
-    const builtinShpDef = buitinShapesDef[el.type];
+    const builtinShpDef = builtinShapesDef[el.type];
     const attrs: SVGVNodeAttrs = {};
     const needsAnimate = scope.animation;
     let svgElType = 'path';
@@ -266,8 +266,8 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     // style.font has been normalized by `normalizeTextStyle`.
     const font = style.font || DEFAULT_FONT;
 
-    // Consider different font display differently in vertial align, we always
-    // set vertialAlign as 'middle', and use 'y' to locate text vertically.
+    // Consider different font display differently in vertical align, we always
+    // set verticalAlign as 'middle', and use 'y' to locate text vertically.
     const x = style.x || 0;
     const y = adjustTextY(style.y || 0, getLineHeight(font), style.textBaseline);
     const textAlign = TEXT_ALIGN_TO_ANCHOR[style.textAlign as keyof typeof TEXT_ALIGN_TO_ANCHOR]
@@ -474,12 +474,13 @@ export function setPattern(
     scope: BrushScope
 ) {
     const val = el.style[target] as ImagePatternObject | SVGPatternObject;
-    // TODO: support repeat-x & repeat-y
-    const noRepeat = (val as ImagePatternObject).repeat === 'no-repeat';
+    const boundingRect = el.getBoundingRect();
     const patternAttrs: SVGVNodeAttrs = {};
-    if (!noRepeat) {
-        patternAttrs.patternUnits = 'userSpaceOnUse';
-    }
+    // TODO: support repeat-x & repeat-y
+    const repeat = (val as ImagePatternObject).repeat;
+    const noRepeat = repeat === 'no-repeat';
+    const repeatX = repeat === 'repeat-x';
+    const repeatY = repeat === 'repeat-y';
     let child: SVGVNode;
     if (isImagePattern(val)) {
         let imageWidth = val.imageWidth;
@@ -506,8 +507,20 @@ export function setPattern(
             const setSizeToVNode = (vNode: SVGVNode, img: ImageLike) => {
                 if (vNode) {
                     const svgEl = vNode.elm as SVGElement;
-                    const width = (vNode.attrs.width = imageWidth || img.width);
-                    const height = (vNode.attrs.height = imageHeight || img.height);
+                    let width = imageWidth || img.width;
+                    let height = imageHeight || img.height;
+                    if (vNode.tag === 'pattern') {
+                        if (repeatX) {
+                            height = 1;
+                            width /= boundingRect.width;
+                        }
+                        else if (repeatY) {
+                            width = 1;
+                            height /= boundingRect.height;
+                        }
+                    }
+                    vNode.attrs.width = width;
+                    vNode.attrs.height = height;
                     if (svgEl) {
                         svgEl.setAttribute('width', width as any);
                         svgEl.setAttribute('height', height as any);
@@ -536,18 +549,45 @@ export function setPattern(
                 height: imageHeight
             }
         );
-        patternAttrs.width = noRepeat ? 1 : imageWidth;
-        patternAttrs.height = noRepeat ? 1 : imageHeight;
+        patternAttrs.width = imageWidth;
+        patternAttrs.height = imageHeight;
     }
     else if (val.svgElement) {  // Only string supported in SSR.
         // TODO it's not so good to use textContent as innerHTML
         child = clone(val.svgElement);
-        patternAttrs.width = noRepeat ? 1 : val.svgWidth;
-        patternAttrs.height = noRepeat ? 1 : val.svgHeight;
+        patternAttrs.width = val.svgWidth;
+        patternAttrs.height = val.svgHeight;
     }
     if (!child) {
         return;
     }
+
+    let patternWidth;
+    let patternHeight;
+    if (noRepeat) {
+        patternWidth = patternHeight = 1;
+    }
+    // https://github.com/fabricjs/fabric.js/blob/78b7029aaed9287b4e4e7f84d11f85a25d067af3/src/pattern.class.js
+    else if (repeatX) {
+        patternHeight = 1;
+        patternWidth = (patternAttrs.width as number) / boundingRect.width;
+    }
+    else if (repeatY) {
+        patternWidth = 1;
+        patternHeight = (patternAttrs.height as number) / boundingRect.height;
+    }
+    else {
+        patternAttrs.patternUnits = 'userSpaceOnUse';
+    }
+
+    if (patternWidth != null && !isNaN(patternWidth)) {
+        patternAttrs.width = patternWidth;
+    }
+    if (patternHeight != null && !isNaN(patternHeight)) {
+        patternAttrs.height = patternHeight;
+    }
+
+    console.log(patternAttrs)
 
     patternAttrs.patternTransform = getSRTTransformString(val);
 
