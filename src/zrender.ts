@@ -25,7 +25,6 @@ import Displayable from './graphic/Displayable';
 import { lum } from './tool/color';
 import { DARK_MODE_THRESHOLD } from './config';
 import Group from './graphic/Group';
-import { isTouchDevice } from './core/event';
 
 
 type PainterBaseCtor = {
@@ -130,14 +129,15 @@ class ZRender {
 
         const useCoarsePointer = opts.useCoarsePointer;
         const usePointerSize = (useCoarsePointer == null || useCoarsePointer === 'auto')
-            ? isTouchDevice()
+            ? env.touchEventsSupported
             : !!useCoarsePointer;
         const defaultPointerSize = 44;
-        const targetSize = usePointerSize
-            ? (opts.pointerSize == null ? defaultPointerSize : opts.pointerSize)
-            : 0;
+        let pointerSize;
+        if (usePointerSize) {
+            pointerSize = zrUtil.retrieve2(opts.pointerSize, defaultPointerSize);
+        }
 
-        this.handler = new Handler(storage, painter, handerProxy, painter.root, targetSize);
+        this.handler = new Handler(storage, painter, handerProxy, painter.root, pointerSize);
 
         this.animation = new Animation({
             stage: {

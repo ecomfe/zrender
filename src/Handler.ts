@@ -11,8 +11,7 @@ import { ZRRawEvent, ZRPinchEvent, ElementEventName, ElementEventNameWithOn, ZRR
 import Storage from './Storage';
 import Element, {ElementEvent} from './Element';
 import CanvasPainter from './canvas/Painter';
-import { BoundingRect } from './export';
-
+import BoundingRect from './core/BoundingRect';
 
 /**
  * [The interface between `Handler` and `HandlerProxy`]:
@@ -384,8 +383,9 @@ class Handler extends Eventful {
             if (candidates.length) {
                 const rStep = 4;
                 const thetaStep = Math.PI / 12;
+                const PI2 = Math.PI * 2;
                 for (let r = 0; r < targetSizeHalf; r += rStep) {
-                    for (let theta = 0; theta < Math.PI * 2; theta += thetaStep) {
+                    for (let theta = 0; theta < PI2; theta += thetaStep) {
                         const x1 = x + r * Math.cos(theta);
                         const y1 = y + r * Math.sin(theta);
                         setHoverTarget(candidates, out, x1, y1, exclude);
