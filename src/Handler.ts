@@ -11,7 +11,7 @@ import { ZRRawEvent, ZRPinchEvent, ElementEventName, ElementEventNameWithOn, ZRR
 import Storage from './Storage';
 import Element, {ElementEvent} from './Element';
 import CanvasPainter from './canvas/Painter';
-
+import BoundingRect from './core/BoundingRect';
 
 /**
  * [The interface between `Handler` and `HandlerProxy`]:
@@ -131,6 +131,8 @@ const handlerNames = [
 type HandlerName = 'click' |'dblclick' |'mousewheel' |'mouseout' |
     'mouseup' |'mousedown' |'mousemove' |'contextmenu';
 
+const tmpRect = new BoundingRect(0, 0, 0, 0);
+
 // TODO draggable
 class Handler extends Eventful {
 
@@ -146,6 +148,8 @@ class Handler extends Eventful {
 
     private _draggingMgr: Draggable
 
+    private _pointerSize: number
+
     _downEl: Element
     _upEl: Element
     _downPoint: [number, number]
@@ -154,7 +158,8 @@ class Handler extends Eventful {
         storage: Storage,
         painter: PainterBase,
         proxy: HandlerProxyInterface,
-        painterRoot: HTMLElement
+        painterRoot: HTMLElement,
+        pointerSize: number
     ) {
         super();
 
@@ -163,6 +168,8 @@ class Handler extends Eventful {
         this.painter = painter;
 
         this.painterRoot = painterRoot;
+
+        this._pointerSize = pointerSize;
 
         proxy = proxy || new EmptyProxy();
 
@@ -337,18 +344,55 @@ class Handler extends Eventful {
     findHover(x: number, y: number, exclude?: Displayable): HoveredResult {
         const list = this.storage.getDisplayList();
         const out = new HoveredResult(x, y);
+        setHoverTarget(list, out, x, y, exclude);
 
-        for (let i = list.length - 1; i >= 0; i--) {
-            let hoverCheckResult;
-            if (list[i] !== exclude
-                // getDisplayList may include ignored item in VML mode
-                && !list[i].ignore
-                && (hoverCheckResult = isHover(list[i], x, y))
-            ) {
-                !out.topTarget && (out.topTarget = list[i]);
-                if (hoverCheckResult !== SILENT) {
-                    out.target = list[i];
-                    break;
+        if (this._pointerSize && !out.target) {
+            /**
+             * If no element at pointer position, check intersection with
+             * elements with pointer enlarged by target size.
+             */
+            const candidates: Displayable[] = [];
+            const pointerSize = this._pointerSize;
+            const targetSizeHalf = pointerSize / 2;
+            const pointerRect = new BoundingRect(x - targetSizeHalf, y - targetSizeHalf, pointerSize, pointerSize);
+
+            for (let i = list.length - 1; i >= 0; i--) {
+                const el = list[i];
+                if (el !== exclude
+                    && !el.ignore
+                    && !el.ignoreCoarsePointer
+                    // If an element ignores, its textContent should also ignore.
+                    // TSpan's parent is not a Group but a ZRText.
+                    // See Text.js _getOrCreateChild
+                    && (!el.parent || !(el.parent as any).ignoreCoarsePointer)
+                ) {
+                    tmpRect.copy(el.getBoundingRect());
+                    if (el.transform) {
+                        tmpRect.applyTransform(el.transform);
+                    }
+                    if (tmpRect.intersect(pointerRect)) {
+                        candidates.push(el);
+                    }
+                }
+            }
+
+            /**
+             * If there are elements whose bounding boxes are near the pointer,
+             * use the most top one that intersects with the enlarged pointer.
+             */
+            if (candidates.length) {
+                const rStep = 4;
+                const thetaStep = Math.PI / 12;
+                const PI2 = Math.PI * 2;
+                for (let r = 0; r < targetSizeHalf; r += rStep) {
+                    for (let theta = 0; theta < PI2; theta += thetaStep) {
+                        const x1 = x + r * Math.cos(theta);
+                        const y1 = y + r * Math.sin(theta);
+                        setHoverTarget(candidates, out, x1, y1, exclude);
+                        if (out.target) {
+                            return out;
+                        }
+                    }
                 }
             }
         }
@@ -466,6 +510,30 @@ function isHover(displayable: Displayable, x: number, y: number) {
     }
 
     return false;
+}
+
+function setHoverTarget(
+    list: Displayable[],
+    out: HoveredResult,
+    x: number,
+    y: number,
+    exclude: Displayable
+) {
+    for (let i = list.length - 1; i >= 0; i--) {
+        const el = list[i];
+        let hoverCheckResult;
+        if (el !== exclude
+            // getDisplayList may include ignored item in VML mode
+            && !el.ignore
+            && (hoverCheckResult = isHover(el, x, y))
+        ) {
+            !out.topTarget && (out.topTarget = el);
+            if (hoverCheckResult !== SILENT) {
+                out.target = el;
+                break;
+            }
+        }
+    }
 }
 
 /**

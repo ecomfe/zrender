@@ -309,6 +309,5 @@ export function isMiddleOrRightButtonOnMouseUpDown(e: { which: number }) {
     return e.which === 2 || e.which === 3;
 }
 
-
 // For backward compatibility
 export {Eventful as Dispatcher};
