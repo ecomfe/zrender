@@ -233,27 +233,29 @@ export function parse(colorStr: string, rgbaArr?: number[]): number[] {
                         ? setRgba(rgbaArr, +params[0], +params[1], +params[2], 1)
                         : setRgba(rgbaArr, 0, 0, 0, 1);
                 }
-                alpha = parseCssFloat(params.pop() as string); // jshint ignore:line
+                alpha = parseCssFloat(params.pop()); // jshint ignore:line
             // Fall through.
             case 'rgb':
-                if (params.length !== 3) {
+                if (params.length >= 3) {
+                    setRgba(rgbaArr,
+                        parseCssInt(params[0]),
+                        parseCssInt(params[1]),
+                        parseCssInt(params[2]),
+                        params.length === 3 ? alpha : parseCssFloat(params[3])
+                    );
+                    putToCache(colorStr, rgbaArr);
+                    return rgbaArr;
+                }
+                else {
                     setRgba(rgbaArr, 0, 0, 0, 1);
                     return;
                 }
-                setRgba(rgbaArr,
-                    parseCssInt(params[0]),
-                    parseCssInt(params[1]),
-                    parseCssInt(params[2]),
-                    alpha
-                );
-                putToCache(colorStr, rgbaArr);
-                return rgbaArr;
             case 'hsla':
                 if (params.length !== 4) {
                     setRgba(rgbaArr, 0, 0, 0, 1);
                     return;
                 }
-                params[3] = parseCssFloat(params[3] as string);
+                params[3] = parseCssFloat(params[3]);
                 hsla2rgba(params, rgbaArr);
                 putToCache(colorStr, rgbaArr);
                 return rgbaArr;

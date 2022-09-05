@@ -1,6 +1,7 @@
 
 import env from './env';
 import {buildTransformer} from './fourPointsTransform';
+import {Dictionary} from './types';
 
 const EVENT_SAVED_PROP = '___zrEVENTSAVED';
 const _calcOut: number[] = [];
@@ -166,4 +167,21 @@ function preparePointerTransformer(markers: HTMLDivElement[], saved: SavedInfo, 
 
 export function isCanvasEl(el: HTMLElement): el is HTMLCanvasElement {
     return el.nodeName.toUpperCase() === 'CANVAS';
+}
+
+const replaceReg = /([&<>"'])/g;
+const replaceMap: Dictionary<string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    '\'': '&#39;'
+};
+
+export function encodeHTML(source: string): string {
+    return source == null
+        ? ''
+        : (source + '').replace(replaceReg, function (str, c) {
+            return replaceMap[c];
+        });
 }
