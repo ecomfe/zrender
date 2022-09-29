@@ -435,6 +435,9 @@ export default class Layer extends Eventful {
                 }
                 // Pattern
                 else if (util.isImagePatternObject(clearColor)) {
+                    // scale pattern by dpr
+                    clearColor.scaleX = clearColor.scaleX || dpr;
+                    clearColor.scaleY = clearColor.scaleY || dpr;
                     clearColorGradientOrPattern = createCanvasPattern(
                         ctx, clearColor, {
                             dirty() {
@@ -476,7 +479,7 @@ export default class Layer extends Eventful {
         }
     }
 
-    // Iterface of refresh
+    // Interface of refresh
     refresh: (clearColor?: string | GradientObject | ImagePatternObject) => void
 
     // Interface of renderToCanvas in getRenderedCanvas

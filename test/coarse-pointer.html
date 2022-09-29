@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="../dist/zrender.js"></script>
+    <script src="lib/config.js"></script>
+</head>
+<body>
+    <style>
+        html {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        .chart {
+            height: 800px;
+        }
+        h1 {
+            background: #000;
+            color: #eee;
+            font-size: 18px;
+            text-align: center;
+            padding: 10px;
+            margin: 0 0 10px 0;
+        }
+    </style>
+
+    <h1>
+        Open mobile debug mode and then touch. The green circles should make a color to be lighter while the red circles should not.
+    </h1>
+
+    Open this case with <a href="?__COARSE__POINTER__=true">?__COARSE__POINTER__=true</a>.
+
+    <div id="main0" class="chart"></div>
+
+
+    <script type="text/javascript">
+    (function () {
+        var zr = zrender.init(document.getElementById('main0'), {
+            useCoarsePointer: window.__ZRENDER__DEFAULT__COARSE_POINTER
+        });
+
+        var rect = new zrender.Rect({
+            shape: {
+                x: 170,
+                y: 110,
+                width: 50,
+                height: 50
+            },
+            style: {
+                fill: '#007'
+            }
+        });
+        zr.add(rect);
+
+        rect.on('mouseover', function () {
+            rect.attr('style', {
+                fill: '#06f'
+            });
+        });
+
+        rect.on('mouseout', function () {
+            rect.attr('style', {
+                fill: '#007'
+            });
+        });
+
+        var circle = new zrender.Circle({
+            style: {
+                fill: 'green',
+            },
+            shape: {
+                cx: 180,
+                cy: 95,
+                r: 5
+            },
+            textContent: new zrender.Text({
+                style: {
+                    text: '1. Touch around the green circles.\n2. Expect the blue shape to be a lighter blue.',
+                    fontSize: 12
+                }
+            }),
+            textConfig: {
+                position: 'top'
+            },
+            silent: true
+        });
+        zr.add(circle);
+
+        circle = new zrender.Circle({
+            style: {
+                fill: 'red',
+            },
+            shape: {
+                cx: 260,
+                cy: 180,
+                r: 5
+            },
+            textContent: new zrender.Text({
+                style: {
+                    text: '3. Touch around the red circles.\n4. Expect the blue shape not to change.',
+                    fontSize: 12
+                }
+            }),
+            textConfig: {
+                position: 'bottom'
+            },
+            silent: true
+        });
+        zr.add(circle);
+
+
+        var path = new zrender.Polygon({
+            shape: {
+                points: [
+                    [100, 250],
+                    [170, 340],
+                    [300, 220],
+                    [200, 400],
+                    [100, 300]
+                ]
+            },
+            style: {
+                fill: '#007'
+            }
+        });
+        zr.add(path);
+
+        path.on('mouseover', function () {
+            path.attr('style', {
+                fill: '#06f'
+            });
+        });
+
+        path.on('mouseout', function () {
+            path.attr('style', {
+                fill: '#007'
+            });
+        });
+
+        zr.add(new zrender.Circle({
+            style: {
+                fill: 'red',
+            },
+            shape: {
+                cx: 160,
+                cy: 270,
+                r: 5
+            },
+            silent: true
+        }));
+
+        zr.add(new zrender.Circle({
+            style: {
+                fill: 'green',
+            },
+            shape: {
+                cx: 180,
+                cy: 310,
+                r: 5
+            },
+            silent: true
+        }));
+
+        var rect2 = new zrender.Rect({
+            shape: {
+                x: 170,
+                y: 450,
+                width: 50,
+                height: 50
+            },
+            style: {
+                fill: '#700'
+            },
+            textContent: new zrender.Text({
+                style: {
+                    text: 'This is a shape with `ignoreCoarsePointer`.\nIt will NOT be affected by `useCoarsePointer`.',
+                    fontSize: 12
+                },
+                ignoreCoarsePointer: true
+            }),
+            textConfig: {
+                position: 'bottom'
+            },
+            ignoreCoarsePointer: true
+        });
+        rect2.ignoreCoarsePointer = true;
+        zr.add(rect2);
+
+        rect2.on('mouseover', function () {
+            rect2.attr('style', {
+                fill: '#f00'
+            });
+        });
+
+        rect2.on('mouseout', function () {
+            rect2.attr('style', {
+                fill: '#700'
+            });
+        });
+
+        zr.add(new zrender.Circle({
+            style: {
+                fill: 'green',
+            },
+            shape: {
+                cx: 200,
+                cy: 470,
+                r: 5
+            },
+            silent: true
+        }));
+        zr.add(new zrender.Circle({
+            style: {
+                fill: 'green',
+            },
+            shape: {
+                cx: 200,
+                cy: 520,
+                r: 5
+            },
+            silent: true
+        }));
+        zr.add(new zrender.Circle({
+            style: {
+                fill: 'red',
+            },
+            shape: {
+                cx: 235,
+                cy: 470,
+                r: 5
+            },
+            silent: true
+        }));
+        zr.add(new zrender.Circle({
+            style: {
+                fill: 'red',
+            },
+            shape: {
+                cx: 200,
+                cy: 540,
+                r: 5
+            },
+            silent: true
+        }));
+    })();
+    </script>
+
+
+
+
+
+
+
+</body>
+</html>
