@@ -567,7 +567,6 @@ export function setPattern(
     if (noRepeat) {
         patternWidth = patternHeight = 1;
     }
-    // https://github.com/fabricjs/fabric.js/blob/78b7029aaed9287b4e4e7f84d11f85a25d067af3/src/pattern.class.js
     else if (repeatX) {
         patternHeight = 1;
         patternWidth = (patternAttrs.width as number) / boundingRect.width;
@@ -587,9 +586,8 @@ export function setPattern(
         patternAttrs.height = patternHeight;
     }
 
-    console.log(patternAttrs)
-
-    patternAttrs.patternTransform = getSRTTransformString(val);
+    const patternTransform = getSRTTransformString(val);
+    patternTransform && (patternAttrs.patternTransform = patternTransform);
 
     // Use the whole html as cache key.
     let patternVNode = createVNode(

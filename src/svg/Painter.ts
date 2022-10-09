@@ -282,17 +282,23 @@ class SVGPainter implements PainterBase {
                 viewportStyle.height = height + 'px';
             }
 
-            const svgDom = this._svgDom;
-            if (svgDom) {
-                // Set width by 'svgRoot.width = width' is invalid
-                svgDom.setAttribute('width', width as any);
-                svgDom.setAttribute('height', height as any);
-            }
+            if (!isPattern(this._backgroundColor)) {
+                const svgDom = this._svgDom;
+                if (svgDom) {
+                    // Set width by 'svgRoot.width = width' is invalid
+                    svgDom.setAttribute('width', width as any);
+                    svgDom.setAttribute('height', height as any);
+                }
 
-            const bgEl = this._bgVNode && this._bgVNode.elm as SVGElement;
-            if (bgEl) {
-               bgEl.setAttribute('width', width as any);
-               bgEl.setAttribute('height', height as any);
+                const bgEl = this._bgVNode && this._bgVNode.elm as SVGElement;
+                if (bgEl) {
+                    bgEl.setAttribute('width', width as any);
+                    bgEl.setAttribute('height', height as any);
+                }
+            }
+            else {
+                // pattern backgroundColor requires a full refresh
+                this.refresh();
             }
         }
     }
