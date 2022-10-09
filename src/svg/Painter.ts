@@ -28,7 +28,7 @@ import Path from '../graphic/Path';
 import patch, { updateAttrs } from './patch';
 import { getSize } from '../canvas/helper';
 import { GradientObject } from '../graphic/Gradient';
-import { PatternObject } from '../export';
+import { PatternObject } from '../graphic/Pattern';
 
 let svgId = 0;
 
