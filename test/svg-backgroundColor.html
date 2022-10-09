@@ -7,7 +7,7 @@
     <script src="../dist/zrender.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
-        #repeat {
+        .opt-bar {
             position: absolute;
             top: 10px;
             left: 10px;
@@ -61,7 +61,8 @@
         // repeat: 'no-repeat'
     };
 
-    document.querySelector('#repeat').addEventListener('change', e => {
+    const repeatSelector = document.querySelector('#repeat');
+    repeatSelector.addEventListener('change', e => {
         if (bg.image) {
             bg.repeat = e.target.value;
             zr.setBackgroundColor(bg);
@@ -74,9 +75,11 @@
     function updateBg() {
         var text;
         var mod = i % 5;
+        repeatSelector.style.display = 'none';
         if (mod === 0) {
             text = 'pattern';
             bg = pattern;
+            repeatSelector.style.display = '';
         }
         else if (mod === 1) {
             text = 'radial gradient';
