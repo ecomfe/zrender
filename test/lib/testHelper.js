@@ -5,9 +5,19 @@
 
 
     // Set default renderer in dev mode from hash.
-    var matchResult = location.href.match(/[?&]__RENDERER__=(canvas|svg)(&|$)/);
-    if (matchResult) {
-        window.__ZRENDER__DEFAULT__RENDERER__ = matchResult[1];
+    var rendererMatchResult = location.href.match(/[?&]__RENDERER__=(canvas|svg)(&|$)/);
+    if (rendererMatchResult) {
+        window.__ZRENDER__DEFAULT__RENDERER__ = rendererMatchResult[1];
+    }
+
+    var coarsePointerMatchResult = location.href.match(/[?&]__COARSE__POINTER__=(true|false|auto)(&|$)/);
+    if (coarsePointerMatchResult) {
+        window.__ZRENDER__DEFAULT__COARSE_POINTER =
+            coarsePointerMatchResult[1] === 'true'
+                ? true
+                : coarsePointerMatchResult[1] === 'false'
+                    ? false
+                    : 'auto';
     }
 
     // ----------------------------

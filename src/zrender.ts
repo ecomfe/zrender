@@ -126,7 +126,18 @@ class ZRender {
         const handerProxy = (!env.node && !env.worker && !ssrMode)
             ? new HandlerProxy(painter.getViewportRoot(), painter.root)
             : null;
-        this.handler = new Handler(storage, painter, handerProxy, painter.root);
+
+        const useCoarsePointer = opts.useCoarsePointer;
+        const usePointerSize = (useCoarsePointer == null || useCoarsePointer === 'auto')
+            ? env.touchEventsSupported
+            : !!useCoarsePointer;
+        const defaultPointerSize = 44;
+        let pointerSize;
+        if (usePointerSize) {
+            pointerSize = zrUtil.retrieve2(opts.pointerSize, defaultPointerSize);
+        }
+
+        this.handler = new Handler(storage, painter, handerProxy, painter.root, pointerSize);
 
         this.animation = new Animation({
             stage: {
@@ -425,6 +436,8 @@ export interface ZRenderInitOpt {
     width?: number | string // 10, 10px, 'auto'
     height?: number | string
     useDirtyRect?: boolean
+    useCoarsePointer?: 'auto' | boolean
+    pointerSize?: number
     ssr?: boolean   // If enable ssr mode.
 }
 
@@ -472,7 +485,7 @@ export function registerPainter(name: string, Ctor: PainterBaseCtor) {
 /**
  * @type {string}
  */
-export const version = '5.3.2';
+export const version = '5.4.0';
 
 
 export interface ZRenderType extends ZRender {};
