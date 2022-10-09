@@ -6,9 +6,25 @@
     <script src="./lib/config.js"></script>
     <script src="../dist/zrender.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        #repeat {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+    </style>
 </head>
 <body>
     <div id="main" style="width:100vw;height:100vh;"></div>
+    <div class="opt-bar">
+        <button onclick="updateBg()">Change Background</button>
+        <select id="repeat">
+            <option value="">repeat</option>
+            <option value="repeat-x">repeat-x</option>
+            <option value="repeat-y">repeat-y</option>
+            <option value="no-repeat">no-repeat</option>
+        </select>
+    </div>
     <script type="text/javascript">
     var zr = zrender.init(document.getElementById('main'), {
         renderer: 'svg'
@@ -40,14 +56,23 @@
     imageDom.src = `https://picsum.photos/seed/picsum/400/200`
     var pattern = {
         image: imageDom,
-        repeat: 'repeat-x'
+        // repeat: 'repeat-x'
+        // repeat: 'repeat-y'
+        // repeat: 'no-repeat'
     };
 
+    document.querySelector('#repeat').addEventListener('change', e => {
+        if (bg.image) {
+            bg.repeat = e.target.value;
+            zr.setBackgroundColor(bg);
+        }
+    });
+
     var i = 0;
+    var bg;
 
     function updateBg() {
         var text;
-        var bg;
         var mod = i % 5;
         if (mod === 0) {
             text = 'pattern';
@@ -74,8 +99,6 @@
     }
 
     updateBg();
-
-    // setInterval(updateBg, 3e3);
 
     window.addEventListener('resize', function() {
         zr.resize();
