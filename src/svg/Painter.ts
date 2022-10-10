@@ -387,7 +387,6 @@ function createBackgroundVNode(
                     fill: backgroundColor
                 },
                 dirty: noop,
-                // FIXME: resize
                 getBoundingRect: () => ({ width, height })
             } as any, bgVNode.attrs, 'fill', scope);
         }

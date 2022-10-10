@@ -476,7 +476,6 @@ export function setPattern(
     const val = el.style[target] as ImagePatternObject | SVGPatternObject;
     const boundingRect = el.getBoundingRect();
     const patternAttrs: SVGVNodeAttrs = {};
-    // TODO: support repeat-x & repeat-y
     const repeat = (val as ImagePatternObject).repeat;
     const noRepeat = repeat === 'no-repeat';
     const repeatX = repeat === 'repeat-x';
