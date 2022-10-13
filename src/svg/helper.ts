@@ -175,7 +175,7 @@ export function getSRTTransformString(
 export const encodeBase64 = (function () {
     if (env.hasGlobalWindow && isFunction(window.btoa)) {
         return function (str: string) {
-            return window.btoa(unescape(str));
+            return window.btoa(unescape(encodeURIComponent(str)));
         };
     }
     if (typeof Buffer !== 'undefined') {
