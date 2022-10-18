@@ -27,6 +27,7 @@ jobs:
           npm run prepare:nightly
           npm ci
           npm run release
+          npm run test
           npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
