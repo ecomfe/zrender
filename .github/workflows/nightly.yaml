@@ -24,9 +24,9 @@ jobs:
           registry-url: https://registry.npmjs.org/
       - name: Setup and publish nightly
         run: |
+          npm run prepare:nightly
           npm ci
           npm run release
-          npm run prepare:nightly
           npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}

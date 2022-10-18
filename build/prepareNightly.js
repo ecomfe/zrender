@@ -1,4 +1,6 @@
 const fs = require('fs');
+const { execSync } = require('child_process');
+
 const packageJsonPath = __dirname + '/../package.json';
 const nightlyPackageName = 'zrender-nightly';
 
@@ -33,6 +35,14 @@ function updateVersion(version) {
 
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
 packageJson.name = nightlyPackageName;
-packageJson.version = updateVersion(packageJson.version);
+const version = updateVersion(packageJson.version);
 
 fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2), 'utf-8');
+
+// Update version in package.json and package-lock.json
+execSync(`npm version ${version} --git-tag-version=false`);
+
+const entryPath = __dirname + '/../src/zrender.ts';
+const entryFile = fs.readFileSync(entryPath, 'utf-8')
+    .replace(/export const version = '\S+'/, `export const version = '${version}'`);
+fs.writeFileSync(entryPath, entryFile, 'utf-8');
