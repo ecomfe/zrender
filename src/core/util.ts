@@ -653,20 +653,131 @@ export function isPrimitive(obj: any): boolean {
     return obj[primitiveKey];
 }
 
+interface Iterator<IteratorValue extends unknown, IteratorReturn> {
+    next(): {value: IteratorValue, done: false} | {value: IteratorReturn, done: true};
+}
+
+interface MapInterface<T, KEY extends string | number = string | number> {
+    // Size should be a getter here, but tsconfig will not allow getters (es3 target).
+    // Since our polyfill and HashMap class do not expose this, it should be ok.
+    size(): number;
+    clear(): undefined;
+    delete(key: KEY): boolean;
+    get(key: KEY): T | undefined
+    set(key: KEY, value: T): this
+    has(key: KEY): boolean
+    keys(): Iterator<KEY, undefined>
+    values(): Iterator<T, undefined>
+    entries(): Iterator<[KEY, T], undefined>
+    forEach(callback: (key: KEY, value: T) => void): void
+}
+
+class MapPolyfill<T, KEY extends string | number = string | number> implements MapInterface<T, KEY> {
+    private data: Record<KEY, T> = {} as Record<KEY, T>;
+
+    size(): number {
+        return Object.keys(this.data).length;
+    }
+    toString(): string {
+        return '[object MapPolyfill]';
+    }
+    clear(): undefined {
+        this.data = {} as Record<KEY, T>;
+        return undefined;
+    }
+    delete(key: KEY): boolean {
+        const existed = this.has(key);
+        delete this.data[key];
+        return existed;
+    }
+    get(key: KEY): T | undefined {
+        return this.data[key];
+    }
+    set(key: KEY, value: T): this {
+        this.data[key] = value;
+        return this;
+    }
+    has(key: KEY): boolean {
+        return this.data.hasOwnProperty(key);
+    }
+    keys(): Iterator<KEY, undefined> {
+        const keys = Object.keys(this.data) as KEY[];
+        let i = 0;
+        let end = keys.length;
+        return {
+            next() {
+                if (i < end) {
+                    return {value: keys[i] as KEY, done: false};
+                }
+                return {done: true, value: undefined};
+            }
+        };
+    }
+    values(): Iterator<T, undefined> {
+        const data = this.data;
+        const keys = Object.keys(this.data) as KEY[];
+        let i = 0;
+        let end = keys.length;
+        return {
+            next() {
+                if (i < end) {
+                    return {value: data[keys[i]] as T, done: false};
+                }
+                return {done: true, value: undefined};
+            }
+        };
+    }
+    entries(): Iterator<[KEY, T], undefined> {
+        const data = this.data;
+        const keys = Object.keys(this.data) as KEY[];
+        let i = 0;
+        let end = keys.length;
+        return {
+            next() {
+                if (i < end) {
+                    return {value: [keys[i], data[keys[i]]] as [KEY, T], done: false};
+                }
+                return {done: true, value: undefined};
+            }
+        };
+    }
+    forEach(callback: (key: KEY, value: T) => void): void {
+        // This is a potential performance bottleneck, see details in
+        // https://github.com/ecomfe/zrender/issues/965, however it is now
+        // less likely to occur as we default to native maps when possible.
+        for (const key in this.data) {
+            if (this.data.hasOwnProperty(key)) {
+                callback(key, this.data[key]);
+            }
+        }
+    }
+
+    [Symbol.iterator](): Iterator<[KEY, T], undefined> {
+        return this.entries();
+    }
+}
+
+// We want to use native Map if it is available, but we do not want to polyfill the global scope
+// in case users ship their own polyfills or patch the native map object in any way.
+const isNativeMapSupported = typeof Map === 'function';
+function maybeNativeMap<T, KEY extends string | number = string | number>(): MapInterface<T, KEY> {
+    // Map may be a native class if we are running in an ES6 compatible environment.
+    // eslint-disable-next-line
+    return (isNativeMapSupported ? Map : MapPolyfill) as unknown as MapInterface<T, KEY>;
+}
 
 /**
  * @constructor
- * @param {Object} obj Only apply `ownProperty`.
+ * @param {Object} obj
  */
 export class HashMap<T, KEY extends string | number = string | number> {
-
-    data: {[key in KEY]: T} = {} as {[key in KEY]: T};
+    data: MapInterface<T, KEY> = maybeNativeMap<T, KEY>();
 
     constructor(obj?: HashMap<T, KEY> | { [key in KEY]?: T } | KEY[]) {
         const isArr = isArray(obj);
         // Key should not be set on this, otherwise
         // methods get/set/... may be overrided.
-        this.data = {} as {[key in KEY]: T};
+        this.data = maybeNativeMap<T, KEY>();
         const thisMap = this;
 
         (obj instanceof HashMap)
@@ -682,12 +793,14 @@ export class HashMap<T, KEY extends string | number = string | number> {
     // (We usually treat `null` and `undefined` as the same, different
     // from ES6 Map).
     get(key: KEY): T {
-        return this.data.hasOwnProperty(key) ? this.data[key] : null;
+        return this.data.get(key);
     }
     set(key: KEY, value: T): T {
         // Comparing with invocation chaining, `return value` is more commonly
         // used in this case: `const someVal = map.set('a', genVal());`
-        return (this.data[key] = value);
+        // eslint-disable-next-line
+        this.data.set(key, value);
+        return value;
     }
     // Although util.each can be performed on this hashMap directly, user
     // should not use the exposed keys, who are prefixed.
@@ -695,18 +808,25 @@ export class HashMap<T, KEY extends string | number = string | number> {
         cb: (this: Context, value?: T, key?: KEY) => void,
         context?: Context
     ) {
-        for (let key in this.data) {
-            if (this.data.hasOwnProperty(key)) {
-                cb.call(context, this.data[key], key);
-            }
-        }
+        this.data.forEach((key, value) => {
+            cb.call(context, value, key);
+        });
     }
     keys(): KEY[] {
-        return keys(this.data);
+        const keys: KEY[] = [];
+        // We are iterating using the keys iterator and not directly
+        // accesing this.data[key] in our for..in loop. This produces
+        // a false positive eslint error that we are silencing.
+        // eslint-disable-next-line
+        for (const key in this.data.keys()) {
+            keys.push(key as KEY);
+        }
+
+        return keys;
     }
     // Do not use this method if performance sensitive.
     removeKey(key: KEY) {
-        delete this.data[key];
+        this.data.delete(key);
     }
 }
 
