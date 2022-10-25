@@ -653,41 +653,25 @@ export function isPrimitive(obj: any): boolean {
     return obj[primitiveKey];
 }
 
-interface Iterator<IteratorValue extends unknown, IteratorReturn> {
-    next(): {value: IteratorValue, done: false} | {value: IteratorReturn, done: true};
-}
-
 interface MapInterface<T, KEY extends string | number = string | number> {
     // Size should be a getter here, but tsconfig will not allow getters (es3 target).
     // Since our polyfill and HashMap class do not expose this, it should be ok.
-    size(): number;
-    clear(): undefined;
     delete(key: KEY): boolean;
     get(key: KEY): T | undefined
     set(key: KEY, value: T): this
-    has(key: KEY): boolean
-    keys(): Iterator<KEY, undefined>
-    values(): Iterator<T, undefined>
-    entries(): Iterator<[KEY, T], undefined>
+    keys(): KEY[];
     forEach(callback: (key: KEY, value: T) => void): void
 }
+
 
 class MapPolyfill<T, KEY extends string | number = string | number> implements MapInterface<T, KEY> {
     private data: Record<KEY, T> = {} as Record<KEY, T>;
 
-    size(): number {
-        return Object.keys(this.data).length;
-    }
-    toString(): string {
-        return '[object MapPolyfill]';
-    }
-    clear(): undefined {
-        this.data = {} as Record<KEY, T>;
-        return undefined;
-    }
     delete(key: KEY): boolean {
-        const existed = this.has(key);
-        delete this.data[key];
+        const existed = this.data.hasOwnProperty(key);
+        if (existed) {
+            delete this.data[key];
+        }
         return existed;
     }
     get(key: KEY): T | undefined {
@@ -697,49 +681,8 @@ class MapPolyfill<T, KEY extends string | number = string | number> implements M
         this.data[key] = value;
         return this;
     }
-    has(key: KEY): boolean {
-        return this.data.hasOwnProperty(key);
-    }
-    keys(): Iterator<KEY, undefined> {
-        const keys = Object.keys(this.data) as KEY[];
-        let i = 0;
-        let end = keys.length;
-        return {
-            next() {
-                if (i < end) {
-                    return {value: keys[i] as KEY, done: false};
-                }
-                return {done: true, value: undefined};
-            }
-        };
-    }
-    values(): Iterator<T, undefined> {
-        const data = this.data;
-        const keys = Object.keys(this.data) as KEY[];
-        let i = 0;
-        let end = keys.length;
-        return {
-            next() {
-                if (i < end) {
-                    return {value: data[keys[i]] as T, done: false};
-                }
-                return {done: true, value: undefined};
-            }
-        };
-    }
-    entries(): Iterator<[KEY, T], undefined> {
-        const data = this.data;
-        const keys = Object.keys(this.data) as KEY[];
-        let i = 0;
-        let end = keys.length;
-        return {
-            next() {
-                if (i < end) {
-                    return {value: [keys[i], data[keys[i]]] as [KEY, T], done: false};
-                }
-                return {done: true, value: undefined};
-            }
-        };
+    keys(): KEY[] {
+        return Object.keys(this.data) as KEY[];
     }
     forEach(callback: (key: KEY, value: T) => void): void {
         // This is a potential performance bottleneck, see details in
@@ -750,10 +693,6 @@ class MapPolyfill<T, KEY extends string | number = string | number> implements M
                 callback(key, this.data[key]);
             }
         }
-    }
-
-    [Symbol.iterator](): Iterator<[KEY, T], undefined> {
-        return this.entries();
     }
 }
 
@@ -771,7 +710,7 @@ function maybeNativeMap<T, KEY extends string | number = string | number>(): Map
  * @param {Object} obj
  */
 export class HashMap<T, KEY extends string | number = string | number> {
-    data: MapInterface<T, KEY> = maybeNativeMap<T, KEY>();
+    data: MapInterface<T, KEY>
 
     constructor(obj?: HashMap<T, KEY> | { [key in KEY]?: T } | KEY[]) {
         const isArr = isArray(obj);
@@ -798,7 +737,6 @@ export class HashMap<T, KEY extends string | number = string | number> {
     set(key: KEY, value: T): T {
         // Comparing with invocation chaining, `return value` is more commonly
         // used in this case: `const someVal = map.set('a', genVal());`
-        // eslint-disable-next-line
         this.data.set(key, value);
         return value;
     }
@@ -813,19 +751,16 @@ export class HashMap<T, KEY extends string | number = string | number> {
         });
     }
     keys(): KEY[] {
-        const keys: KEY[] = [];
-        // We are iterating using the keys iterator and not directly
-        // accesing this.data[key] in our for..in loop. This produces
-        // a false positive eslint error that we are silencing.
-        // eslint-disable-next-line
-        for (const key in this.data.keys()) {
-            keys.push(key as KEY);
+        // Polyfilled map return and Array<KEYS> for keys
+        if (this.data instanceof MapPolyfill) {
+            return this.data.keys();
         }
 
-        return keys;
+        // Native map return an iterator so we need to convert it to an array
+        return Array.from(this.data.keys());
     }
     // Do not use this method if performance sensitive.
-    removeKey(key: KEY) {
+    removeKey(key: KEY): void {
         this.data.delete(key);
     }
 }
