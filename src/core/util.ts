@@ -654,15 +654,12 @@ export function isPrimitive(obj: any): boolean {
 }
 
 interface MapInterface<T, KEY extends string | number = string | number> {
-    // Size should be a getter here, but tsconfig will not allow getters (es3 target).
-    // Since our polyfill and HashMap class do not expose this, it should be ok.
     delete(key: KEY): boolean;
     get(key: KEY): T | undefined
     set(key: KEY, value: T): this
     keys(): KEY[];
-    forEach(callback: (key: KEY, value: T) => void): void
+    forEach(callback: (value: T, key: KEY) => void): void
 }
-
 
 class MapPolyfill<T, KEY extends string | number = string | number> implements MapInterface<T, KEY> {
     private data: Record<KEY, T> = {} as Record<KEY, T>;
@@ -682,15 +679,15 @@ class MapPolyfill<T, KEY extends string | number = string | number> implements M
         return this;
     }
     keys(): KEY[] {
-        return Object.keys(this.data) as KEY[];
+        return keys(this.data);
     }
-    forEach(callback: (key: KEY, value: T) => void): void {
+    forEach(callback: (value: T, key: KEY) => void): void {
         // This is a potential performance bottleneck, see details in
         // https://github.com/ecomfe/zrender/issues/965, however it is now
         // less likely to occur as we default to native maps when possible.
         for (const key in this.data) {
             if (this.data.hasOwnProperty(key)) {
-                callback(key, this.data[key]);
+                callback(this.data[key], key);
             }
         }
     }
@@ -702,7 +699,7 @@ const isNativeMapSupported = typeof Map === 'function';
 function maybeNativeMap<T, KEY extends string | number = string | number>(): MapInterface<T, KEY> {
     // Map may be a native class if we are running in an ES6 compatible environment.
     // eslint-disable-next-line
-    return (isNativeMapSupported ? Map : MapPolyfill) as unknown as MapInterface<T, KEY>;
+    return (isNativeMapSupported ? new Map<KEY, T>() : new MapPolyfill<T, KEY>()) as MapInterface<T, KEY>;
 }
 
 /**
@@ -746,18 +743,18 @@ export class HashMap<T, KEY extends string | number = string | number> {
         cb: (this: Context, value?: T, key?: KEY) => void,
         context?: Context
     ) {
-        this.data.forEach((key, value) => {
+        this.data.forEach((value, key) => {
             cb.call(context, value, key);
         });
     }
     keys(): KEY[] {
-        // Polyfilled map return and Array<KEYS> for keys
-        if (this.data instanceof MapPolyfill) {
-            return this.data.keys();
+        // Native map return an iterator so we need to convert it to an array
+        if (isNativeMapSupported) {
+            return Array.from(this.data.keys());
         }
 
-        // Native map return an iterator so we need to convert it to an array
-        return Array.from(this.data.keys());
+        // Polyfilled map return and Array<KEYS> for keys
+        return this.data.keys();
     }
     // Do not use this method if performance sensitive.
     removeKey(key: KEY): void {
