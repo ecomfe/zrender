@@ -685,9 +685,10 @@ class MapPolyfill<T, KEY extends string | number = string | number> implements M
         // This is a potential performance bottleneck, see details in
         // https://github.com/ecomfe/zrender/issues/965, however it is now
         // less likely to occur as we default to native maps when possible.
-        for (const key in this.data) {
-            if (this.data.hasOwnProperty(key)) {
-                callback(this.data[key], key);
+        const data = this.data;
+        for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+                callback(data[key], key);
             }
         }
     }
