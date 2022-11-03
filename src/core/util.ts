@@ -655,21 +655,25 @@ export function isPrimitive(obj: any): boolean {
 
 interface MapInterface<T, KEY extends string | number = string | number> {
     delete(key: KEY): boolean;
-    get(key: KEY): T | undefined
-    set(key: KEY, value: T): this
+    has(key: KEY): boolean;
+    get(key: KEY): T | undefined;
+    set(key: KEY, value: T): this;
     keys(): KEY[];
-    forEach(callback: (value: T, key: KEY) => void): void
+    forEach(callback: (value: T, key: KEY) => void): void;
 }
 
 class MapPolyfill<T, KEY extends string | number = string | number> implements MapInterface<T, KEY> {
     private data: Record<KEY, T> = {} as Record<KEY, T>;
 
     delete(key: KEY): boolean {
-        const existed = this.data.hasOwnProperty(key);
+        const existed = this.has(key);
         if (existed) {
             delete this.data[key];
         }
         return existed;
+    }
+    has(key: KEY): boolean {
+        return this.data.hasOwnProperty(key);
     }
     get(key: KEY): T | undefined {
         return this.data[key];
@@ -726,9 +730,10 @@ export class HashMap<T, KEY extends string | number = string | number> {
         }
     }
 
-    // Do not provide `has` method to avoid defining what is `has`.
-    // (We usually treat `null` and `undefined` as the same, different
-    // from ES6 Map).
+    // `hasKey` instead of `has` for potential misleading.
+    hasKey(key: KEY): boolean {
+        return this.data.has(key);
+    }
     get(key: KEY): T {
         return this.data.get(key);
     }
@@ -749,13 +754,11 @@ export class HashMap<T, KEY extends string | number = string | number> {
         });
     }
     keys(): KEY[] {
-        // Native map return an iterator so we need to convert it to an array
-        if (isNativeMapSupported) {
-            return Array.from(this.data.keys());
-        }
-
-        // Polyfilled map return and Array<KEYS> for keys
-        return this.data.keys();
+        const keys = this.data.keys();
+        return isNativeMapSupported
+            // Native map returns an iterator so we need to convert it to an array
+            ? Array.from(keys)
+            : keys;
     }
     // Do not use this method if performance sensitive.
     removeKey(key: KEY): void {
