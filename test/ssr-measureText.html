@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Image</title>
+    <script src="./lib/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/zrender@5.4.0"></script>
+    <script>window.zrender540 = zrender;</script>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body {
+            overflow: hidden;
+        }
+        .painter {
+            height: 50vh;
+        }
+    </style>
+</head>
+<body>
+    <script type="text/javascript">
+        // See also https://github.com/ecomfe/zrender/issues/947
+        // See also https://github.com/apache/echarts/issues/17326
+
+        // mock non-canvas environment
+        zrender.setPlatformAPI({
+            createCanvas: zrender.util.noop
+        });
+        zrender540.setPlatformAPI({
+            createCanvas: zrender540.util.noop
+        });
+
+        function createZr(zrender, painterIdx, indication) {
+            var zr = zrender.init(null, {
+                renderer: 'svg',
+                ssr: true,
+                width: document.documentElement.clientWidth,
+                height: document.documentElement.clientHeight / 2
+            });
+
+            zr.add(new zrender.Text({
+                style: {
+                    x: 100,
+                    y: 200,
+                    text: (indication || '') + 'ABCDEFG1234567',
+                    fontSize: 18
+                }
+            }));
+
+            function showBoundingRect() {
+                zr.storage.traverse(function (el) {
+                    if (el.type === 'text') {
+                        var rect = el.getBoundingRect();
+
+                        zr.add(new zrender.Rect({
+                            shape: rect,
+                            x: el.x,
+                            y: el.y,
+                            rotation: el.rotation,
+                            scaleX: el.scaleX,
+                            scaleY: el.scaleY,
+                            originX: el.originX,
+                            originY: el.originY,
+                            style: {
+                                fill: null,
+                                stroke: zrender.color.random(),
+                                lineWidth: 1
+                            }
+                        }));
+                    }
+                });
+            }
+
+            var painter = document.createElement('div');
+            painter.id = 'painter' + painterIdx;
+            painter.className = 'painter';
+            document.body.appendChild(painter);
+            function paint() {
+                painter.innerHTML = zr.painter.renderToString();
+            }
+
+            showBoundingRect();
+            paint();
+
+            window.addEventListener('resize', function () {
+                zr.resize({
+                    width: document.documentElement.clientWidth,
+                    height: document.documentElement.clientHeight / 2
+                });
+                paint();
+            });
+        }
+
+        createZr(zrender540, 0, 'BEFORE: ');
+        createZr(zrender, 1, 'AFTER: ');
+    </script>
+</body>
+</html>

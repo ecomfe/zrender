@@ -75,8 +75,8 @@ export const platformApi: Platform = {
                 text = text || '';
                 font = font || DEFAULT_FONT;
                 // Use font size if there is no other method can be used.
-                const res = /^([0-9]*?)px$/.exec(font);
-                const fontSize = +(res && res[1]) || DEFAULT_FONT_SIZE;
+                const res = /(\d+)px/.exec(font);
+                const fontSize = res && +res[1] || DEFAULT_FONT_SIZE;
                 let width = 0;
                 if (font.indexOf('mono') >= 0) {   // is monospace
                     width = fontSize * text.length;
@@ -103,7 +103,7 @@ export const platformApi: Platform = {
 
 export function setPlatformAPI(newPlatformApis: Partial<Platform>) {
     for (let key in platformApi) {
-        // Don't assign unkown methods.
+        // Don't assign unknown methods.
         if ((newPlatformApis as any)[key]) {
             (platformApi as any)[key] = (newPlatformApis as any)[key];
         }
