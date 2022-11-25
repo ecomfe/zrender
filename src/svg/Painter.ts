@@ -393,7 +393,7 @@ function createBackgroundVNode(
         else {
             const { color, opacity } = normalizeColor(backgroundColor);
             bgVNode.attrs.fill = color;
-            opacity < 1 && (bgVNode.attrs.fillOpacity = opacity);
+            opacity < 1 && (bgVNode.attrs['fill-opacity'] = opacity);
         }
     }
     return bgVNode;
