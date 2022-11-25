@@ -2,7 +2,7 @@ name: Publish Nightly Next
 
 on:
   schedule:
-    - cron: '0 8 * * *'
+    - cron: '10 8 * * *'
   workflow_dispatch: {}
   repository_dispatch:
     types: publish-nightly-next
@@ -14,22 +14,23 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x]
+        node-version: [16.x]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: next
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           registry-url: https://registry.npmjs.org/
       - name: Setup and publish nightly
         run: |
+          npm run prepare:nightly-next
           npm ci
           npm run release
-          npm run prepare:nightly-next
+          npm run test
           npm publish --tag next
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}

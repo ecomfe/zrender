@@ -123,7 +123,7 @@ function createAttrsConvert(desc: ShapeMapDesc): ConvertShapeToAttr {
     };
 }
 
-const buitinShapesDef: Record<string, [ConvertShapeToAttr, ShapeValidator?]> = {
+const builtinShapesDef: Record<string, [ConvertShapeToAttr, ShapeValidator?]> = {
     circle: [createAttrsConvert(['cx', 'cy', 'r'])],
     polyline: [convertPolyShape, validatePolyShape],
     polygon: [convertPolyShape, validatePolyShape]
@@ -149,7 +149,7 @@ function hasShapeAnimation(el: Displayable) {
 export function brushSVGPath(el: Path, scope: BrushScope) {
     const style = el.style;
     const shape = el.shape;
-    const builtinShpDef = buitinShapesDef[el.type];
+    const builtinShpDef = builtinShapesDef[el.type];
     const attrs: SVGVNodeAttrs = {};
     const needsAnimate = scope.animation;
     let svgElType = 'path';
@@ -266,8 +266,8 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     // style.font has been normalized by `normalizeTextStyle`.
     const font = style.font || DEFAULT_FONT;
 
-    // Consider different font display differently in vertial align, we always
-    // set vertialAlign as 'middle', and use 'y' to locate text vertically.
+    // Consider different font display differently in vertical align, we always
+    // set verticalAlign as 'middle', and use 'y' to locate text vertically.
     const x = style.x || 0;
     const y = adjustTextY(style.y || 0, getLineHeight(font), style.textBaseline);
     const textAlign = TEXT_ALIGN_TO_ANCHOR[style.textAlign as keyof typeof TEXT_ALIGN_TO_ANCHOR]
@@ -388,7 +388,7 @@ function setShadow(
     }
 }
 
-function setGradient(
+export function setGradient(
     style: PathStyleProps,
     attrs: SVGVNodeAttrs,
     target: 'fill' | 'stroke',
@@ -467,16 +467,19 @@ function setGradient(
     attrs[target] = getIdURL(gradientId);
 }
 
-function setPattern(
+export function setPattern(
     el: Displayable,
     attrs: SVGVNodeAttrs,
     target: 'fill' | 'stroke',
     scope: BrushScope
 ) {
     const val = el.style[target] as ImagePatternObject | SVGPatternObject;
-    const patternAttrs: SVGVNodeAttrs = {
-        'patternUnits': 'userSpaceOnUse'
-    };
+    const boundingRect = el.getBoundingRect();
+    const patternAttrs: SVGVNodeAttrs = {};
+    const repeat = (val as ImagePatternObject).repeat;
+    const noRepeat = repeat === 'no-repeat';
+    const repeatX = repeat === 'repeat-x';
+    const repeatY = repeat === 'repeat-y';
     let child: SVGVNode;
     if (isImagePattern(val)) {
         let imageWidth = val.imageWidth;
@@ -503,8 +506,20 @@ function setPattern(
             const setSizeToVNode = (vNode: SVGVNode, img: ImageLike) => {
                 if (vNode) {
                     const svgEl = vNode.elm as SVGElement;
-                    const width = (vNode.attrs.width = imageWidth || img.width);
-                    const height = (vNode.attrs.height = imageHeight || img.height);
+                    let width = imageWidth || img.width;
+                    let height = imageHeight || img.height;
+                    if (vNode.tag === 'pattern') {
+                        if (repeatX) {
+                            height = 1;
+                            width /= boundingRect.width;
+                        }
+                        else if (repeatY) {
+                            width = 1;
+                            height /= boundingRect.height;
+                        }
+                    }
+                    vNode.attrs.width = width;
+                    vNode.attrs.height = height;
                     if (svgEl) {
                         svgEl.setAttribute('width', width as any);
                         svgEl.setAttribute('height', height as any);
@@ -513,7 +528,7 @@ function setPattern(
             };
             const createdImage = createOrUpdateImage(
                 imageSrc, null, el, (img) => {
-                    setSizeToVNode(patternVNode, img);
+                    noRepeat || setSizeToVNode(patternVNode, img);
                     setSizeToVNode(child, img);
                 }
             );
@@ -546,7 +561,32 @@ function setPattern(
         return;
     }
 
-    patternAttrs.patternTransform = getSRTTransformString(val);
+    let patternWidth;
+    let patternHeight;
+    if (noRepeat) {
+        patternWidth = patternHeight = 1;
+    }
+    else if (repeatX) {
+        patternHeight = 1;
+        patternWidth = (patternAttrs.width as number) / boundingRect.width;
+    }
+    else if (repeatY) {
+        patternWidth = 1;
+        patternHeight = (patternAttrs.height as number) / boundingRect.height;
+    }
+    else {
+        patternAttrs.patternUnits = 'userSpaceOnUse';
+    }
+
+    if (patternWidth != null && !isNaN(patternWidth)) {
+        patternAttrs.width = patternWidth;
+    }
+    if (patternHeight != null && !isNaN(patternHeight)) {
+        patternAttrs.height = patternHeight;
+    }
+
+    const patternTransform = getSRTTransformString(val);
+    patternTransform && (patternAttrs.patternTransform = patternTransform);
 
     // Use the whole html as cache key.
     let patternVNode = createVNode(

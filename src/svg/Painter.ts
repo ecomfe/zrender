@@ -3,7 +3,10 @@
  */
 
 import {
-    brush, setClipPath
+    brush,
+    setClipPath,
+    setGradient,
+    setPattern
 } from './graphic';
 import Displayable from '../graphic/Displayable';
 import Storage from '../Storage';
@@ -19,11 +22,13 @@ import {
     createBrushScope,
     createSVGVNode
 } from './core';
-import { normalizeColor, encodeBase64 } from './helper';
-import { extend, keys, logError, map, retrieve2 } from '../core/util';
+import { normalizeColor, encodeBase64, isGradient, isPattern } from './helper';
+import { extend, keys, logError, map, noop, retrieve2 } from '../core/util';
 import Path from '../graphic/Path';
 import patch, { updateAttrs } from './patch';
 import { getSize } from '../canvas/helper';
+import { GradientObject } from '../graphic/Gradient';
+import { PatternObject } from '../graphic/Pattern';
 
 let svgId = 0;
 
@@ -32,6 +37,8 @@ interface SVGPainterOption {
     height?: number
     ssr?: boolean
 }
+
+type SVGPainterBackgroundColor = string | GradientObject | PatternObject;
 
 class SVGPainter implements PainterBase {
 
@@ -53,7 +60,7 @@ class SVGPainter implements PainterBase {
     private _width: number
     private _height: number
 
-    private _backgroundColor: string
+    private _backgroundColor: SVGPainterBackgroundColor
 
     private _id: string
 
@@ -126,7 +133,6 @@ class SVGPainter implements PainterBase {
         opts = opts || {};
 
         const list = this.storage.getDisplayList(true);
-        const bgColor = this._backgroundColor;
         const width = this._width;
         const height = this._height;
 
@@ -137,26 +143,8 @@ class SVGPainter implements PainterBase {
 
         const children: SVGVNode[] = [];
 
-        if (bgColor && bgColor !== 'none') {
-            const { color, opacity } = normalizeColor(bgColor);
-            this._bgVNode = createVNode(
-                'rect',
-                'bg',
-                {
-                    width: width,
-                    height: height,
-                    x: '0',
-                    y: '0',
-                    id: '0',
-                    fill: color,
-                    'fill-opacity': opacity
-                }
-            );
-            children.push(this._bgVNode);
-        }
-        else {
-            this._bgVNode = null;
-        }
+        const bgVNode = this._bgVNode = createBackgroundVNode(width, height, this._backgroundColor, scope);
+        bgVNode && children.push(bgVNode);
 
         // Ignore the root g if wan't the output to be more tight.
         const mainVNode = !opts.compress
@@ -201,16 +189,8 @@ class SVGPainter implements PainterBase {
         }), { newline: true });
     }
 
-    setBackgroundColor(backgroundColor: string) {
+    setBackgroundColor(backgroundColor: SVGPainterBackgroundColor) {
         this._backgroundColor = backgroundColor;
-        const bgVNode = this._bgVNode;
-        if (bgVNode && bgVNode.elm) {
-            const { color, opacity } = normalizeColor(backgroundColor);
-            (bgVNode.elm as SVGElement).setAttribute('fill', color);
-            if (opacity < 1) {
-                (bgVNode.elm as SVGElement).setAttribute('fill-opacity', opacity as any);
-            }
-        }
     }
 
     getSvgRoot() {
@@ -302,11 +282,23 @@ class SVGPainter implements PainterBase {
                 viewportStyle.height = height + 'px';
             }
 
-            const svgDom = this._svgDom;
-            if (svgDom) {
-                // Set width by 'svgRoot.width = width' is invalid
-                svgDom.setAttribute('width', width as any);
-                svgDom.setAttribute('height', height as any);
+            if (!isPattern(this._backgroundColor)) {
+                const svgDom = this._svgDom;
+                if (svgDom) {
+                    // Set width by 'svgRoot.width = width' is invalid
+                    svgDom.setAttribute('width', width as any);
+                    svgDom.setAttribute('height', height as any);
+                }
+
+                const bgEl = this._bgVNode && this._bgVNode.elm as SVGElement;
+                if (bgEl) {
+                    bgEl.setAttribute('width', width as any);
+                    bgEl.setAttribute('height', height as any);
+                }
+            }
+            else {
+                // pattern backgroundColor requires a full refresh
+                this.refresh();
             }
         }
     }
@@ -344,13 +336,13 @@ class SVGPainter implements PainterBase {
         this._oldVNode = null;
     }
     toDataURL(base64?: boolean) {
-        let str = encodeURIComponent(this.renderToString());
+        let str = this.renderToString();
         const prefix = 'data:image/svg+xml;';
         if (base64) {
             str = encodeBase64(str);
             return str && prefix + 'base64,' + str;
         }
-        return prefix + 'charset=UTF-8,' + str;
+        return prefix + 'charset=UTF-8,' + encodeURIComponent(str);
     }
 
     refreshHover = createMethodNotSupport('refreshHover') as PainterBase['refreshHover'];
@@ -367,5 +359,44 @@ function createMethodNotSupport(method: string): any {
     };
 }
 
+function createBackgroundVNode(
+    width: number,
+    height: number,
+    backgroundColor: SVGPainterBackgroundColor,
+    scope: BrushScope
+) {
+    let bgVNode;
+    if (backgroundColor && backgroundColor !== 'none') {
+        bgVNode = createVNode(
+            'rect',
+            'bg',
+            {
+                width,
+                height,
+                x: '0',
+                y: '0',
+                id: '0'
+            }
+        );
+        if (isGradient(backgroundColor)) {
+            setGradient({ fill: backgroundColor as any }, bgVNode.attrs, 'fill', scope);
+        }
+        else if (isPattern(backgroundColor)) {
+            setPattern({
+                style: {
+                    fill: backgroundColor
+                },
+                dirty: noop,
+                getBoundingRect: () => ({ width, height })
+            } as any, bgVNode.attrs, 'fill', scope);
+        }
+        else {
+            const { color, opacity } = normalizeColor(backgroundColor);
+            bgVNode.attrs.fill = color;
+            opacity < 1 && (bgVNode.attrs['fill-opacity'] = opacity);
+        }
+    }
+    return bgVNode;
+}
 
 export default SVGPainter;

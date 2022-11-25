@@ -32,5 +32,9 @@ describe('platform', function() {
             createCanvas: oldCreateCanvas,
             measureText: oldMeasureText
         });
-    })
+    });
+
+    it('measureText should return correct width', function () {
+        expect(platform.platformApi.measureText('A', 'normal normal 18px sans-serif').width).toBe(12.06);
+    });
 });

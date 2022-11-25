@@ -422,8 +422,14 @@ export default class Layer extends Eventful {
                 let clearColorGradientOrPattern;
                 // Gradient
                 if (util.isGradientObject(clearColor)) {
+                    // shouldn't cache when clearColor is not global and size changed
+                    const shouldCache = clearColor.global || (
+                        (clearColor as InnerGradientObject).__width === width
+                        && (clearColor as InnerGradientObject).__height === height
+                    );
                     // Cache canvas gradient
-                    clearColorGradientOrPattern = (clearColor as InnerGradientObject).__canvasGradient
+                    clearColorGradientOrPattern = shouldCache
+                        && (clearColor as InnerGradientObject).__canvasGradient
                         || getCanvasGradient(ctx, clearColor, {
                             x: 0,
                             y: 0,
@@ -432,6 +438,8 @@ export default class Layer extends Eventful {
                         });
 
                     (clearColor as InnerGradientObject).__canvasGradient = clearColorGradientOrPattern;
+                    (clearColor as InnerGradientObject).__width = width;
+                    (clearColor as InnerGradientObject).__height = height;
                 }
                 // Pattern
                 else if (util.isImagePatternObject(clearColor)) {

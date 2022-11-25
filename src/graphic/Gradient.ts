@@ -12,6 +12,8 @@ export interface GradientObject {
 
 export interface InnerGradientObject extends GradientObject {
     __canvasGradient: CanvasGradient
+    __width: number
+    __height: number
 }
 
 export interface GradientColorStop {
