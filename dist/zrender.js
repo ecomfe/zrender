@@ -124,8 +124,8 @@
                 else {
                     text = text || '';
                     font = font || DEFAULT_FONT;
-                    var res = /^([0-9]*?)px$/.exec(font);
-                    var fontSize = +(res && res[1]) || DEFAULT_FONT_SIZE;
+                    var res = /(\d+)px/.exec(font);
+                    var fontSize = res && +res[1] || DEFAULT_FONT_SIZE;
                     var width = 0;
                     if (font.indexOf('mono') >= 0) {
                         width = fontSize * text.length;
@@ -578,11 +578,48 @@
     function isPrimitive(obj) {
         return obj[primitiveKey];
     }
+    var MapPolyfill = (function () {
+        function MapPolyfill() {
+            this.data = {};
+        }
+        MapPolyfill.prototype["delete"] = function (key) {
+            var existed = this.has(key);
+            if (existed) {
+                delete this.data[key];
+            }
+            return existed;
+        };
+        MapPolyfill.prototype.has = function (key) {
+            return this.data.hasOwnProperty(key);
+        };
+        MapPolyfill.prototype.get = function (key) {
+            return this.data[key];
+        };
+        MapPolyfill.prototype.set = function (key, value) {
+            this.data[key] = value;
+            return this;
+        };
+        MapPolyfill.prototype.keys = function () {
+            return keys(this.data);
+        };
+        MapPolyfill.prototype.forEach = function (callback) {
+            var data = this.data;
+            for (var key in data) {
+                if (data.hasOwnProperty(key)) {
+                    callback(data[key], key);
+                }
+            }
+        };
+        return MapPolyfill;
+    }());
+    var isNativeMapSupported = typeof Map === 'function';
+    function maybeNativeMap() {
+        return (isNativeMapSupported ? new Map() : new MapPolyfill());
+    }
     var HashMap = (function () {
         function HashMap(obj) {
-            this.data = {};
             var isArr = isArray(obj);
-            this.data = {};
+            this.data = maybeNativeMap();
             var thisMap = this;
             (obj instanceof HashMap)
                 ? obj.each(visit)
@@ -591,24 +628,29 @@
                 isArr ? thisMap.set(value, key) : thisMap.set(key, value);
             }
         }
+        HashMap.prototype.hasKey = function (key) {
+            return this.data.has(key);
+        };
         HashMap.prototype.get = function (key) {
-            return this.data.hasOwnProperty(key) ? this.data[key] : null;
+            return this.data.get(key);
         };
         HashMap.prototype.set = function (key, value) {
-            return (this.data[key] = value);
+            this.data.set(key, value);
+            return value;
         };
         HashMap.prototype.each = function (cb, context) {
-            for (var key in this.data) {
-                if (this.data.hasOwnProperty(key)) {
-                    cb.call(context, this.data[key], key);
-                }
-            }
+            this.data.forEach(function (value, key) {
+                cb.call(context, value, key);
+            });
         };
         HashMap.prototype.keys = function () {
-            return keys(this.data);
+            var keys = this.data.keys();
+            return isNativeMapSupported
+                ? Array.from(keys)
+                : keys;
         };
         HashMap.prototype.removeKey = function (key) {
-            delete this.data[key];
+            this.data["delete"](key);
         };
         return HashMap;
     }());
@@ -4149,7 +4191,7 @@
     var encodeBase64 = (function () {
         if (env.hasGlobalWindow && isFunction(window.btoa)) {
             return function (str) {
-                return window.btoa(unescape(str));
+                return window.btoa(unescape(encodeURIComponent(str)));
             };
         }
         if (typeof Buffer !== 'undefined') {
@@ -7196,7 +7238,7 @@
     function registerPainter(name, Ctor) {
         painterCtors[name] = Ctor;
     }
-    var version = '5.4.0';
+    var version = '5.4.1';
 
     var STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
     var DEFAULT_COMMON_STYLE = {
@@ -14959,7 +15001,10 @@
                 if (clearColor && clearColor !== 'transparent') {
                     var clearColorGradientOrPattern = void 0;
                     if (isGradientObject(clearColor)) {
-                        clearColorGradientOrPattern = clearColor.__canvasGradient
+                        var shouldCache = clearColor.global || (clearColor.__width === width
+                            && clearColor.__height === height);
+                        clearColorGradientOrPattern = shouldCache
+                            && clearColor.__canvasGradient
                             || getCanvasGradient(ctx, clearColor, {
                                 x: 0,
                                 y: 0,
@@ -14967,6 +15012,8 @@
                                 height: height
                             });
                         clearColor.__canvasGradient = clearColorGradientOrPattern;
+                        clearColor.__width = width;
+                        clearColor.__height = height;
                     }
                     else if (isImagePatternObject(clearColor)) {
                         clearColor.scaleX = clearColor.scaleX || dpr;
@@ -16247,7 +16294,7 @@
             }
         };
     }
-    var buitinShapesDef = {
+    var builtinShapesDef = {
         circle: [createAttrsConvert(['cx', 'cy', 'r'])],
         polyline: [convertPolyShape, validatePolyShape],
         polygon: [convertPolyShape, validatePolyShape]
@@ -16264,7 +16311,7 @@
     function brushSVGPath(el, scope) {
         var style = el.style;
         var shape = el.shape;
-        var builtinShpDef = buitinShapesDef[el.type];
+        var builtinShpDef = builtinShapesDef[el.type];
         var attrs = {};
         var needsAnimate = scope.animation;
         var svgElType = 'path';
@@ -16280,11 +16327,12 @@
             builtinShpDef[0](shape, attrs, mul);
         }
         else {
+            var needBuildPath = !el.path || el.shapeChanged();
             if (!el.path) {
                 el.createPathProxy();
             }
             var path = el.path;
-            if (el.shapeChanged()) {
+            if (needBuildPath) {
                 path.beginPath();
                 el.buildPath(path, el.shape);
                 el.pathUpdated();
@@ -16504,9 +16552,12 @@
     }
     function setPattern(el, attrs, target, scope) {
         var val = el.style[target];
-        var patternAttrs = {
-            'patternUnits': 'userSpaceOnUse'
-        };
+        var boundingRect = el.getBoundingRect();
+        var patternAttrs = {};
+        var repeat = val.repeat;
+        var noRepeat = repeat === 'no-repeat';
+        var repeatX = repeat === 'repeat-x';
+        var repeatY = repeat === 'repeat-y';
         var child;
         if (isImagePattern(val)) {
             var imageWidth_1 = val.imageWidth;
@@ -16531,8 +16582,20 @@
                 var setSizeToVNode_1 = function (vNode, img) {
                     if (vNode) {
                         var svgEl = vNode.elm;
-                        var width = (vNode.attrs.width = imageWidth_1 || img.width);
-                        var height = (vNode.attrs.height = imageHeight_1 || img.height);
+                        var width = imageWidth_1 || img.width;
+                        var height = imageHeight_1 || img.height;
+                        if (vNode.tag === 'pattern') {
+                            if (repeatX) {
+                                height = 1;
+                                width /= boundingRect.width;
+                            }
+                            else if (repeatY) {
+                                width = 1;
+                                height /= boundingRect.height;
+                            }
+                        }
+                        vNode.attrs.width = width;
+                        vNode.attrs.height = height;
                         if (svgEl) {
                             svgEl.setAttribute('width', width);
                             svgEl.setAttribute('height', height);
@@ -16540,7 +16603,7 @@
                     }
                 };
                 var createdImage = createOrUpdateImage(imageSrc, null, el, function (img) {
-                    setSizeToVNode_1(patternVNode, img);
+                    noRepeat || setSizeToVNode_1(patternVNode, img);
                     setSizeToVNode_1(child, img);
                 });
                 if (createdImage && createdImage.width && createdImage.height) {
@@ -16564,7 +16627,30 @@
         if (!child) {
             return;
         }
-        patternAttrs.patternTransform = getSRTTransformString(val);
+        var patternWidth;
+        var patternHeight;
+        if (noRepeat) {
+            patternWidth = patternHeight = 1;
+        }
+        else if (repeatX) {
+            patternHeight = 1;
+            patternWidth = patternAttrs.width / boundingRect.width;
+        }
+        else if (repeatY) {
+            patternWidth = 1;
+            patternHeight = patternAttrs.height / boundingRect.height;
+        }
+        else {
+            patternAttrs.patternUnits = 'userSpaceOnUse';
+        }
+        if (patternWidth != null && !isNaN(patternWidth)) {
+            patternAttrs.width = patternWidth;
+        }
+        if (patternHeight != null && !isNaN(patternHeight)) {
+            patternAttrs.height = patternHeight;
+        }
+        var patternTransform = getSRTTransformString(val);
+        patternTransform && (patternAttrs.patternTransform = patternTransform);
         var patternVNode = createVNode('pattern', '', patternAttrs, [child]);
         var patternKey = vNodeToString(patternVNode);
         var patternCache = scope.patternCache;
@@ -16916,7 +17002,6 @@
         SVGPainter.prototype.renderToVNode = function (opts) {
             opts = opts || {};
             var list = this.storage.getDisplayList(true);
-            var bgColor = this._backgroundColor;
             var width = this._width;
             var height = this._height;
             var scope = createBrushScope(this._id);
@@ -16924,22 +17009,8 @@
             scope.willUpdate = opts.willUpdate;
             scope.compress = opts.compress;
             var children = [];
-            if (bgColor && bgColor !== 'none') {
-                var _a = normalizeColor(bgColor), color = _a.color, opacity = _a.opacity;
-                this._bgVNode = createVNode('rect', 'bg', {
-                    width: width,
-                    height: height,
-                    x: '0',
-                    y: '0',
-                    id: '0',
-                    fill: color,
-                    'fill-opacity': opacity
-                });
-                children.push(this._bgVNode);
-            }
-            else {
-                this._bgVNode = null;
-            }
+            var bgVNode = this._bgVNode = createBackgroundVNode(width, height, this._backgroundColor, scope);
+            bgVNode && children.push(bgVNode);
             var mainVNode = !opts.compress
                 ? (this._mainVNode = createVNode('g', 'main', {}, [])) : null;
             this._paintList(list, scope, mainVNode ? mainVNode.children : children);
@@ -16968,14 +17039,6 @@
         };
         SVGPainter.prototype.setBackgroundColor = function (backgroundColor) {
             this._backgroundColor = backgroundColor;
-            var bgVNode = this._bgVNode;
-            if (bgVNode && bgVNode.elm) {
-                var _a = normalizeColor(backgroundColor), color = _a.color, opacity = _a.opacity;
-                bgVNode.elm.setAttribute('fill', color);
-                if (opacity < 1) {
-                    bgVNode.elm.setAttribute('fill-opacity', opacity);
-                }
-            }
         };
         SVGPainter.prototype.getSvgRoot = function () {
             return this._mainVNode && this._mainVNode.elm;
@@ -17040,10 +17103,20 @@
                     viewportStyle.width = width + 'px';
                     viewportStyle.height = height + 'px';
                 }
-                var svgDom = this._svgDom;
-                if (svgDom) {
-                    svgDom.setAttribute('width', width);
-                    svgDom.setAttribute('height', height);
+                if (!isPattern(this._backgroundColor)) {
+                    var svgDom = this._svgDom;
+                    if (svgDom) {
+                        svgDom.setAttribute('width', width);
+                        svgDom.setAttribute('height', height);
+                    }
+                    var bgEl = this._bgVNode && this._bgVNode.elm;
+                    if (bgEl) {
+                        bgEl.setAttribute('width', width);
+                        bgEl.setAttribute('height', height);
+                    }
+                }
+                else {
+                    this.refresh();
                 }
             }
         };
@@ -17071,13 +17144,13 @@
             this._oldVNode = null;
         };
         SVGPainter.prototype.toDataURL = function (base64) {
-            var str = encodeURIComponent(this.renderToString());
+            var str = this.renderToString();
             var prefix = 'data:image/svg+xml;';
             if (base64) {
                 str = encodeBase64(str);
                 return str && prefix + 'base64,' + str;
             }
-            return prefix + 'charset=UTF-8,' + str;
+            return prefix + 'charset=UTF-8,' + encodeURIComponent(str);
         };
         return SVGPainter;
     }());
@@ -17087,6 +17160,36 @@
                 logError('In SVG mode painter not support method "' + method + '"');
             }
         };
+    }
+    function createBackgroundVNode(width, height, backgroundColor, scope) {
+        var bgVNode;
+        if (backgroundColor && backgroundColor !== 'none') {
+            bgVNode = createVNode('rect', 'bg', {
+                width: width,
+                height: height,
+                x: '0',
+                y: '0',
+                id: '0'
+            });
+            if (isGradient(backgroundColor)) {
+                setGradient({ fill: backgroundColor }, bgVNode.attrs, 'fill', scope);
+            }
+            else if (isPattern(backgroundColor)) {
+                setPattern({
+                    style: {
+                        fill: backgroundColor
+                    },
+                    dirty: noop,
+                    getBoundingRect: function () { return ({ width: width, height: height }); }
+                }, bgVNode.attrs, 'fill', scope);
+            }
+            else {
+                var _a = normalizeColor(backgroundColor), color = _a.color, opacity = _a.opacity;
+                bgVNode.attrs.fill = color;
+                opacity < 1 && (bgVNode.attrs['fill-opacity'] = opacity);
+            }
+        }
+        return bgVNode;
     }
 
     registerPainter('canvas', CanvasPainter);

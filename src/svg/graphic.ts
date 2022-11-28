@@ -170,12 +170,13 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
         builtinShpDef[0](shape, attrs, mul);
     }
     else {
+        const needBuildPath = !el.path || el.shapeChanged();
         if (!el.path) {
             el.createPathProxy();
         }
         const path = el.path;
 
-        if (el.shapeChanged()) {
+        if (needBuildPath) {
             path.beginPath();
             el.buildPath(path, el.shape);
             el.pathUpdated();
