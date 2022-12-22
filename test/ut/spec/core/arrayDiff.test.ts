@@ -3,8 +3,22 @@ import arrayDiff from '../../../../src/core/arrayDiff';
 describe('arrayDiff', function () {
 
     it('Basic', function () {
-        const newArr = [{"name":"类目12"},{"name":"类目13"},{"name":"类目14"},{"name":"类目15"},{"name":"类目16"},{"name":"类目17"}];
-        const oldArr = [{"name":"类目11"},{"name":"类目12"},{"name":"类目13"},{"name":"类目14"},{"name":"类目15"},{"name":"类目16"}];
+        const newArr = [
+            {'name': '类目12'},
+            {'name': '类目13'},
+            {'name': '类目14'},
+            {'name': '类目15'},
+            {'name': '类目16'},
+            {'name': '类目17'}
+        ];
+        const oldArr = [
+            {'name': '类目11'},
+            {'name': '类目12'},
+            {'name': '类目13'},
+            {'name': '类目14'},
+            {'name': '类目15'},
+            {'name': '类目16'}
+        ];
 
         const result = arrayDiff(newArr, oldArr, function (a, b) {
             return a.name === b.name;
@@ -25,7 +39,7 @@ describe('arrayDiff', function () {
         const result = arrayDiff([1, 2, 3, 4], [1, 2, 3, 4]);
         expect(result[0].added).toBe(false);
         expect(result[0].removed).toBe(false);
-        expect(result[0].indices).toEqual([0, 1, 2, 3])
+        expect(result[0].indices).toEqual([0, 1, 2, 3]);
     });
 
     it('All different array', function () {

@@ -1,6 +1,6 @@
 import * as zrUtil from '../../../../src/core/util';
 
-describe('zrUtil', function() {
+describe('zrUtil', function () {
 
     describe('merge', function () {
 
@@ -146,5 +146,55 @@ describe('zrUtil', function() {
 
         });
 
+    });
+
+    describe('each', function () {
+
+        it('array base', function () {
+            const basicArray = ['z', 'r', 'e', 'n', 'd', 'e', 'r'];
+            const target: string[] = [];
+            const thisObject = {
+                count: 0
+            };
+            const cb = jest.fn(function (char, index) {
+                this.count++;
+                target[index] = char + 'E';
+            });
+            zrUtil.each(basicArray, cb, thisObject);
+            expect(cb).toBeCalledTimes(basicArray.length);
+            new Array(basicArray.length).fill('Z').forEach((_, index) => {
+                expect(cb).toHaveBeenNthCalledWith(index + 1, basicArray[index], index, basicArray);
+            });
+            expect(target).toEqual(['zE', 'rE', 'eE', 'nE', 'dE', 'eE', 'rE']);
+            expect(thisObject.count).toBe(7);
+        });
+
+        it('object base', function () {
+            const basicObject = {
+                name: 'zRender',
+                version: '5.4.1'
+            };
+            const ObjectKeys = Object.keys(basicObject);
+            const ObjectKeysLength = ObjectKeys.length;
+            const ObjectValues = Object.values(basicObject);
+            const target: Partial<typeof basicObject> = {};
+            const thisObject = {
+                count: 0
+            };
+            const cb = jest.fn(function (value: string, key: keyof typeof basicObject) {
+                this.count++;
+                target[key] = value + 'E';
+            });
+            zrUtil.each(basicObject, cb, thisObject);
+            expect(cb).toBeCalledTimes(ObjectKeysLength);
+            new Array(ObjectKeysLength).fill('Z').forEach((_, index) => {
+                expect(cb).toHaveBeenNthCalledWith(index + 1, ObjectValues[index], ObjectKeys[index], basicObject);
+            });
+            expect(target).toEqual({
+                name: 'zRenderE',
+                version: '5.4.1E'
+            });
+            expect(thisObject.count).toBe(2);
+        });
     });
 });
