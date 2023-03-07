@@ -591,9 +591,17 @@ function pushTokens(
 }
 
 
-function isLatin(ch: string) {
+function isAlphabeticLetter(ch: string) {
+    // Unicode Character Ranges
+    // https://jrgraphix.net/research/unicode_blocks.php
+    // The following ranges may not cover all letter ranges but only the more
+    // popular ones. Developers could make pull requests when they find those
+    // not covered.
     let code = ch.charCodeAt(0);
-    return code >= 0x21 && code <= 0x17F;
+    return code >= 0x20 && code <= 0x24F // Latin
+        || code >= 0x370 && code <= 0x10FF // Greek, Coptic, Cyrilic, and etc.
+        || code >= 0x1200 && code <= 0x13FF // Ethiopic and Cherokee
+        || code >= 0x1E00 && code <= 0x206F; // Latin and Greek extended
 }
 
 const breakCharMap = reduce(',&?/;] '.split(''), function (obj, ch) {
@@ -604,7 +612,7 @@ const breakCharMap = reduce(',&?/;] '.split(''), function (obj, ch) {
  * If break by word. For latin languages.
  */
 function isWordBreakChar(ch: string) {
-    if (isLatin(ch)) {
+    if (isAlphabeticLetter(ch)) {
         if (breakCharMap[ch]) {
             return true;
         }
