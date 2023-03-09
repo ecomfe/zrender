@@ -7238,7 +7238,7 @@
     function registerPainter(name, Ctor) {
         painterCtors[name] = Ctor;
     }
-    var version = '5.4.1';
+    var version = '5.4.2';
 
     var STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
     var DEFAULT_COMMON_STYLE = {
@@ -12791,16 +12791,19 @@
             }
         }
     }
-    function isLatin(ch) {
+    function isAlphabeticLetter(ch) {
         var code = ch.charCodeAt(0);
-        return code >= 0x21 && code <= 0x17F;
+        return code >= 0x20 && code <= 0x24F
+            || code >= 0x370 && code <= 0x10FF
+            || code >= 0x1200 && code <= 0x13FF
+            || code >= 0x1E00 && code <= 0x206F;
     }
     var breakCharMap = reduce(',&?/;] '.split(''), function (obj, ch) {
         obj[ch] = true;
         return obj;
     }, {});
     function isWordBreakChar(ch) {
-        if (isLatin(ch)) {
+        if (isAlphabeticLetter(ch)) {
             if (breakCharMap[ch]) {
                 return true;
             }
@@ -15900,9 +15903,9 @@
         opts = opts || {};
         var S = opts.newline ? '\n' : '';
         function convertElToString(el) {
-            var children = el.children, tag = el.tag, attrs = el.attrs;
+            var children = el.children, tag = el.tag, attrs = el.attrs, text = el.text;
             return createElementOpen(tag, attrs)
-                + encodeHTML(el.text)
+                + (tag !== 'style' ? encodeHTML(text) : text || '')
                 + (children ? "" + S + map(children, function (child) { return convertElToString(child); }).join(S) + S : '')
                 + createElementClose(tag);
         }
