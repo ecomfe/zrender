@@ -8,6 +8,7 @@ export const SVGNS = 'http://www.w3.org/2000/svg';
 export const XLINKNS = 'http://www.w3.org/1999/xlink';
 export const XMLNS = 'http://www.w3.org/2000/xmlns/';
 export const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
+export const META_DATA_PREFIX = 'ecmeta_';
 
 export function createElement(name: string) {
     return document.createElementNS(SVGNS, name);
@@ -128,6 +129,10 @@ export interface BrushScope {
 
     cssNodes: Record<string, CSSSelectorVNode>
     cssAnims: Record<string, Record<string, Record<string, string>>>
+    /**
+     * Cache for css style string, mapping from style string to class name.
+     */
+    cssStyleCache: Record<string, string>
 
     cssClassIdx: number
     cssAnimIdx: number
@@ -141,6 +146,10 @@ export interface BrushScope {
      * If create animates nodes.
      */
     animation?: boolean,
+    /**
+     * If create emphasis styles.
+     */
+    emphasis?: boolean,
 
     /**
      * If will update. Some optimization for string generation can't be applied.
@@ -164,6 +173,7 @@ export function createBrushScope(zrId: string): BrushScope {
 
         cssNodes: {},
         cssAnims: {},
+        cssStyleCache: {},
 
         cssClassIdx: 0,
         cssAnimIdx: 0,

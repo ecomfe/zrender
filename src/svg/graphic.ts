@@ -26,7 +26,7 @@ import { getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import mapStyleToAttrs from './mapStyleToAttrs';
-import { SVGVNodeAttrs, createVNode, SVGVNode, vNodeToString, BrushScope } from './core';
+import { SVGVNodeAttrs, createVNode, SVGVNode, vNodeToString, BrushScope, META_DATA_PREFIX } from './core';
 import { MatrixArray } from '../core/matrix';
 import Displayable from '../graphic/Displayable';
 import { assert, clone, isFunction, isString, logError, map, retrieve2 } from '../core/util';
@@ -39,6 +39,7 @@ import { ImageLike } from '../core/types';
 import { createCSSAnimation } from './cssAnimation';
 import { hasSeparateFont, parseFontSize } from '../graphic/Text';
 import { DEFAULT_FONT, DEFAULT_FONT_FAMILY } from '../core/platform';
+import { createCSSEmphasis } from './cssEmphasis';
 
 const round = Math.round;
 
@@ -67,6 +68,14 @@ function setStyleAttrs(attrs: SVGVNodeAttrs, style: AllStyleOption, el: Path | T
     }, style, el, false);
 
     setShadow(el, attrs, scope);
+}
+
+function setMetaData(attrs: SVGVNodeAttrs, el: Path | TSpan | ZRImage) {
+    if (el.__metaData) {
+        for (const key in el.__metaData) {
+            attrs[META_DATA_PREFIX + key] = el.__metaData[key] + '';
+        }
+    }
 }
 
 function noRotateScale(m: MatrixArray) {
@@ -204,8 +213,10 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
 
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
+    setMetaData(attrs, el);
 
     scope.animation && createCSSAnimation(el, attrs, scope);
+    scope.emphasis && createCSSEmphasis(el, attrs, scope);
 
     return createVNode(svgElType, el.id + '', attrs);
 }
@@ -248,6 +259,7 @@ export function brushSVGImage(el: ZRImage, scope: BrushScope) {
 
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
+    setMetaData(attrs, el);
 
     scope.animation && createCSSAnimation(el, attrs, scope);
 
@@ -319,6 +331,7 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     }
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
+    setMetaData(attrs, el);
 
     scope.animation && createCSSAnimation(el, attrs, scope);
 

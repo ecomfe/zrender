@@ -128,6 +128,7 @@ class SVGPainter implements PainterBase {
         willUpdate?: boolean
         compress?: boolean,
         useViewBox?: boolean
+        emphasis?: boolean
     }) {
 
         opts = opts || {};
@@ -140,6 +141,7 @@ class SVGPainter implements PainterBase {
         scope.animation = opts.animation;
         scope.willUpdate = opts.willUpdate;
         scope.compress = opts.compress;
+        scope.emphasis = opts.emphasis;
 
         const children: SVGVNode[] = [];
 
@@ -173,7 +175,12 @@ class SVGPainter implements PainterBase {
          * If add css animation.
          * @default true
          */
-        cssAnimation?: boolean
+        cssAnimation?: boolean,
+        /**
+         * If add css emphasis.
+         * @default true
+         */
+        cssEmphasis?: boolean,
         /**
          * If use viewBox
          * @default true
@@ -183,6 +190,7 @@ class SVGPainter implements PainterBase {
         opts = opts || {};
         return vNodeToString(this.renderToVNode({
             animation: retrieve2(opts.cssAnimation, true),
+            emphasis: retrieve2(opts.cssEmphasis, true),
             willUpdate: false,
             compress: true,
             useViewBox: retrieve2(opts.useViewBox, true)

@@ -369,6 +369,11 @@ class Element<Props extends ElementProps = ElementProps> {
     __inHover: boolean
 
     /**
+     * Any information to be binded on the element when rendering.
+     */
+    __metaData: Record<string, string | number | boolean>
+
+    /**
      * path to clip the elements and its children, if it is a group.
      * @see http://www.w3.org/TR/2dcontext/#clipping-region
      */
