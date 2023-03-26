@@ -70,9 +70,9 @@ export function vNodeToString(el: SVGVNode, opts?: {
     opts = opts || {};
     const S = opts.newline ? '\n' : '';
     function convertElToString(el: SVGVNode): string {
-        const {children, tag, attrs} = el;
+        const {children, tag, attrs, text} = el;
         return createElementOpen(tag, attrs)
-            + encodeHTML(el.text)
+            + (tag !== 'style' ? encodeHTML(text) : text || '')
             + (children ? `${S}${map(children, child => convertElToString(child)).join(S)}${S}` : '')
             + createElementClose(tag);
     }

@@ -1,6 +1,6 @@
 {
   "name": "zrender",
-  "version": "5.4.1",
+  "version": "5.4.3",
   "description": "A lightweight graphic library providing 2d draw for Apache ECharts",
   "keywords": [
     "canvas",
@@ -14,9 +14,10 @@
     "url": "https://github.com/ecomfe/zrender.git"
   },
   "scripts": {
-    "prepublish": "npm run release",
+    "prepare": "npm run build:lib",
     "build": "npm run build:bundle && npm run build:lib",
     "release": "node build/build.js --minify && npm run build:lib",
+    "prepublishOnly": "node build/prepublish.js",
     "prepare:nightly": "node build/prepareNightly.js",
     "prepare:nightly-next": "node build/prepareNightly.js --next",
     "build:bundle": "node build/build.js",
