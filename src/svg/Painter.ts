@@ -124,10 +124,10 @@ class SVGPainter implements PainterBase {
     }
 
     renderToVNode(opts?: {
-        animation?: boolean
-        willUpdate?: boolean
+        animation?: boolean,
+        willUpdate?: boolean,
         compress?: boolean,
-        useViewBox?: boolean
+        useViewBox?: boolean,
         emphasis?: boolean
     }) {
 

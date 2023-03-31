@@ -35,30 +35,41 @@ export function createCSSEmphasis(
     attrs: SVGVNodeAttrs,
     scope: BrushScope
 ) {
-    if (el.states.emphasis) {
-        const empahsisStyle = el.states.emphasis.style;
+    if (!el.ignore && el.__metaData) {
+        const empahsisStyle = el.states.emphasis
+            ? el.states.emphasis.style
+            : {};
         let fill = empahsisStyle.fill;
         if (!fill) {
             // No empahsis fill, lift color
             const normalFill = el.style.fill;
-            const selectFill = el.states.select.style.fill;
+            const selectFill = el.states.select && el.states.select.style.fill;
             const fromFill = el.currentStates.indexOf('select') >= 0
                 ? (selectFill || normalFill)
                 : normalFill;
             if (fromFill) {
                 fill = liftColor(fromFill);
             }
-            else {
-                // No fill information, ignore css
-                return;
-            }
+        }
+        let lineWidth = empahsisStyle.lineWidth;
+        if (lineWidth) {
+            // Symbols use transform to set size, so lineWidth
+            // should be divided by scaleX
+            const scaleX = el.transform ? el.transform[0] : 1;
+            lineWidth = lineWidth / scaleX;
         }
         const style = {
             cursor: 'pointer', // TODO: Should be included in el
-            fill: fill,
-            stroke: empahsisStyle.stroke,
-            'stroke-width': empahsisStyle.lineWidth
-        };
+        } as any;
+        if (fill) {
+            style.fill = fill;
+        }
+        if (empahsisStyle.stroke) {
+            style.stroke = empahsisStyle.stroke;
+        }
+        if (lineWidth) {
+            style['stroke-width'] = lineWidth;
+        }
         const styleKey = JSON.stringify(style);
         let className = scope.cssStyleCache[styleKey];
         if (!className) {
