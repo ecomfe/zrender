@@ -2,10 +2,9 @@ import * as imageHelper from '../helper/image';
 import {
     extend,
     retrieve2,
-    retrieve3,
-    reduce
+    retrieve3
 } from '../../core/util';
-import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../../core/types';
+import { TextAlign, TextVerticalAlign, ImageLike } from '../../core/types';
 import { TextStyleProps } from '../Text';
 import { getLineHeight, getWidth, parsePercent } from '../../contain/text';
 
@@ -604,21 +603,11 @@ function isAlphabeticLetter(ch: string) {
         || code >= 0x1E00 && code <= 0x206F; // Latin and Greek extended
 }
 
-const breakCharMap = reduce(',&?/;] '.split(''), function (obj, ch) {
-    obj[ch] = true;
-    return obj;
-}, {} as Dictionary<boolean>);
 /**
  * If break by word. For latin languages.
  */
-function isWordBreakChar(ch: string) {
-    if (isAlphabeticLetter(ch)) {
-        if (breakCharMap[ch]) {
-            return true;
-        }
-        return false;
-    }
-    return true;
+function canLineBreakBeforeChar(ch: string) {
+    return !isAlphabeticLetter(ch);
 }
 
 function wrapText(
@@ -654,7 +643,16 @@ function wrapText(
         }
 
         const chWidth = getWidth(ch, font);
-        const inWord = isBreakAll ? false : !isWordBreakChar(ch);
+
+        if (ch === ' ') {
+            line += currentWord + ch;
+            accumWidth += chWidth;
+            currentWord = '';
+            currentWordWidth = 0;
+            continue;
+        }
+
+        const inWord = isBreakAll ? false : !canLineBreakBeforeChar(ch);
 
         if (!lines.length
             ? lastAccumWidth + accumWidth + chWidth > lineWidth
