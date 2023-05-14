@@ -108,7 +108,11 @@ class Transformable {
 
         let m = this.transform;
         if (!(needLocalTransform || parentTransform)) {
-            m && mIdentity(m);
+            if (m) {
+                mIdentity(m);
+                // reset invTransform
+                this.invTransform = null;
+            }
             return;
         }
 
