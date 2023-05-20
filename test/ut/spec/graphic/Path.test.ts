@@ -194,7 +194,7 @@ describe('Path', function () {
         // TODO textContent
     });
 
-    it('Path#useStates. Mutiple states should be merged properly', function () {
+    it('Path#useStates. Multiple states should be merged properly', function () {
         const rect = createRectForStateTest();
 
         rect.states = {

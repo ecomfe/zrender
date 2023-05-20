@@ -19,7 +19,7 @@ describe('Text', function () {
                     stroke: 'blue'
                 }
             }
-        }
+        };
 
         text.useState('emphasis');
 

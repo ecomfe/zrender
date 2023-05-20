@@ -1,4 +1,4 @@
-import {Polyline, Rect, init} from '../zrender';
+import {Polyline, Rect} from '../zrender';
 import Animation from '../../../../src/animation/Animation';
 
 describe('ElementAnimation', function () {

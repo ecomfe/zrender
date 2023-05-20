@@ -4,7 +4,7 @@
         "noImplicitAny": true,
         "strictBindCallApply": true,
 
-        "noImplicitThis": true,
+        "noImplicitThis": false,
 
         // https://github.com/ezolenko/rollup-plugin-typescript2/issues/12#issuecomment-536173372
         "moduleResolution": "Node",
@@ -12,7 +12,7 @@
         "pretty": true
     },
     "include": [
-        "**/*.ts"
+        "spec/**/*.ts",
     ],
     "exclude": [
     ]

@@ -1,6 +1,6 @@
 import * as platform from '../../../../src/core/platform';
 
-describe('platform', function() {
+describe('platform', function () {
 
     it('Default font should be correct', function () {
         expect(platform.DEFAULT_FONT_SIZE).toBe(12);

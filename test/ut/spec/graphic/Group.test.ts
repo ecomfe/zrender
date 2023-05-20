@@ -1,4 +1,4 @@
-import {Group, Path, Image as ZImage, Element} from '../zrender';
+import {Group, Element} from '../zrender';
 
 describe('Group', function () {
 
