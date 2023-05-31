@@ -1,34 +1,7 @@
-import LRU from '../core/LRU';
-import { extend, isGradientObject, isString, map } from '../core/util';
-import * as colorTool from '../tool/color';
 import Displayable from '../graphic/Displayable';
-import { GradientObject } from '../graphic/Gradient';
+import { liftColor } from '../tool/color';
 import { BrushScope, SVGVNodeAttrs } from './core';
-
-// TODO: Consider deleting the same logic in ECharts and call this method?
-const liftedColorCache = new LRU<string>(100);
-function liftColor(color: GradientObject): GradientObject;
-function liftColor(color: string): string;
-function liftColor(color: string | GradientObject): string | GradientObject {
-    if (isString(color)) {
-        let liftedColor = liftedColorCache.get(color);
-        if (!liftedColor) {
-            liftedColor = colorTool.lift(color, -0.1);
-            liftedColorCache.put(color, liftedColor);
-        }
-        return liftedColor;
-    }
-    else if (isGradientObject(color)) {
-        const ret = extend({}, color) as GradientObject;
-        ret.colorStops = map(color.colorStops, stop => ({
-            offset: stop.offset,
-            color: colorTool.lift(stop.color, -0.1)
-        }));
-        return ret;
-    }
-    // Change nothing.
-    return color;
-}
+import { getClassId } from './cssClassId';
 
 export function createCSSEmphasis(
     el: Displayable,
@@ -36,14 +9,16 @@ export function createCSSEmphasis(
     scope: BrushScope
 ) {
     if (!el.ignore && el.__metaData) {
-        const empahsisStyle = el.states.emphasis
+        const emphasisStyle = el.states.emphasis && el.states.emphasis.style
             ? el.states.emphasis.style
             : {};
-        let fill = empahsisStyle.fill;
+        let fill = emphasisStyle.fill;
         if (!fill) {
             // No empahsis fill, lift color
-            const normalFill = el.style.fill;
-            const selectFill = el.states.select && el.states.select.style.fill;
+            const normalFill = el.style && el.style.fill;
+            const selectFill = el.states.select
+                && el.states.select.style
+                && el.states.select.style.fill;
             const fromFill = el.currentStates.indexOf('select') >= 0
                 ? (selectFill || normalFill)
                 : normalFill;
@@ -51,21 +26,23 @@ export function createCSSEmphasis(
                 fill = liftColor(fromFill);
             }
         }
-        let lineWidth = empahsisStyle.lineWidth;
+        let lineWidth = emphasisStyle.lineWidth;
         if (lineWidth) {
             // Symbols use transform to set size, so lineWidth
             // should be divided by scaleX
-            const scaleX = el.transform ? el.transform[0] : 1;
+            const scaleX = (!emphasisStyle.strokeNoScale && el.transform)
+                ? el.transform[0]
+                : 1;
             lineWidth = lineWidth / scaleX;
         }
         const style = {
-            cursor: 'pointer', // TODO: Should be included in el
+            cursor: 'pointer', // TODO: Should this be customized?
         } as any;
         if (fill) {
             style.fill = fill;
         }
-        if (empahsisStyle.stroke) {
-            style.stroke = empahsisStyle.stroke;
+        if (emphasisStyle.stroke) {
+            style.stroke = emphasisStyle.stroke;
         }
         if (lineWidth) {
             style['stroke-width'] = lineWidth;
@@ -73,7 +50,7 @@ export function createCSSEmphasis(
         const styleKey = JSON.stringify(style);
         let className = scope.cssStyleCache[styleKey];
         if (!className) {
-            className = scope.zrId + '-cls-' + scope.cssClassIdx++;
+            className = scope.zrId + '-cls-' + getClassId();
             scope.cssStyleCache[styleKey] = className;
             scope.cssNodes['.' + className + ':hover'] = style;
         }

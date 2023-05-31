@@ -58,9 +58,9 @@
             if (type === 'seriesItem') {
                 child.addEventListener('mouseover', event => {
                     const attrs = event.target.attributes;
-                    const seriesIndex = attrs.ecmeta_seriesIndex.value;
-                    const dataIndex = attrs.ecmeta_dataIndex.value;
-                    const styleType = attrs.ecmeta_styleType.value;
+                    const seriesIndex = attrs.ecmeta_seriesindex.value;
+                    const dataIndex = attrs.ecmeta_dataindex.value;
+                    const styleType = attrs.ecmeta_styletype.value;
                     const emphasis = metaData.series[seriesIndex].emphasis;
                     if (emphasis && emphasis[styleType]) {
                         const style = emphasis[styleType];
@@ -71,9 +71,9 @@
                 });
                 child.addEventListener('mouseout', event => {
                     const attrs = event.target.attributes;
-                    const seriesIndex = attrs.ecmeta_seriesIndex.value;
-                    const dataIndex = attrs.ecmeta_dataIndex.value;
-                    const styleType = attrs.ecmeta_styleType.value;
+                    const seriesIndex = attrs.ecmeta_seriesindex.value;
+                    const dataIndex = attrs.ecmeta_dataindex.value;
+                    const styleType = attrs.ecmeta_styletype.value;
                     const normal = metaData.series[seriesIndex].normal;
                     if (normal && normal[styleType]) {
                         const style = normal[styleType];
@@ -84,8 +84,7 @@
                 });
             }
         }
-        console.log(root)
-    });
+    }, 100);
     </script>
 
 </body>

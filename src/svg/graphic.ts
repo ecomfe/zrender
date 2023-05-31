@@ -29,7 +29,7 @@ import mapStyleToAttrs from './mapStyleToAttrs';
 import { SVGVNodeAttrs, createVNode, SVGVNode, vNodeToString, BrushScope, META_DATA_PREFIX } from './core';
 import { MatrixArray } from '../core/matrix';
 import Displayable from '../graphic/Displayable';
-import { assert, clone, isFunction, isString, logError, map, retrieve2 } from '../core/util';
+import { assert, clone, each, isFunction, isString, logError, map, retrieve2 } from '../core/util';
 import Polyline from '../graphic/shape/Polyline';
 import Polygon from '../graphic/shape/Polygon';
 import { GradientObject } from '../graphic/Gradient';
@@ -72,9 +72,10 @@ function setStyleAttrs(attrs: SVGVNodeAttrs, style: AllStyleOption, el: Path | T
 
 function setMetaData(attrs: SVGVNodeAttrs, el: Path | TSpan | ZRImage) {
     if (el.__metaData) {
-        for (const key in el.__metaData) {
-            attrs[META_DATA_PREFIX + key] = el.__metaData[key] + '';
-        }
+        each(el.__metaData, function (val, key) {
+            attrs[(META_DATA_PREFIX + key).toLowerCase()]
+                = val + '';
+        });
     }
 }
 

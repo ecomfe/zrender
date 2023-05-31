@@ -134,7 +134,6 @@ export interface BrushScope {
      */
     cssStyleCache: Record<string, string>
 
-    cssClassIdx: number
     cssAnimIdx: number
 
     shadowIdx: number
@@ -175,7 +174,6 @@ export function createBrushScope(zrId: string): BrushScope {
         cssAnims: {},
         cssStyleCache: {},
 
-        cssClassIdx: 0,
         cssAnimIdx: 0,
 
         shadowIdx: 0,
