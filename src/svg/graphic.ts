@@ -40,6 +40,7 @@ import { createCSSAnimation } from './cssAnimation';
 import { hasSeparateFont, parseFontSize } from '../graphic/Text';
 import { DEFAULT_FONT, DEFAULT_FONT_FAMILY } from '../core/platform';
 import { createCSSEmphasis } from './cssEmphasis';
+import { getElementSSRData } from '../zrender';
 
 const round = Math.round;
 
@@ -62,6 +63,10 @@ function setStyleAttrs(attrs: SVGVNodeAttrs, style: AllStyleOption, el: Path | T
         else if (isFillStroke && isPattern(val)) {
             setPattern(el, attrs, key, scope);
         }
+        else if (isFillStroke && val === 'none') {
+            // When is none, it cannot be interacted when ssr
+            attrs[key] = 'transparent';
+        }
         else {
             attrs[key] = val;
         }
@@ -71,11 +76,15 @@ function setStyleAttrs(attrs: SVGVNodeAttrs, style: AllStyleOption, el: Path | T
 }
 
 function setMetaData(attrs: SVGVNodeAttrs, el: Path | TSpan | ZRImage) {
-    if (el.__metaData) {
-        each(el.__metaData, function (val, key) {
+    const metaData = getElementSSRData(el);
+    if (metaData) {
+        metaData.each((val, key) => {
             attrs[(META_DATA_PREFIX + key).toLowerCase()]
                 = val + '';
         });
+        if (el.isSilent()) {
+            attrs[META_DATA_PREFIX + 'silent'] = 'true';
+        }
     }
 }
 
