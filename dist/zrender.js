@@ -5425,7 +5425,10 @@
             var needLocalTransform = this.needLocalTransform();
             var m = this.transform;
             if (!(needLocalTransform || parentTransform)) {
-                m && mIdentity(m);
+                if (m) {
+                    mIdentity(m);
+                    this.invTransform = null;
+                }
                 return;
             }
             m = m || create$1();
@@ -7238,7 +7241,7 @@
     function registerPainter(name, Ctor) {
         painterCtors[name] = Ctor;
     }
-    var version = '5.4.3';
+    var version = '5.4.4';
 
     var STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
     var DEFAULT_COMMON_STYLE = {
