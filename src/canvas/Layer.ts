@@ -89,8 +89,6 @@ export default class Layer extends Eventful {
 
     private _paintRects: BoundingRect[]
 
-    __painter: CanvasPainter
-
     __dirty = true
     __firstTimePaint = true
 
@@ -449,9 +447,8 @@ export default class Layer extends Eventful {
                     clearColorGradientOrPattern = createCanvasPattern(
                         ctx, clearColor, {
                             dirty() {
-                                // TODO
                                 self.setUnpainted();
-                                self.__painter.refresh();
+                                self.painter.refresh();
                             }
                         }
                     );
