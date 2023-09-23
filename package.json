@@ -36,7 +36,8 @@
   },
   "sideEffects": [
     "lib/canvas/canvas.js",
-    "lib/svg/svg.js"
+    "lib/svg/svg.js",
+    "lib/all.js"
   ],
   "devDependencies": {
     "@microsoft/api-extractor": "^7.7.2",
