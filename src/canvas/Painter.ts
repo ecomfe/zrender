@@ -597,7 +597,7 @@ export default class CanvasPainter implements PainterBase {
 
         layersMap[zlevel] = layer;
 
-        // Vitual layer will not directly show on the screen.
+        // Virtual layer will not directly show on the screen.
         // (It can be a WebGL layer and assigned to a ZRImage element)
         // But it still under management of zrender.
         if (!layer.virtual) {
@@ -623,7 +623,7 @@ export default class CanvasPainter implements PainterBase {
             }
         }
 
-        layer.__painter = this;
+        layer.painter || (layer.painter = this);
     }
 
     // Iterate each layer
