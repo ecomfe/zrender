@@ -42,7 +42,7 @@
         }
     });
     zr.add(txt);
-    
+
     var linearGradient = new zrender.LinearGradient();
     linearGradient.addColorStop(0, '#a598e1');
     linearGradient.addColorStop(1, '#14c4ba');
@@ -95,7 +95,6 @@
         else {
             bg = text = 'none';
         }
-        console.log(text);
         zr.setBackgroundColor(bg);
         txt.setStyle({ text: 'SVG BackgroundColor: ' + text });
         i++;

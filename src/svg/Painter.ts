@@ -382,8 +382,7 @@ function createBackgroundVNode(
                 width,
                 height,
                 x: '0',
-                y: '0',
-                id: '0'
+                y: '0'
             }
         );
         if (isGradient(backgroundColor)) {
