@@ -16,9 +16,6 @@
 </head>
 <body>
     <div id="main" style="width:100vw;height:100vh;"></div>
-
-    <h2>This should not have a rect with the same id as the above instance.</h2>
-    <div id="main2" style="width:100vw;height:100vh;"></div>
     <div class="opt-bar">
         <button onclick="updateBg()">Change Background</button>
         <select id="repeat">
@@ -45,11 +42,6 @@
         }
     });
     zr.add(txt);
-
-    var zr2 = zrender.init(document.getElementById('main2'), {
-        renderer: 'svg'
-    });
-    zr2.add(txt);
 
     var linearGradient = new zrender.LinearGradient();
     linearGradient.addColorStop(0, '#a598e1');
@@ -104,7 +96,6 @@
             bg = text = 'none';
         }
         zr.setBackgroundColor(bg);
-        zr2.setBackgroundColor(bg);
         txt.setStyle({ text: 'SVG BackgroundColor: ' + text });
         i++;
     }

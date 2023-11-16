@@ -143,7 +143,7 @@ class SVGPainter implements PainterBase {
 
         const children: SVGVNode[] = [];
 
-        const bgVNode = this._bgVNode = createBackgroundVNode(this._id, width, height, this._backgroundColor, scope);
+        const bgVNode = this._bgVNode = createBackgroundVNode(width, height, this._backgroundColor, scope);
         bgVNode && children.push(bgVNode);
 
         // Ignore the root g if wan't the output to be more tight.
@@ -360,7 +360,6 @@ function createMethodNotSupport(method: string): any {
 }
 
 function createBackgroundVNode(
-    zrId: string,
     width: number,
     height: number,
     backgroundColor: SVGPainterBackgroundColor,
@@ -375,8 +374,7 @@ function createBackgroundVNode(
                 width,
                 height,
                 x: '0',
-                y: '0',
-                id: zrId + '-bg'
+                y: '0'
             }
         );
         if (isGradient(backgroundColor)) {
