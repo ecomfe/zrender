@@ -311,7 +311,7 @@ export default class Layer extends Eventful {
              * rect if and only if it's not painted this frame and was
              * previously painted on the canvas.
              */
-            const shouldPaint = el.shouldBePainted(viewWidth, viewHeight, true, true);
+            const shouldPaint = el && el.shouldBePainted(viewWidth, viewHeight, true, true);
             if (el && (!shouldPaint || !el.__zr) && el.__isRendered) {
                 // el was removed
                 const prevRect = el.getPrevPaintRect();
