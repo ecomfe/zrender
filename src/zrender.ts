@@ -81,7 +81,7 @@ class ZRender {
 
     private _needsRefresh = true
     private _needsRefreshHover = true
-
+    private _disposed = false;
     /**
      * If theme is dark mode. It will determine the color strategy for labels.
      */
@@ -154,7 +154,7 @@ class ZRender {
      * 添加元素
      */
     add(el: Element) {
-        if (!el) {
+        if (!el || this._disposed) {
             return;
         }
         this.storage.addRoot(el);
@@ -166,7 +166,7 @@ class ZRender {
      * 删除元素
      */
     remove(el: Element) {
-        if (!el) {
+        if (!el || this._disposed) {
             return;
         }
         this.storage.delRoot(el);
@@ -178,6 +178,9 @@ class ZRender {
      * Change configuration of layer
     */
     configLayer(zLevel: number, config: LayerConfig) {
+       if(this._disposed) {
+            return;
+        }
         if (this.painter.configLayer) {
             this.painter.configLayer(zLevel, config);
         }
@@ -188,6 +191,9 @@ class ZRender {
      * Set background color
      */
     setBackgroundColor(backgroundColor: string | GradientObject | PatternObject) {
+        if(this._disposed) {
+            return;
+        }
         if (this.painter.setBackgroundColor) {
             this.painter.setBackgroundColor(backgroundColor);
         }
@@ -215,6 +221,9 @@ class ZRender {
      * Repaint the canvas immediately
      */
     refreshImmediately(fromInside?: boolean) {
+       if(this._disposed) {
+            return;
+        }
         // const start = new Date();
         if (!fromInside) {
             // Update animation if refreshImmediately is invoked from outside.
@@ -234,6 +243,9 @@ class ZRender {
      * Mark and repaint the canvas in the next frame of browser
      */
     refresh() {
+       if(this._disposed) {
+            return;
+        }
         this._needsRefresh = true;
         // Active the animation again.
         this.animation.start();
@@ -243,6 +255,9 @@ class ZRender {
      * Perform all refresh
      */
     flush() {
+       if(this._disposed) {
+            return;
+        }
         this._flush(false);
     }
 
@@ -288,6 +303,9 @@ class ZRender {
      * Wake up animation loop. But not render.
      */
     wakeUp() {
+       if(this._disposed) {
+            return;
+        }
         this.animation.start();
         // Reset the frame count.
         this._stillFrameAccum = 0;
@@ -304,6 +322,9 @@ class ZRender {
      * Refresh hover immediately
      */
     refreshHoverImmediately() {
+       if(this._disposed) {
+            return;
+        }
         this._needsRefreshHover = false;
         if (this.painter.refreshHover && this.painter.getType() === 'canvas') {
             this.painter.refreshHover();
@@ -318,6 +339,9 @@ class ZRender {
         width?: number| string
         height?: number | string
     }) {
+       if(this._disposed) {
+            return;
+        }
         opts = opts || {};
         this.painter.resize(opts.width, opts.height);
         this.handler.resize();
@@ -327,6 +351,9 @@ class ZRender {
      * Stop and clear all animation immediately
      */
     clearAnimation() {
+       if(this._disposed) {
+            return;
+        }
         this.animation.clear();
     }
 
@@ -334,6 +361,9 @@ class ZRender {
      * Get container width
      */
     getWidth(): number {
+       if(this._disposed) {
+            return;
+        }
         return this.painter.getWidth();
     }
 
@@ -341,6 +371,9 @@ class ZRender {
      * Get container height
      */
     getHeight(): number {
+       if(this._disposed) {
+            return;
+        }
         return this.painter.getHeight();
     }
 
@@ -381,6 +414,9 @@ class ZRender {
      */
     // eslint-disable-next-line max-len
     off(eventName?: string, eventHandler?: EventCallback) {
+       if(this._disposed) {
+            return;
+        }
         this.handler.off(eventName, eventHandler);
     }
 
@@ -391,6 +427,9 @@ class ZRender {
      * @param event Event object
      */
     trigger(eventName: string, event?: unknown) {
+       if(this._disposed) {
+            return;
+        }
         this.handler.trigger(eventName, event);
     }
 
@@ -399,6 +438,9 @@ class ZRender {
      * Clear all objects and the canvas.
      */
     clear() {
+       if(this._disposed) {
+            return;
+        }
         const roots = this.storage.getRoots();
         for (let i = 0; i < roots.length; i++) {
             if (roots[i] instanceof Group) {
@@ -424,6 +466,8 @@ class ZRender {
         this.storage =
         this.painter =
         this.handler = null;
+
+        this._disposed = true;
 
         delInstance(this.id);
     }
