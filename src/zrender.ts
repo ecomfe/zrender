@@ -123,7 +123,7 @@ class ZRender {
         this.storage = storage;
         this.painter = painter;
 
-        const handerProxy = (!env.node && !env.worker && !ssrMode)
+        const handlerProxy = (!env.node && !env.worker && !ssrMode)
             ? new HandlerProxy(painter.getViewportRoot(), painter.root)
             : null;
 
@@ -137,7 +137,7 @@ class ZRender {
             pointerSize = zrUtil.retrieve2(opts.pointerSize, defaultPointerSize);
         }
 
-        this.handler = new Handler(storage, painter, handerProxy, painter.root, pointerSize);
+        this.handler = new Handler(storage, painter, handlerProxy, painter.root, pointerSize);
 
         this.animation = new Animation({
             stage: {
@@ -284,7 +284,7 @@ class ZRender {
         }
         else if (this._sleepAfterStill > 0) {
             this._stillFrameAccum++;
-            // Stop the animiation after still for 10 frames.
+            // Stop the animation after still for 10 frames.
             if (this._stillFrameAccum > this._sleepAfterStill) {
                 this.animation.stop();
             }
