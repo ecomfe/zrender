@@ -81,7 +81,7 @@ class ZRender {
 
     private _needsRefresh = true
     private _needsRefreshHover = true
-    private _disposed = false;
+    private _disposed: boolean;
     /**
      * If theme is dark mode. It will determine the color strategy for labels.
      */
@@ -154,7 +154,7 @@ class ZRender {
      * 添加元素
      */
     add(el: Element) {
-        if (!el || this._disposed) {
+        if (this._disposed || !el) {
             return;
         }
         this.storage.addRoot(el);
@@ -166,7 +166,7 @@ class ZRender {
      * 删除元素
      */
     remove(el: Element) {
-        if (!el || this._disposed) {
+        if (this._disposed || !el) {
             return;
         }
         this.storage.delRoot(el);
@@ -178,7 +178,7 @@ class ZRender {
      * Change configuration of layer
     */
     configLayer(zLevel: number, config: LayerConfig) {
-       if(this._disposed) {
+        if (this._disposed) {
             return;
         }
         if (this.painter.configLayer) {
@@ -191,7 +191,7 @@ class ZRender {
      * Set background color
      */
     setBackgroundColor(backgroundColor: string | GradientObject | PatternObject) {
-        if(this._disposed) {
+        if (this._disposed) {
             return;
         }
         if (this.painter.setBackgroundColor) {
@@ -221,7 +221,7 @@ class ZRender {
      * Repaint the canvas immediately
      */
     refreshImmediately(fromInside?: boolean) {
-       if(this._disposed) {
+        if (this._disposed) {
             return;
         }
         // const start = new Date();
@@ -243,7 +243,7 @@ class ZRender {
      * Mark and repaint the canvas in the next frame of browser
      */
     refresh() {
-       if(this._disposed) {
+        if (this._disposed) {
             return;
         }
         this._needsRefresh = true;
@@ -255,7 +255,7 @@ class ZRender {
      * Perform all refresh
      */
     flush() {
-       if(this._disposed) {
+        if (this._disposed) {
             return;
         }
         this._flush(false);
@@ -303,7 +303,7 @@ class ZRender {
      * Wake up animation loop. But not render.
      */
     wakeUp() {
-       if(this._disposed) {
+        if (this._disposed) {
             return;
         }
         this.animation.start();
@@ -322,7 +322,7 @@ class ZRender {
      * Refresh hover immediately
      */
     refreshHoverImmediately() {
-       if(this._disposed) {
+        if (this._disposed) {
             return;
         }
         this._needsRefreshHover = false;
@@ -339,7 +339,7 @@ class ZRender {
         width?: number| string
         height?: number | string
     }) {
-       if(this._disposed) {
+        if (this._disposed) {
             return;
         }
         opts = opts || {};
@@ -351,7 +351,7 @@ class ZRender {
      * Stop and clear all animation immediately
      */
     clearAnimation() {
-       if(this._disposed) {
+        if (this._disposed) {
             return;
         }
         this.animation.clear();
@@ -360,8 +360,8 @@ class ZRender {
     /**
      * Get container width
      */
-    getWidth(): number {
-       if(this._disposed) {
+    getWidth(): number | undefined {
+        if (this._disposed) {
             return;
         }
         return this.painter.getWidth();
@@ -370,8 +370,8 @@ class ZRender {
     /**
      * Get container height
      */
-    getHeight(): number {
-       if(this._disposed) {
+    getHeight(): number | undefined {
+        if (this._disposed) {
             return;
         }
         return this.painter.getHeight();
@@ -382,6 +382,9 @@ class ZRender {
      * @param cursorStyle='default' 例如 crosshair
      */
     setCursorStyle(cursorStyle: string) {
+        if (this._disposed) {
+            return;
+        }
         this.handler.setCursorStyle(cursorStyle);
     }
 
@@ -394,7 +397,10 @@ class ZRender {
     findHover(x: number, y: number): {
         target: Displayable
         topTarget: Displayable
-    } {
+    } | undefined {
+        if (this._disposed) {
+            return;
+        }
         return this.handler.findHover(x, y);
     }
 
@@ -403,7 +409,9 @@ class ZRender {
     on<Ctx>(eventName: string, eventHandler: WithThisType<EventCallback<any[]>, unknown extends Ctx ? ZRenderType : Ctx>, context?: Ctx): this
     // eslint-disable-next-line max-len
     on<Ctx>(eventName: string, eventHandler: (...args: any) => any, context?: Ctx): this {
-        this.handler.on(eventName, eventHandler, context);
+        if (!this._disposed) {
+            this.handler.on(eventName, eventHandler, context);
+        }
         return this;
     }
 
@@ -414,7 +422,7 @@ class ZRender {
      */
     // eslint-disable-next-line max-len
     off(eventName?: string, eventHandler?: EventCallback) {
-       if(this._disposed) {
+        if (this._disposed) {
             return;
         }
         this.handler.off(eventName, eventHandler);
@@ -427,7 +435,7 @@ class ZRender {
      * @param event Event object
      */
     trigger(eventName: string, event?: unknown) {
-       if(this._disposed) {
+        if (this._disposed) {
             return;
         }
         this.handler.trigger(eventName, event);
@@ -438,7 +446,7 @@ class ZRender {
      * Clear all objects and the canvas.
      */
     clear() {
-       if(this._disposed) {
+        if (this._disposed) {
             return;
         }
         const roots = this.storage.getRoots();
@@ -455,6 +463,10 @@ class ZRender {
      * Dispose self.
      */
     dispose() {
+        if (this._disposed) {
+            return;
+        }
+
         this.animation.stop();
 
         this.clear();
