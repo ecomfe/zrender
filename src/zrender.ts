@@ -541,9 +541,7 @@ export function registerPainter(name: string, Ctor: PainterBaseCtor) {
 export type ElementSSRData = zrUtil.HashMap<unknown>;
 export type ElementSSRDataGetter<T> = (el: Element) => zrUtil.HashMap<T>;
 
-let ssrDataGetter = function (el: Element): ElementSSRData {
-    return null;
-}
+let ssrDataGetter: ElementSSRDataGetter<unknown>;
 
 export function getElementSSRData(el: Element): ElementSSRData {
     if (typeof ssrDataGetter === 'function') {

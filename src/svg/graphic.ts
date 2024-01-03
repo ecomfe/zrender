@@ -79,8 +79,7 @@ function setMetaData(attrs: SVGVNodeAttrs, el: Path | TSpan | ZRImage) {
     const metaData = getElementSSRData(el);
     if (metaData) {
         metaData.each((val, key) => {
-            attrs[(META_DATA_PREFIX + key).toLowerCase()]
-                = val + '';
+            val != null && (attrs[(META_DATA_PREFIX + key).toLowerCase()] = val + '');
         });
         if (el.isSilent()) {
             attrs[META_DATA_PREFIX + 'silent'] = 'true';
