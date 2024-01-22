@@ -21,7 +21,7 @@ rules:
                 - "warn"
                 - "error"
     no-constant-condition: 0
-    comma-dangle: 2
+    comma-dangle: 0
     no-debugger: 2
     no-dupe-keys: 2
     no-empty-character-class: 2
