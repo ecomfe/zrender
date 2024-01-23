@@ -845,7 +845,10 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
                     break;
                 case 'rotate':
                     // TODO: zrender use different hand in coordinate system.
-                    matrix.rotate(mt, mt, -parseFloat(valueArr[0]) * DEGREE_TO_ANGLE);
+                    matrix.rotate(mt, mt, -parseFloat(valueArr[0]) * DEGREE_TO_ANGLE, [
+                        parseFloat(valueArr[1] || '0'),
+                        parseFloat(valueArr[2] || '0')
+                    ]);
                     break;
                 case 'skewX':
                     const sx = Math.tan(parseFloat(valueArr[0]) * DEGREE_TO_ANGLE);

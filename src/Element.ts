@@ -1018,6 +1018,22 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     /**
+     * Return if el.silent or any ancestor element has silent true.
+     */
+    isSilent() {
+        let isSilent = this.silent;
+        let ancestor = this.parent;
+        while (!isSilent && ancestor) {
+            if (ancestor.silent) {
+                isSilent = true;
+                break;
+            }
+            ancestor = ancestor.parent;
+        }
+        return isSilent;
+    }
+
+    /**
      * Update animation targets when reference is changed.
      */
     private _updateAnimationTargets() {

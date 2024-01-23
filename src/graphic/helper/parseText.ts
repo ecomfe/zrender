@@ -41,8 +41,8 @@ export function truncateText(
     text: string,
     containerWidth: number,
     font: string,
-    ellipsis: string,
-    options: InnerTruncateOption
+    ellipsis?: string,
+    options?: InnerTruncateOption
 ): string {
     if (!containerWidth) {
         return '';
@@ -63,8 +63,8 @@ export function truncateText(
 function prepareTruncateOptions(
     containerWidth: number,
     font: string,
-    ellipsis: string,
-    options: InnerTruncateOption
+    ellipsis?: string,
+    options?: InnerTruncateOption
 ): InnerPreparedTruncateOption {
     options = options || {};
     let preparedOpts = extend({}, options) as InnerPreparedTruncateOption;

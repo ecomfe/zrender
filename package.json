@@ -36,7 +36,8 @@
   },
   "sideEffects": [
     "lib/canvas/canvas.js",
-    "lib/svg/svg.js"
+    "lib/svg/svg.js",
+    "lib/all.js"
   ],
   "devDependencies": {
     "@microsoft/api-extractor": "^7.7.2",
@@ -58,5 +59,17 @@
     "ts-jest": "^27.0.6",
     "typescript": "^4.4.3",
     "uglify-js": "^3.10.0"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./dist/zrender.js",
+      "import": "./index.js"
+    },
+    "./*.js": "./*.js",
+    "./*.ts": "./*.ts",
+    "./*.json": "./*.json",
+    "./*": "./*.js"
   }
 }

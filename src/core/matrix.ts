@@ -79,7 +79,12 @@ export function translate(out: MatrixArray, a: MatrixArray, v: VectorArray): Mat
 /**
  * 旋转变换
  */
-export function rotate(out: MatrixArray, a: MatrixArray, rad: number): MatrixArray {
+export function rotate(
+    out: MatrixArray,
+    a: MatrixArray,
+    rad: number,
+    pivot: VectorArray = [0, 0]
+): MatrixArray {
     const aa = a[0];
     const ac = a[2];
     const atx = a[4];
@@ -93,8 +98,8 @@ export function rotate(out: MatrixArray, a: MatrixArray, rad: number): MatrixArr
     out[1] = -aa * st + ab * ct;
     out[2] = ac * ct + ad * st;
     out[3] = -ac * st + ct * ad;
-    out[4] = ct * atx + st * aty;
-    out[5] = ct * aty - st * atx;
+    out[4] = ct * (atx - pivot[0]) + st * (aty - pivot[1]) + pivot[0];
+    out[5] = ct * (aty - pivot[1]) - st * (atx - pivot[0]) + pivot[1];
     return out;
 }
 

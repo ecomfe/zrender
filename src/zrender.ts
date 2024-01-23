@@ -81,7 +81,7 @@ class ZRender {
 
     private _needsRefresh = true
     private _needsRefreshHover = true
-
+    private _disposed: boolean;
     /**
      * If theme is dark mode. It will determine the color strategy for labels.
      */
@@ -123,7 +123,7 @@ class ZRender {
         this.storage = storage;
         this.painter = painter;
 
-        const handerProxy = (!env.node && !env.worker && !ssrMode)
+        const handlerProxy = (!env.node && !env.worker && !ssrMode)
             ? new HandlerProxy(painter.getViewportRoot(), painter.root)
             : null;
 
@@ -137,7 +137,7 @@ class ZRender {
             pointerSize = zrUtil.retrieve2(opts.pointerSize, defaultPointerSize);
         }
 
-        this.handler = new Handler(storage, painter, handerProxy, painter.root, pointerSize);
+        this.handler = new Handler(storage, painter, handlerProxy, painter.root, pointerSize);
 
         this.animation = new Animation({
             stage: {
@@ -154,7 +154,7 @@ class ZRender {
      * 添加元素
      */
     add(el: Element) {
-        if (!el) {
+        if (this._disposed || !el) {
             return;
         }
         this.storage.addRoot(el);
@@ -166,7 +166,7 @@ class ZRender {
      * 删除元素
      */
     remove(el: Element) {
-        if (!el) {
+        if (this._disposed || !el) {
             return;
         }
         this.storage.delRoot(el);
@@ -178,6 +178,9 @@ class ZRender {
      * Change configuration of layer
     */
     configLayer(zLevel: number, config: LayerConfig) {
+        if (this._disposed) {
+            return;
+        }
         if (this.painter.configLayer) {
             this.painter.configLayer(zLevel, config);
         }
@@ -188,6 +191,9 @@ class ZRender {
      * Set background color
      */
     setBackgroundColor(backgroundColor: string | GradientObject | PatternObject) {
+        if (this._disposed) {
+            return;
+        }
         if (this.painter.setBackgroundColor) {
             this.painter.setBackgroundColor(backgroundColor);
         }
@@ -215,6 +221,9 @@ class ZRender {
      * Repaint the canvas immediately
      */
     refreshImmediately(fromInside?: boolean) {
+        if (this._disposed) {
+            return;
+        }
         // const start = new Date();
         if (!fromInside) {
             // Update animation if refreshImmediately is invoked from outside.
@@ -234,6 +243,9 @@ class ZRender {
      * Mark and repaint the canvas in the next frame of browser
      */
     refresh() {
+        if (this._disposed) {
+            return;
+        }
         this._needsRefresh = true;
         // Active the animation again.
         this.animation.start();
@@ -243,6 +255,9 @@ class ZRender {
      * Perform all refresh
      */
     flush() {
+        if (this._disposed) {
+            return;
+        }
         this._flush(false);
     }
 
@@ -269,7 +284,7 @@ class ZRender {
         }
         else if (this._sleepAfterStill > 0) {
             this._stillFrameAccum++;
-            // Stop the animiation after still for 10 frames.
+            // Stop the animation after still for 10 frames.
             if (this._stillFrameAccum > this._sleepAfterStill) {
                 this.animation.stop();
             }
@@ -288,6 +303,9 @@ class ZRender {
      * Wake up animation loop. But not render.
      */
     wakeUp() {
+        if (this._disposed) {
+            return;
+        }
         this.animation.start();
         // Reset the frame count.
         this._stillFrameAccum = 0;
@@ -304,6 +322,9 @@ class ZRender {
      * Refresh hover immediately
      */
     refreshHoverImmediately() {
+        if (this._disposed) {
+            return;
+        }
         this._needsRefreshHover = false;
         if (this.painter.refreshHover && this.painter.getType() === 'canvas') {
             this.painter.refreshHover();
@@ -318,6 +339,9 @@ class ZRender {
         width?: number| string
         height?: number | string
     }) {
+        if (this._disposed) {
+            return;
+        }
         opts = opts || {};
         this.painter.resize(opts.width, opts.height);
         this.handler.resize();
@@ -327,20 +351,29 @@ class ZRender {
      * Stop and clear all animation immediately
      */
     clearAnimation() {
+        if (this._disposed) {
+            return;
+        }
         this.animation.clear();
     }
 
     /**
      * Get container width
      */
-    getWidth(): number {
+    getWidth(): number | undefined {
+        if (this._disposed) {
+            return;
+        }
         return this.painter.getWidth();
     }
 
     /**
      * Get container height
      */
-    getHeight(): number {
+    getHeight(): number | undefined {
+        if (this._disposed) {
+            return;
+        }
         return this.painter.getHeight();
     }
 
@@ -349,6 +382,9 @@ class ZRender {
      * @param cursorStyle='default' 例如 crosshair
      */
     setCursorStyle(cursorStyle: string) {
+        if (this._disposed) {
+            return;
+        }
         this.handler.setCursorStyle(cursorStyle);
     }
 
@@ -361,7 +397,10 @@ class ZRender {
     findHover(x: number, y: number): {
         target: Displayable
         topTarget: Displayable
-    } {
+    } | undefined {
+        if (this._disposed) {
+            return;
+        }
         return this.handler.findHover(x, y);
     }
 
@@ -370,7 +409,9 @@ class ZRender {
     on<Ctx>(eventName: string, eventHandler: WithThisType<EventCallback<any[]>, unknown extends Ctx ? ZRenderType : Ctx>, context?: Ctx): this
     // eslint-disable-next-line max-len
     on<Ctx>(eventName: string, eventHandler: (...args: any) => any, context?: Ctx): this {
-        this.handler.on(eventName, eventHandler, context);
+        if (!this._disposed) {
+            this.handler.on(eventName, eventHandler, context);
+        }
         return this;
     }
 
@@ -381,6 +422,9 @@ class ZRender {
      */
     // eslint-disable-next-line max-len
     off(eventName?: string, eventHandler?: EventCallback) {
+        if (this._disposed) {
+            return;
+        }
         this.handler.off(eventName, eventHandler);
     }
 
@@ -391,6 +435,9 @@ class ZRender {
      * @param event Event object
      */
     trigger(eventName: string, event?: unknown) {
+        if (this._disposed) {
+            return;
+        }
         this.handler.trigger(eventName, event);
     }
 
@@ -399,6 +446,9 @@ class ZRender {
      * Clear all objects and the canvas.
      */
     clear() {
+        if (this._disposed) {
+            return;
+        }
         const roots = this.storage.getRoots();
         for (let i = 0; i < roots.length; i++) {
             if (roots[i] instanceof Group) {
@@ -413,6 +463,10 @@ class ZRender {
      * Dispose self.
      */
     dispose() {
+        if (this._disposed) {
+            return;
+        }
+
         this.animation.stop();
 
         this.clear();
@@ -424,6 +478,8 @@ class ZRender {
         this.storage =
         this.painter =
         this.handler = null;
+
+        this._disposed = true;
 
         delInstance(this.id);
     }
@@ -480,6 +536,21 @@ export function getInstance(id: number): ZRender {
 
 export function registerPainter(name: string, Ctor: PainterBaseCtor) {
     painterCtors[name] = Ctor;
+}
+
+export type ElementSSRData = zrUtil.HashMap<unknown>;
+export type ElementSSRDataGetter<T> = (el: Element) => zrUtil.HashMap<T>;
+
+let ssrDataGetter: ElementSSRDataGetter<unknown>;
+
+export function getElementSSRData(el: Element): ElementSSRData {
+    if (typeof ssrDataGetter === 'function') {
+        return ssrDataGetter(el);
+    }
+}
+
+export function registerSSRDataGetter<T>(getter: ElementSSRDataGetter<T>) {
+    ssrDataGetter = getter;
 }
 
 /**
