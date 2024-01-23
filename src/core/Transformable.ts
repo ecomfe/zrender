@@ -217,6 +217,7 @@ class Transformable {
         let m = this.transform;
         if (parent && parent.transform) {
             // Get local transform and decompose them to position, scale, rotation
+            parent.invTransform = parent.invTransform || matrix.create();
             matrix.mul(tmpTransform, parent.invTransform, m);
             m = tmpTransform;
         }
