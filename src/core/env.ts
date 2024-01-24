@@ -38,8 +38,8 @@ else if (typeof document === 'undefined' && typeof self !== 'undefined') {
     env.worker = true;
 }
 else if (
-    typeof navigator === 'undefined' ||
-    navigator.userAgent.indexOf('Node.js') === 0
+    typeof navigator === 'undefined'
+    || navigator.userAgent.indexOf('Node.js') === 0
 ) {
     // In node
     env.node = true;
