@@ -3,8 +3,6 @@ const DEFAULT_MIN_MERGE = 32;
 
 const DEFAULT_MIN_GALLOPING = 7;
 
-const DEFAULT_TMP_STORAGE_LENGTH = 256;
-
 type CompareFunc<T> =(a: T, b: T) => number
 
 function minRunLength(n: number): number {
@@ -217,22 +215,11 @@ function gallopRight<T>(value: T, array: T[], start: number, length: number, hin
 
 function TimSort<T>(array: T[], compare: CompareFunc<T>) {
     let minGallop = DEFAULT_MIN_GALLOPING;
-    let length = 0;
-    let tmpStorageLength = DEFAULT_TMP_STORAGE_LENGTH;
-    let stackLength = 0;
     let runStart: number[];
     let runLength: number[];
     let stackSize = 0;
 
-    length = array.length;
-
-    if (length < 2 * DEFAULT_TMP_STORAGE_LENGTH) {
-        tmpStorageLength = length >>> 1;
-    }
-
     var tmp: T[] = [];
-
-    stackLength = length < 120 ? 5 : length < 1542 ? 10 : length < 119151 ? 19 : 40;
 
     runStart = [];
     runLength = [];

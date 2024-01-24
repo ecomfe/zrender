@@ -675,8 +675,6 @@ export default class PathProxy {
                     const endAngle = delta + startAngle;
                     // TODO Arc 旋转
                     i += 1;
-                    const anticlockwise = !data[i++];
-
                     if (isFirst) {
                         // 直接使用 arc 命令
                         // 第一个命令起点还未定义
