@@ -65,7 +65,7 @@ export function logError(...args: any[]) {
 /**
  * Those data types can be cloned:
  *     Plain object, Array, TypedArray, number, string, null, undefined.
- * Those data types will be assgined using the orginal data:
+ * Those data types will be assigned using the original data:
  *     BUILTIN_OBJECT
  * Instance of user defined class will be cloned to a plain object, without
  * properties in prototype.
@@ -626,8 +626,8 @@ export function assert(condition: any, message?: string) {
 }
 
 /**
- * @param str string to be trimed
- * @return trimed string
+ * @param str string to be trimmed
+ * @return trimmed string
  */
 export function trim(str: string): string {
     if (str == null) {
@@ -717,7 +717,7 @@ export class HashMap<T, KEY extends string | number = string | number> {
     constructor(obj?: HashMap<T, KEY> | { [key in KEY]?: T } | KEY[]) {
         const isArr = isArray(obj);
         // Key should not be set on this, otherwise
-        // methods get/set/... may be overrided.
+        // methods get/set/... may be overridden.
         this.data = maybeNativeMap<T, KEY>();
         const thisMap = this;
 
