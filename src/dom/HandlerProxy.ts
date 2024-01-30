@@ -152,7 +152,7 @@ function isLocalEl(instance: HandlerDomProxy, el: Node) {
 
 /**
  * Make a fake event but not change the original event,
- * becuase the global event probably be used by other
+ * because the global event probably be used by other
  * listeners not belonging to zrender.
  * @class
  */
@@ -259,8 +259,8 @@ const localDOMHandlers: DomHandlersMap = {
     mousewheel(event: ZRRawEvent) {
         // IE8- and some other lagacy agent do not support event `wheel`, so we still listen
         // to the legacy event `mouseevent`.
-        // Typically if event `wheel` is suppored and the handler has been mounted on a
-        // DOM element, the lagecy `mousewheel` event will not be triggered (Chrome and Safari).
+        // Typically if event `wheel` is supported and the handler has been mounted on a
+        // DOM element, the legacy `mousewheel` event will not be triggered (Chrome and Safari).
         // But we still do this guard to avoid to duplicated handle.
         if (wheelEventSupported) {
             return;
@@ -337,7 +337,7 @@ const localDOMHandlers: DomHandlersMap = {
         // FIXME
         // pointermove is so sensitive that it always triggered when
         // tap(click) on touch screen, which affect some judgement in
-        // upper application. So, we dont support mousemove on MS touch
+        // upper application. So, we don't support mousemove on MS touch
         // device yet.
         if (!isPointerFromTouch(event)) {
             localDOMHandlers.mousemove.call(this, event);
@@ -385,7 +385,7 @@ const globalDOMHandlers: DomHandlersMap = {
         // FIXME
         // pointermove is so sensitive that it always triggered when
         // tap(click) on touch screen, which affect some judgement in
-        // upper application. So, we dont support mousemove on MS touch
+        // upper application. So, we don't support mousemove on MS touch
         // device yet.
         if (!isPointerFromTouch(event)) {
             globalDOMHandlers.mousemove.call(this, event);
@@ -441,7 +441,7 @@ function mountLocalDOMEventListeners(instance: HandlerDomProxy, scope: DOMHandle
         // touch screen. And we only support click behavior on MS touch screen now.
 
         // MS Gesture Event is only supported on IE11+/Edge and on Windows 8+.
-        // We dont support touch on IE on win7.
+        // We don't support touch on IE on win7.
         // See <https://msdn.microsoft.com/en-us/library/dn433243(v=vs.85).aspx>
         // if (typeof MSGesture === 'function') {
         //     (this._msGesture = new MSGesture()).target = dom; // jshint ignore:line
@@ -540,7 +540,7 @@ class DOMHandlerScope {
     domTarget: HTMLElement | HTMLDocument
     domHandlers: DomHandlersMap
 
-    // Key: eventName, value: mounted handler funcitons.
+    // Key: eventName, value: mounted handler functions.
     // Used for unmount.
     mounted: Dictionary<EventListener> = {};
 

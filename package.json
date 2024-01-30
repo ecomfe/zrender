@@ -1,6 +1,6 @@
 {
   "name": "zrender",
-  "version": "5.4.3",
+  "version": "5.5.0",
   "description": "A lightweight graphic library providing 2d draw for Apache ECharts",
   "keywords": [
     "canvas",
@@ -67,9 +67,23 @@
       "require": "./dist/zrender.js",
       "import": "./index.js"
     },
-    "./*.js": "./*.js",
-    "./*.ts": "./*.ts",
-    "./*.json": "./*.json",
-    "./*": "./*.js"
+    "./lib/canvas/canvas": "./lib/canvas/canvas.js",
+    "./lib/svg/svg": "./lib/svg/svg.js",
+    "./lib/vml/vml": "./lib/vml/vml.js",
+    "./lib/canvas/Painter": "./lib/canvas/Painter.js",
+    "./lib/svg/Painter": "./lib/svg/Painter.js",
+    "./lib/svg/patch": "./lib/svg/patch.js",
+    "./lib/Storage": "./lib/Storage.js",
+    "./lib/core/util": "./lib/core/util.js",
+    "./lib/core/env": "./lib/core/env.js",
+    "./lib/core/Transformable": "./lib/core/Transformable.js",
+    "./lib/core/BoundingRect": "./lib/core/BoundingRect.js",
+    "./lib/core/vector": "./lib/core/vector.js",
+    "./lib/core/bbox": "./lib/core/bbox.js",
+    "./lib/contain/polygon": "./lib/contain/polygon.js",
+    "./lib/tool/color": "./lib/tool/color.js",
+    "./lib/graphic/LinearGradient": "./lib/graphic/LinearGradient.js",
+    "./lib/graphic/RadialGradient": "./lib/graphic/RadialGradient.js",
+    "./*": "./*"
   }
 }
