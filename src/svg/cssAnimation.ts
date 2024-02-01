@@ -10,6 +10,7 @@ import Animator from '../animation/Animator';
 import CompoundPath from '../graphic/CompoundPath';
 import { AnimationEasing } from '../animation/easing';
 import { createCubicEasingFunc } from '../animation/cubicEasing';
+import { getClassId } from './cssClassId';
 
 export const EASING_MAP: Record<string, string> = {
     // From https://easings.net/
@@ -355,7 +356,7 @@ export function createCSSAnimation(
     }
 
     if (cssAnimations.length) {
-        const className = scope.zrId + '-cls-' + scope.cssClassIdx++;
+        const className = scope.zrId + '-cls-' + getClassId();
         scope.cssNodes['.' + className] = {
             animation: cssAnimations.join(',')
         };

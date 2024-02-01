@@ -122,7 +122,7 @@ function removeVnodes(parentElm: Node, vnodes: SVGVNode[], startIdx: number, end
 
 export function updateAttrs(oldVnode: SVGVNode, vnode: SVGVNode): void {
     let key: string;
-    const elm = vnode.elm as Element;
+    const elm = vnode.elm as SVGElement;
     const oldAttrs = oldVnode && oldVnode.attrs || {};
     const attrs = vnode.attrs || {};
 
@@ -143,7 +143,10 @@ export function updateAttrs(oldVnode: SVGVNode, vnode: SVGVNode): void {
                 elm.removeAttribute(key);
             }
             else {
-                if (key.charCodeAt(0) !== xChar) {
+                if (key === 'style') {
+                    elm.style.cssText = cur as string;
+                }
+                else if (key.charCodeAt(0) !== xChar) {
                     elm.setAttribute(key, cur as any);
                 }
                 // TODO

@@ -124,10 +124,11 @@ class SVGPainter implements PainterBase {
     }
 
     renderToVNode(opts?: {
-        animation?: boolean
-        willUpdate?: boolean
+        animation?: boolean,
+        willUpdate?: boolean,
         compress?: boolean,
-        useViewBox?: boolean
+        useViewBox?: boolean,
+        emphasis?: boolean
     }) {
 
         opts = opts || {};
@@ -140,6 +141,7 @@ class SVGPainter implements PainterBase {
         scope.animation = opts.animation;
         scope.willUpdate = opts.willUpdate;
         scope.compress = opts.compress;
+        scope.emphasis = opts.emphasis;
 
         const children: SVGVNode[] = [];
 
@@ -173,7 +175,12 @@ class SVGPainter implements PainterBase {
          * If add css animation.
          * @default true
          */
-        cssAnimation?: boolean
+        cssAnimation?: boolean,
+        /**
+         * If add css emphasis.
+         * @default true
+         */
+        cssEmphasis?: boolean,
         /**
          * If use viewBox
          * @default true
@@ -183,6 +190,7 @@ class SVGPainter implements PainterBase {
         opts = opts || {};
         return vNodeToString(this.renderToVNode({
             animation: retrieve2(opts.cssAnimation, true),
+            emphasis: retrieve2(opts.cssEmphasis, true),
             willUpdate: false,
             compress: true,
             useViewBox: retrieve2(opts.useViewBox, true)
@@ -374,8 +382,7 @@ function createBackgroundVNode(
                 width,
                 height,
                 x: '0',
-                y: '0',
-                id: '0'
+                y: '0'
             }
         );
         if (isGradient(backgroundColor)) {

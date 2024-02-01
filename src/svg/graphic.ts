@@ -26,7 +26,7 @@ import { getLineHeight } from '../contain/text';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import SVGPathRebuilder from './SVGPathRebuilder';
 import mapStyleToAttrs from './mapStyleToAttrs';
-import { SVGVNodeAttrs, createVNode, SVGVNode, vNodeToString, BrushScope } from './core';
+import { SVGVNodeAttrs, createVNode, SVGVNode, vNodeToString, BrushScope, META_DATA_PREFIX } from './core';
 import { MatrixArray } from '../core/matrix';
 import Displayable from '../graphic/Displayable';
 import { assert, clone, isFunction, isString, logError, map, retrieve2 } from '../core/util';
@@ -39,6 +39,8 @@ import { ImageLike } from '../core/types';
 import { createCSSAnimation } from './cssAnimation';
 import { hasSeparateFont, parseFontSize } from '../graphic/Text';
 import { DEFAULT_FONT, DEFAULT_FONT_FAMILY } from '../core/platform';
+import { createCSSEmphasis } from './cssEmphasis';
+import { getElementSSRData } from '../zrender';
 
 const round = Math.round;
 
@@ -61,12 +63,28 @@ function setStyleAttrs(attrs: SVGVNodeAttrs, style: AllStyleOption, el: Path | T
         else if (isFillStroke && isPattern(val)) {
             setPattern(el, attrs, key, scope);
         }
+        else if (isFillStroke && val === 'none') {
+            // When is none, it cannot be interacted when ssr
+            attrs[key] = 'transparent';
+        }
         else {
             attrs[key] = val;
         }
     }, style, el, false);
 
     setShadow(el, attrs, scope);
+}
+
+function setMetaData(attrs: SVGVNodeAttrs, el: Path | TSpan | ZRImage) {
+    const metaData = getElementSSRData(el);
+    if (metaData) {
+        metaData.each((val, key) => {
+            val != null && (attrs[(META_DATA_PREFIX + key).toLowerCase()] = val + '');
+        });
+        if (el.isSilent()) {
+            attrs[META_DATA_PREFIX + 'silent'] = 'true';
+        }
+    }
 }
 
 function noRotateScale(m: MatrixArray) {
@@ -204,8 +222,10 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
 
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
+    setMetaData(attrs, el);
 
     scope.animation && createCSSAnimation(el, attrs, scope);
+    scope.emphasis && createCSSEmphasis(el, attrs, scope);
 
     return createVNode(svgElType, el.id + '', attrs);
 }
@@ -248,6 +268,7 @@ export function brushSVGImage(el: ZRImage, scope: BrushScope) {
 
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
+    setMetaData(attrs, el);
 
     scope.animation && createCSSAnimation(el, attrs, scope);
 
@@ -319,6 +340,7 @@ export function brushSVGTSpan(el: TSpan, scope: BrushScope) {
     }
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
+    setMetaData(attrs, el);
 
     scope.animation && createCSSAnimation(el, attrs, scope);
 

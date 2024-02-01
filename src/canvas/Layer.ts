@@ -89,8 +89,6 @@ export default class Layer extends Eventful {
 
     private _paintRects: BoundingRect[]
 
-    __painter: CanvasPainter
-
     __dirty = true
     __firstTimePaint = true
 
@@ -311,7 +309,7 @@ export default class Layer extends Eventful {
              * rect if and only if it's not painted this frame and was
              * previously painted on the canvas.
              */
-            const shouldPaint = el.shouldBePainted(viewWidth, viewHeight, true, true);
+            const shouldPaint = el && el.shouldBePainted(viewWidth, viewHeight, true, true);
             if (el && (!shouldPaint || !el.__zr) && el.__isRendered) {
                 // el was removed
                 const prevRect = el.getPrevPaintRect();
@@ -449,9 +447,8 @@ export default class Layer extends Eventful {
                     clearColorGradientOrPattern = createCanvasPattern(
                         ctx, clearColor, {
                             dirty() {
-                                // TODO
                                 self.setUnpainted();
-                                self.__painter.refresh();
+                                self.painter.refresh();
                             }
                         }
                     );
