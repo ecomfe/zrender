@@ -166,7 +166,12 @@ describe('zrUtil', function() {
 
             const b: { key: any } = {key: null};
             b.key = b;
-            expect(zrUtil.clone(b)).toEqual(b);
+            const bCloned = zrUtil.clone(b);
+            expect(bCloned === b).toBeFalsy();
+            expect(bCloned.key === b).toBeFalsy();
+            expect(bCloned === b.key).toBeFalsy();
+            expect(bCloned.key === b.key).toBeFalsy();
+            expect(bCloned).toEqual(b);
         });
 
     });
