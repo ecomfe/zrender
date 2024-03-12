@@ -75,14 +75,13 @@ export function logError(...args: any[]) {
  * (There might be a large number of date in `series.data`).
  * So date should not be modified in and out of echarts.
  */
-function cloneHelper<T extends any>(source: T, alreadyCloned: Set<Object>): T {
+function cloneHelper<T extends any>(source: T, alreadyCloned: Map<Object, Object>): T {
     if (source == null || typeof source !== 'object') {
         return source;
     }
     if (alreadyCloned.has(source)) {
-        return source;
+        return alreadyCloned.get(source) as T;
     }
-    alreadyCloned.add(source);
 
     let result = source as any;
     const typeStr = <string>objToString.call(source);
@@ -90,6 +89,7 @@ function cloneHelper<T extends any>(source: T, alreadyCloned: Set<Object>): T {
     if (typeStr === '[object Array]') {
         if (!isPrimitive(source)) {
             result = [] as any;
+            alreadyCloned.set(source, []);
             for (let i = 0, len = (source as any[]).length; i < len; i++) {
                 result[i] = cloneHelper((source as any[])[i], alreadyCloned);
             }
@@ -112,6 +112,7 @@ function cloneHelper<T extends any>(source: T, alreadyCloned: Set<Object>): T {
     }
     else if (!BUILTIN_OBJECT[typeStr] && !isPrimitive(source) && !isDom(source)) {
         result = {} as any;
+        alreadyCloned.set(source, result);
         for (let key in source) {
             // Check if key is __proto__ to avoid prototype pollution
             if (source.hasOwnProperty(key) && key !== protoKey) {
@@ -125,7 +126,7 @@ function cloneHelper<T extends any>(source: T, alreadyCloned: Set<Object>): T {
 }
 
 export function clone<T extends any>(source: T): T {
-    const alreadyCloned = new Set<any>();
+    const alreadyCloned = new Map<Object, Object>();
     return cloneHelper(source, alreadyCloned);
 }
 
