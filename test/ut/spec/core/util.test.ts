@@ -146,5 +146,33 @@ describe('zrUtil', function() {
 
         });
 
+        it("circular", function () {
+            class TreeNode {
+                public children: TreeNode[]
+                public parent: TreeNode | null
+
+                constructor(parent: TreeNode = null, children: TreeNode[] = []) {
+                    this.children = children;
+                    this.parent = parent;
+                }
+            }
+
+            const root = new TreeNode();
+            const a = new TreeNode(root, [new TreeNode(), new TreeNode()]);
+            a.children.forEach(c => c.parent = a);
+            root.children.push(a)
+            root.children.push(new TreeNode(root, [new TreeNode()]))
+            expect(zrUtil.clone(root)).toEqual(root);
+
+            const b: { key: any } = {key: null};
+            b.key = b;
+            const bCloned = zrUtil.clone(b);
+            expect(bCloned === b).toBeFalsy();
+            expect(bCloned.key === b).toBeFalsy();
+            expect(bCloned === b.key).toBeFalsy();
+            expect(bCloned.key === b.key).toBeFalsy();
+            expect(bCloned).toEqual(b);
+        });
+
     });
 });
