@@ -70,15 +70,26 @@
     });
     zr.add(cnText);
 
-    const TEXTS = [LARGE_TEXT_EN, LARGE_TEXT_ZH];
+    var rndText = new zrender.Text({
+        style: {
+            text: TEXT_WITH_NON_BMP_CHARS,
+            fontSize: config.fontSize,
+            width: config.width,
+            padding: 10,
+            borderColor: '#000',
+            borderWidth: 1,
+
+            overflow: 'break',
+            lineOverflow: 'truncate',
+            ellipsis: '…',
+
+            x: config.width + 100 + config.width + 100
+        }
+    });
+    zr.add(rndText);
+
+    const TEXTS = [LARGE_TEXT_EN, LARGE_TEXT_ZH, TEXT_WITH_NON_BMP_CHARS];
     function update() {
-        enText.style.width = cnText.style.width = config.width;
-        enText.style.height = cnText.style.height = config.height;
-
-        enText.style.overflow = config.breakAll ? 'breakAll' : 'break';
-
-        cnText.style.x = config.width + 100;
-
         enText.style.rich = cnText.style.rich = config.rich ? {
             highlight: {
                 // padding: 4,
@@ -87,8 +98,12 @@
             }
         } : null;
 
-        [enText, cnText].forEach((text, idx) => {
-            text.style.fontSize = cnText.style.fontSize = config.fontSize;
+        [enText, cnText, rndText].forEach((text, idx) => {
+            text.style.fontSize = config.fontSize;
+            text.style.width = config.width;
+            text.style.height = config.height;
+            text.style.x = (config.width + 100) * idx;
+            text.style.overflow = config.breakAll ? 'breakAll' : 'break';
 
             if (config.search) {
                 text.style.text = TEXTS[idx].replace(
