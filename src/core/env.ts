@@ -39,6 +39,7 @@ else if (typeof document === 'undefined' && typeof self !== 'undefined') {
 }
 else if (
     typeof navigator === 'undefined'
+    || typeof navigator.userAgent === 'undefined' // bugfix running without navigator.userAgent
     || navigator.userAgent.indexOf('Node.js') === 0
 ) {
     // In node
