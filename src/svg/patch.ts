@@ -144,7 +144,7 @@ export function updateAttrs(oldVnode: SVGVNode, vnode: SVGVNode): void {
             }
             else {
                 if (key === 'style') {
-                    elm.style.cssText = cur as string
+                    elm.style.cssText = cur as string;
                 }
                 else if (key.charCodeAt(0) !== xChar) {
                     elm.setAttribute(key, cur as any);

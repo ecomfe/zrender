@@ -38,11 +38,9 @@ else if (typeof document === 'undefined' && typeof self !== 'undefined') {
     env.worker = true;
 }
 else if (
-    (
-        typeof process !== 'undefined'
-        && typeof process.version === 'string'
-    )
-    || 'Deno' in window
+    (typeof process !== 'undefined' && typeof process.version === 'string')
+    || (typeof navigator === 'undefined' || typeof navigator.userAgent === 'undefined')
+    || (env.hasGlobalWindow && 'Deno' in window)
 ) {
     // In node
     env.node = true;

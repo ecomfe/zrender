@@ -497,9 +497,9 @@ function isHover(displayable: Displayable, x: number, y: number) {
                 if (clipPath && !clipPath.contain(x, y)) {
                     return false;
                 }
-                if (el.silent) {
-                    isSilent = true;
-                }
+            }
+            if (el.silent) {
+                isSilent = true;
             }
             // Consider when el is textContent, also need to be silent
             // if any of its host el and its ancestors is silent.

@@ -1,4 +1,6 @@
 import LRU from '../core/LRU';
+import { extend, isGradientObject, isString, map } from '../core/util';
+import { GradientObject } from '../graphic/Gradient';
 
 const kCSSColorTable = {
     'transparent': [0, 0, 0, 0], 'aliceblue': [240, 248, 255, 1],
@@ -566,4 +568,28 @@ export function random(): string {
         Math.round(Math.random() * 255),
         Math.round(Math.random() * 255)
     ], 'rgb');
+}
+
+const liftedColorCache = new LRU<string>(100);
+export function liftColor(color: GradientObject): GradientObject;
+export function liftColor(color: string): string;
+export function liftColor(color: string | GradientObject): string | GradientObject {
+    if (isString(color)) {
+        let liftedColor = liftedColorCache.get(color);
+        if (!liftedColor) {
+            liftedColor = lift(color, -0.1);
+            liftedColorCache.put(color, liftedColor);
+        }
+        return liftedColor;
+    }
+    else if (isGradientObject(color)) {
+        const ret = extend({}, color) as GradientObject;
+        ret.colorStops = map(color.colorStops, stop => ({
+            offset: stop.offset,
+            color: lift(stop.color, -0.1)
+        }));
+        return ret;
+    }
+    // Change nothing.
+    return color;
 }

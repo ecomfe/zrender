@@ -1,0 +1,91 @@
+name: Node CI
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+concurrency:
+  # Note that the `teardown-pr-preview` workflow needs the same group name
+  # to cancel the running `ci` workflows
+  group: ${{ github.workflow }}-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - name: Fetch commit count
+        env:
+          PR_COMMIT_COUNT: ${{ github.event.pull_request.commits }}
+        run: |
+          echo "FETCH_DEPTH=$(($PR_COMMIT_COUNT + 1))" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ env.FETCH_DEPTH }}
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Cache node modules
+        id: cache-dep
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-lint-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.cache-dep.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Collect changed files
+        run: |
+          mkdir ~/tmp/
+          git diff ${{ github.event.pull_request.base.sha }} ${{ github.sha }} --diff-filter=ACM --name-only --relative '*src/**/*.ts' > ~/tmp/changed_files
+          echo -e "Changed files: \n$(cat ~/tmp/changed_files)"
+
+      - name: Lint
+        run: npx eslint $(cat ~/tmp/changed_files)
+
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Cache node modules
+        id: cache-dep
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.cache-dep.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Unit Test
+        run: npm run test
+
+      - name: Build release
+        run: npm run release
