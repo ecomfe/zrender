@@ -75,7 +75,7 @@ export const platformApi: Platform = {
                 text = text || '';
                 font = font || DEFAULT_FONT;
                 // Use font size if there is no other method can be used.
-                const res = /(\d+)px/.exec(font);
+                const res = /((?:\d+)?\.?\d*)px/.exec(font);
                 const fontSize = res && +res[1] || DEFAULT_FONT_SIZE;
                 let width = 0;
                 if (font.indexOf('mono') >= 0) {   // is monospace
