@@ -125,7 +125,7 @@
                 else {
                     text = text || '';
                     font = font || DEFAULT_FONT;
-                    var res = /(\d+)px/.exec(font);
+                    var res = /((?:\d+)?\.?\d*)px/.exec(font);
                     var fontSize = res && +res[1] || DEFAULT_FONT_SIZE;
                     var width = 0;
                     if (font.indexOf('mono') >= 0) {
@@ -7338,7 +7338,7 @@
     function registerSSRDataGetter(getter) {
         ssrDataGetter = getter;
     }
-    var version = '5.5.0';
+    var version = '5.6.0';
 
     var STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
     var DEFAULT_COMMON_STYLE = {
