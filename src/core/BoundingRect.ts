@@ -109,6 +109,10 @@ class BoundingRect {
         const by0 = b.y;
         const by1 = b.y + b.height;
 
+        if ((a.width <= 0 && a.height <= 0) || (b.width <= 0 && b.height <= 0)) {
+            return false;
+        }
+
         let overlap = !(ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
         if (mtv) {
             let dMin = Infinity;
