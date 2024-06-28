@@ -142,6 +142,7 @@ class SVGPainter implements PainterBase {
         scope.willUpdate = opts.willUpdate;
         scope.compress = opts.compress;
         scope.emphasis = opts.emphasis;
+        scope.ssr = this._opts.ssr;
 
         const children: SVGVNode[] = [];
 
