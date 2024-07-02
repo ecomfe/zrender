@@ -37,11 +37,7 @@ else if (typeof document === 'undefined' && typeof self !== 'undefined') {
     // In worker
     env.worker = true;
 }
-else if (
-    (typeof process !== 'undefined' && typeof process.version === 'string')
-    || (typeof navigator === 'undefined' || typeof navigator.userAgent === 'undefined')
-    || (env.hasGlobalWindow && 'Deno' in window)
-) {
+else if (!env.hasGlobalWindow || 'Deno' in window) {
     // In node
     env.node = true;
     env.svgSupported = true;
