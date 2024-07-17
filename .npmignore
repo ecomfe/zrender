@@ -1,7 +1,6 @@
 /doc
 /test
 /benchmark
-/build
 /tsconfig.json
 .github
 .vscode
