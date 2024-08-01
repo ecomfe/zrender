@@ -2,10 +2,9 @@ import * as imageHelper from '../helper/image';
 import {
     extend,
     retrieve2,
-    retrieve3,
-    reduce
+    retrieve3
 } from '../../core/util';
-import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../../core/types';
+import { TextAlign, TextVerticalAlign, ImageLike } from '../../core/types';
 import { TextStyleProps } from '../Text';
 import { getLineHeight, getWidth, parsePercent } from '../../contain/text';
 
@@ -604,21 +603,11 @@ function isAlphabeticLetter(ch: string) {
         || code >= 0x1E00 && code <= 0x206F; // Latin and Greek extended
 }
 
-const breakCharMap = reduce(',&?/;] '.split(''), function (obj, ch) {
-    obj[ch] = true;
-    return obj;
-}, {} as Dictionary<boolean>);
 /**
  * If break by word. For latin languages.
  */
-function isWordBreakChar(ch: string) {
-    if (isAlphabeticLetter(ch)) {
-        if (breakCharMap[ch]) {
-            return true;
-        }
-        return false;
-    }
-    return true;
+function canLineBreakBeforeChar(ch: string) {
+    return !isAlphabeticLetter(ch);
 }
 
 function wrapText(
@@ -636,8 +625,8 @@ function wrapText(
     let accumWidth = 0;
 
     for (let i = 0; i < text.length; i++) {
-
-        const ch = text.charAt(i);
+        let ch;
+        [ch, i] = getWholeCharAndI(text, i);
         if (ch === '\n') {
             if (currentWord) {
                 line += currentWord;
@@ -654,7 +643,16 @@ function wrapText(
         }
 
         const chWidth = getWidth(ch, font);
-        const inWord = isBreakAll ? false : !isWordBreakChar(ch);
+
+        if (ch === ' ') {
+            line += currentWord + ch;
+            accumWidth += chWidth;
+            currentWord = '';
+            currentWordWidth = 0;
+            continue;
+        }
+
+        const inWord = isBreakAll ? false : !canLineBreakBeforeChar(ch);
 
         if (!lines.length
             ? lastAccumWidth + accumWidth + chWidth > lineWidth
@@ -761,4 +759,45 @@ function wrapText(
         lines: lines,
         linesWidths
     };
+}
+
+// Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/charAt#getting_whole_characters
+function getWholeCharAndI(str: string, i: number): [string, number] {
+    const code = str.charCodeAt(i);
+
+    if (isNaN(code)) {
+        return ['', i]; // Position not found
+    }
+    if (code < 0xd800 || code > 0xdfff) {
+        return [str.charAt(i), i]; // Normal character, keeping 'i' the same
+    }
+
+    // High surrogate (could change last hex to 0xDB7F to treat high private
+    // surrogates as single characters)
+    if (0xd800 <= code && code <= 0xdbff) {
+        if (str.length <= i + 1) {
+            return [str.charAt(i), i]; // Error: High surrogate without following low surrogate
+        }
+        const next = str.charCodeAt(i + 1);
+        if (next < 0xdc00 || next > 0xdfff) {
+            return [str.charAt(i), i]; // Error: High surrogate without following low surrogate
+        }
+        return [str.charAt(i) + str.charAt(i + 1), i + 1];
+    }
+
+    // Low surrogate (0xDC00 <= code && code <= 0xDFFF)
+    if (i === 0) {
+        return [str.charAt(i), i]; // Error: Low surrogate without preceding high surrogate
+    }
+
+    const prev = str.charCodeAt(i - 1);
+
+    // (could change last hex to 0xDB7F to treat high private surrogates
+    // as single characters)
+    if (prev < 0xd800 || prev > 0xdbff) {
+        return [str.charAt(i), i]; // Error: Low surrogate without preceding high surrogate
+    }
+
+    // Return the next character instead (and increment)
+    return [str.charAt(i + 1), i + 1];
 }
