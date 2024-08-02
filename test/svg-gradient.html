@@ -8,68 +8,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
-    <div id="main"></div>
+    <div id="main-svg" style="display: inline-block;"></div>
+    <div id="main-canvas" style="display: inline-block;"></div>
+
     <script type="text/javascript">
-        var zr = zrender.init(document.getElementById('main'), {
+        var zrSVG = zrender.init(document.getElementById('main-svg'), {
             renderer: 'svg',
             width: 200,
             height: 200
         });
-        zr.setBackgroundColor('navajowhite');
 
-        var linearGradient1 = new zrender.LinearGradient(0, 0, 0, 1);
-        linearGradient1.addColorStop(0, 'transparent');
-        linearGradient1.addColorStop(1, 'orange');
+        var zrCanvas = zrender.init(document.getElementById('main-canvas'), {
+            renderer: 'canvas',
+            width: 200,
+            height: 200
+        });
 
-        var linearGradient2 = new zrender.LinearGradient(0, 0, 0, 1);
-        linearGradient2.addColorStop(0, 'none');
-        linearGradient2.addColorStop(1, 'orange');
+        render(zrSVG)
+        render(zrCanvas)
 
-        var linearGradient3 = new zrender.LinearGradient(0, 0, 0, 1);
-        linearGradient3.addColorStop(0, '');
-        linearGradient3.addColorStop(1, 'orange');
+        function render(zr) {
+            zr.setBackgroundColor('navajowhite');
 
-        zr.add(
-            new zrender.Rect({
-                shape: {
-                    x: 20,
-                    y: 50,
-                    width: 20,
-                    height: 100,
-                },
-                style: {
-                    fill: linearGradient1
-                }
-            })
-        );
+            var linearGradient1 = new zrender.LinearGradient(0, 0, 0, 1);
+            linearGradient1.addColorStop(0, 'transparent');
+            linearGradient1.addColorStop(1, 'orange');
 
-        zr.add(
-            new zrender.Rect({
-                shape: {
-                    x: 60,
-                    y: 50,
-                    width: 20,
-                    height: 100,
-                },
-                style: {
-                    fill: linearGradient2
-                }
-            })
-        );
+            var linearGradient2 = new zrender.LinearGradient(0, 0, 0, 1);
+            linearGradient2.addColorStop(0, 'none');
+            linearGradient2.addColorStop(1, 'orange');
 
-        zr.add(
-            new zrender.Rect({
-                shape: {
-                    x: 100,
-                    y: 50,
-                    width: 20,
-                    height: 100,
-                },
-                style: {
-                    fill: linearGradient3
-                }
-            })
-        );
+            var linearGradient3 = new zrender.LinearGradient(0, 0, 0, 1);
+            linearGradient3.addColorStop(0, '');
+            linearGradient3.addColorStop(1, 'orange');
+
+            zr.add(
+                new zrender.Rect({
+                    shape: {
+                        x: 20,
+                        y: 50,
+                        width: 20,
+                        height: 100,
+                    },
+                    style: {
+                        fill: linearGradient1
+                    }
+                })
+            );
+
+            zr.add(
+                new zrender.Rect({
+                    shape: {
+                        x: 60,
+                        y: 50,
+                        width: 20,
+                        height: 100,
+                    },
+                    style: {
+                        fill: linearGradient2
+                    }
+                })
+            );
+
+            zr.add(
+                new zrender.Rect({
+                    shape: {
+                        x: 100,
+                        y: 50,
+                        width: 20,
+                        height: 100,
+                    },
+                    style: {
+                        fill: linearGradient3
+                    }
+                })
+            );
+        }
     </script>
 </body>
 </html>
