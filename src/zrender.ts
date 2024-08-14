@@ -83,6 +83,7 @@ class ZRender {
     private _needsRefreshHover = true
     private _disposed: boolean;
     /**
+     * TODO: probably should be removed in the future
      * If theme is dark mode. It will determine the color strategy for labels.
      */
     private _darkMode = false;
@@ -117,7 +118,16 @@ class ZRender {
             ? false
             : opts.useDirtyRect;
 
-        const painter = new painterCtors[rendererType](dom, storage, opts, id);
+        const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const darkMode = opts.darkMode === 'light'
+            ? false
+            : (opts.darkMode === 'dark' ? true : isDark);
+
+        const painter = new painterCtors[rendererType](dom, storage,
+            {
+                darkMode,
+                ...opts
+            }, id);
         const ssrMode = opts.ssr || painter.ssrOnly;
 
         this.storage = storage;
@@ -491,6 +501,7 @@ export interface ZRenderInitOpt {
     devicePixelRatio?: number
     width?: number | string // 10, 10px, 'auto'
     height?: number | string
+    darkMode?: 'auto' | 'light' | 'dark'
     useDirtyRect?: boolean
     useCoarsePointer?: 'auto' | boolean
     pointerSize?: number

@@ -14,6 +14,7 @@ import BoundingRect from '../core/BoundingRect';
 import { REDRAW_BIT } from '../graphic/constants';
 import { getSize } from './helper';
 import type IncrementalDisplayable from '../graphic/IncrementalDisplayable';
+import { convertToDark } from '../tool/color';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 const CANVAS_ZLEVEL = 314159;
@@ -67,7 +68,8 @@ interface CanvasPainterOption {
     devicePixelRatio?: number
     width?: number | string  // Can be 10 / 10px / auto
     height?: number | string,
-    useDirtyRect?: boolean
+    useDirtyRect?: boolean,
+    darkMode?: boolean
 }
 
 export default class CanvasPainter implements PainterBase {
@@ -274,7 +276,8 @@ export default class CanvasPainter implements PainterBase {
         const scope: BrushScope = {
             inHover: true,
             viewWidth: this._width,
-            viewHeight: this._height
+            viewHeight: this._height,
+            darkMode: this._opts.darkMode
         };
 
         let ctx;
@@ -305,7 +308,7 @@ export default class CanvasPainter implements PainterBase {
     }
 
     paintOne(ctx: CanvasRenderingContext2D, el: Displayable) {
-        brushSingle(ctx, el);
+        brushSingle(ctx, el, this._opts.darkMode);
     }
 
     private _paintList(list: Displayable[], prevList: Displayable[], paintAll: boolean, redrawId?: number) {
@@ -416,7 +419,8 @@ export default class CanvasPainter implements PainterBase {
                     allClipped: false,
                     prevEl: null,
                     viewWidth: this._width,
-                    viewHeight: this._height
+                    viewHeight: this._height,
+                    darkMode: this._opts.darkMode
                 };
 
                 for (i = start; i < layer.__endIndex; i++) {
@@ -785,7 +789,10 @@ export default class CanvasPainter implements PainterBase {
     }
 
     setBackgroundColor(backgroundColor: string | GradientObject | ImagePatternObject) {
-        this._backgroundColor = backgroundColor;
+        // TODO: fix when is gradient or pattern
+        this._backgroundColor = this._opts.darkMode
+            ? convertToDark(backgroundColor as string, 'fill')
+            : backgroundColor;
 
         util.each(this._layers, layer => {
             layer.setUnpainted();
@@ -950,7 +957,8 @@ export default class CanvasPainter implements PainterBase {
             const scope = {
                 inHover: false,
                 viewWidth: this._width,
-                viewHeight: this._height
+                viewHeight: this._height,
+                darkMode: this._opts.darkMode
             };
             const displayList = this.storage.getDisplayList(true);
             for (let i = 0, len = displayList.length; i < len; i++) {

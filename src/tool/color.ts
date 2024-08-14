@@ -593,3 +593,39 @@ export function liftColor(color: string | GradientObject): string | GradientObje
     // Change nothing.
     return color;
 }
+
+/**
+ * text stroke is treated as 'stroke'
+ */
+export type ColorAttributeType = 'fill' | 'stroke' | 'textFill';
+
+/**
+ * Convert color to dark mode.
+ * @param lightColor color in light mode
+ * @return color in dark mode, in rgba format
+ */
+export function convertToDark(lightColor: string, type: ColorAttributeType): string {
+    let colorArr = parse(lightColor);
+
+    if (colorArr) {
+        colorArr = rgba2hsla(colorArr);
+        switch (type) {
+            // TODO: Probably using other color space to enhance the result.
+            // Just a quick demo for now.
+            case 'stroke':
+            case 'textFill':
+                // Text color needs more contrast luminance?
+                colorArr[2] = 1 - colorArr[2];
+                break;
+            case 'fill':
+            default:
+                colorArr[2] = Math.min(1, (1 - colorArr[2]) * 1.1);
+                break;
+        }
+
+        // Desaturate a little.
+        colorArr[1] *= 0.9;
+
+        return stringify(hsla2rgba(colorArr), 'rgba');
+    }
+}
