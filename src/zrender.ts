@@ -22,7 +22,7 @@ import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
 import { EventCallback } from './core/Eventful';
 import Displayable from './graphic/Displayable';
-import { lum } from './tool/color';
+import { lum, normalizeColorMap } from './tool/color';
 import { DARK_MODE_THRESHOLD } from './config';
 import Group from './graphic/Group';
 
@@ -122,6 +122,9 @@ class ZRender {
         const darkMode = opts.darkMode === 'light'
             ? false
             : (opts.darkMode === 'dark' ? true : isDark);
+
+        opts.darkColorMap = normalizeColorMap(opts.darkColorMap);
+        console.log(opts.darkColorMap)
 
         const painter = new painterCtors[rendererType](dom, storage,
             {
@@ -502,6 +505,7 @@ export interface ZRenderInitOpt {
     width?: number | string // 10, 10px, 'auto'
     height?: number | string
     darkMode?: 'auto' | 'light' | 'dark'
+    darkColorMap?: Dictionary<string>,
     useDirtyRect?: boolean
     useCoarsePointer?: 'auto' | boolean
     pointerSize?: number

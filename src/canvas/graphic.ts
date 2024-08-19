@@ -4,7 +4,7 @@ import { GradientObject } from '../graphic/Gradient';
 import { ImagePatternObject, InnerImagePatternObject } from '../graphic/Pattern';
 import { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
-import { ZRCanvasRenderingContext } from '../core/types';
+import { Dictionary, ZRCanvasRenderingContext } from '../core/types';
 import { createOrUpdateImage, isImageReady } from '../graphic/helper/image';
 import { getCanvasGradient, isClipPathChanged } from './helper';
 import Path, { PathStyleProps } from '../graphic/Path';
@@ -441,7 +441,7 @@ function bindPathAndTextCommonStyle(
             styleChanged = true;
         }
         isValidStrokeFillStyle(style.fill) && (ctx.fillStyle = scope.darkMode
-            ? convertToDark(style.fill, 'fill')
+            ? convertToDark(style.fill, 'fill', scope.darkColorMap)
             : style.fill
         );
     }
@@ -451,7 +451,7 @@ function bindPathAndTextCommonStyle(
             styleChanged = true;
         }
         isValidStrokeFillStyle(style.stroke) && (ctx.strokeStyle = scope.darkMode
-            ? convertToDark(style.stroke, 'stroke')
+            ? convertToDark(style.stroke, 'stroke', scope.darkColorMap)
             : style.stroke
         );
     }
@@ -575,6 +575,7 @@ export type BrushScope = {
     lastDrawType?: number
 
     darkMode?: boolean
+    darkColorMap?: Dictionary<string>
 }
 
 // If path can be batched
@@ -611,12 +612,18 @@ function getStyle(el: Displayable, inHover?: boolean) {
     return inHover ? (el.__hoverStyle || el.style) : el.style;
 }
 
-export function brushSingle(ctx: CanvasRenderingContext2D, el: Displayable, darkMode: boolean) {
+export function brushSingle(
+    ctx: CanvasRenderingContext2D,
+    el: Displayable,
+    darkMode: boolean,
+    darkColorMap: Dictionary<string>
+) {
     const scope: BrushScope = {
         inHover: false,
         viewWidth: 0,
         viewHeight: 0,
-        darkMode
+        darkMode,
+        darkColorMap
     };
     brush(ctx, el, scope, true);
 }
@@ -801,7 +808,8 @@ function brushIncremental(
         viewWidth: scope.viewWidth,
         viewHeight: scope.viewHeight,
         inHover: scope.inHover,
-        darkMode: scope.darkMode
+        darkMode: scope.darkMode,
+        darkColorMap: scope.darkColorMap
     };
     let i;
     let len;
