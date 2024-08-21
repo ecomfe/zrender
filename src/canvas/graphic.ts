@@ -615,8 +615,8 @@ function getStyle(el: Displayable, inHover?: boolean) {
 export function brushSingle(
     ctx: CanvasRenderingContext2D,
     el: Displayable,
-    darkMode: boolean,
-    darkColorMap: Dictionary<string>
+    darkMode?: boolean,
+    darkColorMap?: Dictionary<string>
 ) {
     const scope: BrushScope = {
         inHover: false,

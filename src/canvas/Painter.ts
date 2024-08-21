@@ -310,7 +310,7 @@ export default class CanvasPainter implements PainterBase {
     }
 
     paintOne(ctx: CanvasRenderingContext2D, el: Displayable) {
-        brushSingle(ctx, el, this._opts.darkMode);
+        brushSingle(ctx, el, this._opts.darkMode, this._opts.darkColorMap);
     }
 
     private _paintList(list: Displayable[], prevList: Displayable[], paintAll: boolean, redrawId?: number) {
