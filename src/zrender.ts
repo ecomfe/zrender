@@ -22,7 +22,7 @@ import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
 import { EventCallback } from './core/Eventful';
 import Displayable from './graphic/Displayable';
-import { lum } from './tool/color';
+import { lum, normalizeColorMap } from './tool/color';
 import { DARK_MODE_THRESHOLD } from './config';
 import Group from './graphic/Group';
 
@@ -83,6 +83,7 @@ class ZRender {
     private _needsRefreshHover = true
     private _disposed: boolean;
     /**
+     * TODO: probably should be removed in the future
      * If theme is dark mode. It will determine the color strategy for labels.
      */
     private _darkMode = false;
@@ -117,7 +118,19 @@ class ZRender {
             ? false
             : opts.useDirtyRect;
 
-        const painter = new painterCtors[rendererType](dom, storage, opts, id);
+        const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const darkMode = opts.darkMode === 'light'
+            ? false
+            : (opts.darkMode === 'dark' ? true : isDark);
+
+        opts.darkColorMap = normalizeColorMap(opts.darkColorMap);
+        console.log(opts.darkColorMap)
+
+        const painter = new painterCtors[rendererType](dom, storage,
+            {
+                darkMode,
+                ...opts
+            }, id);
         const ssrMode = opts.ssr || painter.ssrOnly;
 
         this.storage = storage;
@@ -491,6 +504,8 @@ export interface ZRenderInitOpt {
     devicePixelRatio?: number
     width?: number | string // 10, 10px, 'auto'
     height?: number | string
+    darkMode?: 'auto' | 'light' | 'dark'
+    darkColorMap?: Dictionary<string>,
     useDirtyRect?: boolean
     useCoarsePointer?: 'auto' | boolean
     pointerSize?: number

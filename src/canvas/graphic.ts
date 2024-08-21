@@ -4,7 +4,7 @@ import { GradientObject } from '../graphic/Gradient';
 import { ImagePatternObject, InnerImagePatternObject } from '../graphic/Pattern';
 import { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
-import { ZRCanvasRenderingContext } from '../core/types';
+import { Dictionary, ZRCanvasRenderingContext } from '../core/types';
 import { createOrUpdateImage, isImageReady } from '../graphic/helper/image';
 import { getCanvasGradient, isClipPathChanged } from './helper';
 import Path, { PathStyleProps } from '../graphic/Path';
@@ -16,6 +16,7 @@ import { getLineDash } from './dashStyle';
 import { REDRAW_BIT, SHAPE_CHANGED_BIT } from '../graphic/constants';
 import type IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 import { DEFAULT_FONT } from '../core/platform';
+import { convertToDark } from '../tool/color';
 
 const pathProxyForDraw = new PathProxy(true);
 
@@ -439,14 +440,20 @@ function bindPathAndTextCommonStyle(
             flushPathDrawn(ctx, scope);
             styleChanged = true;
         }
-        isValidStrokeFillStyle(style.fill) && (ctx.fillStyle = style.fill);
+        isValidStrokeFillStyle(style.fill) && (ctx.fillStyle = scope.darkMode
+            ? convertToDark(style.fill, 'fill', scope.darkColorMap)
+            : style.fill
+        );
     }
     if (forceSetAll || style.stroke !== prevStyle.stroke) {
         if (!styleChanged) {
             flushPathDrawn(ctx, scope);
             styleChanged = true;
         }
-        isValidStrokeFillStyle(style.stroke) && (ctx.strokeStyle = style.stroke);
+        isValidStrokeFillStyle(style.stroke) && (ctx.strokeStyle = scope.darkMode
+            ? convertToDark(style.stroke, 'stroke', scope.darkColorMap)
+            : style.stroke
+        );
     }
     if (forceSetAll || style.opacity !== prevStyle.opacity) {
         if (!styleChanged) {
@@ -566,6 +573,9 @@ export type BrushScope = {
     batchStroke?: string
 
     lastDrawType?: number
+
+    darkMode?: boolean
+    darkColorMap?: Dictionary<string>
 }
 
 // If path can be batched
@@ -602,8 +612,20 @@ function getStyle(el: Displayable, inHover?: boolean) {
     return inHover ? (el.__hoverStyle || el.style) : el.style;
 }
 
-export function brushSingle(ctx: CanvasRenderingContext2D, el: Displayable) {
-    brush(ctx, el, { inHover: false, viewWidth: 0, viewHeight: 0 }, true);
+export function brushSingle(
+    ctx: CanvasRenderingContext2D,
+    el: Displayable,
+    darkMode?: boolean,
+    darkColorMap?: Dictionary<string>
+) {
+    const scope: BrushScope = {
+        inHover: false,
+        viewWidth: 0,
+        viewHeight: 0,
+        darkMode,
+        darkColorMap
+    };
+    brush(ctx, el, scope, true);
 }
 
 // Brush different type of elements.
@@ -785,7 +807,9 @@ function brushIncremental(
         allClipped: false,
         viewWidth: scope.viewWidth,
         viewHeight: scope.viewHeight,
-        inHover: scope.inHover
+        inHover: scope.inHover,
+        darkMode: scope.darkMode,
+        darkColorMap: scope.darkColorMap
     };
     let i;
     let len;
