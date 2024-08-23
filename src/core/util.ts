@@ -75,9 +75,12 @@ export function logError(...args: any[]) {
  * (There might be a large number of date in `series.data`).
  * So date should not be modified in and out of echarts.
  */
-export function clone<T extends any>(source: T): T {
+function cloneHelper<T extends any>(source: T, alreadyCloned: Map<Object, Object>): T {
     if (source == null || typeof source !== 'object') {
         return source;
+    }
+    if (alreadyCloned.has(source)) {
+        return alreadyCloned.get(source) as T;
     }
 
     let result = source as any;
@@ -86,8 +89,9 @@ export function clone<T extends any>(source: T): T {
     if (typeStr === '[object Array]') {
         if (!isPrimitive(source)) {
             result = [] as any;
+            alreadyCloned.set(source, []);
             for (let i = 0, len = (source as any[]).length; i < len; i++) {
-                result[i] = clone((source as any[])[i]);
+                result[i] = cloneHelper((source as any[])[i], alreadyCloned);
             }
         }
     }
@@ -108,15 +112,22 @@ export function clone<T extends any>(source: T): T {
     }
     else if (!BUILTIN_OBJECT[typeStr] && !isPrimitive(source) && !isDom(source)) {
         result = {} as any;
+        alreadyCloned.set(source, result);
         for (let key in source) {
             // Check if key is __proto__ to avoid prototype pollution
             if (source.hasOwnProperty(key) && key !== protoKey) {
-                result[key] = clone(source[key]);
+                result[key] = cloneHelper(source[key], alreadyCloned);
             }
         }
     }
 
+    alreadyCloned.delete(source);
     return result;
+}
+
+export function clone<T extends any>(source: T): T {
+    const alreadyCloned = new Map<Object, Object>();
+    return cloneHelper(source, alreadyCloned);
 }
 
 export function merge<
