@@ -392,6 +392,9 @@ export default class PathProxy {
         if (hasTypedArray && (this.data instanceof Float32Array)) {
             this.data = new Float32Array(offset + appendSize);
         }
+        else if (this.data == null) {
+            this.data = [];
+        }
         for (let i = 0; i < len; i++) {
             const appendPathData = path[i].data;
             for (let k = 0; k < appendPathData.length; k++) {
