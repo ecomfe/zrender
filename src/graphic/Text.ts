@@ -554,6 +554,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         const hasShadow = style.textShadowBlur > 0;
 
         const fixedBoundingRect = style.width != null
+            && text !== textLines[0]
             && (style.overflow === 'truncate' || style.overflow === 'break' || style.overflow === 'breakAll');
         const calculatedLineHeight = contentBlock.calculatedLineHeight;
 
