@@ -75,6 +75,14 @@ export default class Clip {
         opts.easing && this.setEasing(opts.easing);
     }
 
+    getDelay() {
+        return this._delay;
+    }
+
+    setStartTime(startTime: number) {
+        this._startTime = startTime;
+    }
+
     step(globalTime: number, deltaTime: number): boolean {
         // Set startTime on first step, or _startTime may has milleseconds different between clips
         // PENDING
