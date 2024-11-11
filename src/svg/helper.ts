@@ -17,7 +17,7 @@ const mathRound = Math.round;
 export function normalizeColor(color: string): { color: string; opacity: number; } {
     if (process.env.NODE_ENV !== 'production') {
         if (!color || color === 'none' || color === 'transparent') {
-            console.warn(`'${color}' is an illegal value for transparency in SVG, please use 'rgba(r,g,b,0)' instead.`);
+            console.warn(`'${color}' is not recommended value for transparency in SVG, please use 'rgba(r,g,b,0)' instead.`);
         }
     }
 
