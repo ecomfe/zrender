@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Animation</title>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="main"></div>
+    <script type="text/javascript">
+        var main = document.getElementById('main');
+        // 初始化zrender
+        var zr = zrender.init(main);
+
+        var polyline1 = new zrender.Polyline({
+            shape: {
+                points: [
+                    [100, 50],
+                    [200, 100],
+                    [200, 200],
+                    [300, 400],
+                    [300, 400],
+                    [200, 350],
+                    [200, 350],
+                    [100, 400]
+                ],
+                drawMode: 'lines'
+            },
+            style: {
+                fill: 'red',
+                lineWidth: 2
+            }
+        });
+        zr.add(polyline1);
+
+        zr.add(new zrender.Text({
+            style: {
+                text: 'drawMode: lines',
+                x: 150,
+                y: 20
+            }
+        }));
+
+        var polyline2 = new zrender.Polyline({
+            shape: {
+                points: [
+                    [400, 50],
+                    [500, 100],
+
+                    [500, 200],
+                    [600, 400],
+
+                    [600, 400],
+                    [500, 350],
+
+                    [500, 350],
+                    [400, 400]
+                ],
+                drawMode: 'lines',
+                smooth: 0.8
+            },
+            style: {
+                fill: 'blue',
+                lineWidth: 2
+            }
+        });
+        zr.add(polyline2);
+
+        zr.add(new zrender.Text({
+            style: {
+                text: 'drawMode: lines, with smooth',
+                x: 450,
+                y: 20
+            }
+        }));
+
+        var polyline3 = new zrender.Polyline({
+            shape: {
+                points: [
+                    [700, 50],
+                    [800, 100],
+                ],
+                smooth: 0.8
+            },
+            style: {
+                fill: 'green',
+                lineWidth: 2
+            }
+        });
+        zr.add(polyline3);
+
+        var polyline4 = new zrender.Polyline({
+            shape: {
+                points: [
+                    [800, 200],
+                    [900, 400],
+                    [800, 350],
+                    [700, 400]
+                ],
+                smooth: 0.8
+            },
+            style: {
+                fill: 'green',
+                lineWidth: 2
+            }
+        });
+        zr.add(polyline4);
+
+        zr.add(new zrender.Text({
+            style: {
+                text: 'drawMode: lineStrip, with smooth',
+                x: 750,
+                y: 20
+            }
+        }));
+    </script>
+</body>
+</html>

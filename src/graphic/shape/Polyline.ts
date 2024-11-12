@@ -12,6 +12,7 @@ export class PolylineShape {
     percent?: number = 1
     smooth?: number = 0
     smoothConstraint?: VectorArray[] = null
+    drawMode?: 'lineStrip' | 'lines' = 'lineStrip'
 }
 
 export interface PolylineProps extends PathProps {
