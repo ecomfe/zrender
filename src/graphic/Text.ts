@@ -602,7 +602,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
 
             if (fixedBoundingRect) {
                 el.setBoundingRect(new BoundingRect(
-                    adjustTextX(subElStyle.x, style.width, subElStyle.textAlign as TextAlign),
+                    adjustTextX(subElStyle.x, contentWidth, subElStyle.textAlign as TextAlign),
                     adjustTextY(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline as TextVerticalAlign),
                     /**
                      * Text boundary should be the real text width.
