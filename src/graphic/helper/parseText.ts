@@ -44,8 +44,25 @@ export function truncateText(
     ellipsis?: string,
     options?: InnerTruncateOption
 ): string {
+    const out = {} as Parameters<typeof truncateText2>[0];
+    truncateText2(out, text, containerWidth, font, ellipsis, options);
+    return out.text;
+}
+
+// PENDING: not sure whether `truncateText` is used outside zrender, since it has an `export`
+// specifier. So keep it and perform the interface modification in `truncateText2`.
+function truncateText2(
+    out: {text: string, isTruncated: boolean},
+    text: string,
+    containerWidth: number,
+    font: string,
+    ellipsis?: string,
+    options?: InnerTruncateOption
+): void {
     if (!containerWidth) {
-        return '';
+        out.text = '';
+        out.isTruncated = false;
+        return;
     }
 
     const textLines = (text + '').split('\n');
@@ -53,11 +70,16 @@ export function truncateText(
 
     // FIXME
     // It is not appropriate that every line has '...' when truncate multiple lines.
+    let isTruncated = false;
+    const truncateOut = {} as Parameters<typeof truncateSingleLine>[0];
     for (let i = 0, len = textLines.length; i < len; i++) {
-        textLines[i] = truncateSingleLine(textLines[i], options as InnerPreparedTruncateOption);
+        truncateSingleLine(truncateOut, textLines[i], options as InnerPreparedTruncateOption);
+        textLines[i] = truncateOut.textLine;
+        isTruncated = isTruncated || truncateOut.isTruncated;
     }
 
-    return textLines.join('\n');
+    out.text = textLines.join('\n');
+    out.isTruncated = isTruncated;
 }
 
 function prepareTruncateOptions(
@@ -104,19 +126,27 @@ function prepareTruncateOptions(
     return preparedOpts;
 }
 
-function truncateSingleLine(textLine: string, options: InnerPreparedTruncateOption): string {
+function truncateSingleLine(
+    out: {textLine: string, isTruncated: boolean},
+    textLine: string,
+    options: InnerPreparedTruncateOption
+): void {
     const containerWidth = options.containerWidth;
     const font = options.font;
     const contentWidth = options.contentWidth;
 
     if (!containerWidth) {
-        return '';
+        out.textLine = '';
+        out.isTruncated = false;
+        return;
     }
 
     let lineWidth = getWidth(textLine, font);
 
     if (lineWidth <= containerWidth) {
-        return textLine;
+        out.textLine = textLine;
+        out.isTruncated = false;
+        return;
     }
 
     for (let j = 0; ; j++) {
@@ -139,7 +169,8 @@ function truncateSingleLine(textLine: string, options: InnerPreparedTruncateOpti
         textLine = options.placeholder;
     }
 
-    return textLine;
+    out.textLine = textLine;
+    out.isTruncated = true;
 }
 
 function estimateLength(
@@ -174,6 +205,10 @@ export interface PlainTextContentBlock {
     outerHeight: number
 
     lines: string[]
+
+    // Be `true` if and only if the result text is modified due to overflow, due to
+    // settings on either `overflow` or `lineOverflow`
+    isTruncated: boolean
 }
 
 export function parsePlainText(
@@ -192,6 +227,7 @@ export function parsePlainText(
     const bgColorDrawn = !!(style.backgroundColor);
 
     const truncateLineOverflow = style.lineOverflow === 'truncate';
+    let isTruncated = false;
 
     let width = style.width;
     let lines: string[];
@@ -210,6 +246,7 @@ export function parsePlainText(
     if (contentHeight > height && truncateLineOverflow) {
         const lineCount = Math.floor(height / lineHeight);
 
+        isTruncated = isTruncated || (lines.length > lineCount);
         lines = lines.slice(0, lineCount);
 
         // TODO If show ellipse for line truncate
@@ -228,8 +265,11 @@ export function parsePlainText(
             placeholder: style.placeholder
         });
         // Having every line has '...' when truncate multiple lines.
+        const singleOut = {} as Parameters<typeof truncateSingleLine>[0];
         for (let i = 0; i < lines.length; i++) {
-            lines[i] = truncateSingleLine(lines[i], options);
+            truncateSingleLine(singleOut, lines[i], options);
+            lines[i] = singleOut.textLine;
+            isTruncated = isTruncated || singleOut.isTruncated;
         }
     }
 
@@ -265,7 +305,8 @@ export function parsePlainText(
         calculatedLineHeight: calculatedLineHeight,
         contentWidth: contentWidth,
         contentHeight: contentHeight,
-        width: width
+        width: width,
+        isTruncated: isTruncated
     };
 }
 
@@ -314,6 +355,9 @@ export class RichTextContentBlock {
     outerWidth: number = 0
     outerHeight: number = 0
     lines: RichTextLine[] = []
+    // Be `true` if and only if the result text is modified due to overflow, due to
+    // settings on either `overflow` or `lineOverflow`
+    isTruncated: boolean = false
 }
 
 type WrapInfo = {
@@ -326,7 +370,7 @@ type WrapInfo = {
  * Also consider 'bbbb{a|xxx\nzzz}xxxx\naaaa'.
  * If styleName is undefined, it is plain text.
  */
-export function parseRichText(text: string, style: TextStyleProps) {
+export function parseRichText(text: string, style: TextStyleProps): RichTextContentBlock {
     const contentBlock = new RichTextContentBlock();
 
     text != null && (text += '');
@@ -366,6 +410,7 @@ export function parseRichText(text: string, style: TextStyleProps) {
 
     const truncate = overflow === 'truncate';
     const truncateLine = style.lineOverflow === 'truncate';
+    const tmpTruncateOut = {} as Parameters<typeof truncateText2>[0];
 
     // let prevToken: RichTextToken;
 
@@ -412,6 +457,7 @@ export function parseRichText(text: string, style: TextStyleProps) {
             if (truncateLine && topHeight != null && calculatedHeight + token.lineHeight > topHeight) {
                 // TODO Add ellipsis on the previous token.
                 // prevToken.text =
+                const originalLength = contentBlock.lines.length;
                 if (j > 0) {
                     line.tokens = line.tokens.slice(0, j);
                     finishLine(line, lineWidth, lineHeight);
@@ -420,6 +466,7 @@ export function parseRichText(text: string, style: TextStyleProps) {
                 else {
                     contentBlock.lines = contentBlock.lines.slice(0, i);
                 }
+                contentBlock.isTruncated = contentBlock.isTruncated || (contentBlock.lines.length < originalLength);
                 break outer;
             }
 
@@ -461,10 +508,13 @@ export function parseRichText(text: string, style: TextStyleProps) {
                         token.width = token.contentWidth = 0;
                     }
                     else {
-                        token.text = truncateText(
+                        truncateText2(
+                            tmpTruncateOut,
                             token.text, remainTruncWidth - paddingH, font, style.ellipsis,
                             {minChar: style.truncateMinChar}
                         );
+                        token.text = tmpTruncateOut.text;
+                        contentBlock.isTruncated = contentBlock.isTruncated || tmpTruncateOut.isTruncated;
                         token.width = token.contentWidth = getWidth(token.text, font);
                     }
                 }
