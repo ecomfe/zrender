@@ -268,6 +268,38 @@
     document.getElementById('main').innerHTML = svg;
     console.timeEnd('render');
 
+    // base64
+    console.log('window SSR base64:');
+    console.log(zr.painter.toDataURL(true));
+
+    // worker base64
+    const workerSource = `
+        importScripts('${location.origin}/dist/zrender.js')
+        const zr = zrender.init(null, {
+            renderer: 'svg',
+            ssr: true,
+            width: 1200,
+            height: 1200
+        });
+        const el = new zrender.Circle({
+            x: 50,
+            y: 50,
+            shape: {
+                cx: 0,
+                cy: 0,
+                r: 25
+            },
+            style: {
+                fill: 'red'
+            }
+        });
+        zr.add(el);
+        console.log('worker SSR base64:');
+        console.log(zr.painter.toDataURL(true));
+        zr.dispose();
+    `;
+    new Worker(URL.createObjectURL(new Blob([workerSource], { type: 'application/javascript' })));
+
     // var blob = new Blob([svg], { type: 'image/svg+xml' });
     // var a = document.createElement('a');
     // a.download = 'aaa.svg';
