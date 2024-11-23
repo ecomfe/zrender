@@ -17,7 +17,12 @@
             height: 100%;
             margin: 0;
         }
+        #message {
+            position: relative;
+            padding: 20px 0;
+        }
     </style>
+    <div id="message"></div>
     <div id="main"></div>
 
     <script>
@@ -123,6 +128,17 @@
         console.time('render');
         zr.refreshImmediately();
         console.timeEnd('render');
+
+        const msgHTML = [];
+        textElementList.forEach((text, idx) => {
+            msgHTML.push('[text block ' + idx + '] text.isTruncated: ' + text.isTruncated);
+        });
+        updateMessageDisplay(msgHTML.join('<br/>'));
+    }
+
+    function updateMessageDisplay(unescapedHTML) {
+        const dom = document.getElementById('message');
+        dom.innerHTML = unescapedHTML;
     }
 
     update();
