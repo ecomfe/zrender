@@ -63,12 +63,14 @@ function setStyleAttrs(attrs: SVGVNodeAttrs, style: AllStyleOption, el: Path | T
         else if (isFillStroke && isPattern(val)) {
             setPattern(el, attrs, key, scope);
         }
-        else if (isFillStroke && val === 'none') {
-            // When is none, it cannot be interacted when ssr
-            attrs[key] = 'transparent';
-        }
         else {
             attrs[key] = val;
+        }
+        if (isFillStroke && scope.ssr && val === 'none') {
+            // When is none, it cannot be interacted when ssr
+            // Setting `pointer-events` as `visible` to make it responding
+            // See also https://www.w3.org/TR/SVG/interact.html#PointerEventsProperty
+            attrs['pointer-events'] = 'visible';
         }
     }, style, el, false);
 

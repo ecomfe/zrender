@@ -1,6 +1,7 @@
 /doc
 /test
 /benchmark
+/tsconfig.json
 .github
 .vscode
 
@@ -8,3 +9,6 @@ npm-debug.log
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+.eslintignore
+.eslintrc.yaml

@@ -159,6 +159,8 @@ export interface BrushScope {
      * If compress the output string.
      */
     compress?: boolean
+
+    ssr?: boolean
 }
 
 export function createBrushScope(zrId: string): BrushScope {
