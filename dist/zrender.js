@@ -235,6 +235,7 @@ var nativeFilter = arrayProto.filter;
 var nativeSlice = arrayProto.slice;
 var nativeMap = arrayProto.map;
 var nativeReduce = arrayProto.reduce;
+var protoKey = '__proto__';
 
 // Avoid assign to an exported variable, for transforming to cjs.
 var methods = {};
@@ -297,7 +298,7 @@ function clone(source) {
     else if (!BUILTIN_OBJECT[typeStr] && !isPrimitive(source) && !isDom(source)) {
         result = {};
         for (var key in source) {
-            if (source.hasOwnProperty(key)) {
+            if (source.hasOwnProperty(key) && key !== protoKey) {
                 result[key] = clone(source[key]);
             }
         }
@@ -320,7 +321,7 @@ function merge(target, source, overwrite) {
     }
 
     for (var key in source) {
-        if (source.hasOwnProperty(key)) {
+        if (source.hasOwnProperty(key) && key !== protoKey) {
             var targetProp = target[key];
             var sourceProp = source[key];
 
@@ -369,7 +370,7 @@ function mergeAll(targetAndSources, overwrite) {
  */
 function extend(target, source) {
     for (var key in source) {
-        if (source.hasOwnProperty(key)) {
+        if (source.hasOwnProperty(key) && key !== protoKey) {
             target[key] = source[key];
         }
     }
@@ -384,7 +385,7 @@ function extend(target, source) {
  */
 function defaults(target, source, overlay) {
     for (var key in source) {
-        if (source.hasOwnProperty(key)
+        if (source.hasOwnProperty(key) && key !== protoKey
             && (overlay ? source[key] != null : target[key] == null)
         ) {
             target[key] = source[key];
@@ -11546,7 +11547,7 @@ var instances = {};    // ZRender实例map索引
 /**
  * @type {string}
  */
-var version = '4.3.2';
+var version = '4.3.3';
 
 /**
  * Initializing a zrender instance
