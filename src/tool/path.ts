@@ -389,7 +389,7 @@ function createPathOptions(str: string, opts: SVGPathOption): InnerSVGPathOption
     const innerOpts: InnerSVGPathOption = extend({}, opts);
     innerOpts.buildPath = function (path: PathProxy | CanvasRenderingContext2D) {
         if (isPathProxy(path)) {
-            path.appendPath(pathProxy);
+            path.setData(pathProxy.data);
             // Svg and vml renderer don't have context
             const ctx = path.getContext();
             if (ctx) {

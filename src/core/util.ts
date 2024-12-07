@@ -203,7 +203,7 @@ export function defaults<
     S extends Dictionary<any>
 >(target: T, source: S, overlay?: boolean): T & S {
     const keysArr = keys(source);
-    for (let i = 0; i < keysArr.length; i++) {
+    for (let i = 0, len = keysArr.length; i < len; i++) {
         let key = keysArr[i];
         if ((overlay ? source[key] != null : (target as T & S)[key] == null)) {
             (target as S & T)[key] = (source as T & S)[key];
@@ -319,7 +319,7 @@ export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayL
     }
     else {
         for (let key in arr) {
-            if (arr.hasOwnProperty(key)) {
+            if (arr.hasOwnProperty(key) && key !== protoKey) {
                 cb.call(context, (arr as Dictionary<any>)[key], key as any, arr);
             }
         }
@@ -436,11 +436,11 @@ export function keys<T extends object>(obj: T): (KeyOfDistributive<T> & string)[
     // `Object.keys` only return string rather than `number | string`.
     type TKeys = KeyOfDistributive<T> & string;
     if (Object.keys) {
-        return Object.keys(obj) as TKeys[];
+        return filter(Object.keys(obj) as TKeys[], key => key !== protoKey);
     }
     let keyList: TKeys[] = [];
     for (let key in obj) {
-        if (obj.hasOwnProperty(key)) {
+        if (obj.hasOwnProperty(key) && key !== protoKey) {
             keyList.push(key as any);
         }
     }
