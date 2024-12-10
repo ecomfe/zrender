@@ -368,7 +368,7 @@
         }
         else {
             for (var key in arr) {
-                if (arr.hasOwnProperty(key) && key !== protoKey) {
+                if (arr.hasOwnProperty(key)) {
                     cb.call(context, arr[key], key, arr);
                 }
             }
@@ -436,11 +436,11 @@
             return [];
         }
         if (Object.keys) {
-            return filter(Object.keys(obj), function (key) { return key !== protoKey; });
+            return Object.keys(obj);
         }
         var keyList = [];
         for (var key in obj) {
-            if (obj.hasOwnProperty(key) && key !== protoKey) {
+            if (obj.hasOwnProperty(key)) {
                 keyList.push(key);
             }
         }
