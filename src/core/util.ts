@@ -319,7 +319,7 @@ export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayL
     }
     else {
         for (let key in arr) {
-            if (arr.hasOwnProperty(key) && key !== protoKey) {
+            if (arr.hasOwnProperty(key)) {
                 cb.call(context, (arr as Dictionary<any>)[key], key as any, arr);
             }
         }
@@ -436,11 +436,11 @@ export function keys<T extends object>(obj: T): (KeyOfDistributive<T> & string)[
     // `Object.keys` only return string rather than `number | string`.
     type TKeys = KeyOfDistributive<T> & string;
     if (Object.keys) {
-        return filter(Object.keys(obj) as TKeys[], key => key !== protoKey);
+        return Object.keys(obj) as TKeys[];
     }
     let keyList: TKeys[] = [];
     for (let key in obj) {
-        if (obj.hasOwnProperty(key) && key !== protoKey) {
+        if (obj.hasOwnProperty(key)) {
             keyList.push(key as any);
         }
     }
