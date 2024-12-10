@@ -292,7 +292,7 @@
     }
     function defaults(target, source, overlay) {
         var keysArr = keys(source);
-        for (var i = 0; i < keysArr.length; i++) {
+        for (var i = 0, len = keysArr.length; i < len; i++) {
             var key = keysArr[i];
             if ((overlay ? source[key] != null : target[key] == null)) {
                 target[key] = source[key];
@@ -368,7 +368,7 @@
         }
         else {
             for (var key in arr) {
-                if (arr.hasOwnProperty(key)) {
+                if (arr.hasOwnProperty(key) && key !== protoKey) {
                     cb.call(context, arr[key], key, arr);
                 }
             }
@@ -436,11 +436,11 @@
             return [];
         }
         if (Object.keys) {
-            return Object.keys(obj);
+            return filter(Object.keys(obj), function (key) { return key !== protoKey; });
         }
         var keyList = [];
         for (var key in obj) {
-            if (obj.hasOwnProperty(key)) {
+            if (obj.hasOwnProperty(key) && key !== protoKey) {
                 keyList.push(key);
             }
         }
