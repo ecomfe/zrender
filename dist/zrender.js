@@ -38,8 +38,7 @@
     else if (typeof document === 'undefined' && typeof self !== 'undefined') {
         env.worker = true;
     }
-    else if (typeof navigator === 'undefined'
-        || navigator.userAgent.indexOf('Node.js') === 0) {
+    else if (!env.hasGlobalWindow || 'Deno' in window) {
         env.node = true;
         env.svgSupported = true;
     }
@@ -293,7 +292,7 @@
     }
     function defaults(target, source, overlay) {
         var keysArr = keys(source);
-        for (var i = 0; i < keysArr.length; i++) {
+        for (var i = 0, len = keysArr.length; i < len; i++) {
             var key = keysArr[i];
             if ((overlay ? source[key] != null : target[key] == null)) {
                 target[key] = source[key];
@@ -7338,7 +7337,7 @@
     function registerSSRDataGetter(getter) {
         ssrDataGetter = getter;
     }
-    var version = '5.6.0';
+    var version = '5.6.1';
 
     var STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
     var DEFAULT_COMMON_STYLE = {
@@ -12552,16 +12551,23 @@
     }
 
     var STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
-    function truncateText(text, containerWidth, font, ellipsis, options) {
+    function truncateText2(out, text, containerWidth, font, ellipsis, options) {
         if (!containerWidth) {
-            return '';
+            out.text = '';
+            out.isTruncated = false;
+            return;
         }
         var textLines = (text + '').split('\n');
         options = prepareTruncateOptions(containerWidth, font, ellipsis, options);
+        var isTruncated = false;
+        var truncateOut = {};
         for (var i = 0, len = textLines.length; i < len; i++) {
-            textLines[i] = truncateSingleLine(textLines[i], options);
+            truncateSingleLine(truncateOut, textLines[i], options);
+            textLines[i] = truncateOut.textLine;
+            isTruncated = isTruncated || truncateOut.isTruncated;
         }
-        return textLines.join('\n');
+        out.text = textLines.join('\n');
+        out.isTruncated = isTruncated;
     }
     function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
         options = options || {};
@@ -12589,16 +12595,20 @@
         preparedOpts.containerWidth = containerWidth;
         return preparedOpts;
     }
-    function truncateSingleLine(textLine, options) {
+    function truncateSingleLine(out, textLine, options) {
         var containerWidth = options.containerWidth;
         var font = options.font;
         var contentWidth = options.contentWidth;
         if (!containerWidth) {
-            return '';
+            out.textLine = '';
+            out.isTruncated = false;
+            return;
         }
         var lineWidth = getWidth(textLine, font);
         if (lineWidth <= containerWidth) {
-            return textLine;
+            out.textLine = textLine;
+            out.isTruncated = false;
+            return;
         }
         for (var j = 0;; j++) {
             if (lineWidth <= contentWidth || j >= options.maxIterations) {
@@ -12616,7 +12626,8 @@
         if (textLine === '') {
             textLine = options.placeholder;
         }
-        return textLine;
+        out.textLine = textLine;
+        out.isTruncated = true;
     }
     function estimateLength(text, contentWidth, ascCharWidth, cnCharWidth) {
         var width = 0;
@@ -12637,6 +12648,7 @@
         var lineHeight = retrieve2(style.lineHeight, calculatedLineHeight);
         var bgColorDrawn = !!(style.backgroundColor);
         var truncateLineOverflow = style.lineOverflow === 'truncate';
+        var isTruncated = false;
         var width = style.width;
         var lines;
         if (width != null && (overflow === 'break' || overflow === 'breakAll')) {
@@ -12649,6 +12661,7 @@
         var height = retrieve2(style.height, contentHeight);
         if (contentHeight > height && truncateLineOverflow) {
             var lineCount = Math.floor(height / lineHeight);
+            isTruncated = isTruncated || (lines.length > lineCount);
             lines = lines.slice(0, lineCount);
         }
         if (text && truncate && width != null) {
@@ -12656,8 +12669,11 @@
                 minChar: style.truncateMinChar,
                 placeholder: style.placeholder
             });
+            var singleOut = {};
             for (var i = 0; i < lines.length; i++) {
-                lines[i] = truncateSingleLine(lines[i], options);
+                truncateSingleLine(singleOut, lines[i], options);
+                lines[i] = singleOut.textLine;
+                isTruncated = isTruncated || singleOut.isTruncated;
             }
         }
         var outerHeight = height;
@@ -12686,7 +12702,8 @@
             calculatedLineHeight: calculatedLineHeight,
             contentWidth: contentWidth,
             contentHeight: contentHeight,
-            width: width
+            width: width,
+            isTruncated: isTruncated
         };
     }
     var RichTextToken = (function () {
@@ -12712,6 +12729,7 @@
             this.outerWidth = 0;
             this.outerHeight = 0;
             this.lines = [];
+            this.isTruncated = false;
         }
         return RichTextContentBlock;
     }());
@@ -12746,6 +12764,7 @@
         var stlPadding = style.padding;
         var truncate = overflow === 'truncate';
         var truncateLine = style.lineOverflow === 'truncate';
+        var tmpTruncateOut = {};
         function finishLine(line, lineWidth, lineHeight) {
             line.width = lineWidth;
             line.lineHeight = lineHeight;
@@ -12771,6 +12790,7 @@
                 token.align = tokenStyle && tokenStyle.align || style.align;
                 token.verticalAlign = tokenStyle && tokenStyle.verticalAlign || 'middle';
                 if (truncateLine && topHeight != null && calculatedHeight + token.lineHeight > topHeight) {
+                    var originalLength = contentBlock.lines.length;
                     if (j > 0) {
                         line.tokens = line.tokens.slice(0, j);
                         finishLine(line, lineWidth, lineHeight);
@@ -12779,6 +12799,7 @@
                     else {
                         contentBlock.lines = contentBlock.lines.slice(0, i);
                     }
+                    contentBlock.isTruncated = contentBlock.isTruncated || (contentBlock.lines.length < originalLength);
                     break outer;
                 }
                 var styleTokenWidth = tokenStyle.width;
@@ -12807,7 +12828,9 @@
                             token.width = token.contentWidth = 0;
                         }
                         else {
-                            token.text = truncateText(token.text, remainTruncWidth - paddingH, font, style.ellipsis, { minChar: style.truncateMinChar });
+                            truncateText2(tmpTruncateOut, token.text, remainTruncWidth - paddingH, font, style.ellipsis, { minChar: style.truncateMinChar });
+                            token.text = tmpTruncateOut.text;
+                            contentBlock.isTruncated = contentBlock.isTruncated || tmpTruncateOut.isTruncated;
                             token.width = token.contentWidth = getWidth(token.text, font);
                         }
                     }
@@ -13204,6 +13227,7 @@
             var textLines = contentBlock.lines;
             var lineHeight = contentBlock.lineHeight;
             var defaultStyle = this._defaultStyle;
+            this.isTruncated = !!contentBlock.isTruncated;
             var baseX = style.x || 0;
             var baseY = style.y || 0;
             var textAlign = style.align || defaultStyle.align || 'left';
@@ -13270,7 +13294,7 @@
                 setSeparateFont(subElStyle, style);
                 textY += lineHeight;
                 if (fixedBoundingRect) {
-                    el.setBoundingRect(new BoundingRect(adjustTextX(subElStyle.x, style.width, subElStyle.textAlign), adjustTextY$1(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline), contentWidth, calculatedLineHeight));
+                    el.setBoundingRect(new BoundingRect(adjustTextX(subElStyle.x, contentWidth, subElStyle.textAlign), adjustTextY$1(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline), contentWidth, calculatedLineHeight));
                 }
             }
         };
@@ -13287,6 +13311,7 @@
             var defaultStyle = this._defaultStyle;
             var textAlign = style.align || defaultStyle.align;
             var verticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
+            this.isTruncated = !!contentBlock.isTruncated;
             var boxX = adjustTextX(baseX, outerWidth, textAlign);
             var boxY = adjustTextY$1(baseY, outerHeight, verticalAlign);
             var xLeft = boxX;
@@ -16416,11 +16441,11 @@
             else if (isFillStroke && isPattern(val)) {
                 setPattern(el, attrs, key, scope);
             }
-            else if (isFillStroke && val === 'none') {
-                attrs[key] = 'transparent';
-            }
             else {
                 attrs[key] = val;
+            }
+            if (isFillStroke && scope.ssr && val === 'none') {
+                attrs['pointer-events'] = 'visible';
             }
         }, style, el, false);
         setShadow(el, attrs, scope);
@@ -17200,6 +17225,7 @@
             scope.willUpdate = opts.willUpdate;
             scope.compress = opts.compress;
             scope.emphasis = opts.emphasis;
+            scope.ssr = this._opts.ssr;
             var children = [];
             var bgVNode = this._bgVNode = createBackgroundVNode(width, height, this._backgroundColor, scope);
             bgVNode && children.push(bgVNode);
