@@ -203,7 +203,7 @@ export function defaults<
     S extends Dictionary<any>
 >(target: T, source: S, overlay?: boolean): T & S {
     const keysArr = keys(source);
-    for (let i = 0; i < keysArr.length; i++) {
+    for (let i = 0, len = keysArr.length; i < len; i++) {
         let key = keysArr[i];
         if ((overlay ? source[key] != null : (target as T & S)[key] == null)) {
             (target as S & T)[key] = (source as T & S)[key];

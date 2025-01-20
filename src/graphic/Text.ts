@@ -275,6 +275,12 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
      */
     innerTransformable: Transformable
 
+    // Be `true` if and only if the result text is modified due to overflow, due to
+    // settings on either `overflow` or `lineOverflow`. Based on this the caller can
+    // take some action like showing the original text in a particular tip.
+    // Only take effect after rendering. So do not visit it before it.
+    isTruncated: boolean
+
     private _children: (ZRImage | Rect | TSpan)[] = []
 
     private _childCursor: 0
@@ -497,6 +503,8 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
 
         const defaultStyle = this._defaultStyle;
 
+        this.isTruncated = !!contentBlock.isTruncated;
+
         const baseX = style.x || 0;
         const baseY = style.y || 0;
         const textAlign = style.align || defaultStyle.align || 'left';
@@ -602,7 +610,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
 
             if (fixedBoundingRect) {
                 el.setBoundingRect(new BoundingRect(
-                    adjustTextX(subElStyle.x, style.width, subElStyle.textAlign as TextAlign),
+                    adjustTextX(subElStyle.x, contentWidth, subElStyle.textAlign as TextAlign),
                     adjustTextY(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline as TextVerticalAlign),
                     /**
                      * Text boundary should be the real text width.
@@ -634,6 +642,8 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         const defaultStyle = this._defaultStyle;
         const textAlign = style.align || defaultStyle.align;
         const verticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
+
+        this.isTruncated = !!contentBlock.isTruncated;
 
         const boxX = adjustTextX(baseX, outerWidth, textAlign);
         const boxY = adjustTextY(baseY, outerHeight, verticalAlign);

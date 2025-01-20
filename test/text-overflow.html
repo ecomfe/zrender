@@ -17,86 +17,102 @@
             height: 100%;
             margin: 0;
         }
+        #message {
+            position: relative;
+            padding: 20px 0;
+        }
     </style>
+    <div id="message"></div>
     <div id="main"></div>
 
     <script>
     var zr = zrender.init(document.getElementById('main'), {
         renderer: window.__ZRENDER__DEFAULT__RENDERER__
     });
+
     const config = {
         search: '',
-        width: 400,
+        width: 200,
         height: 400,
         fontSize: 13,
         fixedLineHeight: false,
         lineHeight: 14,
         rich: true,
-        breakAll: false
+        overflow: 'break',
+        lineOverflow: 'truncate',
+        align: null
     }
 
+    const gui = new dat.GUI();
+    gui.add(config, 'search').onChange(update);
+    gui.add(config, 'width', 10, 300).onChange(update);
+    gui.add(config, 'height', 10, 1600).onChange(update);
+    gui.add(config, 'fontSize', 1, 30).onChange(update);
+    gui.add(config, 'fixedLineHeight').onChange(update);
+    gui.add(config, 'lineHeight', 12, 50).onChange(update);
+    gui.add(config, 'rich').onChange(update);
+    gui.add(config, 'overflow', ['break', 'breakAll', 'truncate', 'none']).onChange(update);
+    gui.add(config, 'lineOverflow', ['truncate', null]).onChange(update);
+    gui.add(config, 'align', [null, 'left', 'center', 'right']).onChange(update);
 
-    var enText = new zrender.Text({
-        style: {
-            text: LARGE_TEXT_EN,
-            fontSize: config.fontSize,
-            width: config.width,
-            padding: 10,
-            borderColor: '#000',
-            borderWidth: 1,
-
-            overflow: 'break',
-            lineOverflow: 'truncate',
-            ellipsis: '…'
-        }
-    });
-    zr.add(enText);
-
-    var cnText = new zrender.Text({
-        style: {
-            text: LARGE_TEXT_ZH,
-            fontSize: config.fontSize,
-            width: config.width,
-            padding: 10,
-            borderColor: '#000',
-            borderWidth: 1,
-
-            overflow: 'break',
-            lineOverflow: 'truncate',
-            ellipsis: '…',
-
-            x: config.width + 100
-        }
-    });
-    zr.add(cnText);
-
-    const TEXTS = [LARGE_TEXT_EN, LARGE_TEXT_ZH];
-    function update() {
-        enText.style.width = cnText.style.width = config.width;
-        enText.style.height = cnText.style.height = config.height;
-
-        enText.style.overflow = config.breakAll ? 'breakAll' : 'break';
-
-        cnText.style.x = config.width + 100;
-
-        enText.style.rich = cnText.style.rich = config.rich ? {
-            highlight: {
-                // padding: 4,
-                backgroundColor: 'yellow',
-                fontSize: 20
+    const texts = [
+        LARGE_TEXT_EN,
+        LARGE_TEXT_ZH,
+        'abcde',
+        '红黄蓝'
+    ];
+    const textElementList = [];
+    texts.forEach(text => {
+        var el = new zrender.Text({
+            style: {
+                text: text,
             }
-        } : null;
+        });
+        zr.add(el);
+        textElementList.push(el);
+    });
 
-        [enText, cnText].forEach((text, idx) => {
-            text.style.fontSize = cnText.style.fontSize = config.fontSize;
+    function update() {
+        let lastTextElement = null;
+
+        textElementList.forEach((text, idx) => {
+
+            text.style.padding = 10;
+            text.style.borderColor = '#000';
+            text.style.borderWidth = 1;
+            text.style.ellipsis = '…';
+
+            text.style.fontSize = config.fontSize;
+            text.style.width = config.width;
+            text.style.height = config.height;
+            text.style.overflow = config.overflow;
+            text.style.lineOverflow = config.lineOverflow;
+            text.style.align = config.align;
+
+            text.style.rich = config.rich ? {
+                highlight: {
+                    // padding: 4,
+                    backgroundColor: 'yellow',
+                    fontSize: 20
+                }
+            } : null;
+
+            text.style.x = lastTextElement
+                ? lastTextElement.style.x + lastTextElement.style.width + 50
+                : 0;
+            lastTextElement = text;
+
+            if (text.style.__originalText == null) {
+                text.style.__originalText = text.style.text;
+            }
 
             if (config.search) {
-                text.style.text = TEXTS[idx].replace(
+                text.style.text = text.style.__originalText.replace(
                     new RegExp(config.search, 'g'), `{highlight|${config.search}}`
                 );
             }
             else {
-                text.style.text = TEXTS[idx];
+                text.style.text = text.style.__originalText;
             }
 
             if (!config.fixedLineHeight) {
@@ -112,16 +128,18 @@
         console.time('render');
         zr.refreshImmediately();
         console.timeEnd('render');
+
+        const msgHTML = [];
+        textElementList.forEach((text, idx) => {
+            msgHTML.push('[text block ' + idx + '] text.isTruncated: ' + text.isTruncated);
+        });
+        updateMessageDisplay(msgHTML.join('<br/>'));
     }
-    const gui = new dat.GUI();
-    gui.add(config, 'search').onChange(update);
-    gui.add(config, 'width', 100, 700).onChange(update);
-    gui.add(config, 'height', 10, 1600).onChange(update);
-    gui.add(config, 'fontSize', 1, 30).onChange(update);
-    gui.add(config, 'fixedLineHeight').onChange(update);
-    gui.add(config, 'lineHeight', 12, 50).onChange(update);
-    gui.add(config, 'rich').onChange(update);
-    gui.add(config, 'breakAll').onChange(update);
+
+    function updateMessageDisplay(unescapedHTML) {
+        const dom = document.getElementById('message');
+        dom.innerHTML = unescapedHTML;
+    }
 
     update();
     </script>
