@@ -119,18 +119,14 @@ class ZRender {
             : opts.useDirtyRect;
 
         const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const darkMode = opts.darkMode === 'light'
-            ? false
-            : (opts.darkMode === 'dark' ? true : isDark);
+        const darkMode = (opts.darkMode == null || opts.darkMode === 'auto')
+            ? isDark
+            : !!opts.darkMode;
+        opts.darkMode = darkMode;
 
         opts.darkColorMap = normalizeColorMap(opts.darkColorMap);
-        console.log(opts.darkColorMap)
 
-        const painter = new painterCtors[rendererType](dom, storage,
-            {
-                darkMode,
-                ...opts
-            }, id);
+        const painter = new painterCtors[rendererType](dom, storage, opts, id);
         const ssrMode = opts.ssr || painter.ssrOnly;
 
         this.storage = storage;
@@ -500,11 +496,11 @@ class ZRender {
 
 
 export interface ZRenderInitOpt {
-    renderer?: string   // 'canvas' or 'svg
+    renderer?: string   // 'canvas' or 'svg'
     devicePixelRatio?: number
     width?: number | string // 10, 10px, 'auto'
     height?: number | string
-    darkMode?: 'auto' | 'light' | 'dark'
+    darkMode?: 'auto' | boolean
     darkColorMap?: Dictionary<string>,
     useDirtyRect?: boolean
     useCoarsePointer?: 'auto' | boolean
