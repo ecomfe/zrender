@@ -33,11 +33,13 @@
         : {};
 
     const config = Object.assign({
+        useOBB: true,
         rotation: 0,
         rotation2: 0,
-        direction: -Math.PI / 6,
-        useOBB: true,
         useDirection: false,
+        direction: -Math.PI / 6,
+        useTouchThreshold: false,
+        touchThreshold: 0,
         exchangeSize: false,
     }, configFromHash);
 
@@ -140,8 +142,15 @@
             const obb2 = new zrender.OrientedBoundingRect(
                 rect2.getBoundingRect(), rect2.getComputedTransform()
             );
-            const opt = config.useDirection
-                ? {direction: config.direction} : undefined;
+            let opt = undefined;
+            if (config.useDirection) {
+                opt = opt || {};
+                opt.direction = config.direction;
+            }
+            if (config.useTouchThreshold) {
+                opt = opt || {};
+                opt.touchThreshold = config.touchThreshold;
+            }
             overlapped = obb.intersect(obb2, mtv, opt);
         }
         else {
@@ -197,10 +206,12 @@
 
     const gui = new dat.GUI();
     gui.add(config, 'useOBB').onChange(update);
-    gui.add(config, 'useDirection').onChange(update);
     gui.add(config, 'rotation', -5, 5).onChange(update);
     gui.add(config, 'rotation2', -5, 5).onChange(update);
+    gui.add(config, 'useDirection').onChange(update);
     gui.add(config, 'direction', -5, 5).onChange(update);
+    gui.add(config, 'useTouchThreshold').onChange(update);
+    gui.add(config, 'touchThreshold', -10, 10).onChange(update);
     gui.add(config, 'exchangeSize').onChange(update);
 
     update();
