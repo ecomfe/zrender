@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Text Overflow</title>
-    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.js"></script>
+    <script src="http://localhost:8001/echarts/infra/test_local/dat.gui.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.js"></script> -->
     <script src="../dist/zrender.js"></script>
     <script src="lib/config.js"></script>
     <SCript src="data/text.js"></SCript>
@@ -38,6 +39,7 @@
         rotation2: 0,
         useDirection: false,
         direction: -Math.PI / 6,
+        bidirectional: true,
         useTouchThreshold: false,
         touchThreshold: 0,
         exchangeSize: false,
@@ -115,6 +117,15 @@
         }
     });
     zr.add(directionText);
+    const directionMark = new zrender.Circle({
+        shape: {
+            r: 5
+        },
+        style: {
+            fill: '#555'
+        }
+    });
+    zr.add(directionMark);
 
     function update() {
         rect.attr('rotation', config.rotation);
@@ -146,6 +157,7 @@
             if (config.useDirection) {
                 opt = opt || {};
                 opt.direction = config.direction;
+                opt.bidirectional = config.bidirectional;
             }
             if (config.useTouchThreshold) {
                 opt = opt || {};
@@ -186,6 +198,9 @@
             directionLine.shape.y1 - directionLine.shape.y2,
             directionLine.shape.x1 - directionLine.shape.x2,
         ));
+        directionMark.attr('x', center.x + 400 * Math.cos(config.direction));
+        directionMark.attr('y', center.y + 400 * Math.sin(config.direction));
+        directionMark.ignore = !config.useDirection;
 
         rect.setStyle('fill', overlapped ? 'red' : 'green');
         rect2.setStyle('fill', overlapped ? 'red' : 'green');
@@ -210,6 +225,7 @@
     gui.add(config, 'rotation2', -5, 5).onChange(update);
     gui.add(config, 'useDirection').onChange(update);
     gui.add(config, 'direction', -5, 5).onChange(update);
+    gui.add(config, 'bidirectional', true).onChange(update);
     gui.add(config, 'useTouchThreshold').onChange(update);
     gui.add(config, 'touchThreshold', -10, 10).onChange(update);
     gui.add(config, 'exchangeSize').onChange(update);

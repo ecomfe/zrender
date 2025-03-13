@@ -20,6 +20,7 @@
 import Point, { PointLike } from './Point';
 import BoundingRect from './BoundingRect';
 import { MatrixArray } from './matrix';
+import { EPSILON } from './util';
 
 const extent = [0, 0];
 const extent2 = [0, 0];
@@ -30,6 +31,8 @@ type DirectionContext = {
     useDir: boolean
     dirMinTv: Point
     direction: number
+    bidirectional: boolean
+    dirCheckVec: Point
     dirTmp: Point
     touchThreshold: number
 };
@@ -37,6 +40,8 @@ const intersectCtx: DirectionContext = {
     useDir: false,
     dirMinTv: new Point(),
     direction: 0,
+    bidirectional: true,
+    dirCheckVec: new Point(),
     dirTmp: new Point(),
     touchThreshold: 0,
 };
@@ -100,10 +105,12 @@ class OrientedBoundingRect {
      * @param mtv Calculated .
      *  If it's not overlapped. it means needs to move given rect with Maximum Translation Vector to be overlapped.
      *  Else it means needs to move given rect with Minimum Translation Vector to be not overlapped.
-     * @param opt.direction Be a radian, representing a line (say, `directionLine`).
-     *  `direction=atan(y/x)`, i.e., `direction=0` is the line on vector(1,0), `direction=PI/4` is the line
-     *  on vector(1,1). If specified, when overlapping, the output `mtv` is still a minimal vector that can
-     *  resolve the overlap. However it is not Minimum Translation Vector, but a vector parallel to `directionLine`.
+     * @param opt.direction Be a radian, representing a vector direction.
+     *  `direction=atan2(y, x)`, i.e., `direction=0` is vector(1,0), `direction=PI/4` is vector(1,1). If specified,
+     *  when overlapping, the output `mtv` is still a minimal vector that can resolve the overlap. However it is
+     *  not Minimum Translation Vector, but a vector follow the direction.
+     * @param opt.bidirectional boolean, default true. It means whether `opt.direction` is bidirectional. If `true`,
+     *  the returned mtv is the minimal among both `opt.direction` and `opt.direction + Math.PI`.
      * @param opt.touchThreshold Aggressive overlap handling, such as "hide one element", should be conservative.
      *  Two rects that touch but are within the threshold do not be considered intersecting. With this feature,
      *  elements can use the same OBB instance to achieve compact layout while still passing through the
@@ -113,8 +120,9 @@ class OrientedBoundingRect {
         other: OrientedBoundingRect,
         mtv?: PointLike,
         opt?: {
-            direction?: number;
-            touchThreshold?: number;
+            direction?: number
+            touchThreshold?: number
+            bidirectional: boolean
         }
     ): boolean {
         // OBB collision with SAT method
@@ -133,6 +141,12 @@ class OrientedBoundingRect {
                 intersectCtx.dirMinTv.copy(minTv);
                 intersectCtx.dirTmp.copy(minTv);
                 intersectCtx.direction = opt.direction;
+                intersectCtx.bidirectional = opt.bidirectional == null || !!opt.bidirectional;
+                if (!intersectCtx.bidirectional) {
+                    intersectCtx.dirCheckVec.set(
+                        Math.cos(intersectCtx.direction), Math.sin(intersectCtx.direction)
+                    );
+                }
             }
             if (opt.touchThreshold != null) {
                 intersectCtx.touchThreshold = opt.touchThreshold;
@@ -209,22 +223,19 @@ class OrientedBoundingRect {
                 const dist1 = Math.abs(extent[0] - extent2[1]);
 
                 if (intersectCtx.useDir || Math.min(dist0, dist1) < minTv.len()) {
-                    if (dist0 < dist1) {
+                    // If bidirectional, both dist0 dist1 need to check,
+                    // otherwise only check the smaller one.
+                    if (dist0 < dist1 || !intersectCtx.bidirectional) {
                         Point.scale(minTv, axis, dist0 * inverse);
+                        if (intersectCtx.useDir) {
+                            calcDirectionalMTV(intersectCtx, minTv);
+                        }
                     }
-                    else {
+                    if (dist0 >= dist1 || !intersectCtx.bidirectional) {
                         Point.scale(minTv, axis, -dist1 * inverse);
-                    }
-                }
-                if (intersectCtx.useDir) {
-                    const squareMag = minTv.y * minTv.y + minTv.x * minTv.x;
-                    const dirSin = Math.sin(intersectCtx.direction);
-                    const dirCos = Math.cos(intersectCtx.direction);
-                    const scxy = dirSin * minTv.y + dirCos * minTv.x;
-                    intersectCtx.dirTmp.x = squareMag * dirCos / scxy;
-                    intersectCtx.dirTmp.y = squareMag * dirSin / scxy;
-                    if (intersectCtx.dirTmp.len() < intersectCtx.dirMinTv.len()) {
-                        intersectCtx.dirMinTv.copy(intersectCtx.dirTmp);
+                        if (intersectCtx.useDir) {
+                            calcDirectionalMTV(intersectCtx, minTv);
+                        }
                     }
                 }
             }
@@ -248,6 +259,24 @@ class OrientedBoundingRect {
         const half = (min + max) / 2;
         out[0] = Math.min(min + intersectCtx.touchThreshold, half);
         out[1] = Math.max(max - intersectCtx.touchThreshold, half);
+    }
+}
+
+function calcDirectionalMTV(intersectCtx: DirectionContext, minTV: Point): void {
+    const squareMag = minTv.y * minTv.y + minTv.x * minTv.x;
+    const dirSin = Math.sin(intersectCtx.direction);
+    const dirCos = Math.cos(intersectCtx.direction);
+    const scxy = dirSin * minTv.y + dirCos * minTv.x;
+    intersectCtx.dirTmp.x = squareMag * dirCos / scxy;
+    intersectCtx.dirTmp.y = squareMag * dirSin / scxy;
+    if ((
+            intersectCtx.bidirectional
+            // Aslo include (0,0) and handle precision error.
+            || intersectCtx.dirCheckVec.dot(intersectCtx.dirTmp) > -EPSILON
+        )
+        && intersectCtx.dirTmp.len() < intersectCtx.dirMinTv.len()
+    ) {
+        intersectCtx.dirMinTv.copy(intersectCtx.dirTmp);
     }
 }
 
