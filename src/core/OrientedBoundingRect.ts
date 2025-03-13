@@ -122,7 +122,7 @@ class OrientedBoundingRect {
         opt?: {
             direction?: number
             touchThreshold?: number
-            bidirectional: boolean
+            bidirectional?: boolean
         }
     ): boolean {
         // OBB collision with SAT method
