@@ -93,7 +93,7 @@ function clampCssFloat(f: number): number {  // Clamp to float 0.0 .. 1.0.
     return f < 0 ? 0 : f > 1 ? 1 : f;
 }
 
-function parseCssInt(val: string | number): number {  // int or percentage.
+export function parseCssInt(val: string | number): number {  // int or percentage.
     let str = val as string;
     if (str.length && str.charAt(str.length - 1) === '%') {
         return clampCssByte(parseFloat(str) / 100 * 255);
@@ -101,7 +101,7 @@ function parseCssInt(val: string | number): number {  // int or percentage.
     return clampCssByte(parseInt(str, 10));
 }
 
-function parseCssFloat(val: string | number): number {  // float or percentage.
+export function parseCssFloat(val: string | number): number {  // float or percentage.
     let str = val as string;
     if (str.length && str.charAt(str.length - 1) === '%') {
         return clampCssFloat(parseFloat(str) / 100);

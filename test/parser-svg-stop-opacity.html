@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Parse SVG stop-opacity</title>
+    <script src="../dist/zrender.js"></script>
+</head>
+<body>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+        #main {
+            padding: 16px;
+        }
+        #chart-container,
+        #original-svg svg {
+            width: 100px;
+            height: 20px;
+            margin-bottom: 10px;
+        }
+    </style>
+    <div id="main">
+        ZRender.parseSVG:
+        <div id="chart-container"></div>
+        Original SVG:
+        <div id="original-svg"></div>
+    </div>
+    <script type="text/javascript">
+        var zr = zrender.init(document.getElementById('chart-container'), {
+            renderer: 'svg'
+        });
+        var svg = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20">
+                <defs>
+                    <linearGradient id="gr" gradientUnits="userSpaceOnUse" x2="100">
+                        <stop offset="0" stop-color="rgba(0,0,255,.5)" stop-opacity="0.5" />
+                        <stop offset="1" stop-color="rgba(255,0,0,.5)" stop-opacity="0" />
+                    </linearGradient>
+                </defs>
+                <rect width="100" height="20" style="fill:url(#gr)"/>
+            </svg>
+        `;
+        var result = zrender.parseSVG(svg);
+        zr.add(result.root);
+        document.getElementById('original-svg').innerHTML = svg;
+    </script>
+</body>
+</html>
