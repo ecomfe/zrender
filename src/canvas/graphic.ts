@@ -152,7 +152,7 @@ function brushPath(ctx: CanvasRenderingContext2D, el: Path, style: PathStyleProp
             strokePattern = (dirtyFlag || !el.__canvasStrokePattern)
                 ? createCanvasPattern(ctx, stroke as ImagePatternObject, el)
                 : el.__canvasStrokePattern;
-            el.__canvasStrokePattern = fillPattern;
+            el.__canvasStrokePattern = strokePattern;
         }
         // Use the gradient or pattern
         if (hasFillGradient) {
