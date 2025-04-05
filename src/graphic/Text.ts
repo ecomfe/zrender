@@ -121,7 +121,7 @@ export interface TextStylePropsPart {
     /**
      * Margin of label. Used when layouting the label.
      */
-    margin?: number
+    margin?: number | number[]
 
     borderColor?: string
     borderWidth?: number
