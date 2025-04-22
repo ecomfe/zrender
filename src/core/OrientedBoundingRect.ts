@@ -20,7 +20,6 @@
 import Point, { PointLike } from './Point';
 import BoundingRect from './BoundingRect';
 import { MatrixArray } from './matrix';
-import { EPSILON } from './util';
 
 const extent = [0, 0];
 const extent2 = [0, 0];
@@ -111,10 +110,13 @@ class OrientedBoundingRect {
      *  not Minimum Translation Vector, but a vector follow the direction.
      * @param opt.bidirectional boolean, default true. It means whether `opt.direction` is bidirectional. If `true`,
      *  the returned mtv is the minimal among both `opt.direction` and `opt.direction + Math.PI`.
-     * @param opt.touchThreshold Aggressive overlap handling, such as "hide one element", should be conservative.
-     *  Two rects that touch but are within the threshold do not be considered intersecting. With this feature,
-     *  elements can use the same OBB instance to achieve compact layout while still passing through the
-     *  overlap-hiding handler.
+     * @param opt.touchThreshold Two rects that touch but are within the threshold do not be considered intersecting.
+     *  With this feature, elements can use the same OBB instance to achieve compact layout while still passing
+     *  through the overlap-hiding handler.
+     *  A positive near-zero number is commonly used here for aggressive overlap handling, such as:
+     *   - Hide one element if overlapping.
+     *   - Two elements are vertically touching at top/bottom edges, but are stricted to move along
+     *     the horizontal direction to resolve overlap.
      */
     intersect(
         other: OrientedBoundingRect,
@@ -199,8 +201,10 @@ class OrientedBoundingRect {
             self._getProjMinMaxOnAxis(i, self._corners, intersectCtx, extent);
             self._getProjMinMaxOnAxis(i, other._corners, intersectCtx, extent2);
 
-            // Not overlap on the any axis.
+            // Following the behavior in `BoundingRect.ts`, touching the edge is considered
+            //  an overlap, but get a mtv [0, 0].
             if (extent[1] < extent2[0] || extent[0] > extent2[1]) {
+                // Not overlap on the any axis.
                 overlapped = false;
                 if (noMtv) {
                     return overlapped;
@@ -218,7 +222,7 @@ class OrientedBoundingRect {
                     }
                 }
             }
-            else if (minTv) {
+            else if (!noMtv) {
                 const dist0 = Math.abs(extent2[0] - extent[1]);
                 const dist1 = Math.abs(extent[0] - extent2[1]);
 
@@ -262,22 +266,43 @@ class OrientedBoundingRect {
     }
 }
 
-function calcDirectionalMTV(intersectCtx: DirectionContext, minTV: Point): void {
+function calcDirectionalMTV(intersectCtx: DirectionContext, minTv: Point): void {
     const squareMag = minTv.y * minTv.y + minTv.x * minTv.x;
     const dirSin = Math.sin(intersectCtx.direction);
     const dirCos = Math.cos(intersectCtx.direction);
-    const scxy = dirSin * minTv.y + dirCos * minTv.x;
-    intersectCtx.dirTmp.x = squareMag * dirCos / scxy;
-    intersectCtx.dirTmp.y = squareMag * dirSin / scxy;
+    const dotProd = dirSin * minTv.y + dirCos * minTv.x;
+    const dirTmp = intersectCtx.dirTmp;
+    const dirMinTv = intersectCtx.dirMinTv;
+
+    if (nearZero(dotProd)) {
+        if (nearZero(minTv.x) && nearZero(minTv.y)) {
+            // The two OBBs touch at the edges.
+            dirMinTv.set(0, 0);
+        }
+        // Otherwise `minTv` is perpendicular to `intersectCtx.direction`.
+        return;
+    }
+
+    dirTmp.x = squareMag * dirCos / dotProd;
+    dirTmp.y = squareMag * dirSin / dotProd;
+    if (nearZero(dirTmp.x) && nearZero(dirTmp.y)) {
+        // The result includes near-(0,0) regardless of `bidirectional`.
+        dirMinTv.set(0, 0);
+        return;
+    }
+
     if ((
             intersectCtx.bidirectional
-            // Aslo include (0,0) and handle precision error.
-            || intersectCtx.dirCheckVec.dot(intersectCtx.dirTmp) > -EPSILON
+            || intersectCtx.dirCheckVec.dot(dirTmp) > 0
         )
-        && intersectCtx.dirTmp.len() < intersectCtx.dirMinTv.len()
+        && dirTmp.len() < dirMinTv.len()
     ) {
-        intersectCtx.dirMinTv.copy(intersectCtx.dirTmp);
+        dirMinTv.copy(dirTmp);
     }
+}
+
+function nearZero(val: number): boolean {
+    return Math.abs(val) < 1e-10; // Empirically OK for pixel-scale values.
 }
 
 export default OrientedBoundingRect;

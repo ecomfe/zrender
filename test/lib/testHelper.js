@@ -239,6 +239,24 @@
             .replace(/'/g, '&#39;');
     };
 
+    var encodeJSObjectKey = function (source, quotationMark) {
+        source = '' + source;
+        if (!/^[a-zA-Z$_][a-zA-Z0-9$_]*$/.test(source)) {
+            source = convertStringToJSLiteral(source, quotationMark);
+        }
+        return source;
+    };
+
+    var convertStringToJSLiteral = function (str, quotationMark) {
+        // assert(getType(str) === 'string');
+        // assert(quotationMark === '"' || quotationMark === "'");
+        str = JSON.stringify(str); // escapse \n\r or others.
+        if (quotationMark === "'") {
+            str = "'" + str.slice(1, str.length - 1).replace(/'/g, "\\'") + "'";
+        }
+        return str;
+    }
+
     testHelper.dir = function () {
         return location.origin + testHelper.resolve(location.pathname, '..');
     };
@@ -385,6 +403,343 @@
         if (!condition) {
             throw new Error(message);
         }
+    };
+
+    /**
+     * Not accurate.
+     * @param {*} type
+     * @return {string} 'function', 'array', 'typedArray', 'regexp',
+     *       'date', 'object', 'boolean', 'number', 'string'
+     */
+    var getType = testHelper.getType = function (value) {
+        var type = typeof value;
+        var typeStr = objToString.call(value);
+
+        return !!TYPED_ARRAY[objToString.call(value)]
+            ? 'typedArray'
+            : typeof value === 'function'
+            ? 'function'
+            : typeStr === '[object Array]'
+            ? 'array'
+            : typeStr === '[object Number]'
+            ? 'number'
+            : typeStr === '[object Boolean]'
+            ? 'boolean'
+            : typeStr === '[object String]'
+            ? 'string'
+            : typeStr === '[object RegExp]'
+            ? 'regexp'
+            : typeStr === '[object Date]'
+            ? 'date'
+            : !!value && type === 'object'
+            ? 'object'
+            : null;
+    };
+
+    /**
+     * JSON.stringify(obj, null, 2) will vertically layout array, which takes too much space.
+     * Can print like:
+     * [
+     *     {name: 'xxx', value: 123},
+     *     {name: 'xxx', value: 123},
+     *     {name: 'xxx', value: 123}
+     * ]
+     * {
+     *     arr: [33, 44, 55],
+     *     str: 'xxx'
+     * }
+     *
+     * @param {*} object
+     * @param {opt|string} [opt] If string, means key.
+     * @param {string} [opt.key=''] Top level key, if given, print like: 'someKey: [asdf]'
+     * @param {number} [opt.lineBreakMaxColumn=80] If the content in a single line is greater than
+     *  `maxColumn` (indent is not included), line break.
+     * @param {boolean} [opt.objectLineBreak=undefined] Whether to line break. undefined/null means auto.
+     * @param {boolean} [opt.arrayLineBreak=undefined] Whether to line break. undefined/null means auto.
+     * @param {string} [opt.indent=4]
+     * @param {string} [opt.marginLeft=0] Spaces number for margin left of the entire text.
+     * @param {string} [opt.lineBreak='\n']
+     * @param {string} [opt.quotationMark="'"] "'" or '"'.
+     */
+    var printObject = testHelper.printObject = function (obj, opt) {
+        opt = typeof opt === 'string'
+            ? {key: opt}
+            : (opt || {});
+
+        var indent = opt.indent != null ? opt.indent : 4;
+        var lineBreak = opt.lineBreak != null ? opt.lineBreak : '\n';
+        var quotationMark = ({'"': '"', "'": "'"})[opt.quotationMark] || "'";
+        var marginLeft = opt.marginLeft || 0;
+        var lineBreakMaxColumn = opt.lineBreakMaxColumn || 80;
+        var forceObjectLineBreak = opt.objectLineBreak === true || opt.objectLineBreak === false;
+        var forceArrayLineBreak = opt.arrayLineBreak === true || opt.arrayLineBreak === false;
+
+        return (new Array(marginLeft + 1)).join(' ') + doPrint(obj, opt.key, 0).str;
+
+        function doPrint(obj, key, depth) {
+            var codeIndent = (new Array(depth * indent + marginLeft + 1)).join(' ');
+            var subCodeIndent = (new Array((depth + 1) * indent + marginLeft + 1)).join(' ');
+            var hasLineBreak = false;
+            //  [
+            //      11, 22, 33, 44, 55, 66, // This is a partial break.
+            //      77, 88, 99
+            //  ]
+            var preventParentArrayPartiallyBreak = false;
+
+            var preStr = '';
+            if (key != null) {
+                preStr += encodeJSObjectKey(key, quotationMark) + ': ';
+            }
+            var str;
+
+            var objType = getType(obj);
+
+            switch (objType) {
+                case 'function':
+                    hasLineBreak = true;
+                    preventParentArrayPartiallyBreak = true;
+                    var fnStr = obj.toString();
+                    var isMethodShorthand = key != null && isMethodShorthandNotAccurate(fnStr, obj.name, key);
+                    str = (isMethodShorthand ? '' : preStr) + fnStr;
+                    break;
+                case 'regexp':
+                case 'date':
+                    str = preStr + quotationMark + obj + quotationMark;
+                    break;
+                case 'array':
+                case 'typedArray':
+                    if (forceArrayLineBreak) {
+                        hasLineBreak = !!opt.arrayLineBreak;
+                    }
+                    // If no break line in array, print in single line, like [12, 23, 34].
+                    // else, each item takes a line.
+                    var childBuilder = [];
+                    var maxColumnWithoutLineBreak = preStr.length;
+                    var canPartiallyBreak = true;
+                    for (var i = 0, len = obj.length; i < len; i++) {
+                        var subResult = doPrint(obj[i], null, depth + 1);
+                        childBuilder.push(subResult.str);
+
+                        if (subResult.hasLineBreak) {
+                            hasLineBreak = true;
+                        }
+                        else {
+                            maxColumnWithoutLineBreak += subResult.str.length + 2; // `2` is ', '.length
+                        }
+
+                        if (subResult.preventParentArrayPartiallyBreak) {
+                            preventParentArrayPartiallyBreak = true;
+                            canPartiallyBreak = false
+                        }
+                    }
+                    if (obj.length > 3) {
+                        // `3` is an arbitrary value, considering a path array:
+                        //  [
+                        //      [1,2], [3,4], [5,6],
+                        //      [7,8], [9,10]
+                        //  ]
+                        preventParentArrayPartiallyBreak = true;
+                    }
+                    if (!forceObjectLineBreak && maxColumnWithoutLineBreak > lineBreakMaxColumn) {
+                        hasLineBreak = true;
+                    }
+                    var tail = hasLineBreak ? lineBreak : '';
+                    var subPre = hasLineBreak ? subCodeIndent : '';
+                    var endPre = hasLineBreak ? codeIndent : '';
+                    var delimiterInline = ', ';
+                    var delimiterBreak = ',' + lineBreak + subCodeIndent;
+                    if (!childBuilder.length) {
+                        str = preStr + '[]';
+                    }
+                    else {
+                        var subContentStr = '';
+                        var subContentMaxColumn = 0;
+                        if (canPartiallyBreak && hasLineBreak) {
+                            for (var idx = 0; idx < childBuilder.length; idx++) {
+                                var childStr = childBuilder[idx];
+                                subContentMaxColumn += childStr.length + delimiterInline.length;
+                                if (idx === childBuilder.length - 1) {
+                                    subContentStr += childStr;
+                                }
+                                else if (subContentMaxColumn > lineBreakMaxColumn) {
+                                    subContentStr += childStr + delimiterBreak;
+                                    subContentMaxColumn = 0;
+                                }
+                                else {
+                                    subContentStr += childStr + delimiterInline;
+                                }
+                            }
+                        }
+                        else {
+                            subContentStr = childBuilder.join(hasLineBreak ? delimiterBreak : delimiterInline);
+                        }
+                        str = ''
+                            + preStr + '[' + tail
+                            + subPre + subContentStr + tail
+                            + endPre + ']';
+                    }
+                    break;
+                case 'object':
+                    if (forceObjectLineBreak) {
+                        hasLineBreak = !!opt.objectLineBreak;
+                    }
+                    var childBuilder = [];
+                    var maxColumnWithoutLineBreak = preStr.length;
+                    var keyCount = 0;
+                    for (var i in obj) {
+                        if (obj.hasOwnProperty(i)) {
+                            keyCount++;
+                            var subResult = doPrint(obj[i], i, depth + 1);
+                            childBuilder.push(subResult.str);
+
+                            if (subResult.hasLineBreak) {
+                                hasLineBreak = true;
+                            }
+                            else {
+                                maxColumnWithoutLineBreak += subResult.str.length + 2; // `2` is ', '.length
+                            }
+
+                            if (subResult.preventParentArrayPartiallyBreak) {
+                                preventParentArrayPartiallyBreak = true;
+                            }
+                        }
+                    }
+                    if (keyCount > 1) {
+                        // `3` is an arbitrary value, considering case like:
+                        //  [
+                        //      {name: 'xx'}, {name: 'yy'}, {name: 'zz'},
+                        //      {name: 'aa'}, {name: 'bb'}
+                        //  ]
+                        preventParentArrayPartiallyBreak = true;
+                    }
+                    if (!forceObjectLineBreak && maxColumnWithoutLineBreak > lineBreakMaxColumn) {
+                        hasLineBreak = true;
+                    }
+                    if (!childBuilder.length) {
+                        str = preStr + '{}';
+                    }
+                    else {
+                        str = ''
+                            + preStr + '{' + (hasLineBreak ? lineBreak : '')
+                                + (hasLineBreak ? subCodeIndent : '')
+                                + childBuilder.join(',' + (hasLineBreak ? lineBreak + subCodeIndent: ' '))
+                                + (hasLineBreak ? lineBreak: '')
+                            + (hasLineBreak ? codeIndent : '') + '}';
+                    }
+                    break;
+                case 'boolean':
+                case 'number':
+                    str = preStr + obj + '';
+                    break;
+                case 'string':
+                    str = preStr + convertStringToJSLiteral(obj, quotationMark);
+                    break;
+                default:
+                    str = preStr + obj + '';
+                    preventParentArrayPartiallyBreak = true;
+            }
+
+            return {
+                str: str,
+                hasLineBreak: hasLineBreak,
+                isMethodShorthand: isMethodShorthand,
+                preventParentArrayPartiallyBreak: preventParentArrayPartiallyBreak
+            };
+        }
+
+        /**
+         * Simple implementation for detecting method shorthand, such as,
+         *  ({abc() { return 1; }}).abc   is a method shorthand and needs to
+         *  be serialized as `{abc() { return 1; }}` rather than `{abc: abc() { return 1; }}`.
+         * Those cases can be detected:
+         *   ({abc() { console.log('=>'); return 1; }}).abc   expected: IS_SHORTHAND
+         *   ({abc(x, y = 5) { return 1; }}).abc   expected: IS_SHORTHAND
+         *   ({$ab_c() { return 1; }}).$ab_c   expected: IS_SHORTHAND
+         *   ({*abc() { return 1; }}).abc   expected: IS_SHORTHAND
+         *   ({*  abc() { return 1; }}).abc   expected: IS_SHORTHAND
+         *   ({async   abc() { return 1; }}).abc   expected: IS_SHORTHAND
+         *   ({*abc() { yield 1; }}).abc   expected: IS_SHORTHAND
+         *   ({abc(x, y) { return x + y; }}).abc   expected: IS_SHORTHAND
+         *   ({abc: function abc() { return 1; }}).abc   expected: NOT_SHORTHAND
+         *   ({abc: function def() { return 1; }}).abc   expected: NOT_SHORTHAND
+         *   ({abc: function() { return 1; }}).abc   expected: NOT_SHORTHAND
+         *   ({abc: function* () { return 1; }}).abc   expected: NOT_SHORTHAND
+         *   ({abc: function (aa, bb) { return 1; }}).abc   expected: NOT_SHORTHAND
+         *   ({abc: function (aa, bb = 5) { return 1; }}).abc   expected: NOT_SHORTHAND
+         *   ({abc: async () => { return 1; }}).abc   expected: NOT_SHORTHAND
+         *   ({abc: () => { return 1; }}).abc   expected: NOT_SHORTHAND
+         *   ({abc: (aa, bb = 5) => { return 1; }}).abc   expected: NOT_SHORTHAND
+         * FIXME: fail at some rare cases, such as:
+         *   Literal string involved, like:
+         *      ({"ab-() ' =>c"() { return 1; }})["ab-() ' =>c"]   expected: IS_SHORTHAND
+         *      ({async "ab-c"() { return 1; }})["ab-c"]   expected: IS_SHORTHAND
+         *   Computed property name involved, like:
+         *      ({[some]() { return 1; }})[some]   expected: IS_SHORTHAND
+        */
+        function isMethodShorthandNotAccurate(fnStr, fnName, objKey) {
+            // Assert fnStr, fnName, objKey is a string.
+            if (fnName !== objKey) {
+                return false;
+            }
+            var matched = fnStr.match(/^\s*(async\s+)?(function\s*)?(\*\s*)?([a-zA-Z$_][a-zA-Z0-9$_]*)?\s*\(/);
+            if (!matched) {
+                return false;
+            }
+            if (matched[2]) { // match 'function'
+                return false;
+            }
+            // May enhanced by /(['"])(?:(?=(\\?))\2.)*?\1/; to match literal string,
+            // such as "ab-c", "a\nc". But this simple impl does not cover it.
+            if (!matched[4] || matched[4] !== objKey) { // match "maybe function name"
+                return false;
+            }
+            return true;
+        }
+
+    };
+
+    var objToString = Object.prototype.toString;
+    var TYPED_ARRAY = {
+        '[object Int8Array]': 1,
+        '[object Uint8Array]': 1,
+        '[object Uint8ClampedArray]': 1,
+        '[object Int16Array]': 1,
+        '[object Uint16Array]': 1,
+        '[object Int32Array]': 1,
+        '[object Uint32Array]': 1,
+        '[object Float32Array]': 1,
+        '[object Float64Array]': 1
+    };
+
+    /**
+     * Not accurate.
+     * @param {*} type
+     * @return {string} 'function', 'array', 'typedArray', 'regexp',
+     *       'date', 'object', 'boolean', 'number', 'string'
+     */
+    var getType = testHelper.getType = function (value) {
+        var type = typeof value;
+        var typeStr = objToString.call(value);
+
+        return !!TYPED_ARRAY[objToString.call(value)]
+            ? 'typedArray'
+            : typeof value === 'function'
+            ? 'function'
+            : typeStr === '[object Array]'
+            ? 'array'
+            : typeStr === '[object Number]'
+            ? 'number'
+            : typeStr === '[object Boolean]'
+            ? 'boolean'
+            : typeStr === '[object String]'
+            ? 'string'
+            : typeStr === '[object RegExp]'
+            ? 'regexp'
+            : typeStr === '[object Date]'
+            ? 'date'
+            : !!value && type === 'object'
+            ? 'object'
+            : null;
     };
 
 })();
