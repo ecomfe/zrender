@@ -698,6 +698,90 @@
 
     };
 
+    var copyToClipboard = function (text) {
+        if (typeof navigator === 'undefined' || !navigator.clipboard || !navigator.clipboard.writeText) {
+            console.error('[clipboard] Can not copy to clipboard.');
+            return;
+        }
+        return navigator.clipboard.writeText(text).then(function () {
+            console.log('[clipboard] Text copied to clipboard.');
+        }).catch(function (err) {
+            console.error('[clipboard] Failed to copy text: ', err); // Just print for easy to use.
+            return err;
+        });
+    };
+
+    /**
+     * A shortcut for both stringify and copy to clipboard.
+     *
+     * @param {any} val Any val to stringify and copy to clipboard.
+     * @param {Object?} printObjectOpt Optional.
+     */
+    testHelper.clipboard = function (val, printObjectOpt) {
+        var literal = testHelper.printObject(val, printObjectOpt);
+        if (document.hasFocus()) {
+            copyToClipboard(literal);
+        }
+        else {
+            // Handle the error:
+            //  NotAllowedError: Failed to execute 'writeText' on 'Clipboard': Document is not focused.
+            ensureClipboardButton();
+            updateClipboardButton(literal)
+            console.log(
+                '⚠️ [clipboard] Please click the new button that appears on the top-left corner of the screen'
+                + ' to copy to clipboard.'
+            );
+        }
+
+        function updateClipboardButton(text) {
+            var button = __tmpClipboardButttonWrapper.button;
+            button.innerHTML = 'Click me to copy to clipboard';
+            button.style.display = 'block';
+            __tmpClipboardButttonWrapper.text = text;
+        }
+
+        function ensureClipboardButton() {
+            var button = __tmpClipboardButttonWrapper.button;
+            if (button != null) {
+                return;
+            }
+            __tmpClipboardButttonWrapper.button = button = document.createElement('div');
+            button.style.cssText = [
+                'height: 80px;',
+                'line-height: 80px;',
+                'padding: 10px 20px;',
+                'margin: 5px;',
+                'text-align: center;',
+                'position: fixed;',
+                'top: 10px;',
+                'left: 10px;',
+                'z-index: 9999;',
+                'cursor: pointer;',
+                'color: #fff;',
+                'background-color: #333;',
+                'border: 2px solid #eee;',
+                'border-radius: 5px;',
+                'font-size: 18px;',
+                'font-weight: bold;',
+                'font-family: sans-serif;',
+                'box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);'
+            ].join('');
+            document.body.appendChild(button);
+            button.addEventListener('click', function () {
+                copyToClipboard(__tmpClipboardButttonWrapper.text).then(function (err) {
+                    if (!err) {
+                        button.style.display = 'none';
+                    }
+                    else {
+                        button.innerHTML = 'error, see console log.';
+                    }
+                });
+            });
+        }
+        // Do not return the text, because it may be too long for a console.log.
+    };
+    var __tmpClipboardButttonWrapper = {};
+
     var objToString = Object.prototype.toString;
     var TYPED_ARRAY = {
         '[object Int8Array]': 1,
