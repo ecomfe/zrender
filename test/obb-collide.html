@@ -35,8 +35,8 @@
     </style>
 
     <div>
-        <button onclick="printState()">console.log(state)</button>
-        <div class="test-case-title">Test cases:</div>
+        <button onclick="printState()">Print state to clipboard</button>
+        <div class="test-case-title">Quick test cases:</div>
         <div id="test_case_box"></div>
     </div>
 
@@ -91,7 +91,7 @@
         rect2_shape_width: 130,
         rect2_shape_height: 400,
     }, {
-        text: 'touch at edge exactly (expect: overlap but mtv 0)',
+        text: 'obb, touch at edge exactly (expect: overlap but mtv 0)',
         useOBB: true,
         useDirection: true,
         direction: Math.PI / 2,
@@ -114,7 +114,7 @@
         rect2_shape_width: 750,
         rect2_shape_height: 12,
     }, {
-        text: 'touch at edge 0.0001px overlap (expect: overlap but mtv near 0)',
+        text: 'obb, touch at edge 0.0001px overlap (expect: overlap but mtv near 0)',
         useOBB: true,
         useDirection: true,
         direction: Math.PI / 2,
@@ -137,7 +137,7 @@
         rect2_shape_width: 750,
         rect2_shape_height: 12,
     }, {
-        text: 'touch at edge 1px overlap (expect: overlap but abs(mtv) 1)',
+        text: 'obb, touch at edge 1px overlap (expect: overlap but abs(mtv) 1)',
         useOBB: true,
         useDirection: true,
         direction: Math.PI / 2,
@@ -160,13 +160,13 @@
         rect2_shape_width: 750,
         rect2_shape_height: 12,
     }, {
-        text: 'rect1: {width:0, height: 20} (expect: can overlap)',
+        text: 'obb, rect1: {width:0, height: 20} (expect: can overlap)',
         useOBB: true,
         useDirection: true,
         direction: Math.PI / 2,
         bidirectional: true,
-        useTouchThreshold: false,
-        touchThreshold: 0,
+        useTouchThreshold: true,
+        touchThreshold: 0.5,
         noMTV: false,
         rect1_rotation: 0,
         rect1_x: 389,
@@ -183,13 +183,36 @@
         rect2_shape_width: 300,
         rect2_shape_height: 50,
     }, {
-        text: 'rect1: {width:0, height: 0} (expect: can overlap)',
+        text: 'no_obb, rect1: {width:0, height: 20} (expect: can overlap)',
+        useOBB: false,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0.5,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 0,
+        rect1_shape_height: 20,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 100,
+        rect2_shape_y: -11,
+        rect2_shape_width: 300,
+        rect2_shape_height: 50,
+    }, {
+        text: 'obb, rect1: {width:0, height: 0} (expect: can overlap)',
         useOBB: true,
         useDirection: true,
         direction: Math.PI / 2,
         bidirectional: true,
-        useTouchThreshold: false,
-        touchThreshold: 0,
+        useTouchThreshold: true,
+        touchThreshold: 0.5,
         noMTV: false,
         rect1_rotation: 0,
         rect1_x: 389,
@@ -206,7 +229,30 @@
         rect2_shape_width: 300,
         rect2_shape_height: 50,
     }, {
-        text: 'mtv not touch, not overlap (a bad case)',
+        text: 'no_obb, rect1: {width:0, height: 0} (expect: can overlap)',
+        useOBB: false,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0.5,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 0,
+        rect1_shape_height: 0,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 100,
+        rect2_shape_y: -11,
+        rect2_shape_width: 300,
+        rect2_shape_height: 50,
+    }, {
+        text: 'obb, mtv not touch, not overlap (a bad case)',
         useOBB: true,
         useDirection: false,
         direction: -0.5235987755982988,
@@ -229,7 +275,7 @@
         rect2_shape_width: 100,
         rect2_shape_height: 50
     }, {
-        text: 'no mtv input',
+        text: 'obb, no mtv input',
         useOBB: true,
         useDirection: true,
         direction: -0.36071126164267575,
@@ -251,6 +297,52 @@
         rect2_shape_y: 0,
         rect2_shape_width: 100,
         rect2_shape_height: 50
+    }, {
+        text: 'no_obb, no mtv input',
+        useOBB: false,
+        useDirection: true,
+        direction: -0.36071126164267575,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 5.564775613886537,
+        noMTV: true,
+        rect1_rotation: 1.6985605419136327,
+        rect1_x: 257,
+        rect1_y: 438,
+        rect1_shape_x: 0,
+        rect1_shape_y: 0,
+        rect1_shape_width: 130,
+        rect1_shape_height: 400,
+        rect2_rotation: -0.6858594411515666,
+        rect2_x: 616,
+        rect2_y: 327,
+        rect2_shape_x: 0,
+        rect2_shape_y: 0,
+        rect2_shape_width: 100,
+        rect2_shape_height: 50
+    }, {
+        text: 'no_obb, directional',
+        useOBB: false,
+        useDirection: true,
+        direction: 0.7231160033869601,
+        bidirectional: false,
+        useTouchThreshold: true,
+        touchThreshold: 3.18,
+        noMTV: false,
+        rect1_rotation: 0.8314987298899235,
+        rect1_x: 184,
+        rect1_y: 177,
+        rect1_shape_x: 0,
+        rect1_shape_y: 0,
+        rect1_shape_width: 130,
+        rect1_shape_height: 400,
+        rect2_rotation: 2.132091447925487,
+        rect2_x: 456,
+        rect2_y: 132,
+        rect2_shape_x: 0,
+        rect2_shape_y: 0,
+        rect2_shape_width: 100,
+        rect2_shape_height: 50
     }];
 
     var zr = zrender.init(document.getElementById('main'), {
@@ -266,20 +358,43 @@
 
     const _state = Object.assign({}, _TEST_CASE_LIST[0], stateFromHash);
 
+    function makeBaseRectStyle() {
+        return {
+            fill: 'green',
+            opacity: 0.7
+        };
+    }
+
+    function makeBoundingRectStyle() {
+        return {
+            stroke: '#111',
+            fill: 'none',
+            lineDash: 'dashed',
+            lineWidth: 1,
+            opacity: 0.3
+        };
+    }
+
     const rect1 = new zrender.Rect({
-        style: {
-            fill: 'green',
-            opacity: 0.7
-        },
+        style: makeBaseRectStyle(),
         draggable: true,
     });
+    const rect1BoundingRect = new zrender.Rect({
+        style: makeBoundingRectStyle(),
+        silent: true,
+    });
+    zr.add(rect1BoundingRect);
+    zr.add(rect1);
     const rect2 = new zrender.Rect({
-        style: {
-            fill: 'green',
-            opacity: 0.7
-        },
+        style: makeBaseRectStyle(),
         draggable: true,
     });
+    zr.add(rect2);
+    const rect2BoundingRect = new zrender.Rect({
+        style: makeBoundingRectStyle(),
+        silent: true,
+    });
+    zr.add(rect2BoundingRect);
     const rect2Moved = new zrender.Rect({
         silent: true,
         style: {
@@ -289,10 +404,14 @@
             lineWidth: 1,
             opacity: 0.9
         },
+        strokeContainThreshold: 0,
     });
-    zr.add(rect1);
-    zr.add(rect2);
     zr.add(rect2Moved);
+    const rect2MovedBoundingRect = new zrender.Rect({
+        style: makeBoundingRectStyle(),
+        silent: true,
+    });
+    zr.add(rect2MovedBoundingRect);
 
 
     rect1.on('drag', () => {
@@ -306,7 +425,7 @@
         update();
     });
 
-    const line = new zrender.Line({
+    const mtvMoveLine = new zrender.Line({
         shape: {
             x1: 0, y1: 0, x2: 0, y2: 0
         },
@@ -315,7 +434,7 @@
             stroke: 'blue'
         }
     });
-    zr.add(line);
+    zr.add(mtvMoveLine);
 
     const directionLine = new zrender.Line({
         shape: {
@@ -325,13 +444,15 @@
             lineWidth: 2,
             stroke: '#555',
             lineDash: 'dotted',
-        }
+        },
+        silent: true,
     });
     zr.add(directionLine);
     const directionText = new zrender.Text({
         style: {
             text: 'When overlapping, the output mtv should parallel to this direction.'
-        }
+        },
+        silent: true,
     });
     zr.add(directionText);
     const directionMark = new zrender.Circle({
@@ -340,7 +461,8 @@
         },
         style: {
             fill: '#555'
-        }
+        },
+        silent: true,
     });
     zr.add(directionMark);
 
@@ -371,6 +493,16 @@
         rect2.attr('y', _state.rect2_y);
 
         const mtv = _state.noMTV ? undefined : new zrender.Point();
+        let intersectOpt = undefined;
+        if (_state.useDirection) {
+            intersectOpt = intersectOpt || {};
+            intersectOpt.direction = _state.direction;
+            intersectOpt.bidirectional = _state.bidirectional;
+        }
+        if (_state.useTouchThreshold) {
+            intersectOpt = intersectOpt || {};
+            intersectOpt.touchThreshold = _state.touchThreshold;
+        }
         let overlapped;
         if (_state.useOBB) {
             const obb = new zrender.OrientedBoundingRect(
@@ -379,24 +511,14 @@
             const obb2 = new zrender.OrientedBoundingRect(
                 rect2.getBoundingRect(), rect2.getComputedTransform()
             );
-            let opt = undefined;
-            if (_state.useDirection) {
-                opt = opt || {};
-                opt.direction = _state.direction;
-                opt.bidirectional = _state.bidirectional;
-            }
-            if (_state.useTouchThreshold) {
-                opt = opt || {};
-                opt.touchThreshold = _state.touchThreshold;
-            }
-            overlapped = obb.intersect(obb2, mtv, opt);
+            overlapped = obb.intersect(obb2, mtv, intersectOpt);
         }
         else {
             const bb = rect1.getBoundingRect();
             bb.applyTransform(rect1.getComputedTransform());
             const bb2 = rect2.getBoundingRect();
             bb2.applyTransform(rect2.getComputedTransform());
-            overlapped = bb.intersect(bb2, mtv);
+            overlapped = bb.intersect(bb2, mtv, intersectOpt);
         }
 
         const center = new zrender.Point(rect1.shape.width / 2, rect1.shape.height / 2);
@@ -404,9 +526,9 @@
         const center2 = new zrender.Point(rect2.shape.width / 2, rect2.shape.height / 2);
         center2.transform(rect2.getComputedTransform());
 
-        line.ignore = !!_state.noMTV;
+        mtvMoveLine.ignore = !!_state.noMTV;
         if (!_state.noMTV) {
-            line.setShape({
+            mtvMoveLine.setShape({
                 x1: center2.x, y1: center2.y,
                 x2: center2.x + mtv.x, y2: center2.y + mtv.y
             });
@@ -441,6 +563,21 @@
             rect2Moved.attr('y', rect2.y + mtv.y);
         }
 
+        function updateBoundingRectView(sourceRect, boundingRectView) {
+            const boundingRect = sourceRect.getBoundingRect().clone();
+            const transform = sourceRect.getComputedTransform();
+            boundingRect.applyTransform(transform);
+            boundingRectView.setShape('x', boundingRect.x);
+            boundingRectView.setShape('y', boundingRect.y);
+            boundingRectView.setShape('width', boundingRect.width);
+            boundingRectView.setShape('height', boundingRect.height);
+
+            boundingRectView.ignore = _state.useOBB || sourceRect.ignore;
+        }
+        updateBoundingRectView(rect1, rect1BoundingRect);
+        updateBoundingRectView(rect2, rect2BoundingRect);
+        updateBoundingRectView(rect2Moved, rect2MovedBoundingRect);
+
         if (!opt || !opt.fromGUI) {
             updateGUIValues();
         }
@@ -473,8 +610,7 @@
     function printState() {
         const st = Object.assign({}, _state);
         st.text = '?';
-        const stateStr = testHelper.printObject(st);
-        console.log(stateStr);
+        testHelper.clipboard(st);
     }
 
     function updateGUIValues() {
