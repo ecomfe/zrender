@@ -1,5 +1,5 @@
 import LRU from '../core/LRU';
-import { extend, isGradientObject, isString, map } from '../core/util';
+import { extend, isFunction, isGradientObject, isString, map } from '../core/util';
 import { GradientObject } from '../graphic/Gradient';
 
 const kCSSColorTable = {
@@ -507,29 +507,16 @@ export const mapToColor = lerp;
 export function modifyHSL(
     color: string,
     h?: number | ((h: number) => number),
-    s?: number | ((s: number) => number),
-    l?: number | ((l: number) => number)
+    s?: number | string | ((s: number) => number),
+    l?: number | string | ((l: number) => number)
 ): string {
     let colorArr = parse(color);
 
     if (color) {
         colorArr = rgba2hsla(colorArr);
-        h != null && (colorArr[0] =
-            typeof h === 'function'
-                ? h(colorArr[0])
-                : clampCssAngle(h)
-        );
-        s != null && (colorArr[1] =
-            typeof s === 'function'
-                ? s(colorArr[1])
-                : parseCssFloat(s)
-        );
-        l != null && (colorArr[2] =
-            typeof l === 'function'
-                ? l(colorArr[2])
-                : parseCssFloat(l)
-        );
-
+        h != null && (colorArr[0] = clampCssAngle(isFunction(h) ? h(colorArr[0]) : h));
+        s != null && (colorArr[1] = parseCssFloat(isFunction(s) ? s(colorArr[1]) : s));
+        l != null && (colorArr[2] = parseCssFloat(isFunction(l) ? l(colorArr[2]) : l));
         return stringify(hsla2rgba(colorArr), 'rgba');
     }
 }
