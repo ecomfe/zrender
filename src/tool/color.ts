@@ -498,20 +498,37 @@ export const mapToColor = lerp;
 
 /**
  * @param color
- * @param h 0 ~ 360, ignore when null.
- * @param s 0 ~ 1, ignore when null.
- * @param l 0 ~ 1, ignore when null.
+ * @param h 0 ~ 360, ignore when null. If function, it takes hue as argument and returns a new hue.
+ * @param s 0 ~ 1, ignore when null. If function, it takes saturation as argument and returns a new saturation.
+ * @param l 0 ~ 1, ignore when null. If function, it takes lightness as argument and returns a new lightness.
  * @return Color string in rgba format.
  * @memberOf module:zrender/util/color
  */
-export function modifyHSL(color: string, h?: number, s?: number, l?: number): string {
+export function modifyHSL(
+    color: string,
+    h?: number | ((h: number) => number),
+    s?: number | ((s: number) => number),
+    l?: number | ((l: number) => number)
+): string {
     let colorArr = parse(color);
 
     if (color) {
         colorArr = rgba2hsla(colorArr);
-        h != null && (colorArr[0] = clampCssAngle(h));
-        s != null && (colorArr[1] = parseCssFloat(s));
-        l != null && (colorArr[2] = parseCssFloat(l));
+        h != null && (colorArr[0] =
+            typeof h === 'function'
+                ? h(colorArr[0])
+                : clampCssAngle(h)
+        );
+        s != null && (colorArr[1] =
+            typeof s === 'function'
+                ? s(colorArr[1])
+                : parseCssFloat(s)
+        );
+        l != null && (colorArr[2] =
+            typeof l === 'function'
+                ? l(colorArr[2])
+                : parseCssFloat(l)
+        );
 
         return stringify(hsla2rgba(colorArr), 'rgba');
     }
