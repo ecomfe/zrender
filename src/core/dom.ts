@@ -54,11 +54,16 @@ export function transformLocalCoord(
     inX: number,
     inY: number
 ) {
-    const elFromCoordTransformCleanup = transformCoordWithViewport(_calcOut, elFrom, inX, inY, true);
-    return elFromCoordTransformCleanup && [
-        elFromCoordTransformCleanup,
-        transformCoordWithViewport(out, elTarget, _calcOut[0], _calcOut[1])
-    ];
+    const clearFromElCoordTransform = transformCoordWithViewport(_calcOut, elFrom, inX, inY, true);
+    if (clearFromElCoordTransform) {
+        const clearTargetElCoordTransform = transformCoordWithViewport(out, elTarget, _calcOut[0], _calcOut[1]);
+        if (clearTargetElCoordTransform) {
+            return () => {
+                clearTargetElCoordTransform();
+                clearFromElCoordTransform();
+            };
+        }
+    }
 }
 
 /**
