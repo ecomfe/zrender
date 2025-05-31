@@ -19,6 +19,7 @@ import RadialGradient, { RadialGradientObject } from '../graphic/RadialGradient'
 import Gradient, { GradientObject } from '../graphic/Gradient';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import { parseXML } from './parseXML';
+import * as colorTool from './color';
 
 
 interface SVGParserOption {
@@ -627,9 +628,19 @@ function parseGradientColorStops(xmlNode: SVGElement, gradient: GradientObject):
             // <stop stop-color="red"/>
             const styleVals = {} as Dictionary<string>;
             parseInlineStyle(stop, styleVals, styleVals);
-            const stopColor = styleVals.stopColor
+            let stopColor = styleVals.stopColor
                 || stop.getAttribute('stop-color')
                 || '#000000';
+            const stopOpacity = styleVals.stopOpacity
+                || stop.getAttribute('stop-opacity');
+            if (stopOpacity) {
+                const rgba = colorTool.parse(stopColor);
+                const stopColorOpacity = rgba && rgba[3];
+                if (stopColorOpacity) {
+                    rgba[3] *= colorTool.parseCssFloat(stopOpacity);
+                    stopColor = colorTool.stringify(rgba, 'rgba');
+                }
+            }
 
             gradient.colorStops.push({
                 offset: offset,
