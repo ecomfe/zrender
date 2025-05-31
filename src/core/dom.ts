@@ -12,6 +12,7 @@ type SavedInfo = {
     trans?: ReturnType<typeof buildTransformer>
     invTrans?: ReturnType<typeof buildTransformer>
     srcCoords?: number[]
+    clearMarkers?: () => void
 }
 
 /**
@@ -45,7 +46,7 @@ type SavedInfo = {
  * @param {HTMLElement} elTarget The `out` is based on elTarget.
  * @param {number} inX
  * @param {number} inY
- * @returns Whether transform successfully. If successful, return a cleanup function array, otherwise `undefined`.
+ * @return {boolean} Whether transform successfully.
  */
 export function transformLocalCoord(
     out: number[],
@@ -54,14 +55,22 @@ export function transformLocalCoord(
     inX: number,
     inY: number
 ) {
-    const clearFromElCoordTransform = transformCoordWithViewport(_calcOut, elFrom, inX, inY, true);
-    if (clearFromElCoordTransform) {
-        const clearTargetElCoordTransform = transformCoordWithViewport(out, elTarget, _calcOut[0], _calcOut[1]);
-        if (clearTargetElCoordTransform) {
-            return () => {
-                clearTargetElCoordTransform();
-                clearFromElCoordTransform();
-            };
+    return transformCoordWithViewport(_calcOut, elFrom, inX, inY, true)
+        && transformCoordWithViewport(out, elTarget, _calcOut[0], _calcOut[1]);
+}
+
+export function transformLocalCoordClear(
+    elFrom: HTMLElement,
+    elTarget: HTMLElement,
+) {
+    elFrom && dealClear(elFrom);
+    elTarget && dealClear(elTarget);
+
+    function dealClear(el: HTMLElement) {
+        const saved: SavedInfo = (el as any)[EVENT_SAVED_PROP];
+        if (saved) {
+            saved.clearMarkers && saved.clearMarkers();
+            delete (el as any)[EVENT_SAVED_PROP];
         }
     }
 }
@@ -76,17 +85,17 @@ export function transformLocalCoord(
  * Support the case when CSS transform is used on el.
  *
  * @param out [inX: number, inY: number] The output. If `inverse: false`,
- *        it represents "local coord", otherwise "viewport coord".
+ *        it represents "local coord", otherwise "vireport coord".
  *        If can not transform, `out` will not be modified but return `false`.
  * @param el The "local coord" is based on the `el`, see comment above.
  * @param inX If `inverse: false`,
- *        it represents "viewport coord", otherwise "local coord".
+ *        it represents "vireport coord", otherwise "local coord".
  * @param inY If `inverse: false`,
- *        it represents "viewport coord", otherwise "local coord".
+ *        it represents "vireport coord", otherwise "local coord".
  * @param inverse
  *        `true`: from "viewport coord" to "local coord".
  *        `false`: from "local coord" to "viewport coord".
- * @returns Whether transform successfully. If successful, return a cleanup function, otherwise `undefined`.
+ * @return {boolean} Whether transform successfully.
  */
 export function transformCoordWithViewport(
     out: number[],
@@ -96,23 +105,15 @@ export function transformCoordWithViewport(
     inverse?: boolean
 ) {
     if (el.getBoundingClientRect && env.domSupported && !isCanvasEl(el)) {
-        const saved: SavedInfo = (el as any)[EVENT_SAVED_PROP] || ((el as any)[EVENT_SAVED_PROP] = {});
+        const saved = (el as any)[EVENT_SAVED_PROP] || ((el as any)[EVENT_SAVED_PROP] = {});
         const markers = prepareCoordMarkers(el, saved);
         const transformer = preparePointerTransformer(markers, saved, inverse);
         if (transformer) {
             transformer(out, inX, inY);
-            return function () {
-                const saved: SavedInfo = (el as any)[EVENT_SAVED_PROP];
-                if (saved) {
-                    each(saved.markers, function (marker) {
-                        const parentNode = marker.parentNode;
-                        parentNode && parentNode.removeChild(marker);
-                    });
-                }
-                delete (el as any)[EVENT_SAVED_PROP];
-            };
+            return true;
         }
     }
+    return false;
 }
 
 function prepareCoordMarkers(el: HTMLElement, saved: SavedInfo) {
@@ -150,6 +151,12 @@ function prepareCoordMarkers(el: HTMLElement, saved: SavedInfo) {
         el.appendChild(marker);
         markers.push(marker);
     }
+
+    saved.clearMarkers = function () {
+        each(markers, function (marker) {
+            marker.parentNode && marker.parentNode.removeChild(marker);
+        });
+    };
 
     return markers;
 }
