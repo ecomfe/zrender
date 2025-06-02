@@ -238,6 +238,7 @@ export interface ElementProps extends Partial<ElementEventHandlerProps>, Partial
     draggable?: boolean | 'horizontal' | 'vertical'
 
     silent?: boolean
+    ignoreHostSilent?: boolean
 
     ignoreClip?: boolean
     globalScaleRatio?: number
@@ -312,6 +313,14 @@ class Element<Props extends ElementProps = ElementProps> {
      * Whether to respond to mouse events.
      */
     silent: boolean
+
+    /**
+     * When this element has `__hostTarget` (e.g., this is a `textContent`), whether
+     * its silent is controlled by that host silent. They may need separate silent
+     * settings. e.g., the host do not have `fill` but only `stroke`, or their mouse
+     * events serve for different features.
+     */
+    ignoreHostSilent: boolean
 
     /**
      * 是否是 Group
@@ -1021,16 +1030,16 @@ class Element<Props extends ElementProps = ElementProps> {
      * Return if el.silent or any ancestor element has silent true.
      */
     isSilent() {
-        let isSilent = this.silent;
-        let ancestor = this.parent;
-        while (!isSilent && ancestor) {
-            if (ancestor.silent) {
-                isSilent = true;
-                break;
+        // Follow the logic of `Handler.ts`#`isHover`.
+        let el: Element = this;
+        while (el) {
+            if (el.silent) {
+                return true;
             }
-            ancestor = ancestor.parent;
+            const hostEl = el.__hostTarget;
+            el = hostEl ? (el.ignoreHostSilent ? null : hostEl) : el.parent;
         }
-        return isSilent;
+        return false;
     }
 
     /**
@@ -1637,6 +1646,7 @@ class Element<Props extends ElementProps = ElementProps> {
 
         elProto.ignore =
         elProto.silent =
+        elProto.ignoreHostSilent =
         elProto.isGroup =
         elProto.draggable =
         elProto.dragging =
