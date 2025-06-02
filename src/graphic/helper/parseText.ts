@@ -239,7 +239,7 @@ export function parsePlainText(
         lines = text ? text.split('\n') : [];
     }
 
-    const contentHeight = lines.length * lineHeight;
+    let contentHeight = lines.length * lineHeight;
     const height = retrieve2(style.height, contentHeight);
 
     // Truncate lines.
@@ -248,6 +248,7 @@ export function parsePlainText(
 
         isTruncated = isTruncated || (lines.length > lineCount);
         lines = lines.slice(0, lineCount);
+        contentHeight = lines.length * lineHeight;
 
         // TODO If show ellipse for line truncate
         // if (style.ellipsis) {
