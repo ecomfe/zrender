@@ -594,7 +594,8 @@ function pushTokens(
             strLines = res.lines;
         }
     }
-    else {
+
+    if (!strLines) {
         strLines = str.split('\n');
     }
 
