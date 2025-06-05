@@ -190,17 +190,15 @@ export interface PlainTextContentBlock {
     // Line height of actual content.
     calculatedLineHeight: number
 
+    // Calculated based on the text.
     contentWidth: number
     contentHeight: number
 
+    // i.e., `retrieve2(style.width/height, contentWidth/contentHeight)`
     width: number
     height: number
 
-    /**
-     * Real text width containing padding.
-     * It should be the same as `width` if background is rendered
-     * and `width` is set by user.
-     */
+    // i.e., `contentBlock.width/height + style.padding`
     outerWidth: number
     outerHeight: number
 
@@ -224,7 +222,6 @@ export function parsePlainText(
     const truncate = overflow === 'truncate';
     const calculatedLineHeight = getLineHeight(font);
     const lineHeight = retrieve2(style.lineHeight, calculatedLineHeight);
-    const bgColorDrawn = !!(style.backgroundColor);
 
     const truncateLineOverflow = style.lineOverflow === 'truncate';
     let isTruncated = false;
@@ -281,20 +278,14 @@ export function parsePlainText(
         contentWidth = Math.max(getWidth(lines[i], font), contentWidth);
     }
     if (width == null) {
-        // When width is not explicitly set, use outerWidth as width.
+        // When width is not explicitly set, use contentWidth as width.
         width = contentWidth;
     }
 
-    let outerWidth = contentWidth;
+    let outerWidth = width;
     if (padding) {
         outerHeight += padding[0] + padding[2];
         outerWidth += padding[1] + padding[3];
-        width += padding[1] + padding[3];
-    }
-
-    if (bgColorDrawn) {
-        // When render background, outerWidth should be the same as width.
-        outerWidth = width;
     }
 
     return {
@@ -314,10 +305,13 @@ export function parsePlainText(
 class RichTextToken {
     styleName: string
     text: string
+
+    // Includes `tokenStyle.padding`
     width: number
     height: number
 
     // Inner height exclude padding
+    // i.e., `retrieve2(tokenStyle.height, token.contentHeight)`
     innerHeight: number
 
     // Width and height of actual text content.
@@ -346,13 +340,14 @@ class RichTextLine {
     }
 }
 export class RichTextContentBlock {
-    // width/height of content
+    // i.e. `retrieve2(outermostStyle.width, contentWidth)`.
+    // exclude outermost style.padding.
     width: number = 0
     height: number = 0
-    // Calculated text height
+    // Calculated text width/height based on content (including tokenStyle.padding).
     contentWidth: number = 0
     contentHeight: number = 0
-    // outerWidth/outerHeight with padding
+    // i.e., contentBlock.width/height + outermostStyle.padding
     outerWidth: number = 0
     outerHeight: number = 0
     lines: RichTextLine[] = []

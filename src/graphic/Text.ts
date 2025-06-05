@@ -41,7 +41,7 @@ export interface TextStylePropsPart {
     strokeOpacity?: number
     /**
      * textStroke may be set as some color as a default
-     * value in upper applicaion, where the default value
+     * value in upper application, where the default value
      * of lineWidth should be 0 to make sure that
      * user can choose to do not use text stroke.
      */
@@ -92,6 +92,7 @@ export interface TextStylePropsPart {
     /**
      * Width of text block. Not include padding
      * Used for background, truncate, wrap
+     * If string - be 'auto'.
      */
     width?: number | string
     /**
@@ -100,7 +101,7 @@ export interface TextStylePropsPart {
      */
     height?: number
     /**
-     * Reserved for special functinality, like 'hr'.
+     * Reserved for special functionality, like 'hr'.
      */
     tag?: string
 
@@ -148,6 +149,10 @@ export interface TextStyleProps extends TextStylePropsPart {
 
     text?: string
 
+    /**
+     * The outer rect (including padding) is placed based on x/y.
+     * By default 0.
+     */
     x?: number
     y?: number
 

@@ -41,8 +41,10 @@
     const config = {
         search: '',
         testElType: 'standalone_text',
-        width: 200,
-        height: 400,
+        textWidth: 200,
+        rectWidth: 100,
+        rectX: 100,
+        textHeight: 400,
         fontSize: 13,
         fixedLineHeight: false,
         lineHeight: 14,
@@ -52,13 +54,16 @@
         align: null,
         verticalAlign: null,
         position: POSITION_LIST[4],
+        textStylePadding: 10
     }
 
     const gui = new dat.GUI();
     gui.add(config, 'search').onChange(update);
     gui.add(config, 'testElType', ['standalone_text', 'rect_text']).onChange(update);
-    gui.add(config, 'width', 10, 300).onChange(update);
-    gui.add(config, 'height', 10, 1600).onChange(update);
+    gui.add(config, 'textWidth', 0, 300).onChange(update);
+    gui.add(config, 'textHeight', 10, 1600).onChange(update);
+    gui.add(config, 'rectWidth', 0, 300).onChange(update);
+    gui.add(config, 'rectX', 0, 400).onChange(update);
     gui.add(config, 'fontSize', 1, 30).onChange(update);
     gui.add(config, 'fixedLineHeight').onChange(update);
     gui.add(config, 'lineHeight', 12, 50).onChange(update);
@@ -68,6 +73,7 @@
     gui.add(config, 'align', [null, 'left', 'center', 'right']).onChange(update);
     gui.add(config, 'verticalAlign', [null, 'top', 'middle', 'bottom']).onChange(update);
     gui.add(config, 'position', POSITION_LIST).onChange(update);
+    gui.add(config, 'textStylePadding', -10, 30).onChange(update);
 
     const texts = [
         LARGE_TEXT_EN,
@@ -110,7 +116,9 @@
         let lastX = null;
 
         elementList.forEach(({standaloneTextEl, rectEl}) => {
-            const xx = lastX == null ? 50 : lastX + config.width + 50;
+            const textWidth = config.textWidth;
+            const textHeight = config.textHeight;
+            const xx = lastX == null ? config.rectX : lastX + textWidth + 50;
             lastX = xx;
 
             if (config.testElType === 'standalone_text') {
@@ -124,21 +132,21 @@
 
             // Standalone text
             updateText(standaloneTextEl);
-            standaloneTextEl.style.width = config.width;
-            standaloneTextEl.style.height = config.height;
+            standaloneTextEl.style.width = textWidth;
+            standaloneTextEl.style.height = textHeight;
             standaloneTextEl.style.x = xx;
 
             // Rect text
             rectEl.setShape({
                 x: xx,
                 y: 300,
-                width: config.width / 2,
+                width: config.rectWidth,
                 height: 200,
             });
             const rectTextEl = rectEl.getTextContent();
             updateText(rectTextEl);
-            rectTextEl.style.width = config.width;
-            rectTextEl.style.height = config.height;
+            rectTextEl.style.width = textWidth;
+            rectTextEl.style.height = textHeight;
             rectEl.setTextConfig({
                 distance: 10,
                 position: config.position
@@ -146,7 +154,7 @@
         });
 
         function updateText(text) {
-            text.style.padding = 10;
+            text.style.padding = config.textStylePadding;
             text.style.borderColor = '#000';
             text.style.borderWidth = 1;
             text.style.ellipsis = '…';
