@@ -7,7 +7,9 @@ import {
 } from '../../core/util';
 import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../../core/types';
 import { TextStyleProps } from '../Text';
-import { getLineHeight, getWidth, parsePercent } from '../../contain/text';
+import {
+    ensureFontMeasureInfo, FontMeasureInfo, getLineHeight, measureCharWidth, measureWidth, parsePercent,
+} from '../../contain/text';
 
 const STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
 
@@ -23,15 +25,12 @@ interface InnerTruncateOption {
 }
 
 interface InnerPreparedTruncateOption extends Required<InnerTruncateOption> {
-    font: string
-
     ellipsis: string
     ellipsisWidth: number
     contentWidth: number
 
     containerWidth: number
-    cnCharWidth: number
-    ascCharWidth: number
+    fontMeasureInfo: FontMeasureInfo
 }
 
 /**
@@ -91,16 +90,11 @@ function prepareTruncateOptions(
     options = options || {};
     let preparedOpts = extend({}, options) as InnerPreparedTruncateOption;
 
-    preparedOpts.font = font;
     ellipsis = retrieve2(ellipsis, '...');
     preparedOpts.maxIterations = retrieve2(options.maxIterations, 2);
     const minChar = preparedOpts.minChar = retrieve2(options.minChar, 0);
-    // FIXME
-    // Other languages?
-    preparedOpts.cnCharWidth = getWidth('国', font);
-    // FIXME
-    // Consider proportional font?
-    const ascCharWidth = preparedOpts.ascCharWidth = getWidth('a', font);
+    const fontMeasureInfo = preparedOpts.fontMeasureInfo = ensureFontMeasureInfo(font);
+    const ascCharWidth = fontMeasureInfo.asciiCharWidth;
     preparedOpts.placeholder = retrieve2(options.placeholder, '');
 
     // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
@@ -110,7 +104,7 @@ function prepareTruncateOptions(
         contentWidth -= ascCharWidth;
     }
 
-    let ellipsisWidth = getWidth(ellipsis, font);
+    let ellipsisWidth = measureWidth(fontMeasureInfo, ellipsis);
     if (ellipsisWidth > contentWidth) {
         ellipsis = '';
         ellipsisWidth = 0;
@@ -132,8 +126,8 @@ function truncateSingleLine(
     options: InnerPreparedTruncateOption
 ): void {
     const containerWidth = options.containerWidth;
-    const font = options.font;
     const contentWidth = options.contentWidth;
+    const fontMeasureInfo = options.fontMeasureInfo;
 
     if (!containerWidth) {
         out.textLine = '';
@@ -141,7 +135,7 @@ function truncateSingleLine(
         return;
     }
 
-    let lineWidth = getWidth(textLine, font);
+    let lineWidth = measureWidth(fontMeasureInfo, textLine);
 
     if (lineWidth <= containerWidth) {
         out.textLine = textLine;
@@ -156,13 +150,13 @@ function truncateSingleLine(
         }
 
         const subLength = j === 0
-            ? estimateLength(textLine, contentWidth, options.ascCharWidth, options.cnCharWidth)
+            ? estimateLength(textLine, contentWidth, fontMeasureInfo)
             : lineWidth > 0
             ? Math.floor(textLine.length * contentWidth / lineWidth)
             : 0;
 
         textLine = textLine.substr(0, subLength);
-        lineWidth = getWidth(textLine, font);
+        lineWidth = measureWidth(fontMeasureInfo, textLine);
     }
 
     if (textLine === '') {
@@ -174,13 +168,14 @@ function truncateSingleLine(
 }
 
 function estimateLength(
-    text: string, contentWidth: number, ascCharWidth: number, cnCharWidth: number
+    text: string,
+    contentWidth: number,
+    fontMeasureInfo: FontMeasureInfo
 ): number {
     let width = 0;
     let i = 0;
     for (let len = text.length; i < len && width < contentWidth; i++) {
-        const charCode = text.charCodeAt(i);
-        width += (0 <= charCode && charCode <= 127) ? ascCharWidth : cnCharWidth;
+        width += measureCharWidth(fontMeasureInfo, text.charCodeAt(i));
     }
     return i;
 }
@@ -274,8 +269,9 @@ export function parsePlainText(
     // Calculate real text width and height
     let outerHeight = height;
     let contentWidth = 0;
+    const fontMeasureInfo = ensureFontMeasureInfo(font);
     for (let i = 0; i < lines.length; i++) {
-        contentWidth = Math.max(getWidth(lines[i], font), contentWidth);
+        contentWidth = Math.max(measureWidth(fontMeasureInfo, lines[i]), contentWidth);
     }
     if (width == null) {
         // When width is not explicitly set, use contentWidth as width.
@@ -475,7 +471,7 @@ export function parseRichText(text: string, style: TextStyleProps): RichTextCont
                 token.percentWidth = styleTokenWidth;
                 pendingList.push(token);
 
-                token.contentWidth = getWidth(token.text, font);
+                token.contentWidth = measureWidth(ensureFontMeasureInfo(font), token.text);
                 // Do not truncate in this case, because there is no user case
                 // and it is too complicated.
             }
@@ -511,11 +507,11 @@ export function parseRichText(text: string, style: TextStyleProps): RichTextCont
                         );
                         token.text = tmpTruncateOut.text;
                         contentBlock.isTruncated = contentBlock.isTruncated || tmpTruncateOut.isTruncated;
-                        token.width = token.contentWidth = getWidth(token.text, font);
+                        token.width = token.contentWidth = measureWidth(ensureFontMeasureInfo(font), token.text);
                     }
                 }
                 else {
-                    token.contentWidth = getWidth(token.text, font);
+                    token.contentWidth = measureWidth(ensureFontMeasureInfo(font), token.text);
                 }
             }
 
@@ -595,6 +591,7 @@ function pushTokens(
         strLines = str.split('\n');
     }
 
+    const fontMeasureInfo = ensureFontMeasureInfo(font);
     for (let i = 0; i < strLines.length; i++) {
         const text = strLines[i];
         const token = new RichTextToken();
@@ -608,7 +605,7 @@ function pushTokens(
         else {
             token.width = linesWidths
                 ? linesWidths[i] // Caculated width in the wrap
-                : getWidth(text, font);
+                : measureWidth(fontMeasureInfo, text);
         }
 
         // The first token should be appended to the last line if not new line.
@@ -681,6 +678,7 @@ function wrapText(
     let currentWord = '';
     let currentWordWidth = 0;
     let accumWidth = 0;
+    const fontMeasureInfo = ensureFontMeasureInfo(font);
 
     for (let i = 0; i < text.length; i++) {
 
@@ -700,7 +698,7 @@ function wrapText(
             continue;
         }
 
-        const chWidth = getWidth(ch, font);
+        const chWidth = measureCharWidth(fontMeasureInfo, ch.charCodeAt(0));
         const inWord = isBreakAll ? false : !isWordBreakChar(ch);
 
         if (!lines.length
