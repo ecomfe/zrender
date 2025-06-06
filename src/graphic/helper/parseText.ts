@@ -7,7 +7,9 @@ import {
 } from '../../core/util';
 import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../../core/types';
 import { TextStyleProps } from '../Text';
-import { getLineHeight, getWidth, parsePercent } from '../../contain/text';
+import {
+    ensureFontMeasureInfo, FontMeasureInfo, getLineHeight, measureCharWidth, measureWidth, parsePercent,
+} from '../../contain/text';
 
 const STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
 
@@ -23,15 +25,12 @@ interface InnerTruncateOption {
 }
 
 interface InnerPreparedTruncateOption extends Required<InnerTruncateOption> {
-    font: string
-
     ellipsis: string
     ellipsisWidth: number
     contentWidth: number
 
     containerWidth: number
-    cnCharWidth: number
-    ascCharWidth: number
+    fontMeasureInfo: FontMeasureInfo
 }
 
 /**
@@ -91,16 +90,11 @@ function prepareTruncateOptions(
     options = options || {};
     let preparedOpts = extend({}, options) as InnerPreparedTruncateOption;
 
-    preparedOpts.font = font;
     ellipsis = retrieve2(ellipsis, '...');
     preparedOpts.maxIterations = retrieve2(options.maxIterations, 2);
     const minChar = preparedOpts.minChar = retrieve2(options.minChar, 0);
-    // FIXME
-    // Other languages?
-    preparedOpts.cnCharWidth = getWidth('国', font);
-    // FIXME
-    // Consider proportional font?
-    const ascCharWidth = preparedOpts.ascCharWidth = getWidth('a', font);
+    const fontMeasureInfo = preparedOpts.fontMeasureInfo = ensureFontMeasureInfo(font);
+    const ascCharWidth = fontMeasureInfo.asciiCharWidth;
     preparedOpts.placeholder = retrieve2(options.placeholder, '');
 
     // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
@@ -110,7 +104,7 @@ function prepareTruncateOptions(
         contentWidth -= ascCharWidth;
     }
 
-    let ellipsisWidth = getWidth(ellipsis, font);
+    let ellipsisWidth = measureWidth(fontMeasureInfo, ellipsis);
     if (ellipsisWidth > contentWidth) {
         ellipsis = '';
         ellipsisWidth = 0;
@@ -132,8 +126,8 @@ function truncateSingleLine(
     options: InnerPreparedTruncateOption
 ): void {
     const containerWidth = options.containerWidth;
-    const font = options.font;
     const contentWidth = options.contentWidth;
+    const fontMeasureInfo = options.fontMeasureInfo;
 
     if (!containerWidth) {
         out.textLine = '';
@@ -141,7 +135,7 @@ function truncateSingleLine(
         return;
     }
 
-    let lineWidth = getWidth(textLine, font);
+    let lineWidth = measureWidth(fontMeasureInfo, textLine);
 
     if (lineWidth <= containerWidth) {
         out.textLine = textLine;
@@ -156,13 +150,13 @@ function truncateSingleLine(
         }
 
         const subLength = j === 0
-            ? estimateLength(textLine, contentWidth, options.ascCharWidth, options.cnCharWidth)
+            ? estimateLength(textLine, contentWidth, fontMeasureInfo)
             : lineWidth > 0
             ? Math.floor(textLine.length * contentWidth / lineWidth)
             : 0;
 
         textLine = textLine.substr(0, subLength);
-        lineWidth = getWidth(textLine, font);
+        lineWidth = measureWidth(fontMeasureInfo, textLine);
     }
 
     if (textLine === '') {
@@ -174,13 +168,14 @@ function truncateSingleLine(
 }
 
 function estimateLength(
-    text: string, contentWidth: number, ascCharWidth: number, cnCharWidth: number
+    text: string,
+    contentWidth: number,
+    fontMeasureInfo: FontMeasureInfo
 ): number {
     let width = 0;
     let i = 0;
     for (let len = text.length; i < len && width < contentWidth; i++) {
-        const charCode = text.charCodeAt(i);
-        width += (0 <= charCode && charCode <= 127) ? ascCharWidth : cnCharWidth;
+        width += measureCharWidth(fontMeasureInfo, text.charCodeAt(i));
     }
     return i;
 }
@@ -190,17 +185,15 @@ export interface PlainTextContentBlock {
     // Line height of actual content.
     calculatedLineHeight: number
 
+    // Calculated based on the text.
     contentWidth: number
     contentHeight: number
 
+    // i.e., `retrieve2(style.width/height, contentWidth/contentHeight)`
     width: number
     height: number
 
-    /**
-     * Real text width containing padding.
-     * It should be the same as `width` if background is rendered
-     * and `width` is set by user.
-     */
+    // i.e., `contentBlock.width/height + style.padding`
     outerWidth: number
     outerHeight: number
 
@@ -224,7 +217,6 @@ export function parsePlainText(
     const truncate = overflow === 'truncate';
     const calculatedLineHeight = getLineHeight(font);
     const lineHeight = retrieve2(style.lineHeight, calculatedLineHeight);
-    const bgColorDrawn = !!(style.backgroundColor);
 
     const truncateLineOverflow = style.lineOverflow === 'truncate';
     let isTruncated = false;
@@ -239,7 +231,7 @@ export function parsePlainText(
         lines = text ? text.split('\n') : [];
     }
 
-    const contentHeight = lines.length * lineHeight;
+    let contentHeight = lines.length * lineHeight;
     const height = retrieve2(style.height, contentHeight);
 
     // Truncate lines.
@@ -248,6 +240,7 @@ export function parsePlainText(
 
         isTruncated = isTruncated || (lines.length > lineCount);
         lines = lines.slice(0, lineCount);
+        contentHeight = lines.length * lineHeight;
 
         // TODO If show ellipse for line truncate
         // if (style.ellipsis) {
@@ -276,24 +269,19 @@ export function parsePlainText(
     // Calculate real text width and height
     let outerHeight = height;
     let contentWidth = 0;
+    const fontMeasureInfo = ensureFontMeasureInfo(font);
     for (let i = 0; i < lines.length; i++) {
-        contentWidth = Math.max(getWidth(lines[i], font), contentWidth);
+        contentWidth = Math.max(measureWidth(fontMeasureInfo, lines[i]), contentWidth);
     }
     if (width == null) {
-        // When width is not explicitly set, use outerWidth as width.
+        // When width is not explicitly set, use contentWidth as width.
         width = contentWidth;
     }
 
-    let outerWidth = contentWidth;
+    let outerWidth = width;
     if (padding) {
         outerHeight += padding[0] + padding[2];
         outerWidth += padding[1] + padding[3];
-        width += padding[1] + padding[3];
-    }
-
-    if (bgColorDrawn) {
-        // When render background, outerWidth should be the same as width.
-        outerWidth = width;
     }
 
     return {
@@ -313,10 +301,13 @@ export function parsePlainText(
 class RichTextToken {
     styleName: string
     text: string
+
+    // Includes `tokenStyle.padding`
     width: number
     height: number
 
     // Inner height exclude padding
+    // i.e., `retrieve2(tokenStyle.height, token.contentHeight)`
     innerHeight: number
 
     // Width and height of actual text content.
@@ -345,13 +336,14 @@ class RichTextLine {
     }
 }
 export class RichTextContentBlock {
-    // width/height of content
+    // i.e. `retrieve2(outermostStyle.width, contentWidth)`.
+    // exclude outermost style.padding.
     width: number = 0
     height: number = 0
-    // Calculated text height
+    // Calculated text width/height based on content (including tokenStyle.padding).
     contentWidth: number = 0
     contentHeight: number = 0
-    // outerWidth/outerHeight with padding
+    // i.e., contentBlock.width/height + outermostStyle.padding
     outerWidth: number = 0
     outerHeight: number = 0
     lines: RichTextLine[] = []
@@ -479,7 +471,7 @@ export function parseRichText(text: string, style: TextStyleProps): RichTextCont
                 token.percentWidth = styleTokenWidth;
                 pendingList.push(token);
 
-                token.contentWidth = getWidth(token.text, font);
+                token.contentWidth = measureWidth(ensureFontMeasureInfo(font), token.text);
                 // Do not truncate in this case, because there is no user case
                 // and it is too complicated.
             }
@@ -515,11 +507,11 @@ export function parseRichText(text: string, style: TextStyleProps): RichTextCont
                         );
                         token.text = tmpTruncateOut.text;
                         contentBlock.isTruncated = contentBlock.isTruncated || tmpTruncateOut.isTruncated;
-                        token.width = token.contentWidth = getWidth(token.text, font);
+                        token.width = token.contentWidth = measureWidth(ensureFontMeasureInfo(font), token.text);
                     }
                 }
                 else {
-                    token.contentWidth = getWidth(token.text, font);
+                    token.contentWidth = measureWidth(ensureFontMeasureInfo(font), token.text);
                 }
             }
 
@@ -594,10 +586,12 @@ function pushTokens(
             strLines = res.lines;
         }
     }
-    else {
+
+    if (!strLines) {
         strLines = str.split('\n');
     }
 
+    const fontMeasureInfo = ensureFontMeasureInfo(font);
     for (let i = 0; i < strLines.length; i++) {
         const text = strLines[i];
         const token = new RichTextToken();
@@ -611,7 +605,7 @@ function pushTokens(
         else {
             token.width = linesWidths
                 ? linesWidths[i] // Caculated width in the wrap
-                : getWidth(text, font);
+                : measureWidth(fontMeasureInfo, text);
         }
 
         // The first token should be appended to the last line if not new line.
@@ -684,6 +678,7 @@ function wrapText(
     let currentWord = '';
     let currentWordWidth = 0;
     let accumWidth = 0;
+    const fontMeasureInfo = ensureFontMeasureInfo(font);
 
     for (let i = 0; i < text.length; i++) {
 
@@ -703,7 +698,7 @@ function wrapText(
             continue;
         }
 
-        const chWidth = getWidth(ch, font);
+        const chWidth = measureCharWidth(fontMeasureInfo, ch.charCodeAt(0));
         const inWord = isBreakAll ? false : !isWordBreakChar(ch);
 
         if (!lines.length

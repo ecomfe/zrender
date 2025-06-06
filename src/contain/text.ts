@@ -1,24 +1,109 @@
 import BoundingRect, { RectLike } from '../core/BoundingRect';
-import { Dictionary, TextAlign, TextVerticalAlign, BuiltinTextPosition } from '../core/types';
+import { TextAlign, TextVerticalAlign, BuiltinTextPosition } from '../core/types';
 import LRU from '../core/LRU';
 import { DEFAULT_FONT, platformApi } from '../core/platform';
 
-let textWidthCache: Dictionary<LRU<number>> = {};
-
+/**
+ * @deprecated But keep for possible outside usage.
+ *  Use `ensureFontMeasureInfo` + `measureWidth` instead.
+ */
 export function getWidth(text: string, font: string): number {
-    font = font || DEFAULT_FONT;
-    let cacheOfFont = textWidthCache[font];
-    if (!cacheOfFont) {
-        cacheOfFont = textWidthCache[font] = new LRU(500);
-    }
-    let width = cacheOfFont.get(text);
-    if (width == null) {
-        width = platformApi.measureText(text, font).width;
-        cacheOfFont.put(text, width);
-    }
+    return measureWidth(ensureFontMeasureInfo(font), text);
+}
 
+export interface FontMeasureInfo {
+    font: string;
+    strWidthCache: LRU<number>;
+    // Key: char code, index: 0~127 (include 127)
+    asciiWidthMap: number[] | null | undefined;
+    asciiWidthMapTried: boolean;
+    // Default width char width used both in non-ascii and line height.
+    stWideCharWidth: number;
+    // Default asc char width
+    asciiCharWidth: number;
+}
+
+export function ensureFontMeasureInfo(font: string): FontMeasureInfo {
+    if (!_fontMeasureInfoCache) {
+        _fontMeasureInfoCache = new LRU(100);
+    }
+    font = font || DEFAULT_FONT;
+    let measureInfo = _fontMeasureInfoCache.get(font);
+    if (!measureInfo) {
+        measureInfo = {
+            font: font,
+            strWidthCache: new LRU(500),
+            asciiWidthMap: null, // Init lazily for performance.
+            asciiWidthMapTried: false,
+            // FIXME
+            // Other languages?
+            // FIXME
+            // Consider proportional font?
+            stWideCharWidth: platformApi.measureText('国', font).width,
+            asciiCharWidth: platformApi.measureText('a', font).width,
+        };
+        _fontMeasureInfoCache.put(font, measureInfo);
+    }
+    return measureInfo;
+}
+let _fontMeasureInfoCache: LRU<FontMeasureInfo>;
+
+/**
+ * For getting more precise result in truncate.
+ * non-monospace font vary in char width.
+ * But if it is time consuming in some platform, return null/undefined.
+ * @return Key: char code, index: 0~127 (include 127)
+ */
+function tryCreateASCIIWidthMap(font: string): FontMeasureInfo['asciiWidthMap'] {
+    // PENDING: is it necessary? Re-examine it if bad case reported.
+    if (_getASCIIWidthMapLongCount >= GET_ASCII_WIDTH_LONG_COUNT_MAX) {
+        return;
+    }
+    font = font || DEFAULT_FONT;
+    const asciiWidthMap = [];
+    const start = +(new Date());
+    // 0~31 and 127 may also have width, and may vary in some fonts.
+    for (let code = 0; code <= 127; code++) {
+        asciiWidthMap[code] = platformApi.measureText(String.fromCharCode(code), font).width;
+    }
+    const cost = +(new Date()) - start;
+    if (cost > 16) {
+        _getASCIIWidthMapLongCount = GET_ASCII_WIDTH_LONG_COUNT_MAX;
+    }
+    else if (cost > 2) {
+        _getASCIIWidthMapLongCount++;
+    }
+    return asciiWidthMap;
+}
+let _getASCIIWidthMapLongCount: number = 0;
+const GET_ASCII_WIDTH_LONG_COUNT_MAX = 5;
+
+/**
+ * Hot path, performance sensitive.
+ */
+export function measureCharWidth(fontMeasureInfo: FontMeasureInfo, charCode: number): number {
+    if (!fontMeasureInfo.asciiWidthMapTried) {
+        fontMeasureInfo.asciiWidthMap = tryCreateASCIIWidthMap(fontMeasureInfo.font);
+        fontMeasureInfo.asciiWidthMapTried = true;
+    }
+    return (0 <= charCode && charCode <= 127)
+        ? (fontMeasureInfo.asciiWidthMap != null
+            ? fontMeasureInfo.asciiWidthMap[charCode]
+            : fontMeasureInfo.asciiCharWidth
+        )
+        : fontMeasureInfo.stWideCharWidth;
+}
+
+export function measureWidth(fontMeasureInfo: FontMeasureInfo, text: string): number {
+    const strWidthCache = fontMeasureInfo.strWidthCache;
+    let width = strWidthCache.get(text);
+    if (width == null) {
+        width = platformApi.measureText(text, fontMeasureInfo.font).width;
+        strWidthCache.put(text, width);
+    }
     return width;
 }
+
 
 /**
  *
@@ -31,7 +116,7 @@ export function innerGetBoundingRect(
     textAlign?: TextAlign,
     textBaseline?: TextVerticalAlign
 ): BoundingRect {
-    const width = getWidth(text, font);
+    const width = measureWidth(ensureFontMeasureInfo(font), text);
     const height = getLineHeight(font);
 
     const x = adjustTextX(0, width, textAlign);
@@ -92,7 +177,7 @@ export function adjustTextY(y: number, height: number, verticalAlign: TextVertic
 
 export function getLineHeight(font?: string): number {
     // FIXME A rough approach.
-    return getWidth('国', font);
+    return ensureFontMeasureInfo(font).stWideCharWidth;
 }
 
 export function measureText(text: string, font?: string): {

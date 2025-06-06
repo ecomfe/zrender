@@ -62,7 +62,7 @@
 
 
         <div class="control-block">
-            <label>textRotation:</label>
+            <label>text.rotation:</label>
             <button onclick="startTextRotation();">Start</button>
             <button onclick="stopTextRotation();">Stop</button>
             <button onclick="updateToURL('textRotation', 0.5 * Math.PI);">0.5 * Math.PI</button>
@@ -116,7 +116,7 @@
         </div> -->
 
         <div class="control-block">
-            <label>background:</label>
+            <label>text.style.backgroundColor:</label>
             <button onclick="updateToURL('hasBg', 1);">Add</button>
             <button onclick="removeToURL('hasBg');">Remove</button>
             <script>
@@ -157,7 +157,7 @@
         </div>
 
         <div class="control-block">
-            <label>textDistance:</label>
+            <label>textConfig.distance:</label>
             <button onclick="updateToURL('textDistance', 15);">15</button>
             <button onclick="updateToURL('textDistance', -20);">-20</button>
             <button onclick="removeToURL('textDistance');">Remove</button>
@@ -181,7 +181,7 @@
         </div>
 
         <div class="control-block">
-            <label>textPosition:</label>
+            <label>textConfig.position:</label>
             <button onclick="updateToURL('textPosition', [10, 20]);">[10, 20]</button>
             <button onclick="updateToURL('textPosition', [-10, -20]);">[-10, -20]</button>
             <button onclick="removeToURL('textPosition');">Remove</button>
@@ -191,18 +191,138 @@
                 for (var i = 0; i < _shapes1.length; i++) {
                     var shape = _shapes1[i];
                     shape.setTextConfig({
-                        position: textPosition
+                        position: clone(textPosition)
                     });
                 }
                 for (var i = 0; i < _shapes2.length; i++) {
                     var shape = _shapes2[i];
                     shape.setTextConfig({
-                        position: textPosition
+                        position: clone(textPosition)
                     });
                 }
             };
             </script>
         </div>
+
+
+        <div class="control-block">
+            <label>textConfig.offset:</label>
+            <button onclick="updateToURL('textOffset', [15, 25]);">[15, 25]</button>
+            <button onclick="updateToURL('textOffset', [-15, -25]);">[-15, -25]</button>
+            <button onclick="removeToURL('textOffset');">Remove</button>
+            <script>
+            _updaters.textOffset = function () {
+                var textOffset = _storage.textOffset;
+                for (var i = 0; i < _shapes1.length; i++) {
+                    var shape = _shapes1[i];
+                    shape.setTextConfig({
+                        offset: clone(textOffset)
+                    });
+                }
+                for (var i = 0; i < _shapes2.length; i++) {
+                    var shape = _shapes2[i];
+                    shape.setTextConfig({
+                        offset: clone(textOffset)
+                    });
+                }
+            };
+            </script>
+        </div>
+
+
+        <div class="control-block">
+            <label>text.x, text.y (should no effect):</label>
+            <button onclick="updateToURL('textXY', [15, 25]);">[15, 25]</button>
+            <button onclick="updateToURL('textXY', [-15, -25]);">[-15, -25]</button>
+            <button onclick="removeToURL('textXY');">Remove</button>
+            <script>
+            _updaters.textXY = function () {
+                var textXY = _storage.textXY;
+                for (var i = 0; i < _shapes1.length; i++) {
+                    var shape = _shapes1[i];
+                    var textContent = shape.getTextContent();
+                    textContent.x = textXY[0];
+                    textContent.y = textXY[1];
+                }
+                for (var i = 0; i < _shapes2.length; i++) {
+                    var shape = _shapes2[i];
+                    var textContent = shape.getTextContent();
+                    textContent.x = textXY[0];
+                    textContent.y = textXY[1];
+                }
+            };
+            </script>
+        </div>
+
+
+
+        <div class="control-block">
+            <label>text.scaleX, text.scaleY:</label>
+            <button onclick="updateToURL('textScaleXY', [2, 0.5]);">[2, 0.5]</button>
+            <button onclick="updateToURL('textScaleXY', [0.5, 2]);">[0.5, 2]</button>
+            <button onclick="removeToURL('textScaleXY');">Remove</button>
+            <script>
+            _updaters.textScaleXY = function () {
+                var textScaleXY = _storage.textScaleXY;
+                for (var i = 0; i < _shapes1.length; i++) {
+                    var shape = _shapes1[i];
+                    var textContent = shape.getTextContent();
+                    textContent.scaleX = textScaleXY[0];
+                    textContent.scaleY = textScaleXY[1];
+                }
+                for (var i = 0; i < _shapes2.length; i++) {
+                    var shape = _shapes2[i];
+                    var textContent = shape.getTextContent();
+                    textContent.scaleX = textScaleXY[0];
+                    textContent.scaleY = textScaleXY[1];
+                }
+            };
+            </script>
+        </div>
+
+
+
+        <div class="control-block">
+            <label>textConfig.local:</label>
+            <button onclick="updateToURL('textConfigLocal', true);">true</button>
+            <button onclick="updateToURL('textConfigLocal', false);">false</button>
+            <button onclick="removeToURL('textConfigLocal');">Remove</button>
+            <script>
+            _updaters.textConfigLocal = function () {
+                var textConfigLocal = _storage.textConfigLocal;
+                for (var i = 0; i < _shapes1.length; i++) {
+                    var shape = _shapes1[i];
+                    shape.setTextConfig({
+                        local: textConfigLocal
+                    });
+                }
+                for (var i = 0; i < _shapes2.length; i++) {
+                    var shape = _shapes2[i];
+                    shape.setTextConfig({
+                        local: textConfigLocal
+                    });
+                }
+            };
+            </script>
+        </div>
+
+
+        <div class="control-block">
+            <label>mainGroup.scale:</label>
+            <button onclick="updateToURL('mainGroupScale', [1.5, 0.5]);">[1.5, 0.5]</button>
+            <button onclick="updateToURL('mainGroupScale', [0.5, 1.5]);">[0.5, 1.5]</button>
+            <button onclick="removeToURL('mainGroupScale');">Remove</button>
+            <script>
+            _updaters.mainGroupScale = function () {
+                var mainGroupScale = _storage.mainGroupScale;
+                _mainGroup1.scaleX = mainGroupScale[0];
+                _mainGroup1.scaleY = mainGroupScale[1];
+                _mainGroup2.scaleX = mainGroupScale[0];
+                _mainGroup2.scaleY = mainGroupScale[1];
+            };
+            </script>
+        </div>
+
 
         <div class="control-block">
             <label>padding:</label>
@@ -230,6 +350,7 @@
             };
             </script>
         </div>
+
 
         <div class="control-block">
             <label>textAlign:</label>
@@ -357,6 +478,8 @@
         var _storage = {};
         var _shapes2 = [];
         var _shapes1 = [];
+        var _mainGroup2 = null;
+        var _mainGroup1 = null;
         var _rotating = false;
 
 
@@ -377,6 +500,8 @@
                 renderer: window.__ZRENDER__DEFAULT__RENDERER__
             });
 
+            _mainGroup1 = new zrender.Group();
+            zr1.add(_mainGroup1);
             zrender.util.each(posList, function (textPos, idx) {
                 var text = textPos + '中文';
                 var shape = new zrender.Rect({
@@ -401,14 +526,16 @@
                         height: 70
                     }
                 });
+                _mainGroup1.add(shape);
                 _shapes1.push(shape);
-                zr1.add(shape);
             });
 
             var zr2 = zrender.init(document.getElementById('main2'), {
                 renderer: window.__ZRENDER__DEFAULT__RENDERER__
             });
 
+            _mainGroup2 = new zrender.Group();
+            zr2.add(_mainGroup2);
             zrender.util.each(posList, function (textPos, idx) {
                 var text = textPos;
 
@@ -445,8 +572,8 @@
                         height: 100
                     }
                 });
+                _mainGroup2.add(shape);
                 _shapes2.push(shape);
-                zr2.add(shape);
             });
         }
 
