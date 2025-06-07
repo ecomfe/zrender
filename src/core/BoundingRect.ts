@@ -1,20 +1,20 @@
-/**
- * @module echarts/core/BoundingRect
- */
-
 import * as matrix from './matrix';
 import Point, { PointLike } from './Point';
 
 const mathMin = Math.min;
 const mathMax = Math.max;
+const mathAbs = Math.abs;
 
 const lt = new Point();
 const rb = new Point();
 const lb = new Point();
 const rt = new Point();
 
-const minTv = new Point();
-const maxTv = new Point();
+const _intersectCtx = createIntersectContext();
+const _minTv = _intersectCtx.minTv;
+const _maxTv = _intersectCtx.maxTv;
+// [min, max]
+const _lenMinMax = [0, 0];
 
 class BoundingRect {
 
@@ -24,6 +24,12 @@ class BoundingRect {
     height: number
 
     constructor(x: number, y: number, width: number, height: number) {
+        BoundingRect.set(this, x, y, width, height);
+    }
+
+    static set<TTarget extends RectLike>(
+        target: TTarget, x: number, y: number, width: number, height: number
+    ): TTarget {
         if (width < 0) {
             x = x + width;
             width = -width;
@@ -33,10 +39,12 @@ class BoundingRect {
             height = -height;
         }
 
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
+        target.x = x;
+        target.y = y;
+        target.width = width;
+        target.height = height;
+
+        return target;
     }
 
     union(other: BoundingRect) {
@@ -80,7 +88,6 @@ class BoundingRect {
 
         const m = matrix.create();
 
-        // 矩阵右乘
         matrix.translate(m, m, [-a.x, -a.y]);
         matrix.scale(m, m, [sx, sy]);
         matrix.translate(m, m, [b.x, b.y]);
@@ -88,89 +95,100 @@ class BoundingRect {
         return m;
     }
 
-    intersect(b: RectLike, mtv?: PointLike): boolean {
-        if (!b) {
+    /**
+     * @see `static intersect`
+     */
+    intersect(
+        b: RectLike,
+        mtv?: PointLike,
+        opt?: BoundingRectIntersectOpt
+    ): boolean {
+        return BoundingRect.intersect(this, b, mtv, opt);
+    }
+
+    /**
+     * [NOTICE]
+     *  Touching the edge is consisdered an intersection.
+     *  zero-width/height can still cause intersection if `touchThreshold` is 0.
+     *  See more in `BoundingRectIntersectOpt['touchThreshold']`
+     *
+     * @param mtv
+     *  If it's not overlapped. it means needs to move `b` rect with Maximum Translation Vector to be overlapped.
+     *  Else it means needs to move `b` rect with Minimum Translation Vector to be not overlapped.
+     */
+    static intersect(
+        a: RectLike,
+        b: RectLike,
+        mtv?: PointLike,
+        opt?: BoundingRectIntersectOpt
+    ): boolean {
+        if (mtv) {
+            Point.set(mtv, 0, 0);
+        }
+        const outIntersectRect = opt && opt.outIntersectRect || null;
+        if (outIntersectRect) {
+            outIntersectRect.x = outIntersectRect.y = outIntersectRect.width = outIntersectRect.height = NaN;
+        }
+
+        if (!a || !b) {
             return false;
         }
 
+        // Normalize negative width/height.
+        if (!(a instanceof BoundingRect)) {
+            a = BoundingRect.set(_tmpIntersectA, a.x, a.y, a.width, a.height);
+        }
         if (!(b instanceof BoundingRect)) {
-            // Normalize negative width/height.
-            b = BoundingRect.create(b);
+            b = BoundingRect.set(_tmpIntersectB, b.x, b.y, b.width, b.height);
         }
 
-        const a = this;
-        const ax0 = a.x;
-        const ax1 = a.x + a.width;
-        const ay0 = a.y;
-        const ay1 = a.y + a.height;
+        _intersectCtx.reset(opt, !!mtv);
 
-        const bx0 = b.x;
-        const bx1 = b.x + b.width;
-        const by0 = b.y;
-        const by1 = b.y + b.height;
+        const touchThreshold = _intersectCtx.touchThreshold;
 
-        let overlap = !(ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
-        if (mtv) {
-            let dMin = Infinity;
-            let dMax = 0;
-            const d0 = Math.abs(ax1 - bx0);
-            const d1 = Math.abs(bx1 - ax0);
-            const d2 = Math.abs(ay1 - by0);
-            const d3 = Math.abs(by1 - ay0);
-            const dx = Math.min(d0, d1);
-            const dy = Math.min(d2, d3);
-            // On x axis
-            if (ax1 < bx0 || bx1 < ax0) {
-                if (dx > dMax) {
-                    dMax = dx;
-                    if (d0 < d1) {
-                        Point.set(maxTv, -d0, 0); // b is on the right
-                    }
-                    else {
-                        Point.set(maxTv, d1, 0);  // b is on the left
-                    }
-                }
-            }
-            else {
-                if (dx < dMin) {
-                    dMin = dx;
-                    if (d0 < d1) {
-                        Point.set(minTv, d0, 0); // b is on the right
-                    }
-                    else {
-                        Point.set(minTv, -d1, 0);  // b is on the left
-                    }
-                }
-            }
+        const ax0 = a.x + touchThreshold;
+        const ax1 = a.x + a.width - touchThreshold;
+        const ay0 = a.y + touchThreshold;
+        const ay1 = a.y + a.height - touchThreshold;
 
-            // On y axis
-            if (ay1 < by0 || by1 < ay0) {
-                if (dy > dMax) {
-                    dMax = dy;
-                    if (d2 < d3) {
-                        Point.set(maxTv, 0, -d2); // b is on the bottom(larger y)
-                    }
-                    else {
-                        Point.set(maxTv, 0, d3);  // b is on the top(smaller y)
-                    }
-                }
-            }
-            else {
-                if (dx < dMin) {
-                    dMin = dx;
-                    if (d2 < d3) {
-                        Point.set(minTv, 0, d2); // b is on the bottom
-                    }
-                    else {
-                        Point.set(minTv, 0, -d3);  // b is on the top
-                    }
-                }
-            }
+        const bx0 = b.x + touchThreshold;
+        const bx1 = b.x + b.width - touchThreshold;
+        const by0 = b.y + touchThreshold;
+        const by1 = b.y + b.height - touchThreshold;
+
+        if (ax0 > ax1 || ay0 > ay1 || bx0 > bx1 || by0 > by1) {
+            return false;
+        }
+
+        const overlap = !(ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
+
+        if (overlap && outIntersectRect) {
+            const x0max = mathMax(ax0, bx0);
+            const y0max = mathMax(ay0, by0);
+            BoundingRect.set(
+                outIntersectRect,
+                x0max,
+                y0max,
+                mathMin(ax1, bx1) - x0max,
+                mathMin(ay1, by1) - y0max
+            );
         }
 
         if (mtv) {
-            Point.copy(mtv, overlap ? minTv : maxTv);
+            _lenMinMax[0] = Infinity;
+            _lenMinMax[1] = 0;
+
+            intersectOneDim(ax0, ax1, bx0, bx1, 'x', 'y');
+            intersectOneDim(ay0, ay1, by0, by1, 'y', 'x');
+
+            Point.copy(
+                mtv,
+                overlap
+                    ? (_intersectCtx.useDir ? _intersectCtx.dirMinTv : _minTv)
+                    : _maxTv
+            );
         }
+
         return overlap;
     }
 
@@ -220,11 +238,13 @@ class BoundingRect {
         return new BoundingRect(rect.x, rect.y, rect.width, rect.height);
     }
 
-    static copy(target: RectLike, source: RectLike) {
+    static copy<TTarget extends RectLike>(target: TTarget, source: RectLike): TTarget {
         target.x = source.x;
         target.y = source.y;
         target.width = source.width;
         target.height = source.height;
+
+        return target;
     }
 
     static applyTransform(target: RectLike, source: RectLike, m: matrix.MatrixArray) {
@@ -278,6 +298,53 @@ class BoundingRect {
     }
 }
 
+const _tmpIntersectA = new BoundingRect(0, 0, 0, 0);
+const _tmpIntersectB = new BoundingRect(0, 0, 0, 0);
+
+
+function intersectOneDim(
+    a0: number, a1: number, b0: number, b1: number,
+    updateDim: 'x' | 'y', zeroDim: 'x' | 'y'
+): void {
+    const d0 = mathAbs(a1 - b0);
+    const d1 = mathAbs(b1 - a0);
+    const d01min = mathMin(d0, d1);
+
+    if (a1 < b0 || b1 < a0) {
+        if (d01min > _lenMinMax[1]) {
+            _lenMinMax[1] = d01min;
+            _maxTv[zeroDim] = 0;
+            if (d0 < d1) {
+                _maxTv[updateDim] = -d0; // b is on the right/bottom(larger x/y)
+            }
+            else {
+                _maxTv[updateDim] = d1; // b is on the left/top(smaller x/y)
+            }
+        }
+    }
+    else {
+        if (d01min < _lenMinMax[0] || _intersectCtx.useDir) {
+            // If bidirectional, both dist0 dist1 need to check,
+            // otherwise only check the smaller one.
+            _lenMinMax[0] = mathMin(d01min, _lenMinMax[0]);
+            if (d0 < d1 || !_intersectCtx.bidirectional) {
+                _minTv[updateDim] = d0; // b is on the right/bottom(larger x/y)
+                _minTv[zeroDim] = 0;
+                if (_intersectCtx.useDir) {
+                    _intersectCtx.calcDirMTV();
+                }
+            }
+            if (d0 >= d1 || !_intersectCtx.bidirectional) {
+                _minTv[updateDim] = -d1; // b is on the left/top(smaller x/y)
+                _minTv[zeroDim] = 0;
+                if (_intersectCtx.useDir) {
+                    _intersectCtx.calcDirMTV();
+                }
+            }
+        }
+    }
+}
+
 
 export type RectLike = {
     x: number
@@ -285,5 +352,132 @@ export type RectLike = {
     width: number
     height: number
 }
+
+export interface BoundingRectIntersectOpt {
+    /**
+     * Be a radian, representing a vector direction.
+     * `direction=atan2(y, x)`, i.e., `direction=0` is vector(1,0), `direction=PI/4` is vector(1,1). If specified,
+     * when overlapping, the output `mtv` is still a minimal vector that can resolve the overlap. However it is
+     * not Minimum Translation Vector, but a vector follow the direction.
+     */
+    direction?: number
+    /**
+     * By default `true`. It means whether `BoundingRectIntersectOpt['direction']` is bidirectional. If `true`,
+     * the returned mtv is the minimal among both `opt.direction` and `opt.direction + Math.PI`.
+     */
+    bidirectional?: boolean
+    /**
+     * Two rects that touch but are within the threshold do not be considered an intersection.
+     * Scenarios:
+     *  - Without a `touchThreshold`, zero-width/height can still cause intersection.
+     *    In some scenarios, a rect with border styles still needs to display even if width/height is zero;
+     *    but in some other scenarios, zero-width/height represents "nothing", such as in HTML
+     *    BoundingClientRect, or when zrender.Group has all children `ignored: true`. In this case, we can use
+     *    a non-negative `touchThreshold` to form a "minus width/height" and force it to never cause an
+     *    intersection. And in this case, mtv will not be calculated.
+     *  - Without a `touchThreshold`, touching the edge is consisdered an intersection.
+     *  - Having a `touchThreshold`, elements can use the same rect instance to achieve compact layout while
+     *    still passing through the overlap-hiding handler.
+     *  - a positive near-zero number is commonly used in `touchThreshold` for aggressive overlap handling,
+     *    such as:
+     *    - Hide one element if overlapping.
+     *    - Two elements are vertically touching at top/bottom edges, but are stricted to move along
+     *      the horizontal direction to resolve overlap.
+     */
+    touchThreshold?: number
+
+    /**
+     * If an intersection occur, set the intersection rect to it.
+     * Otherwise set to all NaN (it will not pass `contain` and `intersect`).
+     */
+    outIntersectRect?: RectLike
+}
+
+export function createIntersectContext() {
+
+    let _direction: BoundingRectIntersectOpt['direction'] = 0;
+    const _dirCheckVec = new Point();
+    const _dirTmp = new Point();
+
+    const _ctx = {
+        minTv: new Point(),
+        maxTv: new Point(),
+        useDir: false as boolean,
+        dirMinTv: new Point(),
+        touchThreshold: 0 as BoundingRectIntersectOpt['touchThreshold'],
+        bidirectional: true as BoundingRectIntersectOpt['bidirectional'],
+
+        negativeSize: false as boolean,
+
+        reset(opt: BoundingRectIntersectOpt | null | undefined, useMTV: boolean): void {
+            _ctx.touchThreshold = 0;
+            if (opt && opt.touchThreshold != null) {
+                _ctx.touchThreshold = mathMax(0, opt.touchThreshold);
+            }
+            _ctx.negativeSize = false;
+
+            if (!useMTV) {
+                return;
+            }
+
+            _ctx.minTv.set(Infinity, Infinity);
+            _ctx.maxTv.set(0, 0);
+            _ctx.useDir = false;
+
+            if (opt && opt.direction != null) {
+                _ctx.useDir = true;
+                _ctx.dirMinTv.copy(_ctx.minTv);
+                _dirTmp.copy(_ctx.minTv);
+                _direction = opt.direction;
+                _ctx.bidirectional = opt.bidirectional == null || !!opt.bidirectional;
+                if (!_ctx.bidirectional) {
+                    _dirCheckVec.set(Math.cos(_direction), Math.sin(_direction));
+                }
+            }
+        },
+
+        calcDirMTV(): void {
+            const minTv = _ctx.minTv;
+            const dirMinTv = _ctx.dirMinTv;
+            const squareMag = minTv.y * minTv.y + minTv.x * minTv.x;
+            const dirSin = Math.sin(_direction);
+            const dirCos = Math.cos(_direction);
+            const dotProd = dirSin * minTv.y + dirCos * minTv.x;
+
+            if (nearZero(dotProd)) {
+                if (nearZero(minTv.x) && nearZero(minTv.y)) {
+                    // The two OBBs touch at the edges.
+                    dirMinTv.set(0, 0);
+                }
+                // Otherwise `minTv` is perpendicular to `this.direction`.
+                return;
+            }
+
+            _dirTmp.x = squareMag * dirCos / dotProd;
+            _dirTmp.y = squareMag * dirSin / dotProd;
+            if (nearZero(_dirTmp.x) && nearZero(_dirTmp.y)) {
+                // The result includes near-(0,0) regardless of `bidirectional`.
+                dirMinTv.set(0, 0);
+                return;
+            }
+
+            if ((
+                    _ctx.bidirectional
+                    || _dirCheckVec.dot(_dirTmp) > 0
+                )
+                && _dirTmp.len() < dirMinTv.len()
+            ) {
+                dirMinTv.copy(_dirTmp);
+            }
+        }
+    };
+
+    function nearZero(val: number): boolean {
+        return mathAbs(val) < 1e-10; // Empirically OK for pixel-scale values.
+    }
+
+    return _ctx;
+}
+
 
 export default BoundingRect;

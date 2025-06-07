@@ -27,6 +27,8 @@ class Transformable {
     skewX: number
     skewY: number
 
+    // Suppose positive y is towards screen-bottom and positive x is towards screen-right;
+    // positive rotation means rotating anticlockwise. (opposite to CSS transform rotate)
     rotation: number
 
     /**
