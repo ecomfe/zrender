@@ -1,12 +1,9 @@
-/**
- * @module echarts/core/BoundingRect
- */
-
 import * as matrix from './matrix';
 import Point, { PointLike } from './Point';
 
 const mathMin = Math.min;
 const mathMax = Math.max;
+const mathAbs = Math.abs;
 
 const lt = new Point();
 const rb = new Point();
@@ -82,7 +79,6 @@ class BoundingRect {
 
         const m = matrix.create();
 
-        // 矩阵右乘
         matrix.translate(m, m, [-a.x, -a.y]);
         matrix.scale(m, m, [sx, sy]);
         matrix.translate(m, m, [b.x, b.y]);
@@ -91,6 +87,11 @@ class BoundingRect {
     }
 
     /**
+     * [NOTICE]
+     *  Touching the edge is consisdered an intersection.
+     *  zero-width/height can still cause intersection if `touchThreshold` is 0.
+     *  See more in `BoundingRectIntersectOpt['touchThreshold']`
+     *
      * @param mtv
      *  If it's not overlapped. it means needs to move `b` rect with Maximum Translation Vector to be overlapped.
      *  Else it means needs to move `b` rect with Minimum Translation Vector to be not overlapped.
@@ -114,20 +115,23 @@ class BoundingRect {
         _intersectCtx.reset(opt, !!mtv);
 
         const touchThreshold = _intersectCtx.touchThreshold;
-        const axTouchThld = Math.min(a.width / 2, touchThreshold);
-        const ayTouchThld = Math.min(a.height / 2, touchThreshold);
-        const bxTouchThld = Math.min(b.width / 2, touchThreshold);
-        const byTouchThld = Math.min(b.height / 2, touchThreshold);
 
-        const ax0 = a.x + axTouchThld;
-        const ax1 = a.x + a.width - axTouchThld;
-        const ay0 = a.y + ayTouchThld;
-        const ay1 = a.y + a.height - ayTouchThld;
+        const ax0 = a.x + touchThreshold;
+        const ax1 = a.x + a.width - touchThreshold;
+        const ay0 = a.y + touchThreshold;
+        const ay1 = a.y + a.height - touchThreshold;
 
-        const bx0 = b.x + bxTouchThld;
-        const bx1 = b.x + b.width - bxTouchThld;
-        const by0 = b.y + byTouchThld;
-        const by1 = b.y + b.height - byTouchThld;
+        const bx0 = b.x + touchThreshold;
+        const bx1 = b.x + b.width - touchThreshold;
+        const by0 = b.y + touchThreshold;
+        const by1 = b.y + b.height - touchThreshold;
+
+        if (ax0 > ax1 || ay0 > ay1 || bx0 > bx1 || by0 > by1) {
+            if (mtv) {
+                Point.set(mtv, 0, 0);
+            }
+            return false;
+        }
 
         const overlap = !(ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
 
@@ -154,9 +158,9 @@ class BoundingRect {
         updateDim: 'x' | 'y', zeroDim: 'x' | 'y',
         lenMinMax: number[] // [min, max], be shared and will be modified.
     ) {
-        const d0 = Math.abs(a1 - b0);
-        const d1 = Math.abs(b1 - a0);
-        const d01min = Math.min(d0, d1);
+        const d0 = mathAbs(a1 - b0);
+        const d1 = mathAbs(b1 - a0);
+        const d01min = mathMin(d0, d1);
 
         if (a1 < b0 || b1 < a0) {
             if (d01min > lenMinMax[1]) {
@@ -174,7 +178,7 @@ class BoundingRect {
             if (d01min < lenMinMax[0] || _intersectCtx.useDir) {
                 // If bidirectional, both dist0 dist1 need to check,
                 // otherwise only check the smaller one.
-                lenMinMax[0] = Math.min(d01min, lenMinMax[0]);
+                lenMinMax[0] = mathMin(d01min, lenMinMax[0]);
                 if (d0 < d1 || !_intersectCtx.bidirectional) {
                     _minTv[updateDim] = d0; // b is on the right/bottom(larger x/y)
                     _minTv[zeroDim] = 0;
@@ -318,13 +322,22 @@ export interface BoundingRectIntersectOpt {
      */
     bidirectional?: boolean
     /**
-     * Two rects that touch but are within the threshold do not be considered intersecting.
-     * With this feature, elements can use the same rect instance to achieve compact layout while still passing
-     * through the overlap-hiding handler.
-     * A positive near-zero number is commonly used here for aggressive overlap handling, such as:
-     *  - Hide one element if overlapping.
-     *  - Two elements are vertically touching at top/bottom edges, but are stricted to move along
-     *    the horizontal direction to resolve overlap.
+     * Two rects that touch but are within the threshold do not be considered an intersection.
+     * Scenarios:
+     *  - Without a `touchThreshold`, zero-width/height can still cause intersection.
+     *    In some scenarios, a rect with border styles still needs to display even if width/height is zero;
+     *    but in some other scenarios, zero-width/height represents "nothing", such as in HTML
+     *    BoundingClientRect, or when zrender.Group has all children `ignored: true`. In this case, we can use
+     *    a non-negative `touchThreshold` to form a "minus width/height" and force it to never cause an
+     *    intersection. And in this case, mtv will not be calculated.
+     *  - Without a `touchThreshold`, touching the edge is consisdered an intersection.
+     *  - Having a `touchThreshold`, elements can use the same rect instance to achieve compact layout while
+     *    still passing through the overlap-hiding handler.
+     *  - a positive near-zero number is commonly used in `touchThreshold` for aggressive overlap handling,
+     *    such as:
+     *    - Hide one element if overlapping.
+     *    - Two elements are vertically touching at top/bottom edges, but are stricted to move along
+     *      the horizontal direction to resolve overlap.
      */
     touchThreshold?: number
 }
@@ -343,11 +356,14 @@ export function createIntersectContext() {
         touchThreshold: 0 as BoundingRectIntersectOpt['touchThreshold'],
         bidirectional: true as BoundingRectIntersectOpt['bidirectional'],
 
+        negativeSize: false as boolean,
+
         reset(opt: BoundingRectIntersectOpt | null | undefined, useMTV: boolean): void {
             _ctx.touchThreshold = 0;
             if (opt && opt.touchThreshold != null) {
-                _ctx.touchThreshold = Math.max(0, opt.touchThreshold);
+                _ctx.touchThreshold = mathMax(0, opt.touchThreshold);
             }
+            _ctx.negativeSize = false;
 
             if (!useMTV) {
                 return;
@@ -406,7 +422,7 @@ export function createIntersectContext() {
     };
 
     function nearZero(val: number): boolean {
-        return Math.abs(val) < 1e-10; // Empirically OK for pixel-scale values.
+        return mathAbs(val) < 1e-10; // Empirically OK for pixel-scale values.
     }
 
     return _ctx;

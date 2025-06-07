@@ -23,14 +23,14 @@
         }
         button {
             margin: 2px 3px;
-            font-size: 11px;
+            font-size: 10px;
         }
         .test-case-title {
             padding-left: 5px;
             font-family: Arial, Helvetica, sans-serif;
         }
         #test_case_box {
-            max-width: 550px;
+            margin-right: 270px;
         }
     </style>
 
@@ -91,13 +91,36 @@
         rect2_shape_width: 130,
         rect2_shape_height: 400,
     }, {
-        text: 'obb, touch at edge exactly (expect: overlap but mtv 0)',
+        text: 'obb, touch at edge exactly, touchThreshold 0 (expect: mtv 0, overlap)',
         useOBB: true,
         useDirection: true,
         direction: Math.PI / 2,
         bidirectional: true,
-        useTouchThreshold: false,
+        useTouchThreshold: true,
         touchThreshold: 0,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 101.390625,
+        rect1_shape_height: 12,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 0,
+        rect2_shape_y: -12,
+        rect2_shape_width: 750,
+        rect2_shape_height: 12,
+    }, {
+        text: 'obb, touch at edge exactly, touchThreshold 0.1 (expect: mtv 0, not overlap)',
+        useOBB: true,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0.1,
         noMTV: false,
         rect1_rotation: 0,
         rect1_x: 389,
@@ -160,13 +183,13 @@
         rect2_shape_width: 750,
         rect2_shape_height: 12,
     }, {
-        text: 'obb, rect1: {width:0, height: 20} (expect: can overlap)',
+        text: 'obb, rect1: {width:0, height: 20}, touchThreshold: 0 (expect: overlap)',
         useOBB: true,
         useDirection: true,
         direction: Math.PI / 2,
         bidirectional: true,
         useTouchThreshold: true,
-        touchThreshold: 0.5,
+        touchThreshold: 0,
         noMTV: false,
         rect1_rotation: 0,
         rect1_x: 389,
@@ -183,7 +206,53 @@
         rect2_shape_width: 300,
         rect2_shape_height: 50,
     }, {
-        text: 'no_obb, rect1: {width:0, height: 20} (expect: can overlap)',
+        text: 'obb, rect1: {width:0, height: 20}, touchThreshold: 0.1 (expect: not overlap)',
+        useOBB: true,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0.1,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 0,
+        rect1_shape_height: 20,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 100,
+        rect2_shape_y: -11,
+        rect2_shape_width: 300,
+        rect2_shape_height: 50,
+    }, {
+        text: 'no_obb, rect1: {width:0, height: 20}, touchThreshold: 0 (expect: overlap)',
+        useOBB: false,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 0,
+        rect1_shape_height: 20,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 100,
+        rect2_shape_y: -11,
+        rect2_shape_width: 300,
+        rect2_shape_height: 50,
+    }, {
+        text: 'no_obb, rect1: {width:0, height: 20}, touchThreshold: 0.5 (expect: not overlap)',
         useOBB: false,
         useDirection: true,
         direction: Math.PI / 2,
@@ -206,13 +275,59 @@
         rect2_shape_width: 300,
         rect2_shape_height: 50,
     }, {
-        text: 'obb, rect1: {width:0, height: 0} (expect: can overlap)',
+        text: 'no_obb, touch at edge exactly, touchThreshold 0 (expect: mtv 0, overlap)',
+        useOBB: false,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 101.390625,
+        rect1_shape_height: 12,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 0,
+        rect2_shape_y: -12,
+        rect2_shape_width: 750,
+        rect2_shape_height: 12,
+    }, {
+        text: 'no_obb, touch at edge exactly, touchThreshold 0.1 (expect: mtv 0, not overlap)',
+        useOBB: false,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0.1,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 101.390625,
+        rect1_shape_height: 12,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 0,
+        rect2_shape_y: -12,
+        rect2_shape_width: 750,
+        rect2_shape_height: 12,
+    }, {
+        text: 'obb, rect1: {width:0, height: 0}, touchThreshold: 0 (expect: can overlap)',
         useOBB: true,
         useDirection: true,
         direction: Math.PI / 2,
         bidirectional: true,
         useTouchThreshold: true,
-        touchThreshold: 0.5,
+        touchThreshold: 0,
         noMTV: false,
         rect1_rotation: 0,
         rect1_x: 389,
@@ -229,13 +344,13 @@
         rect2_shape_width: 300,
         rect2_shape_height: 50,
     }, {
-        text: 'no_obb, rect1: {width:0, height: 0} (expect: can overlap)',
+        text: 'no_obb, rect1: {width:0, height: 0}, touchThreshold: 0 (expect: can overlap)',
         useOBB: false,
         useDirection: true,
         direction: Math.PI / 2,
         bidirectional: true,
         useTouchThreshold: true,
-        touchThreshold: 0.5,
+        touchThreshold: 0,
         noMTV: false,
         rect1_rotation: 0,
         rect1_x: 389,
@@ -596,7 +711,10 @@
         const testCaseBox = document.getElementById('test_case_box');
         _TEST_CASE_LIST.forEach((testCaseDefine, testCaseIdx) => {
             const btn = document.createElement('button');
-            btn.innerHTML = testHelper.encodeHTML(testCaseDefine.text || `test case ${testCaseIdx}`);
+            if (!testCaseDefine.text) {
+                throw new Error();
+            }
+            btn.innerHTML = testHelper.encodeHTML(testCaseDefine.text);
             testCaseBox.appendChild(btn);
             btn.addEventListener('click', resetToTestCase.bind(null, testCaseDefine));
         });
