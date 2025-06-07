@@ -108,6 +108,10 @@ class OrientedBoundingRect {
         let overlapped = true;
         const noMtv = !mtv;
 
+        if (mtv) {
+            Point.set(mtv, 0, 0);
+        }
+
         _intersectCtx.reset(opt, !noMtv);
 
         // Check two axes for both two obb.
@@ -125,15 +129,13 @@ class OrientedBoundingRect {
             }
         }
 
-        if (!noMtv) {
-            _intersectCtx.negativeSize
-                ? Point.set(mtv, 0, 0)
-                : Point.copy(
-                    mtv,
-                    overlapped
-                        ? (_intersectCtx.useDir ? _intersectCtx.dirMinTv : _minTv)
-                        : _maxTv
-                );
+        if (!noMtv && !_intersectCtx.negativeSize) {
+            Point.copy(
+                mtv,
+                overlapped
+                    ? (_intersectCtx.useDir ? _intersectCtx.dirMinTv : _minTv)
+                    : _maxTv
+            );
         }
 
         return overlapped;

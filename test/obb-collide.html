@@ -528,6 +528,17 @@
     });
     zr.add(rect2MovedBoundingRect);
 
+    const intersecRect = new zrender.Rect({
+        silent: true,
+        style: {
+            stroke: 'rgb(100,0,100)',
+            fill: 'none',
+            // lineDash: 'dotted',
+            lineWidth: 2,
+            opacity: 0.8
+        },
+    });
+    zr.add(intersecRect);
 
     rect1.on('drag', () => {
         _state.rect1_x = rect1.x;
@@ -627,13 +638,20 @@
                 rect2.getBoundingRect(), rect2.getComputedTransform()
             );
             overlapped = obb.intersect(obb2, mtv, intersectOpt);
+            intersecRect.ignore = true;
         }
         else {
+            intersectOpt = intersectOpt || {};
+            intersectOpt.outIntersectRect = {};
+
             const bb = rect1.getBoundingRect();
             bb.applyTransform(rect1.getComputedTransform());
             const bb2 = rect2.getBoundingRect();
             bb2.applyTransform(rect2.getComputedTransform());
             overlapped = bb.intersect(bb2, mtv, intersectOpt);
+
+            intersecRect.setShape(intersectOpt.outIntersectRect);
+            intersecRect.ignore = false;
         }
 
         const center = new zrender.Point(rect1.shape.width / 2, rect1.shape.height / 2);

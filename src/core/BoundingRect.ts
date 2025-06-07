@@ -13,6 +13,7 @@ const rt = new Point();
 const _intersectCtx = createIntersectContext();
 const _minTv = _intersectCtx.minTv;
 const _maxTv = _intersectCtx.maxTv;
+// [min, max]
 const _lenMinMax = [0, 0];
 
 class BoundingRect {
@@ -23,6 +24,12 @@ class BoundingRect {
     height: number
 
     constructor(x: number, y: number, width: number, height: number) {
+        BoundingRect.set(this, x, y, width, height);
+    }
+
+    static set<TTarget extends RectLike>(
+        target: TTarget, x: number, y: number, width: number, height: number
+    ): TTarget {
         if (width < 0) {
             x = x + width;
             width = -width;
@@ -32,10 +39,12 @@ class BoundingRect {
             height = -height;
         }
 
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
+        target.x = x;
+        target.y = y;
+        target.width = width;
+        target.height = height;
+
+        return target;
     }
 
     union(other: BoundingRect) {
@@ -87,6 +96,17 @@ class BoundingRect {
     }
 
     /**
+     * @see `static intersect`
+     */
+    intersect(
+        b: RectLike,
+        mtv?: PointLike,
+        opt?: BoundingRectIntersectOpt
+    ): boolean {
+        return BoundingRect.intersect(this, b, mtv, opt);
+    }
+
+    /**
      * [NOTICE]
      *  Touching the edge is consisdered an intersection.
      *  zero-width/height can still cause intersection if `touchThreshold` is 0.
@@ -96,21 +116,31 @@ class BoundingRect {
      *  If it's not overlapped. it means needs to move `b` rect with Maximum Translation Vector to be overlapped.
      *  Else it means needs to move `b` rect with Minimum Translation Vector to be not overlapped.
      */
-    intersect(
+    static intersect(
+        a: RectLike,
         b: RectLike,
         mtv?: PointLike,
         opt?: BoundingRectIntersectOpt
     ): boolean {
-        if (!b) {
+        if (mtv) {
+            Point.set(mtv, 0, 0);
+        }
+        const outIntersectRect = opt && opt.outIntersectRect || null;
+        if (outIntersectRect) {
+            outIntersectRect.x = outIntersectRect.y = outIntersectRect.width = outIntersectRect.height = NaN;
+        }
+
+        if (!a || !b) {
             return false;
         }
 
-        if (!(b instanceof BoundingRect)) {
-            // Normalize negative width/height.
-            b = BoundingRect.create(b);
+        // Normalize negative width/height.
+        if (!(a instanceof BoundingRect)) {
+            a = BoundingRect.set(_tmpIntersectA, a.x, a.y, a.width, a.height);
         }
-
-        const a = this;
+        if (!(b instanceof BoundingRect)) {
+            b = BoundingRect.set(_tmpIntersectB, b.x, b.y, b.width, b.height);
+        }
 
         _intersectCtx.reset(opt, !!mtv);
 
@@ -127,20 +157,29 @@ class BoundingRect {
         const by1 = b.y + b.height - touchThreshold;
 
         if (ax0 > ax1 || ay0 > ay1 || bx0 > bx1 || by0 > by1) {
-            if (mtv) {
-                Point.set(mtv, 0, 0);
-            }
             return false;
         }
 
         const overlap = !(ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
 
+        if (overlap && outIntersectRect) {
+            const x0max = mathMax(ax0, bx0);
+            const y0max = mathMax(ay0, by0);
+            BoundingRect.set(
+                outIntersectRect,
+                x0max,
+                y0max,
+                mathMin(ax1, bx1) - x0max,
+                mathMin(ay1, by1) - y0max
+            );
+        }
+
         if (mtv) {
             _lenMinMax[0] = Infinity;
             _lenMinMax[1] = 0;
 
-            this._intersectOneDim(ax0, ax1, bx0, bx1, 'x', 'y', _lenMinMax);
-            this._intersectOneDim(ay0, ay1, by0, by1, 'y', 'x', _lenMinMax);
+            intersectOneDim(ax0, ax1, bx0, bx1, 'x', 'y');
+            intersectOneDim(ay0, ay1, by0, by1, 'y', 'x');
 
             Point.copy(
                 mtv,
@@ -151,50 +190,6 @@ class BoundingRect {
         }
 
         return overlap;
-    }
-
-    private _intersectOneDim(
-        a0: number, a1: number, b0: number, b1: number,
-        updateDim: 'x' | 'y', zeroDim: 'x' | 'y',
-        lenMinMax: number[] // [min, max], be shared and will be modified.
-    ) {
-        const d0 = mathAbs(a1 - b0);
-        const d1 = mathAbs(b1 - a0);
-        const d01min = mathMin(d0, d1);
-
-        if (a1 < b0 || b1 < a0) {
-            if (d01min > lenMinMax[1]) {
-                lenMinMax[1] = d01min;
-                _maxTv[zeroDim] = 0;
-                if (d0 < d1) {
-                    _maxTv[updateDim] = -d0; // b is on the right/bottom(larger x/y)
-                }
-                else {
-                    _maxTv[updateDim] = d1; // b is on the left/top(smaller x/y)
-                }
-            }
-        }
-        else {
-            if (d01min < lenMinMax[0] || _intersectCtx.useDir) {
-                // If bidirectional, both dist0 dist1 need to check,
-                // otherwise only check the smaller one.
-                lenMinMax[0] = mathMin(d01min, lenMinMax[0]);
-                if (d0 < d1 || !_intersectCtx.bidirectional) {
-                    _minTv[updateDim] = d0; // b is on the right/bottom(larger x/y)
-                    _minTv[zeroDim] = 0;
-                    if (_intersectCtx.useDir) {
-                        _intersectCtx.calcDirMTV();
-                    }
-                }
-                if (d0 >= d1 || !_intersectCtx.bidirectional) {
-                    _minTv[updateDim] = -d1; // b is on the left/top(smaller x/y)
-                    _minTv[zeroDim] = 0;
-                    if (_intersectCtx.useDir) {
-                        _intersectCtx.calcDirMTV();
-                    }
-                }
-            }
-        }
     }
 
     contain(x: number, y: number): boolean {
@@ -243,11 +238,13 @@ class BoundingRect {
         return new BoundingRect(rect.x, rect.y, rect.width, rect.height);
     }
 
-    static copy(target: RectLike, source: RectLike) {
+    static copy<TTarget extends RectLike>(target: TTarget, source: RectLike): TTarget {
         target.x = source.x;
         target.y = source.y;
         target.width = source.width;
         target.height = source.height;
+
+        return target;
     }
 
     static applyTransform(target: RectLike, source: RectLike, m: matrix.MatrixArray) {
@@ -301,6 +298,54 @@ class BoundingRect {
     }
 }
 
+const _tmpIntersectA = new BoundingRect(0, 0, 0, 0);
+const _tmpIntersectB = new BoundingRect(0, 0, 0, 0);
+
+
+function intersectOneDim(
+    a0: number, a1: number, b0: number, b1: number,
+    updateDim: 'x' | 'y', zeroDim: 'x' | 'y'
+): void {
+    const d0 = mathAbs(a1 - b0);
+    const d1 = mathAbs(b1 - a0);
+    const d01min = mathMin(d0, d1);
+
+    if (a1 < b0 || b1 < a0) {
+        if (d01min > _lenMinMax[1]) {
+            _lenMinMax[1] = d01min;
+            _maxTv[zeroDim] = 0;
+            if (d0 < d1) {
+                _maxTv[updateDim] = -d0; // b is on the right/bottom(larger x/y)
+            }
+            else {
+                _maxTv[updateDim] = d1; // b is on the left/top(smaller x/y)
+            }
+        }
+    }
+    else {
+        if (d01min < _lenMinMax[0] || _intersectCtx.useDir) {
+            // If bidirectional, both dist0 dist1 need to check,
+            // otherwise only check the smaller one.
+            _lenMinMax[0] = mathMin(d01min, _lenMinMax[0]);
+            if (d0 < d1 || !_intersectCtx.bidirectional) {
+                _minTv[updateDim] = d0; // b is on the right/bottom(larger x/y)
+                _minTv[zeroDim] = 0;
+                if (_intersectCtx.useDir) {
+                    _intersectCtx.calcDirMTV();
+                }
+            }
+            if (d0 >= d1 || !_intersectCtx.bidirectional) {
+                _minTv[updateDim] = -d1; // b is on the left/top(smaller x/y)
+                _minTv[zeroDim] = 0;
+                if (_intersectCtx.useDir) {
+                    _intersectCtx.calcDirMTV();
+                }
+            }
+        }
+    }
+}
+
+
 export type RectLike = {
     x: number
     y: number
@@ -340,6 +385,12 @@ export interface BoundingRectIntersectOpt {
      *      the horizontal direction to resolve overlap.
      */
     touchThreshold?: number
+
+    /**
+     * If an intersection occur, set the intersection rect to it.
+     * Otherwise set to all NaN (it will not pass `contain` and `intersect`).
+     */
+    outIntersectRect?: RectLike
 }
 
 export function createIntersectContext() {
