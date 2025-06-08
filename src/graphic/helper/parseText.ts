@@ -3,13 +3,16 @@ import {
     extend,
     retrieve2,
     retrieve3,
-    reduce
+    reduce,
 } from '../../core/util';
-import { TextAlign, TextVerticalAlign, ImageLike, Dictionary } from '../../core/types';
-import { TextStyleProps } from '../Text';
+import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, NullUndefined } from '../../core/types';
+import { DefaultTextStyle, TextStyleProps } from '../Text';
 import {
+    adjustTextX,
+    adjustTextY,
     ensureFontMeasureInfo, FontMeasureInfo, getLineHeight, measureCharWidth, measureWidth, parsePercent,
 } from '../../contain/text';
+import BoundingRect, { BoundingRectIntersectOpt } from '../../core/BoundingRect';
 
 const STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
 
@@ -194,6 +197,8 @@ export interface PlainTextContentBlock {
     height: number
 
     // i.e., `contentBlock.width/height + style.padding`
+    // `borderWidth` is not included here, because historically Path is placed regardless of `lineWidth`,
+    // and `outerWidth`/`outerHeight` is used to calculate placement.
     outerWidth: number
     outerHeight: number
 
@@ -206,13 +211,17 @@ export interface PlainTextContentBlock {
 
 export function parsePlainText(
     text: string,
-    style?: TextStyleProps
+    style: Omit<TextStyleProps, 'align' | 'verticalAlign'>, // Exclude props in DefaultTextStyle
+    defaultOuterWidth: number | NullUndefined,
+    defaultOuterHeight: number | NullUndefined
 ): PlainTextContentBlock {
     text != null && (text += '');
 
     // textPadding has been normalized
     const overflow = style.overflow;
     const padding = style.padding as number[];
+    const paddingH = padding ? padding[1] + padding[3] : 0;
+    const paddingV = padding ? padding[0] + padding[2] : 0;
     const font = style.font;
     const truncate = overflow === 'truncate';
     const calculatedLineHeight = getLineHeight(font);
@@ -222,6 +231,14 @@ export function parsePlainText(
     let isTruncated = false;
 
     let width = style.width;
+    if (width == null && defaultOuterWidth != null) {
+        width = defaultOuterWidth - paddingH;
+    }
+    let height = style.height;
+    if (height == null && defaultOuterHeight != null) {
+        height = defaultOuterHeight - paddingV;
+    }
+
     let lines: string[];
 
     if (width != null && (overflow === 'break' || overflow === 'breakAll')) {
@@ -232,7 +249,9 @@ export function parsePlainText(
     }
 
     let contentHeight = lines.length * lineHeight;
-    const height = retrieve2(style.height, contentHeight);
+    if (height == null) {
+        height = contentHeight;
+    }
 
     // Truncate lines.
     if (contentHeight > height && truncateLineOverflow) {
@@ -279,10 +298,8 @@ export function parsePlainText(
     }
 
     let outerWidth = width;
-    if (padding) {
-        outerHeight += padding[0] + padding[2];
-        outerWidth += padding[1] + padding[3];
-    }
+    outerHeight += paddingV;
+    outerWidth += paddingH;
 
     return {
         lines: lines,
@@ -344,6 +361,8 @@ export class RichTextContentBlock {
     contentWidth: number = 0
     contentHeight: number = 0
     // i.e., contentBlock.width/height + outermostStyle.padding
+    // `borderWidth` is not included here, because historically Path is placed regardless of `lineWidth`,
+    // and `outerWidth`/`outerHeight` is used to calculate placement.
     outerWidth: number = 0
     outerHeight: number = 0
     lines: RichTextLine[] = []
@@ -362,7 +381,13 @@ type WrapInfo = {
  * Also consider 'bbbb{a|xxx\nzzz}xxxx\naaaa'.
  * If styleName is undefined, it is plain text.
  */
-export function parseRichText(text: string, style: TextStyleProps): RichTextContentBlock {
+export function parseRichText(
+    text: string,
+    style: Omit<TextStyleProps, 'align' | 'verticalAlign'>, // Exclude props in DefaultTextStyle
+    defaultOuterWidth: number | NullUndefined,
+    defaultOuterHeight: number | NullUndefined,
+    topTextAlign: TextAlign
+): RichTextContentBlock {
     const contentBlock = new RichTextContentBlock();
 
     text != null && (text += '');
@@ -370,8 +395,19 @@ export function parseRichText(text: string, style: TextStyleProps): RichTextCont
         return contentBlock;
     }
 
-    const topWidth = style.width;
-    const topHeight = style.height;
+    const stlPadding = style.padding as number[];
+    const stlPaddingH = stlPadding ? stlPadding[1] + stlPadding[3] : 0;
+    const stlPaddingV = stlPadding ? stlPadding[0] + stlPadding[2] : 0;
+
+    let topWidth = style.width;
+    if (topWidth == null && defaultOuterWidth != null) {
+        topWidth = defaultOuterWidth - stlPaddingH;
+    }
+    let topHeight = style.height;
+    if (topHeight == null && defaultOuterHeight != null) {
+        topHeight = defaultOuterHeight - stlPaddingV;
+    }
+
     const overflow = style.overflow;
     let wrapInfo: WrapInfo = (overflow === 'break' || overflow === 'breakAll') && topWidth != null
         ? {width: topWidth, accumWidth: 0, breakAll: overflow === 'breakAll'}
@@ -397,8 +433,6 @@ export function parseRichText(text: string, style: TextStyleProps): RichTextCont
 
     let calculatedHeight = 0;
     let calculatedWidth = 0;
-
-    const stlPadding = style.padding as number[];
 
     const truncate = overflow === 'truncate';
     const truncateLine = style.lineOverflow === 'truncate';
@@ -438,12 +472,12 @@ export function parseRichText(text: string, style: TextStyleProps): RichTextCont
 
             textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
             token.height = tokenHeight;
-            // Inlcude padding in lineHeight.
+            // Include padding in lineHeight.
             token.lineHeight = retrieve3(
                 tokenStyle.lineHeight, style.lineHeight, tokenHeight
             );
 
-            token.align = tokenStyle && tokenStyle.align || style.align;
+            token.align = tokenStyle && tokenStyle.align || topTextAlign;
             token.verticalAlign = tokenStyle && tokenStyle.verticalAlign || 'middle';
 
             if (truncateLine && topHeight != null && calculatedHeight + token.lineHeight > topHeight) {
@@ -531,10 +565,8 @@ export function parseRichText(text: string, style: TextStyleProps): RichTextCont
     contentBlock.contentHeight = calculatedHeight;
     contentBlock.contentWidth = calculatedWidth;
 
-    if (stlPadding) {
-        contentBlock.outerWidth += stlPadding[1] + stlPadding[3];
-        contentBlock.outerHeight += stlPadding[0] + stlPadding[2];
-    }
+    contentBlock.outerWidth += stlPaddingH;
+    contentBlock.outerHeight += stlPaddingV;
 
     for (let i = 0; i < pendingList.length; i++) {
         const token = pendingList[i];
@@ -604,7 +636,7 @@ function pushTokens(
         }
         else {
             token.width = linesWidths
-                ? linesWidths[i] // Caculated width in the wrap
+                ? linesWidths[i] // Calculated width in the wrap
                 : measureWidth(fontMeasureInfo, text);
         }
 
@@ -665,6 +697,11 @@ function isWordBreakChar(ch: string) {
     return true;
 }
 
+/**
+ * NOTE: The current strategy is that if no enough space, all the text is
+ * still displayed, regardless of overflow.
+ * A clip path can be used to completely avoid overflow.
+ */
 function wrapText(
     text: string,
     font: string,
@@ -780,12 +817,6 @@ function wrapText(
         }
     }
 
-    if (!lines.length && !line) {
-        line = text;
-        currentWord = '';
-        currentWordWidth = 0;
-    }
-
     // Append last line.
     if (currentWord) {
         line += currentWord;
@@ -807,3 +838,55 @@ function wrapText(
         linesWidths
     };
 }
+
+/**
+ * @see {ElementTextConfig['autoOverflowArea']}
+ */
+export function calcInnerTextOverflowArea(
+    out: CalcInnerTextOverflowAreaOut,
+    overflowRect: DefaultTextStyle['overflowRect'],
+    baseX: number,
+    baseY: number,
+    textAlign: TextAlign,
+    textVerticalAlign: TextVerticalAlign
+): void {
+    out.baseX = baseX;
+    out.baseY = baseY;
+    out.outerWidth = out.outerHeight = null;
+
+    if (!overflowRect) {
+        return;
+    }
+
+    const textWidth = overflowRect.width * 2;
+    const textHeight = overflowRect.height * 2;
+    BoundingRect.set(
+        tmpCITCTextRect,
+        adjustTextX(baseX, textWidth, textAlign),
+        adjustTextY(baseY, textHeight, textVerticalAlign),
+        textWidth,
+        textHeight
+    );
+    // If `overflow: break` and no intersection or intersect but no enough space, we still display all text
+    // on the edge regardless of the overflow. Although that might be meaningless in production env, it is
+    // logically sound and helps in debug. Therefore we use `intersectOpt.clamp`.
+    BoundingRect.intersect(overflowRect, tmpCITCTextRect, null, tmpCITCIntersectRectOpt);
+    const outIntersectRect = tmpCITCIntersectRectOpt.outIntersectRect;
+    out.outerWidth = outIntersectRect.width;
+    out.outerHeight = outIntersectRect.height;
+    out.baseX = adjustTextX(outIntersectRect.x, outIntersectRect.width, textAlign, true);
+    out.baseY = adjustTextY(outIntersectRect.y, outIntersectRect.height, textVerticalAlign, true);
+}
+const tmpCITCTextRect = new BoundingRect(0, 0, 0, 0);
+const tmpCITCIntersectRectOpt = {outIntersectRect: {}, clamp: true} as BoundingRectIntersectOpt;
+
+export type CalcInnerTextOverflowAreaOut = {
+    // The input baseX/baseY or modified baseX/baseY, must exists.
+    baseX: number
+    baseY: number
+    // Calculated outer size based on overflowRect
+    // NaN indicates don't draw.
+    outerWidth: number | NullUndefined
+    outerHeight: number | NullUndefined
+};
+

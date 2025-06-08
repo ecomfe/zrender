@@ -153,27 +153,26 @@ export function getBoundingRect(
     }
 }
 
-export function adjustTextX(x: number, width: number, textAlign: TextAlign): number {
+export function adjustTextX(x: number, width: number, textAlign: TextAlign, inverse?: boolean): number {
     // TODO Right to left language
     if (textAlign === 'right') {
-        x -= width;
+        !inverse ? (x -= width) : (x += width);
     }
     else if (textAlign === 'center') {
-        x -= width / 2;
+        !inverse ? (x -= width / 2) : (x += width / 2);
     }
     return x;
 }
 
-export function adjustTextY(y: number, height: number, verticalAlign: TextVerticalAlign): number {
+export function adjustTextY(y: number, height: number, verticalAlign: TextVerticalAlign, inverse?: boolean): number {
     if (verticalAlign === 'middle') {
-        y -= height / 2;
+        !inverse ? (y -= height / 2) : (y += height / 2);
     }
     else if (verticalAlign === 'bottom') {
-        y -= height;
+        !inverse ? (y -= height) : (y += height);
     }
     return y;
 }
-
 
 export function getLineHeight(font?: string): number {
     // FIXME A rough approach.

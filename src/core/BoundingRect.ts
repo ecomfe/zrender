@@ -406,9 +406,9 @@ export interface BoundingRectIntersectOpt {
     /**
      * - If an intersection occur, set the intersection rect to it.
      * - Otherwise,
-     *   - If `clamp: true`, set to all NaN (it will not pass `contain` and `intersect`).
-     *   - Otherwise, `outIntersectRect` is set with a clamped rect that is on the edge or corner
-     *     of the first rect parameter of `intersect` method.
+     *   - If `clamp: true`, `outIntersectRect` is set with a clamped rect that is on the edge or corner
+     *     of the first rect input to `intersect` method.
+     *   - Otherwise, set to all NaN (it will not pass `contain` and `intersect`).
      */
     outIntersectRect?: RectLike
     clamp?: boolean;
