@@ -142,13 +142,14 @@ export default class ClippathManager extends Definable {
      * @param displayable displayable element
      */
     markUsed(displayable: Displayable) {
-        // displayable.__clipPaths can only be `null`/`undefined` or an non-empty array.
-        if (displayable.__clipPaths) {
-            zrUtil.each(displayable.__clipPaths, (clipPath: PathExtended) => {
+        const clipPaths = displayable.__clipPaths;
+        if (clipPaths) {
+            for (let idx = 0; idx < clipPaths.length; idx++) {
+                const clipPath = clipPaths[idx] as PathExtended;
                 if (clipPath._dom) {
                     super.markDomUsed(clipPath._dom);
                 }
-            });
+            }
         }
     };
 
