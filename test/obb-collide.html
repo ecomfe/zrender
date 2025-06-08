@@ -366,7 +366,7 @@
         rect2_shape_width: 300,
         rect2_shape_height: 50,
     }, {
-        text: 'obb, mtv not touch, not overlap (a bad case)',
+        text: 'obb, mtv not touch, not overlap (a bug)',
         useOBB: true,
         useDirection: false,
         direction: -0.5235987755982988,
@@ -642,6 +642,7 @@
         else {
             intersectOpt = intersectOpt || {};
             intersectOpt.outIntersectRect = {};
+            intersectOpt.clamp = true;
 
             const bb = rect1.getBoundingRect();
             bb.applyTransform(rect1.getComputedTransform());
@@ -764,8 +765,8 @@
     const onGUIUpdate = update.bind(null, {fromGUI: true});
     const guiController = {
         useOBB: gui.add(_state, 'useOBB').onChange(onGUIUpdate),
-        rect1_rotation: gui.add(_state, 'rect1_rotation', -5, 5).onChange(onGUIUpdate),
-        rect2_rotation: gui.add(_state, 'rect2_rotation', -5, 5).onChange(onGUIUpdate),
+        rect1_rotation: gui.add(_state, 'rect1_rotation', -5, 5, 0.01).onChange(onGUIUpdate),
+        rect2_rotation: gui.add(_state, 'rect2_rotation', -5, 5, 0.01).onChange(onGUIUpdate),
         useDirection: gui.add(_state, 'useDirection').onChange(onGUIUpdate),
         direction: gui.add(_state, 'direction', -5, 5).onChange(onGUIUpdate),
         bidirectional: gui.add(_state, 'bidirectional', true).onChange(onGUIUpdate),

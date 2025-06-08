@@ -11,6 +11,8 @@ export type ArrayLike<T> = {
     length: number
 }
 
+export type NullUndefined = null | undefined;
+
 export type ImageLike = HTMLImageElement | HTMLCanvasElement | HTMLVideoElement
 
 // subset of CanvasTextBaseline

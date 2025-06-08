@@ -1,9 +1,13 @@
 import * as matrix from './matrix';
 import Point, { PointLike } from './Point';
+import { NullUndefined } from './types';
 
 const mathMin = Math.min;
 const mathMax = Math.max;
 const mathAbs = Math.abs;
+
+const XY = ['x', 'y'] as const;
+const WH = ['width', 'height'] as const;
 
 const lt = new Point();
 const rb = new Point();
@@ -52,7 +56,7 @@ class BoundingRect {
         const y = mathMin(other.y, this.y);
 
         // If x is -Infinity and width is Infinity (like in the case of
-        // IncrementalDisplayble), x + width would be NaN
+        // IncrementalDisplayable), x + width would be NaN
         if (isFinite(this.x) && isFinite(this.width)) {
             this.width = mathMax(
                 other.x + other.width,
@@ -108,7 +112,7 @@ class BoundingRect {
 
     /**
      * [NOTICE]
-     *  Touching the edge is consisdered an intersection.
+     *  Touching the edge is considered an intersection.
      *  zero-width/height can still cause intersection if `touchThreshold` is 0.
      *  See more in `BoundingRectIntersectOpt['touchThreshold']`
      *
@@ -126,6 +130,7 @@ class BoundingRect {
             Point.set(mtv, 0, 0);
         }
         const outIntersectRect = opt && opt.outIntersectRect || null;
+        const clamp = opt && opt.clamp;
         if (outIntersectRect) {
             outIntersectRect.x = outIntersectRect.y = outIntersectRect.width = outIntersectRect.height = NaN;
         }
@@ -142,7 +147,9 @@ class BoundingRect {
             b = BoundingRect.set(_tmpIntersectB, b.x, b.y, b.width, b.height);
         }
 
-        _intersectCtx.reset(opt, !!mtv);
+        const useMTV = !!mtv;
+
+        _intersectCtx.reset(opt, useMTV);
 
         const touchThreshold = _intersectCtx.touchThreshold;
 
@@ -162,31 +169,21 @@ class BoundingRect {
 
         const overlap = !(ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
 
-        if (overlap && outIntersectRect) {
-            const x0max = mathMax(ax0, bx0);
-            const y0max = mathMax(ay0, by0);
-            BoundingRect.set(
-                outIntersectRect,
-                x0max,
-                y0max,
-                mathMin(ax1, bx1) - x0max,
-                mathMin(ay1, by1) - y0max
-            );
-        }
-
-        if (mtv) {
+        if (useMTV || outIntersectRect) {
             _lenMinMax[0] = Infinity;
             _lenMinMax[1] = 0;
 
-            intersectOneDim(ax0, ax1, bx0, bx1, 'x', 'y');
-            intersectOneDim(ay0, ay1, by0, by1, 'y', 'x');
+            intersectOneDim(ax0, ax1, bx0, bx1, 0, useMTV, outIntersectRect, clamp);
+            intersectOneDim(ay0, ay1, by0, by1, 1, useMTV, outIntersectRect, clamp);
 
-            Point.copy(
-                mtv,
-                overlap
-                    ? (_intersectCtx.useDir ? _intersectCtx.dirMinTv : _minTv)
-                    : _maxTv
-            );
+            if (useMTV) {
+                Point.copy(
+                    mtv,
+                    overlap
+                        ? (_intersectCtx.useDir ? _intersectCtx.dirMinTv : _minTv)
+                        : _maxTv
+                );
+            }
         }
 
         return overlap;
@@ -304,41 +301,61 @@ const _tmpIntersectB = new BoundingRect(0, 0, 0, 0);
 
 function intersectOneDim(
     a0: number, a1: number, b0: number, b1: number,
-    updateDim: 'x' | 'y', zeroDim: 'x' | 'y'
+    updateDimIdx: number,
+    useMTV: boolean,
+    outIntersectRect: BoundingRectIntersectOpt['outIntersectRect'],
+    clamp: BoundingRectIntersectOpt['clamp']
 ): void {
     const d0 = mathAbs(a1 - b0);
     const d1 = mathAbs(b1 - a0);
     const d01min = mathMin(d0, d1);
+    const updateDim = XY[updateDimIdx];
+    const zeroDim = XY[1 - updateDimIdx];
+    const wh = WH[updateDimIdx];
 
-    if (a1 < b0 || b1 < a0) {
-        if (d01min > _lenMinMax[1]) {
-            _lenMinMax[1] = d01min;
-            _maxTv[zeroDim] = 0;
-            if (d0 < d1) {
+    if (a1 < b0 || b1 < a0) { // No intersection on this dimension.
+        if (d0 < d1) {
+            if (useMTV) {
                 _maxTv[updateDim] = -d0; // b is on the right/bottom(larger x/y)
             }
-            else {
+            if (clamp) {
+                outIntersectRect[updateDim] = a1;
+                outIntersectRect[wh] = 0;
+            }
+        }
+        else {
+            if (useMTV) {
                 _maxTv[updateDim] = d1; // b is on the left/top(smaller x/y)
+            }
+            if (clamp) {
+                outIntersectRect[updateDim] = a0;
+                outIntersectRect[wh] = 0;
             }
         }
     }
-    else {
-        if (d01min < _lenMinMax[0] || _intersectCtx.useDir) {
-            // If bidirectional, both dist0 dist1 need to check,
-            // otherwise only check the smaller one.
-            _lenMinMax[0] = mathMin(d01min, _lenMinMax[0]);
-            if (d0 < d1 || !_intersectCtx.bidirectional) {
-                _minTv[updateDim] = d0; // b is on the right/bottom(larger x/y)
-                _minTv[zeroDim] = 0;
-                if (_intersectCtx.useDir) {
-                    _intersectCtx.calcDirMTV();
+    else { // Has intersection
+        if (outIntersectRect) {
+            outIntersectRect[updateDim] = mathMax(a0, b0);
+            outIntersectRect[wh] = mathMin(a1, b1) - outIntersectRect[updateDim];
+        }
+        if (useMTV) {
+            if (d01min < _lenMinMax[0] || _intersectCtx.useDir) {
+                // If bidirectional, both dist0 dist1 need to check,
+                // otherwise only check the smaller one.
+                _lenMinMax[0] = mathMin(d01min, _lenMinMax[0]);
+                if (d0 < d1 || !_intersectCtx.bidirectional) {
+                    _minTv[updateDim] = d0; // b is on the right/bottom(larger x/y)
+                    _minTv[zeroDim] = 0;
+                    if (_intersectCtx.useDir) {
+                        _intersectCtx.calcDirMTV();
+                    }
                 }
-            }
-            if (d0 >= d1 || !_intersectCtx.bidirectional) {
-                _minTv[updateDim] = -d1; // b is on the left/top(smaller x/y)
-                _minTv[zeroDim] = 0;
-                if (_intersectCtx.useDir) {
-                    _intersectCtx.calcDirMTV();
+                if (d0 >= d1 || !_intersectCtx.bidirectional) {
+                    _minTv[updateDim] = -d1; // b is on the left/top(smaller x/y)
+                    _minTv[zeroDim] = 0;
+                    if (_intersectCtx.useDir) {
+                        _intersectCtx.calcDirMTV();
+                    }
                 }
             }
         }
@@ -355,10 +372,10 @@ export type RectLike = {
 
 export interface BoundingRectIntersectOpt {
     /**
+     * If specified, when overlapping, the output `mtv` is still a minimal vector that can resolve the overlap.
+     * However it is not Minimum Translation Vector, but a vector follow the direction.
      * Be a radian, representing a vector direction.
-     * `direction=atan2(y, x)`, i.e., `direction=0` is vector(1,0), `direction=PI/4` is vector(1,1). If specified,
-     * when overlapping, the output `mtv` is still a minimal vector that can resolve the overlap. However it is
-     * not Minimum Translation Vector, but a vector follow the direction.
+     * `direction=atan2(y, x)`, i.e., `direction=0` is vector(1,0), `direction=PI/4` is vector(1,1).
      */
     direction?: number
     /**
@@ -375,24 +392,31 @@ export interface BoundingRectIntersectOpt {
      *    BoundingClientRect, or when zrender.Group has all children `ignored: true`. In this case, we can use
      *    a non-negative `touchThreshold` to form a "minus width/height" and force it to never cause an
      *    intersection. And in this case, mtv will not be calculated.
-     *  - Without a `touchThreshold`, touching the edge is consisdered an intersection.
+     *  - Without a `touchThreshold`, touching the edge is considered an intersection.
      *  - Having a `touchThreshold`, elements can use the same rect instance to achieve compact layout while
      *    still passing through the overlap-hiding handler.
      *  - a positive near-zero number is commonly used in `touchThreshold` for aggressive overlap handling,
      *    such as:
      *    - Hide one element if overlapping.
-     *    - Two elements are vertically touching at top/bottom edges, but are stricted to move along
+     *    - Two elements are vertically touching at top/bottom edges, but are restricted to move along
      *      the horizontal direction to resolve overlap.
      */
     touchThreshold?: number
 
     /**
-     * If an intersection occur, set the intersection rect to it.
-     * Otherwise set to all NaN (it will not pass `contain` and `intersect`).
+     * - If an intersection occur, set the intersection rect to it.
+     * - Otherwise,
+     *   - If `clamp: true`, set to all NaN (it will not pass `contain` and `intersect`).
+     *   - Otherwise, `outIntersectRect` is set with a clamped rect that is on the edge or corner
+     *     of the first rect parameter of `intersect` method.
      */
     outIntersectRect?: RectLike
+    clamp?: boolean;
 }
 
+/**
+ * [CAVEAT] Do not use it other than in `BoundingRect` and `OrientedBoundingRect`.
+ */
 export function createIntersectContext() {
 
     let _direction: BoundingRectIntersectOpt['direction'] = 0;
@@ -409,7 +433,7 @@ export function createIntersectContext() {
 
         negativeSize: false as boolean,
 
-        reset(opt: BoundingRectIntersectOpt | null | undefined, useMTV: boolean): void {
+        reset(opt: BoundingRectIntersectOpt | NullUndefined, useMTV: boolean): void {
             _ctx.touchThreshold = 0;
             if (opt && opt.touchThreshold != null) {
                 _ctx.touchThreshold = mathMax(0, opt.touchThreshold);
