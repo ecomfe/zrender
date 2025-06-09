@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Text Overflow</title>
-    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.js"></script> -->
+    <script src="http://localhost:8001/echarts/infra/test_local/dat.gui.js"></script>
     <script src="../dist/zrender.js"></script>
     <script src="lib/config.js"></script>
     <SCript src="data/text.js"></SCript>
@@ -30,23 +31,39 @@
         renderer: window.__ZRENDER__DEFAULT__RENDERER__
     });
 
+    var POSITION_LIST = [
+        'left', 'right', 'top', 'bottom',
+        'inside',
+        'insideTop', 'insideLeft', 'insideRight', 'insideBottom',
+        'insideTopLeft', 'insideTopRight', 'insideBottomLeft', 'insideBottomRight'
+    ];
+
     const config = {
         search: '',
-        width: 200,
-        height: 400,
+        testElType: 'standalone_text',
+        textWidth: 200,
+        rectWidth: 100,
+        rectX: 100,
+        textHeight: 400,
         fontSize: 13,
         fixedLineHeight: false,
         lineHeight: 14,
         rich: true,
         overflow: 'break',
         lineOverflow: 'truncate',
-        align: null
+        align: null,
+        verticalAlign: null,
+        position: POSITION_LIST[4],
+        textStylePadding: 10
     }
 
     const gui = new dat.GUI();
     gui.add(config, 'search').onChange(update);
-    gui.add(config, 'width', 10, 300).onChange(update);
-    gui.add(config, 'height', 10, 1600).onChange(update);
+    gui.add(config, 'testElType', ['standalone_text', 'rect_text']).onChange(update);
+    gui.add(config, 'textWidth', 0, 300).onChange(update);
+    gui.add(config, 'textHeight', 10, 1600).onChange(update);
+    gui.add(config, 'rectWidth', 0, 300).onChange(update);
+    gui.add(config, 'rectX', 0, 400).onChange(update);
     gui.add(config, 'fontSize', 1, 30).onChange(update);
     gui.add(config, 'fixedLineHeight').onChange(update);
     gui.add(config, 'lineHeight', 12, 50).onChange(update);
@@ -54,6 +71,9 @@
     gui.add(config, 'overflow', ['break', 'breakAll', 'truncate', 'none']).onChange(update);
     gui.add(config, 'lineOverflow', ['truncate', null]).onChange(update);
     gui.add(config, 'align', [null, 'left', 'center', 'right']).onChange(update);
+    gui.add(config, 'verticalAlign', [null, 'top', 'middle', 'bottom']).onChange(update);
+    gui.add(config, 'position', POSITION_LIST).onChange(update);
+    gui.add(config, 'textStylePadding', -10, 30).onChange(update);
 
     const texts = [
         LARGE_TEXT_EN,
@@ -61,33 +81,89 @@
         'abcde',
         '红黄蓝'
     ];
-    const textElementList = [];
+    const elementList = [];
+
     texts.forEach(text => {
-        var el = new zrender.Text({
+        var standaloneTextEl = new zrender.Text({
             style: {
                 text: text,
             }
         });
-        zr.add(el);
-        textElementList.push(el);
+        zr.add(standaloneTextEl);
+
+        var rectEl = new zrender.Rect({
+            ignore: true,
+            style: {
+                fill: 'rgba(100,200,100,0.5)',
+                lineWidth: 2,
+            }
+        });
+        var rectTextEl = new zrender.Text({
+            style: {
+                text: text,
+            }
+        });
+        rectEl.setTextContent(rectTextEl);
+        // rectEl.setTextConfig({
+        //     fill: '#333',
+        // });
+        zr.add(rectEl);
+
+        elementList.push({standaloneTextEl, rectEl});
     });
 
     function update() {
-        let lastTextElement = null;
+        let lastX = null;
 
-        textElementList.forEach((text, idx) => {
+        elementList.forEach(({standaloneTextEl, rectEl}) => {
+            const textWidth = config.textWidth;
+            const textHeight = config.textHeight;
+            const xx = lastX == null ? config.rectX : lastX + textWidth + 50;
+            lastX = xx;
 
-            text.style.padding = 10;
+            if (config.testElType === 'standalone_text') {
+                standaloneTextEl.ignore = false;
+                rectEl.ignore = true;
+            }
+            else {
+                standaloneTextEl.ignore = true;
+                rectEl.ignore = false;
+            }
+
+            // Standalone text
+            updateText(standaloneTextEl);
+            standaloneTextEl.style.width = textWidth;
+            standaloneTextEl.style.height = textHeight;
+            standaloneTextEl.style.x = xx;
+
+            // Rect text
+            rectEl.setShape({
+                x: xx,
+                y: 300,
+                width: config.rectWidth,
+                height: 200,
+            });
+            const rectTextEl = rectEl.getTextContent();
+            updateText(rectTextEl);
+            rectTextEl.style.width = textWidth;
+            rectTextEl.style.height = textHeight;
+            rectEl.setTextConfig({
+                distance: 10,
+                position: config.position
+            });
+        });
+
+        function updateText(text) {
+            text.style.padding = config.textStylePadding;
             text.style.borderColor = '#000';
             text.style.borderWidth = 1;
             text.style.ellipsis = '…';
 
             text.style.fontSize = config.fontSize;
-            text.style.width = config.width;
-            text.style.height = config.height;
             text.style.overflow = config.overflow;
             text.style.lineOverflow = config.lineOverflow;
             text.style.align = config.align;
+            text.style.verticalAlign = config.verticalAlign;
 
             text.style.rich = config.rich ? {
                 highlight: {
@@ -96,11 +172,6 @@
                     fontSize: 20
                 }
             } : null;
-
-            text.style.x = lastTextElement
-                ? lastTextElement.style.x + lastTextElement.style.width + 50
-                : 0;
-            lastTextElement = text;
 
             if (text.style.__originalText == null) {
                 text.style.__originalText = text.style.text;
@@ -123,15 +194,18 @@
             }
 
             text.dirtyStyle();
-        });
+        }
 
         console.time('render');
         zr.refreshImmediately();
         console.timeEnd('render');
 
         const msgHTML = [];
-        textElementList.forEach((text, idx) => {
-            msgHTML.push('[text block ' + idx + '] text.isTruncated: ' + text.isTruncated);
+        elementList.forEach(({standaloneTextEl, rectEl}, idx) => {
+            msgHTML.push(
+                '[text block ' + idx + '] text.isTruncated: '
+                + (config.testElType === 'standalone_text' ? standaloneTextEl : rectEl).isTruncated
+            );
         });
         updateMessageDisplay(msgHTML.join('<br/>'));
     }

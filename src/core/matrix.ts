@@ -77,7 +77,8 @@ export function translate(out: MatrixArray, a: MatrixArray, v: VectorArray): Mat
 }
 
 /**
- * 旋转变换
+ * Suppose positive y is towards screen-bottom and positive x is towards screen-right;
+ * positive rotation means rotating anticlockwise. (opposite to CSS transform rotate)
  */
 export function rotate(
     out: MatrixArray,

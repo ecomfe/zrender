@@ -5,71 +5,510 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Text Overflow</title>
-    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.js"></script>
+    <script src="./lib/dat.gui.js"></script>
     <script src="../dist/zrender.js"></script>
-    <script src="lib/config.js"></script>
-    <SCript src="data/text.js"></SCript>
+    <script src="./lib/config.js"></script>
     <script src="./lib/testHelper.js"></script>
 </head>
 <body>
     <style>
         html, body, #main {
-            width: 100%;
-            height: 100%;
             margin: 0;
+            padding: 0;
+        }
+        #main {
+            width: auto;
+            height: 700px;
+        }
+        button {
+            margin: 2px 3px;
+            font-size: 10px;
+        }
+        .test-case-title {
+            padding-left: 5px;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        #test_case_box {
+            margin-right: 270px;
         }
     </style>
+
+    <div>
+        <button onclick="printState()">Print state to clipboard</button>
+        <div class="test-case-title">Quick test cases:</div>
+        <div id="test_case_box"></div>
+    </div>
+
     <div id="main"></div>
 
     <script>
-    var zr = zrender.init(document.getElementById('main'), {
-        renderer: window.__ZRENDER__DEFAULT__RENDERER__
-    });
 
-    testHelper.initURLStorage();
-    const hashAll = testHelper.getAllFromHash();
-    const configFromHash = (hashAll && hashAll['obb_collide_state'])
-        ? JSON.parse(hashAll['obb_collide_state'])
-        : {};
-
-    const config = Object.assign({
+    const _TEST_CASE_LIST = [{
+        text: 'normal big-small',
         useOBB: true,
-        rotation: 0,
-        rotation2: 0,
         useDirection: false,
         direction: -Math.PI / 6,
         bidirectional: true,
         useTouchThreshold: false,
         touchThreshold: 0,
-        exchangeSize: false,
-    }, configFromHash);
-
-    const sizeDefineList = [{
-        width: 130,
-        height: 400,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 100,
+        rect1_y: 50,
+        rect1_shape_x: 0,
+        rect1_shape_y: 0,
+        rect1_shape_width: 130,
+        rect1_shape_height: 400,
+        rect2_rotation: 0,
+        rect2_x: 300,
+        rect2_y: 200,
+        rect2_shape_x: 0,
+        rect2_shape_y: 0,
+        rect2_shape_width: 100,
+        rect2_shape_height: 50,
     }, {
-        width: 100,
-        height: 50
+        text: 'normal small-big',
+        useOBB: true,
+        useDirection: false,
+        direction: -Math.PI / 6,
+        bidirectional: true,
+        useTouchThreshold: false,
+        touchThreshold: 0,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 100,
+        rect1_y: 50,
+        rect1_shape_x: 0,
+        rect1_shape_y: 0,
+        rect1_shape_width: 100,
+        rect1_shape_height: 50,
+        rect2_rotation: 0,
+        rect2_x: 300,
+        rect2_y: 200,
+        rect2_shape_x: 0,
+        rect2_shape_y: 0,
+        rect2_shape_width: 130,
+        rect2_shape_height: 400,
+    }, {
+        text: 'obb, touch at edge exactly, touchThreshold 0 (expect: mtv 0, overlap)',
+        useOBB: true,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 101.390625,
+        rect1_shape_height: 12,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 0,
+        rect2_shape_y: -12,
+        rect2_shape_width: 750,
+        rect2_shape_height: 12,
+    }, {
+        text: 'obb, touch at edge exactly, touchThreshold 0.1 (expect: mtv 0, not overlap)',
+        useOBB: true,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0.1,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 101.390625,
+        rect1_shape_height: 12,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 0,
+        rect2_shape_y: -12,
+        rect2_shape_width: 750,
+        rect2_shape_height: 12,
+    }, {
+        text: 'obb, touch at edge 0.0001px overlap (expect: overlap but mtv near 0)',
+        useOBB: true,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: false,
+        touchThreshold: 0,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 101.390625,
+        rect1_shape_height: 12,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100.00000000000001,
+        rect2_shape_x: 0,
+        rect2_shape_y: -12,
+        rect2_shape_width: 750,
+        rect2_shape_height: 12,
+    }, {
+        text: 'obb, touch at edge 1px overlap (expect: overlap but abs(mtv) 1)',
+        useOBB: true,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: false,
+        touchThreshold: 0,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 101.390625,
+        rect1_shape_height: 12,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 0,
+        rect2_shape_y: -11,
+        rect2_shape_width: 750,
+        rect2_shape_height: 12,
+    }, {
+        text: 'obb, rect1: {width:0, height: 20}, touchThreshold: 0 (expect: overlap)',
+        useOBB: true,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 0,
+        rect1_shape_height: 20,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 100,
+        rect2_shape_y: -11,
+        rect2_shape_width: 300,
+        rect2_shape_height: 50,
+    }, {
+        text: 'obb, rect1: {width:0, height: 20}, touchThreshold: 0.1 (expect: not overlap)',
+        useOBB: true,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0.1,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 0,
+        rect1_shape_height: 20,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 100,
+        rect2_shape_y: -11,
+        rect2_shape_width: 300,
+        rect2_shape_height: 50,
+    }, {
+        text: 'no_obb, rect1: {width:0, height: 20}, touchThreshold: 0 (expect: overlap)',
+        useOBB: false,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 0,
+        rect1_shape_height: 20,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 100,
+        rect2_shape_y: -11,
+        rect2_shape_width: 300,
+        rect2_shape_height: 50,
+    }, {
+        text: 'no_obb, rect1: {width:0, height: 20}, touchThreshold: 0.5 (expect: not overlap)',
+        useOBB: false,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0.5,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 0,
+        rect1_shape_height: 20,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 100,
+        rect2_shape_y: -11,
+        rect2_shape_width: 300,
+        rect2_shape_height: 50,
+    }, {
+        text: 'no_obb, touch at edge exactly, touchThreshold 0 (expect: mtv 0, overlap)',
+        useOBB: false,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 101.390625,
+        rect1_shape_height: 12,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 0,
+        rect2_shape_y: -12,
+        rect2_shape_width: 750,
+        rect2_shape_height: 12,
+    }, {
+        text: 'no_obb, touch at edge exactly, touchThreshold 0.1 (expect: mtv 0, not overlap)',
+        useOBB: false,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0.1,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 101.390625,
+        rect1_shape_height: 12,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 0,
+        rect2_shape_y: -12,
+        rect2_shape_width: 750,
+        rect2_shape_height: 12,
+    }, {
+        text: 'obb, rect1: {width:0, height: 0}, touchThreshold: 0 (expect: can overlap)',
+        useOBB: true,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 0,
+        rect1_shape_height: 0,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 100,
+        rect2_shape_y: -11,
+        rect2_shape_width: 300,
+        rect2_shape_height: 50,
+    }, {
+        text: 'no_obb, rect1: {width:0, height: 0}, touchThreshold: 0 (expect: can overlap)',
+        useOBB: false,
+        useDirection: true,
+        direction: Math.PI / 2,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 0,
+        noMTV: false,
+        rect1_rotation: 0,
+        rect1_x: 389,
+        rect1_y: 100,
+        rect1_shape_x: -50.6953125,
+        rect1_shape_y: 0,
+        rect1_shape_width: 0,
+        rect1_shape_height: 0,
+        rect2_rotation: 0,
+        rect2_x: 100,
+        rect2_y: 100,
+        rect2_shape_x: 100,
+        rect2_shape_y: -11,
+        rect2_shape_width: 300,
+        rect2_shape_height: 50,
+    }, {
+        text: 'obb, mtv not touch, not overlap (a bug)',
+        useOBB: true,
+        useDirection: false,
+        direction: -0.5235987755982988,
+        bidirectional: true,
+        useTouchThreshold: false,
+        touchThreshold: 0,
+        noMTV: false,
+        rect1_rotation: -0.14394580863674822,
+        rect1_x: 386,
+        rect1_y: 113,
+        rect1_shape_x: 0,
+        rect1_shape_y: 0,
+        rect1_shape_width: 130,
+        rect1_shape_height: 400,
+        rect2_rotation: 0.8314987298899235,
+        rect2_x: 554,
+        rect2_y: 574,
+        rect2_shape_x: 0,
+        rect2_shape_y: 0,
+        rect2_shape_width: 100,
+        rect2_shape_height: 50
+    }, {
+        text: 'obb, no mtv input',
+        useOBB: true,
+        useDirection: true,
+        direction: -0.36071126164267575,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 5.564775613886537,
+        noMTV: true,
+        rect1_rotation: 1.6985605419136327,
+        rect1_x: 257,
+        rect1_y: 438,
+        rect1_shape_x: 0,
+        rect1_shape_y: 0,
+        rect1_shape_width: 130,
+        rect1_shape_height: 400,
+        rect2_rotation: -0.6858594411515666,
+        rect2_x: 616,
+        rect2_y: 327,
+        rect2_shape_x: 0,
+        rect2_shape_y: 0,
+        rect2_shape_width: 100,
+        rect2_shape_height: 50
+    }, {
+        text: 'no_obb, no mtv input',
+        useOBB: false,
+        useDirection: true,
+        direction: -0.36071126164267575,
+        bidirectional: true,
+        useTouchThreshold: true,
+        touchThreshold: 5.564775613886537,
+        noMTV: true,
+        rect1_rotation: 1.6985605419136327,
+        rect1_x: 257,
+        rect1_y: 438,
+        rect1_shape_x: 0,
+        rect1_shape_y: 0,
+        rect1_shape_width: 130,
+        rect1_shape_height: 400,
+        rect2_rotation: -0.6858594411515666,
+        rect2_x: 616,
+        rect2_y: 327,
+        rect2_shape_x: 0,
+        rect2_shape_y: 0,
+        rect2_shape_width: 100,
+        rect2_shape_height: 50
+    }, {
+        text: 'no_obb, directional',
+        useOBB: false,
+        useDirection: true,
+        direction: 0.7231160033869601,
+        bidirectional: false,
+        useTouchThreshold: true,
+        touchThreshold: 3.18,
+        noMTV: false,
+        rect1_rotation: 0.8314987298899235,
+        rect1_x: 184,
+        rect1_y: 177,
+        rect1_shape_x: 0,
+        rect1_shape_y: 0,
+        rect1_shape_width: 130,
+        rect1_shape_height: 400,
+        rect2_rotation: 2.132091447925487,
+        rect2_x: 456,
+        rect2_y: 132,
+        rect2_shape_x: 0,
+        rect2_shape_y: 0,
+        rect2_shape_width: 100,
+        rect2_shape_height: 50
     }];
 
-    const rect = new zrender.Rect({
-        style: {
+    var zr = zrender.init(document.getElementById('main'), {
+        renderer: window.__ZRENDER__DEFAULT__RENDERER__
+    });
+
+    testHelper.initURLStorage();
+
+    const hashAll = testHelper.getAllFromHash();
+    const stateFromHash = (hashAll && hashAll['obb_collide_state'])
+        ? JSON.parse(hashAll['obb_collide_state'])
+        : {};
+
+    const _state = Object.assign({}, _TEST_CASE_LIST[0], stateFromHash);
+
+    function makeBaseRectStyle() {
+        return {
             fill: 'green',
             opacity: 0.7
-        },
+        };
+    }
+
+    function makeBoundingRectStyle() {
+        return {
+            stroke: '#111',
+            fill: 'none',
+            lineDash: 'dashed',
+            lineWidth: 1,
+            opacity: 0.3
+        };
+    }
+
+    const rect1 = new zrender.Rect({
+        style: makeBaseRectStyle(),
         draggable: true,
-        x: (configFromHash.rect || {}).x || 100,
-        y: (configFromHash.rect || {}).y || 50
     });
+    const rect1BoundingRect = new zrender.Rect({
+        style: makeBoundingRectStyle(),
+        silent: true,
+    });
+    zr.add(rect1BoundingRect);
+    zr.add(rect1);
     const rect2 = new zrender.Rect({
-        style: {
-            fill: 'green',
-            opacity: 0.7
-        },
+        style: makeBaseRectStyle(),
         draggable: true,
-        x: (configFromHash.rect2 || {}).x || 300,
-        y: (configFromHash.rect2 || {}).y || 200
     });
+    zr.add(rect2);
+    const rect2BoundingRect = new zrender.Rect({
+        style: makeBoundingRectStyle(),
+        silent: true,
+    });
+    zr.add(rect2BoundingRect);
     const rect2Moved = new zrender.Rect({
         silent: true,
         style: {
@@ -79,16 +518,39 @@
             lineWidth: 1,
             opacity: 0.9
         },
+        strokeContainThreshold: 0,
     });
-    zr.add(rect);
-    zr.add(rect2);
     zr.add(rect2Moved);
+    const rect2MovedBoundingRect = new zrender.Rect({
+        style: makeBoundingRectStyle(),
+        silent: true,
+    });
+    zr.add(rect2MovedBoundingRect);
 
+    const intersecRect = new zrender.Rect({
+        silent: true,
+        style: {
+            stroke: 'rgb(100,0,100)',
+            fill: 'none',
+            // lineDash: 'dotted',
+            lineWidth: 2,
+            opacity: 0.8
+        },
+    });
+    zr.add(intersecRect);
 
-    rect.on('drag', update);
-    rect2.on('drag', update);
+    rect1.on('drag', () => {
+        _state.rect1_x = rect1.x;
+        _state.rect1_y = rect1.y;
+        update();
+    });
+    rect2.on('drag', () => {
+        _state.rect2_x = rect2.x;
+        _state.rect2_y = rect2.y;
+        update();
+    });
 
-    const line = new zrender.Line({
+    const mtvMoveLine = new zrender.Line({
         shape: {
             x1: 0, y1: 0, x2: 0, y2: 0
         },
@@ -97,7 +559,7 @@
             stroke: 'blue'
         }
     });
-    zr.add(line);
+    zr.add(mtvMoveLine);
 
     const directionLine = new zrender.Line({
         shape: {
@@ -107,13 +569,15 @@
             lineWidth: 2,
             stroke: '#555',
             lineDash: 'dotted',
-        }
+        },
+        silent: true,
     });
     zr.add(directionLine);
     const directionText = new zrender.Text({
         style: {
             text: 'When overlapping, the output mtv should parallel to this direction.'
-        }
+        },
+        silent: true,
     });
     zr.add(directionText);
     const directionMark = new zrender.Circle({
@@ -122,114 +586,198 @@
         },
         style: {
             fill: '#555'
-        }
+        },
+        silent: true,
     });
     zr.add(directionMark);
 
-    function update() {
-        rect.attr('rotation', config.rotation);
-        rect2.attr('rotation', config.rotation2);
-        rect2Moved.attr('rotation', config.rotation2);
 
-        let currSizeList = sizeDefineList.slice();
-        if (config.exchangeSize) {
-            currSizeList.reverse();
+    function update(opt) {
+
+        rect1.attr('rotation', _state.rect1_rotation);
+        rect1.setShape('x', _state.rect1_shape_x);
+        rect1.setShape('y', _state.rect1_shape_y);
+        rect1.setShape('width', _state.rect1_shape_width);
+        rect1.setShape('height', _state.rect1_shape_height);
+
+        rect2.attr('rotation', _state.rect2_rotation);
+        rect2.setShape('x', _state.rect2_shape_x);
+        rect2.setShape('y', _state.rect2_shape_y);
+        rect2.setShape('width', _state.rect2_shape_width);
+        rect2.setShape('height', _state.rect2_shape_height);
+
+        rect2Moved.attr('rotation', _state.rect2_rotation);
+        rect2Moved.setShape('x', _state.rect2_shape_x);
+        rect2Moved.setShape('y', _state.rect2_shape_y);
+        rect2Moved.setShape('width', _state.rect2_shape_width);
+        rect2Moved.setShape('height', _state.rect2_shape_height);
+
+        rect1.attr('x', _state.rect1_x);
+        rect1.attr('y', _state.rect1_y);
+        rect2.attr('x', _state.rect2_x);
+        rect2.attr('y', _state.rect2_y);
+
+        const mtv = _state.noMTV ? undefined : new zrender.Point();
+        let intersectOpt = undefined;
+        if (_state.useDirection) {
+            intersectOpt = intersectOpt || {};
+            intersectOpt.direction = _state.direction;
+            intersectOpt.bidirectional = _state.bidirectional;
         }
-
-        rect.setShape('width', currSizeList[0].width);
-        rect.setShape('height', currSizeList[0].height);
-        rect2.setShape('width', currSizeList[1].width);
-        rect2.setShape('height', currSizeList[1].height);
-        rect2Moved.setShape('width', currSizeList[1].width);
-        rect2Moved.setShape('height', currSizeList[1].height);
-
-        const mtv = new zrender.Point();
+        if (_state.useTouchThreshold) {
+            intersectOpt = intersectOpt || {};
+            intersectOpt.touchThreshold = _state.touchThreshold;
+        }
         let overlapped;
-        if (config.useOBB) {
+        if (_state.useOBB) {
             const obb = new zrender.OrientedBoundingRect(
-                rect.getBoundingRect(), rect.getComputedTransform()
+                rect1.getBoundingRect(), rect1.getComputedTransform()
             );
             const obb2 = new zrender.OrientedBoundingRect(
                 rect2.getBoundingRect(), rect2.getComputedTransform()
             );
-            let opt = undefined;
-            if (config.useDirection) {
-                opt = opt || {};
-                opt.direction = config.direction;
-                opt.bidirectional = config.bidirectional;
-            }
-            if (config.useTouchThreshold) {
-                opt = opt || {};
-                opt.touchThreshold = config.touchThreshold;
-            }
-            overlapped = obb.intersect(obb2, mtv, opt);
+            overlapped = obb.intersect(obb2, mtv, intersectOpt);
+            intersecRect.ignore = true;
         }
         else {
-            const bb = rect.getBoundingRect();
-            bb.applyTransform(rect.getComputedTransform());
+            intersectOpt = intersectOpt || {};
+            intersectOpt.outIntersectRect = {};
+            intersectOpt.clamp = true;
+
+            const bb = rect1.getBoundingRect();
+            bb.applyTransform(rect1.getComputedTransform());
             const bb2 = rect2.getBoundingRect();
             bb2.applyTransform(rect2.getComputedTransform());
-            overlapped = bb.intersect(bb2, mtv);
+            overlapped = bb.intersect(bb2, mtv, intersectOpt);
+
+            intersecRect.setShape(intersectOpt.outIntersectRect);
+            intersecRect.ignore = false;
         }
 
-        const center = new zrender.Point(rect.shape.width / 2, rect.shape.height / 2);
-        center.transform(rect.getComputedTransform());
+        const center = new zrender.Point(rect1.shape.width / 2, rect1.shape.height / 2);
+        center.transform(rect1.getComputedTransform());
         const center2 = new zrender.Point(rect2.shape.width / 2, rect2.shape.height / 2);
         center2.transform(rect2.getComputedTransform());
 
-        line.setShape({
-            x1: center2.x, y1: center2.y,
-            x2: center2.x + mtv.x, y2: center2.y + mtv.y
-        });
+        mtvMoveLine.ignore = !!_state.noMTV;
+        if (!_state.noMTV) {
+            mtvMoveLine.setShape({
+                x1: center2.x, y1: center2.y,
+                x2: center2.x + mtv.x, y2: center2.y + mtv.y
+            });
+        }
 
-        directionLine.ignore = !config.useDirection;
+        directionLine.ignore = !_state.useDirection;
         const directionR = Math.min(zr.getWidth(), zr.getHeight()) / 2;
         directionLine.setShape({
-            x1: center.x - directionR * Math.cos(config.direction),
-            y1: center.y - directionR * Math.sin(config.direction),
-            x2: center.x + directionR * Math.cos(config.direction),
-            y2: center.y + directionR * Math.sin(config.direction),
+            x1: center.x - directionR * Math.cos(_state.direction),
+            y1: center.y - directionR * Math.sin(_state.direction),
+            x2: center.x + directionR * Math.cos(_state.direction),
+            y2: center.y + directionR * Math.sin(_state.direction),
         });
-        directionText.ignore = !config.useDirection;
+        directionText.ignore = !_state.useDirection;
         directionText.attr('x', center.x);
         directionText.attr('y', center.y);
         directionText.attr('rotation', Math.PI - Math.atan2(
             directionLine.shape.y1 - directionLine.shape.y2,
             directionLine.shape.x1 - directionLine.shape.x2,
         ));
-        directionMark.attr('x', center.x + 400 * Math.cos(config.direction));
-        directionMark.attr('y', center.y + 400 * Math.sin(config.direction));
-        directionMark.ignore = !config.useDirection;
+        directionMark.attr('x', center.x + 400 * Math.cos(_state.direction));
+        directionMark.attr('y', center.y + 400 * Math.sin(_state.direction));
+        directionMark.ignore = !_state.useDirection;
 
-        rect.setStyle('fill', overlapped ? 'red' : 'green');
+        rect1.setStyle('fill', overlapped ? 'red' : 'green');
         rect2.setStyle('fill', overlapped ? 'red' : 'green');
         rect2Moved.setStyle('stroke', overlapped ? 'red' : 'green');
 
-        rect2Moved.attr('x', rect2.x + mtv.x);
-        rect2Moved.attr('y', rect2.y + mtv.y);
+        rect2Moved.ignore = !!_state.noMTV;
+        if (!_state.noMTV) {
+            rect2Moved.attr('x', rect2.x + mtv.x);
+            rect2Moved.attr('y', rect2.y + mtv.y);
+        }
+
+        function updateBoundingRectView(sourceRect, boundingRectView) {
+            const boundingRect = sourceRect.getBoundingRect().clone();
+            const transform = sourceRect.getComputedTransform();
+            boundingRect.applyTransform(transform);
+            boundingRectView.setShape('x', boundingRect.x);
+            boundingRectView.setShape('y', boundingRect.y);
+            boundingRectView.setShape('width', boundingRect.width);
+            boundingRectView.setShape('height', boundingRect.height);
+
+            boundingRectView.ignore = _state.useOBB || sourceRect.ignore;
+        }
+        updateBoundingRectView(rect1, rect1BoundingRect);
+        updateBoundingRectView(rect2, rect2BoundingRect);
+        updateBoundingRectView(rect2Moved, rect2MovedBoundingRect);
+
+        if (!opt || !opt.fromGUI) {
+            updateGUIValues();
+        }
 
         testHelper.updateToHash(
-            'obb_collide_state', JSON.stringify(Object.assign({}, config, {
-                rect: {x: rect.x, y: rect.y},
-                rect2: {x: rect2.x, y: rect2.y},
-            }))
+            'obb_collide_state', JSON.stringify(_state)
         );
 
-        console.log(mtv);
+        if (!_state.noMTV) {
+            console.log('mtv', mtv);
+            window.__obb_mtv = mtv;
+        }
+    }
+
+    function initTestCaseArea() {
+        const testCaseBox = document.getElementById('test_case_box');
+        _TEST_CASE_LIST.forEach((testCaseDefine, testCaseIdx) => {
+            const btn = document.createElement('button');
+            if (!testCaseDefine.text) {
+                throw new Error();
+            }
+            btn.innerHTML = testHelper.encodeHTML(testCaseDefine.text);
+            testCaseBox.appendChild(btn);
+            btn.addEventListener('click', resetToTestCase.bind(null, testCaseDefine));
+        });
+    }
+
+    function resetToTestCase(testCaseDefine) {
+        Object.assign(_state, testCaseDefine);
+        update();
+    }
+
+    function printState() {
+        const st = Object.assign({}, _state);
+        st.text = '?';
+        testHelper.clipboard(st);
+    }
+
+    function updateGUIValues() {
+        guiController.useOBB.setValue(_state.useOBB);
+        guiController.rect1_rotation.setValue(_state.rect1_rotation);
+        guiController.rect2_rotation.setValue(_state.rect2_rotation);
+        guiController.useDirection.setValue(_state.useDirection);
+        guiController.direction.setValue(_state.direction);
+        guiController.bidirectional.setValue(_state.bidirectional);
+        guiController.useTouchThreshold.setValue(_state.useTouchThreshold);
+        guiController.touchThreshold.setValue(_state.touchThreshold);
+        guiController.noMTV.setValue(_state.noMTV);
     }
 
     const gui = new dat.GUI();
-    gui.add(config, 'useOBB').onChange(update);
-    gui.add(config, 'rotation', -5, 5).onChange(update);
-    gui.add(config, 'rotation2', -5, 5).onChange(update);
-    gui.add(config, 'useDirection').onChange(update);
-    gui.add(config, 'direction', -5, 5).onChange(update);
-    gui.add(config, 'bidirectional', true).onChange(update);
-    gui.add(config, 'useTouchThreshold').onChange(update);
-    gui.add(config, 'touchThreshold', -10, 10).onChange(update);
-    gui.add(config, 'exchangeSize').onChange(update);
+    const onGUIUpdate = update.bind(null, {fromGUI: true});
+    const guiController = {
+        useOBB: gui.add(_state, 'useOBB').onChange(onGUIUpdate),
+        rect1_rotation: gui.add(_state, 'rect1_rotation', -5, 5, 0.01).onChange(onGUIUpdate),
+        rect2_rotation: gui.add(_state, 'rect2_rotation', -5, 5, 0.01).onChange(onGUIUpdate),
+        useDirection: gui.add(_state, 'useDirection').onChange(onGUIUpdate),
+        direction: gui.add(_state, 'direction', -5, 5).onChange(onGUIUpdate),
+        bidirectional: gui.add(_state, 'bidirectional', true).onChange(onGUIUpdate),
+        useTouchThreshold: gui.add(_state, 'useTouchThreshold').onChange(onGUIUpdate),
+        touchThreshold: gui.add(_state, 'touchThreshold', -10, 10, 0.01).onChange(onGUIUpdate),
+        noMTV: gui.add(_state, 'noMTV').onChange(onGUIUpdate),
+    }
 
+    initTestCaseArea();
     update();
+
     </script>
 </body>
 </html>

@@ -31,6 +31,7 @@ import Point from './core/Point';
 import { LIGHT_LABEL_COLOR, DARK_LABEL_COLOR } from './config';
 import { parse, stringify } from './tool/color';
 import { REDRAW_BIT } from './graphic/constants';
+import { invert } from './core/matrix';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -81,7 +82,11 @@ export interface ElementTextConfig {
 
     /**
      * Rect that text will be positioned.
-     * Default to be the rect of element.
+     * Default to be the boundingRect of the host element.
+     * The coords of `layoutRect` is based on the target element, but not global.
+     *
+     * [NOTICE]: boundingRect includes `lineWidth`, which is inconsistent with
+     *  the general element placement principle, where `lineWidth` is not counted.
      */
     layoutRect?: RectLike
 
@@ -109,6 +114,10 @@ export interface ElementTextConfig {
 
     /**
      * If use local user space. Which will apply host's transform
+     *
+     * [NOTICE]: If the host element may rotate to non-parallel to screen x/y,
+     *  need to use `local:true`, otherwise the transformed layout rect may not be expected.
+     *
      * @default false
      */
     local?: boolean
@@ -166,6 +175,16 @@ export interface ElementTextConfig {
      * In case position is not using builtin `inside` hints.
      */
     inside?: boolean
+
+    /**
+     * Auto calculate overflow area by `textConfig.layoutRect` (if any) or `host.boundingRect`.
+     * It makes sense only if label is inside. It ensure the text does not overflow the host.
+     * Useful in `text.style.overflow` and `text.style.lineOverflow`.
+     *
+     * If `textConfig.rotation` or `text.rotation exists`, it works correctly only when the rotated text is parallel
+     * to its host (i.e. 0, PI/2, PI, PI*3/2, 2*PI, ...). Do not supported other cases until a real scenario arises.
+     */
+    autoOverflowArea?: boolean
 }
 export interface ElementTextGuideLineConfig {
     /**
@@ -238,6 +257,7 @@ export interface ElementProps extends Partial<ElementEventHandlerProps>, Partial
     draggable?: boolean | 'horizontal' | 'vertical'
 
     silent?: boolean
+    ignoreHostSilent?: boolean
 
     ignoreClip?: boolean
     globalScaleRatio?: number
@@ -277,8 +297,9 @@ export type ElementCalculateTextPosition = (
     rect: RectLike
 ) => TextPositionCalculationResult;
 
-let tmpTextPosCalcRes = {} as TextPositionCalculationResult;
-let tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
+const tmpTextPosCalcRes = {} as TextPositionCalculationResult;
+const tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
+const tmpInnerTextTrans: number[] = [];
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Element<Props extends ElementProps = ElementProps> extends Transformable,
@@ -312,6 +333,14 @@ class Element<Props extends ElementProps = ElementProps> {
      * Whether to respond to mouse events.
      */
     silent: boolean
+
+    /**
+     * When this element has `__hostTarget` (e.g., this is a `textContent`), whether
+     * its silent is controlled by that host silent. They may need separate silent
+     * settings. e.g., the host do not have `fill` but only `stroke`, or their mouse
+     * events serve for different features.
+     */
+    ignoreHostSilent: boolean
 
     /**
      * 是否是 Group
@@ -367,6 +396,8 @@ class Element<Props extends ElementProps = ElementProps> {
      * If so, dirty will only trigger the zrender refresh hover layer
      */
     __inHover: boolean
+
+    __clipPaths?: Path[]
 
     /**
      * path to clip the elements and its children, if it is a group.
@@ -511,9 +542,12 @@ class Element<Props extends ElementProps = ElementProps> {
             // Reset x/y/rotation
             innerTransformable.copyTransform(textEl);
 
-            // Force set attached text's position if `position` is in config.
-            if (textConfig.position != null) {
-                let layoutRect = tmpBoundingRect;
+            const hasPosition = textConfig.position != null;
+            const autoOverflowArea = textConfig.autoOverflowArea;
+
+            let layoutRect: BoundingRect;
+            if (autoOverflowArea || hasPosition) {
+                layoutRect = tmpBoundingRect;
                 if (textConfig.layoutRect) {
                     layoutRect.copy(textConfig.layoutRect);
                 }
@@ -523,7 +557,10 @@ class Element<Props extends ElementProps = ElementProps> {
                 if (!isLocal) {
                     layoutRect.applyTransform(this.transform);
                 }
+            }
 
+            // Force set attached text's position if `position` is in config.
+            if (hasPosition) {
                 if (this.calculateTextPosition) {
                     this.calculateTextPosition(tmpTextPosCalcRes, textConfig, layoutRect);
                 }
@@ -578,11 +615,27 @@ class Element<Props extends ElementProps = ElementProps> {
                 }
             }
 
+            const innerTextDefaultStyle = this._innerTextDefaultStyle || (this._innerTextDefaultStyle = {});
+
+            if (autoOverflowArea) {
+                const overflowRect = innerTextDefaultStyle.overflowRect =
+                    innerTextDefaultStyle.overflowRect || new BoundingRect(0, 0, 0, 0);
+                innerTransformable.getLocalTransform(tmpInnerTextTrans);
+                invert(tmpInnerTextTrans, tmpInnerTextTrans);
+                BoundingRect.copy(overflowRect, layoutRect);
+                // If transform to a non-orthogonal state (e.g. rotate PI/3), the result of this "apply"
+                // is not expected. But we don't need to address it until a real scenario arises.
+                overflowRect.applyTransform(tmpInnerTextTrans);
+            }
+            else {
+                innerTextDefaultStyle.overflowRect = null;
+            }
+            // [CAUTION] Do not change `innerTransformable` below.
+
             // Calculate text color
             const isInside = textConfig.inside == null  // Force to be inside or not.
                 ? (typeof textConfig.position === 'string' && textConfig.position.indexOf('inside') >= 0)
                 : textConfig.inside;
-            const innerTextDefaultStyle = this._innerTextDefaultStyle || (this._innerTextDefaultStyle = {});
 
             let textFill;
             let textStroke;
@@ -1021,16 +1074,16 @@ class Element<Props extends ElementProps = ElementProps> {
      * Return if el.silent or any ancestor element has silent true.
      */
     isSilent() {
-        let isSilent = this.silent;
-        let ancestor = this.parent;
-        while (!isSilent && ancestor) {
-            if (ancestor.silent) {
-                isSilent = true;
-                break;
+        // Follow the logic of `Handler.ts`#`isHover`.
+        let el: Element = this;
+        while (el) {
+            if (el.silent) {
+                return true;
             }
-            ancestor = ancestor.parent;
+            const hostEl = el.__hostTarget;
+            el = hostEl ? (el.ignoreHostSilent ? null : hostEl) : el.parent;
         }
-        return isSilent;
+        return false;
     }
 
     /**
@@ -1637,6 +1690,7 @@ class Element<Props extends ElementProps = ElementProps> {
 
         elProto.ignore =
         elProto.silent =
+        elProto.ignoreHostSilent =
         elProto.isGroup =
         elProto.draggable =
         elProto.dragging =
@@ -2025,6 +2079,5 @@ function animateToShallow<T>(
         animators.push(animator);
     }
 }
-
 
 export default Element;
