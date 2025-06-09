@@ -4,7 +4,6 @@
  */
 
 import Definable from './Definable';
-import * as zrUtil from '../../core/util';
 import Displayable from '../../graphic/Displayable';
 import Path from '../../graphic/Path';
 import {path} from '../graphic';
