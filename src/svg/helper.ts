@@ -15,6 +15,12 @@ import env from '../core/env';
 const mathRound = Math.round;
 
 export function normalizeColor(color: string): { color: string; opacity: number; } {
+    if (process.env.NODE_ENV !== 'production') {
+        if (!color || color === 'none' || color === 'transparent') {
+            console.warn(`'${color}' is not recommended value for transparency in SVG, please use 'rgba(r,g,b,0)' instead.`);
+        }
+    }
+
     let opacity;
     if (!color || color === 'transparent') {
         color = 'none';
@@ -29,7 +35,9 @@ export function normalizeColor(color: string): { color: string; opacity: number;
     }
     return {
         color,
-        opacity: opacity == null ? 1 : opacity
+        opacity: opacity == null
+            ? color === 'none' ? 0 : 1
+            : opacity
     };
 }
 const EPSILON = 1e-4;
