@@ -52,6 +52,8 @@ type ZREventProperties = {
     zrEventControl: 'no_globalout' | 'only_globalout'
 
     zrByTouch: boolean
+
+    zrCursorStyle: string
 }
 
 export type ZRRawMouseEvent = MouseEvent & ZREventProperties

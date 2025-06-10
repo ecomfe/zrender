@@ -220,7 +220,8 @@ class Handler extends Eventful {
         const hoveredTarget = hovered.target;
 
         const proxy = this.proxy;
-        proxy.setCursor && proxy.setCursor(hoveredTarget ? hoveredTarget.cursor : 'default');
+        const cursorStyle = event.zrCursorStyle = hoveredTarget ? hoveredTarget.cursor : 'default';
+        proxy.setCursor && proxy.setCursor(cursorStyle);
 
         // Mouse out on previous hovered element
         if (lastHoveredTarget && hoveredTarget !== lastHoveredTarget) {
