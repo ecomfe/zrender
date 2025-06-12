@@ -703,7 +703,9 @@ function wrapText(
             continue;
         }
 
-        const chWidth = getWidth(ch, font);
+        // Check if first char of line is empty
+        const firstCharIsEmpty = !line && ch === ' ';
+        const chWidth = firstCharIsEmpty ? 0 : getWidth(ch, font);
         const inWord = isBreakAll ? false : !isWordBreakChar(ch);
 
         if (!lines.length
@@ -803,6 +805,15 @@ function wrapText(
     if (lines.length === 1) {
         // No new line.
         accumWidth += lastAccumWidth;
+    }
+
+    // Remove last empty chars from each line.
+    const emptySpaceWidth = getWidth(' ', font);
+    for (var index = 0; index < lines.length; index++) {
+        lines[index] = lines[index].replace(/( )+$/, () => {
+            linesWidths[index] -= emptySpaceWidth;
+            return '';
+        })
     }
 
     return {
