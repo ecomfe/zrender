@@ -189,12 +189,15 @@ class BoundingRect {
         return overlap;
     }
 
-    contain(x: number, y: number): boolean {
-        const rect = this;
+    static contain(rect: RectLike, x: number, y: number): boolean {
         return x >= rect.x
             && x <= (rect.x + rect.width)
             && y >= rect.y
             && y <= (rect.y + rect.height);
+    }
+
+    contain(x: number, y: number): boolean {
+        return BoundingRect.contain(this, x, y);
     }
 
     clone() {
