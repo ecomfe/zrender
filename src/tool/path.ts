@@ -383,13 +383,16 @@ class SVGPath extends Path {
 function isPathProxy(path: PathProxy | CanvasRenderingContext2D): path is PathProxy {
     return (path as PathProxy).setData != null;
 }
+
 // TODO Optimize double memory cost problem
 function createPathOptions(str: string, opts: SVGPathOption): InnerSVGPathOption {
     const pathProxy = createPathProxyFromString(str);
     const innerOpts: InnerSVGPathOption = extend({}, opts);
     innerOpts.buildPath = function (path: PathProxy | CanvasRenderingContext2D) {
-        if (isPathProxy(path)) {
-            path.setData(pathProxy.data);
+        const beProxy = isPathProxy(path);
+        if (beProxy && path.canSave()) {
+            // path.setData(pathProxy.data);
+            path.appendPath(pathProxy);
             // Svg and vml renderer don't have context
             const ctx = path.getContext();
             if (ctx) {
@@ -397,8 +400,10 @@ function createPathOptions(str: string, opts: SVGPathOption): InnerSVGPathOption
             }
         }
         else {
-            const ctx = path;
-            pathProxy.rebuildPath(ctx, 1);
+            const ctx = beProxy ? path.getContext() : path;
+            if (ctx) {
+                pathProxy.rebuildPath(ctx, 1);
+            }
         }
     };
 
