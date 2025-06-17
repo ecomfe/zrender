@@ -982,8 +982,8 @@ export default class PathProxy {
         return newProxy;
     }
 
-    canSave() {
-        return this._saveData;
+    canSave(): boolean {
+        return !!this._saveData;
     }
 
     private static initDefaultProps = (function () {
