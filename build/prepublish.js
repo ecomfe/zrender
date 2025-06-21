@@ -75,6 +75,26 @@ if (untrackedFiles.length) {
 console.log(chalk.green('✔️ No unexpected files found.'));
 console.log();
 
+console.log(chalk.yellow('🔎 Checking registry url of the packages in package-lock.json...\n'));
+
+const NPM_REGISTRY = 'https://registry.npmjs.org/';
+const packageLock = require('../package-lock.json');
+
+const unexpectedPkgsFromUnofficialRegistry = Object.entries(packageLock.dependencies)
+    .concat(Object.entries(packageLock.packages))
+    .filter(([pkgName, pkgRegistry]) => pkgRegistry.resolved && !pkgRegistry.resolved.startsWith(NPM_REGISTRY));
+if (unexpectedPkgsFromUnofficialRegistry.length) {
+    console.error(chalk.red('❌ Found packages that are not from npm registry in package-lock.json! Please double-check before publishing them to npm.'));
+    unexpectedPkgsFromUnofficialRegistry.forEach(([pkgName, pkgRegistry]) => {
+        console.log(`  ∟ ${pkgName} (${pkgRegistry.resolved})`);
+    });
+    console.log();
+    process.exit(-1);
+}
+
+console.log(chalk.green('✔️ No unexpected packages with unofficial registry url found.'));
+console.log();
+
 function escapeOctal(str) {
     const matches = str.match(/(\\\d{3}){3}/g);
     if (matches) {

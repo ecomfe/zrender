@@ -365,6 +365,9 @@ export default class PathProxy {
     }
 
     setData(data: Float32Array | number[]) {
+        if (!this._saveData) {
+            return;
+        }
 
         const len = data.length;
 
@@ -380,6 +383,9 @@ export default class PathProxy {
     }
 
     appendPath(path: PathProxy | PathProxy[]) {
+        if (!this._saveData) {
+            return;
+        }
         if (!(path instanceof Array)) {
             path = [path];
         }
@@ -389,8 +395,14 @@ export default class PathProxy {
         for (let i = 0; i < len; i++) {
             appendSize += path[i].len();
         }
-        if (hasTypedArray && (this.data instanceof Float32Array)) {
+        const oldData = this.data;
+        if (hasTypedArray && (oldData instanceof Float32Array || !oldData)) {
             this.data = new Float32Array(offset + appendSize);
+            if (offset > 0 && oldData) {
+                for (let k = 0; k < offset; k++) {
+                    this.data[k] = oldData[k];
+                }
+            }
         }
         for (let i = 0; i < len; i++) {
             const appendPathData = path[i].data;
@@ -968,6 +980,10 @@ export default class PathProxy {
             : Array.prototype.slice.call(data);
         newProxy._len = this._len;
         return newProxy;
+    }
+
+    canSave(): boolean {
+        return !!this._saveData;
     }
 
     private static initDefaultProps = (function () {

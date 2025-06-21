@@ -154,8 +154,6 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     // TODO use WeakMap?
 
     // Shapes for cascade clipping.
-    // Can only be `null`/`undefined` or an non-empty array, MUST NOT be an empty array.
-    // because it is easy to only using null to check whether clipPaths changed.
     __clipPaths?: Path[]
 
     // FOR CANVAS PAINTER
@@ -223,7 +221,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             return false;
         }
 
-        if (considerClipPath && this.__clipPaths) {
+        if (considerClipPath && this.__clipPaths && this.__clipPaths.length) {
             for (let i = 0; i < this.__clipPaths.length; ++i) {
                 if (this.__clipPaths[i].isZeroArea()) {
                     return false;
