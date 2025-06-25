@@ -30,11 +30,15 @@ const fileVersions = [
 });
 
 const versions = fileVersions.map(({ file, version }) => {
-    console.log(`  ∟ The version in [${chalk.blueBright(file)}] is ${chalk.cyanBright.bold(version)}`);
+    const color = version.indexOf('rc') > -1 ? chalk.magenta : chalk.cyanBright;
+    console.log(`  ∟ The version in [${chalk.blueBright(file)}] is ${color.bold(version)}`);
     return version;
 });
 
-if (new Set(versions).size !== 1) {
+// Ignore rc because when releasing an rc version on npm,
+// the version in package.json contains -rc.x while src doesn't.
+const versionPrefixes = versions.map(version => version.split('-rc')[0]);
+if (new Set(versionPrefixes).size !== 1) {
     console.log();
     console.error(chalk.red('❌ Version does not match! Please check and rerun the release script via:'));
     console.log();
