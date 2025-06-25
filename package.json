@@ -25,7 +25,8 @@
     "watch:bundle": "node build/build.js --watch",
     "watch:lib": "npx tsc-watch -m ES2015 --outDir lib --synchronousWatchDirectory --onSuccess \"node build/processLib.js\"",
     "test": "npx jest --config test/ut/jest.config.js",
-    "lint": "npx eslint src/**/*.ts"
+    "lint": "npx eslint src/**/*.ts",
+    "checktype": "tsc --noEmit"
   },
   "license": "BSD-3-Clause",
   "types": "index.d.ts",
