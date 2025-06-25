@@ -8,6 +8,7 @@ import timsort from './core/timsort';
 import Displayable from './graphic/Displayable';
 import Path from './graphic/Path';
 import { REDRAW_BIT } from './graphic/constants';
+import { NullUndefined } from './core/types';
 
 let invalidZErrorLogged = false;
 function logInvalidZError() {
@@ -83,7 +84,7 @@ export default class Storage {
 
     private _updateAndAddDisplayable(
         el: Element,
-        clipPaths: Path[],
+        parentClipPaths: Path[] | NullUndefined,
         includeIgnore?: boolean
     ) {
         if (el.ignore && !includeIgnore) {
@@ -95,18 +96,21 @@ export default class Storage {
         el.afterUpdate();
 
         const userSetClipPath = el.getClipPath();
+        const parentHasClipPaths = parentClipPaths && parentClipPaths.length;
+        let clipPathIdx = 0;
+        let thisClipPaths = el.__clipPaths;
 
-        if (el.ignoreClip) {
-            clipPaths = null;
-        }
-        else if (userSetClipPath) {
-
-            // FIXME 效率影响
-            if (clipPaths) {
-                clipPaths = clipPaths.slice();
+        if (!el.ignoreClip
+            && (parentHasClipPaths || userSetClipPath)
+        ) { // has clipPath in this pass
+            if (!thisClipPaths) {
+                thisClipPaths = el.__clipPaths = [];
             }
-            else {
-                clipPaths = [];
+            if (parentHasClipPaths) {
+                // PENDING: performance?
+                for (let idx = 0; idx < parentClipPaths.length; idx++) {
+                    thisClipPaths[clipPathIdx++] = parentClipPaths[idx];
+                }
             }
 
             let currentClipPath = userSetClipPath;
@@ -118,11 +122,15 @@ export default class Storage {
                 currentClipPath.parent = parentClipPath as Group;
                 currentClipPath.updateTransform();
 
-                clipPaths.push(currentClipPath);
+                thisClipPaths[clipPathIdx++] = currentClipPath;
 
                 parentClipPath = currentClipPath;
                 currentClipPath = currentClipPath.getClipPath();
             }
+        }
+
+        if (thisClipPaths) { // Remove other old clipPath in array.
+            thisClipPaths.length = clipPathIdx;
         }
 
         // ZRText and Group and combining morphing Path may use children
@@ -137,7 +145,7 @@ export default class Storage {
                     child.__dirty |= REDRAW_BIT;
                 }
 
-                this._updateAndAddDisplayable(child, clipPaths, includeIgnore);
+                this._updateAndAddDisplayable(child, thisClipPaths, includeIgnore);
             }
 
             // Mark group clean here
@@ -146,13 +154,6 @@ export default class Storage {
         }
         else {
             const disp = el as Displayable;
-            // Element is displayable
-            if (clipPaths && clipPaths.length) {
-                disp.__clipPaths = clipPaths;
-            }
-            else if (disp.__clipPaths && disp.__clipPaths.length > 0) {
-                disp.__clipPaths = [];
-            }
 
             // Avoid invalid z, z2, zlevel cause sorting error.
             if (isNaN(disp.z)) {
@@ -174,18 +175,18 @@ export default class Storage {
         // Add decal
         const decalEl = (el as Path).getDecalElement && (el as Path).getDecalElement();
         if (decalEl) {
-            this._updateAndAddDisplayable(decalEl, clipPaths, includeIgnore);
+            this._updateAndAddDisplayable(decalEl, thisClipPaths, includeIgnore);
         }
 
         // Add attached text element and guide line.
         const textGuide = el.getTextGuideLine();
         if (textGuide) {
-            this._updateAndAddDisplayable(textGuide, clipPaths, includeIgnore);
+            this._updateAndAddDisplayable(textGuide, thisClipPaths, includeIgnore);
         }
 
         const textEl = el.getTextContent();
         if (textEl) {
-            this._updateAndAddDisplayable(textEl, clipPaths, includeIgnore);
+            this._updateAndAddDisplayable(textEl, thisClipPaths, includeIgnore);
         }
     }
 

@@ -256,6 +256,8 @@ class Group extends Element<GroupProps> {
 
     getBoundingRect(includeChildren?: Element[]): BoundingRect {
         // TODO Caching
+        // FIXME: if no child or all ignored, the returned boundingRect (0, 0, 0, 0)
+        //  is not a correct bounding rect in some scenarios, such as rect union and intersection detection.
         const tmpRect = new BoundingRect(0, 0, 0, 0);
         const children = includeChildren || this._children;
         const tmpMat: MatrixArray = [];

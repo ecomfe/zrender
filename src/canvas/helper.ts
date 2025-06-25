@@ -82,8 +82,8 @@ export function getCanvasGradient(this: void, ctx: CanvasRenderingContext2D, obj
     return canvasGradient;
 }
 
+// [CAVEAT] Assume the clipPaths array is never modified during a batch of `isClipPathChanged` calling.
 export function isClipPathChanged(clipPaths: Path[], prevClipPaths: Path[]): boolean {
-    // displayable.__clipPaths can only be `null`/`undefined` or an non-empty array.
     if (clipPaths === prevClipPaths || (!clipPaths && !prevClipPaths)) {
         return false;
     }

@@ -18,14 +18,20 @@
 */
 
 import Point, { PointLike } from './Point';
-import BoundingRect from './BoundingRect';
+import BoundingRect, { BoundingRectIntersectOpt, createIntersectContext } from './BoundingRect';
 import { MatrixArray } from './matrix';
 
-const extent = [0, 0];
-const extent2 = [0, 0];
+const mathMin = Math.min;
+const mathMax = Math.max;
+const mathAbs = Math.abs;
 
-const minTv = new Point();
-const maxTv = new Point();
+const _extent = [0, 0];
+const _extent2 = [0, 0];
+
+const _intersectCtx = createIntersectContext();
+const _minTv = _intersectCtx.minTv;
+const _maxTv = _intersectCtx.maxTv;
+
 
 class OrientedBoundingRect {
 
@@ -80,36 +86,57 @@ class OrientedBoundingRect {
     }
 
     /**
-     * If intersect with another OBB
+     * If intersect with another OBB.
+     *
+     * [NOTICE]
+     *  Touching the edge is considered an intersection.
+     *  zero-width/height can still cause intersection if `touchThreshold` is 0.
+     *  See more in `BoundingRectIntersectOpt['touchThreshold']`
+     *
      * @param other Bounding rect to be intersected with
-     * @param mtv Calculated .
-     *  If it's not overlapped. it means needs to move given rect with Maximum Translation Vector to be overlapped.
-     *  Else it means needs to move given rect with Minimum Translation Vector to be not overlapped.
+     * @param mtv
+     *  If it's not overlapped. it means needs to move `other` rect with Maximum Translation Vector to be overlapped.
+     *      FIXME: Maximum Translation Vector is buggy. Fix it before using it. See case in `test/obb-collide.html`.
+     *  Else it means needs to move `other` rect with Minimum Translation Vector to be not overlapped.
      */
-    intersect(other: OrientedBoundingRect, mtv?: PointLike): boolean {
+    intersect(
+        other: OrientedBoundingRect,
+        mtv?: PointLike,
+        opt?: BoundingRectIntersectOpt
+    ): boolean {
         // OBB collision with SAT method
 
         let overlapped = true;
         const noMtv = !mtv;
-        minTv.set(Infinity, Infinity);
-        maxTv.set(0, 0);
+
+        if (mtv) {
+            Point.set(mtv, 0, 0);
+        }
+
+        _intersectCtx.reset(opt, !noMtv);
+
         // Check two axes for both two obb.
-        if (!this._intersectCheckOneSide(this, other, minTv, maxTv, noMtv, 1)) {
+        if (!this._intersectCheckOneSide(this, other, noMtv, 1)) {
             overlapped = false;
             if (noMtv) {
                 // Early return if no need to calculate mtv
                 return overlapped;
             }
         }
-        if (!this._intersectCheckOneSide(other, this, minTv, maxTv, noMtv, -1)) {
+        if (!this._intersectCheckOneSide(other, this, noMtv, -1)) {
             overlapped = false;
             if (noMtv) {
                 return overlapped;
             }
         }
 
-        if (!noMtv) {
-            Point.copy(mtv, overlapped ? minTv : maxTv);
+        if (!noMtv && !_intersectCtx.negativeSize) {
+            Point.copy(
+                mtv,
+                overlapped
+                    ? (_intersectCtx.useDir ? _intersectCtx.dirMinTv : _minTv)
+                    : _maxTv
+            );
         }
 
         return overlapped;
@@ -119,46 +146,57 @@ class OrientedBoundingRect {
     private _intersectCheckOneSide(
         self: OrientedBoundingRect,
         other: OrientedBoundingRect,
-        minTv: Point,
-        maxTv: Point,
         noMtv: boolean,
-        inverse: 1 | -1
+        inverse: 1 | -1,
     ): boolean {
+
+        // [CAVEAT] Must not use `this` in this method.
+
         let overlapped = true;
         for (let i = 0; i < 2; i++) {
-            const axis = this._axes[i];
-            this._getProjMinMaxOnAxis(i, self._corners, extent);
-            this._getProjMinMaxOnAxis(i, other._corners, extent2);
+            const axis = self._axes[i];
+            self._getProjMinMaxOnAxis(i, self._corners, _extent);
+            self._getProjMinMaxOnAxis(i, other._corners, _extent2);
 
-            // Not overlap on the any axis.
-            if (extent[1] < extent2[0] || extent[0] > extent2[1]) {
+            // Following the behavior in `BoundingRect.ts`, touching the edge is considered
+            //  an overlap, but get a mtv [0, 0].
+            if (_intersectCtx.negativeSize || _extent[1] < _extent2[0] || _extent[0] > _extent2[1]) {
+                // Not overlap on the any axis.
                 overlapped = false;
-                if (noMtv) {
+                if (_intersectCtx.negativeSize || noMtv) {
                     return overlapped;
                 }
-                const dist0 = Math.abs(extent2[0] - extent[1]);
-                const dist1 = Math.abs(extent[0] - extent2[1]);
+                const dist0 = mathAbs(_extent2[0] - _extent[1]);
+                const dist1 = mathAbs(_extent[0] - _extent2[1]);
 
                 // Find longest distance of all axes.
-                if (Math.min(dist0, dist1) > maxTv.len()) {
+                if (mathMin(dist0, dist1) > _maxTv.len()) {
                     if (dist0 < dist1) {
-                        Point.scale(maxTv, axis, -dist0 * inverse);
+                        Point.scale(_maxTv, axis, -dist0 * inverse);
                     }
                     else {
-                        Point.scale(maxTv, axis, dist1 * inverse);
+                        Point.scale(_maxTv, axis, dist1 * inverse);
                     }
                 }
             }
-            else if (minTv) {
-                const dist0 = Math.abs(extent2[0] - extent[1]);
-                const dist1 = Math.abs(extent[0] - extent2[1]);
+            else if (!noMtv) {
+                const dist0 = mathAbs(_extent2[0] - _extent[1]);
+                const dist1 = mathAbs(_extent[0] - _extent2[1]);
 
-                if (Math.min(dist0, dist1) < minTv.len()) {
-                    if (dist0 < dist1) {
-                        Point.scale(minTv, axis, dist0 * inverse);
+                if (_intersectCtx.useDir || mathMin(dist0, dist1) < _minTv.len()) {
+                    // If bidirectional, both dist0 dist1 need to check,
+                    // otherwise only check the smaller one.
+                    if (dist0 < dist1 || !_intersectCtx.bidirectional) {
+                        Point.scale(_minTv, axis, dist0 * inverse);
+                        if (_intersectCtx.useDir) {
+                            _intersectCtx.calcDirMTV();
+                        }
                     }
-                    else {
-                        Point.scale(minTv, axis, -dist1 * inverse);
+                    if (dist0 >= dist1 || !_intersectCtx.bidirectional) {
+                        Point.scale(_minTv, axis, -dist1 * inverse);
+                        if (_intersectCtx.useDir) {
+                            _intersectCtx.calcDirMTV();
+                        }
                     }
                 }
             }
@@ -166,7 +204,7 @@ class OrientedBoundingRect {
         return overlapped;
     }
 
-    private _getProjMinMaxOnAxis(dim: number, corners: Point[], out: number[]) {
+    private _getProjMinMaxOnAxis(dim: number, corners: Point[], out: number[]): void {
         const axis = this._axes[dim];
         const origin = this._origin;
         const proj = corners[0].dot(axis) + origin[dim];
@@ -175,12 +213,14 @@ class OrientedBoundingRect {
 
         for (let i = 1; i < corners.length; i++) {
             const proj = corners[i].dot(axis) + origin[dim];
-            min = Math.min(proj, min);
-            max = Math.max(proj, max);
+            min = mathMin(proj, min);
+            max = mathMax(proj, max);
         }
 
-        out[0] = min;
-        out[1] = max;
+        out[0] = min + _intersectCtx.touchThreshold;
+        out[1] = max - _intersectCtx.touchThreshold;
+
+        _intersectCtx.negativeSize = out[1] < out[0];
     }
 }
 

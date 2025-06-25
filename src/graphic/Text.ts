@@ -1,9 +1,13 @@
 /**
  * RichText is a container that manages complex text label.
- * It will parse text string and create sub displayble elements respectively.
+ * It will parse text string and create sub displayable elements respectively.
  */
-import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, MapToType, FontWeight, FontStyle } from '../core/types';
-import { parseRichText, parsePlainText } from './helper/parseText';
+import {
+    TextAlign, TextVerticalAlign, ImageLike, Dictionary, MapToType, FontWeight, FontStyle, NullUndefined
+} from '../core/types';
+import {
+    parseRichText, parsePlainText, CalcInnerTextOverflowAreaOut, calcInnerTextOverflowArea
+} from './helper/parseText';
 import TSpan, { TSpanStyleProps } from './TSpan';
 import { retrieve2, each, normalizeCssArray, trim, retrieve3, extend, keys, defaults } from '../core/util';
 import { adjustTextX, adjustTextY } from '../contain/text';
@@ -41,7 +45,7 @@ export interface TextStylePropsPart {
     strokeOpacity?: number
     /**
      * textStroke may be set as some color as a default
-     * value in upper applicaion, where the default value
+     * value in upper application, where the default value
      * of lineWidth should be 0 to make sure that
      * user can choose to do not use text stroke.
      */
@@ -92,6 +96,7 @@ export interface TextStylePropsPart {
     /**
      * Width of text block. Not include padding
      * Used for background, truncate, wrap
+     * If string - be 'auto'.
      */
     width?: number | string
     /**
@@ -100,7 +105,7 @@ export interface TextStylePropsPart {
      */
     height?: number
     /**
-     * Reserved for special functinality, like 'hr'.
+     * Reserved for special functionality, like 'hr'.
      */
     tag?: string
 
@@ -121,7 +126,7 @@ export interface TextStylePropsPart {
     /**
      * Margin of label. Used when layouting the label.
      */
-    margin?: number
+    margin?: number | number[]
 
     borderColor?: string
     borderWidth?: number
@@ -148,6 +153,10 @@ export interface TextStyleProps extends TextStylePropsPart {
 
     text?: string
 
+    /**
+     * The outer rect (including padding) is placed based on x/y.
+     * By default 0.
+     */
     x?: number
     y?: number
 
@@ -155,6 +164,7 @@ export interface TextStyleProps extends TextStylePropsPart {
      * Only support number in the top block.
      */
     width?: number
+
     /**
      * Text styles for rich text.
      */
@@ -204,12 +214,17 @@ export type TextState = Pick<TextProps, DisplayableStatePropNames> & ElementComm
 
 export type DefaultTextStyle = Pick<TextStyleProps, 'fill' | 'stroke' | 'align' | 'verticalAlign'> & {
     autoStroke?: boolean
+    // In text local coord.
+    // Exist if and only if `ElementTextConfig['autoOverflowArea']: true`
+    overflowRect?: BoundingRect | NullUndefined
 };
 
 const DEFAULT_RICH_TEXT_COLOR = {
     fill: '#000'
 };
 const DEFAULT_STROKE_LINE_WIDTH = 2;
+
+const tmpCITOverflowAreaOut = {} as CalcInnerTextOverflowAreaOut;
 
 // const DEFAULT_TEXT_STYLE: TextStyleProps = {
 //     x: 0,
@@ -270,7 +285,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
 
     /**
      * Will use this to calculate transform matrix
-     * instead of Element itseelf if it's give.
+     * instead of Element itself if it's give.
      * Not exposed to developers
      */
     innerTransformable: Transformable
@@ -489,8 +504,25 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         const textFont = style.font || DEFAULT_FONT;
         const textPadding = style.padding as number[];
 
+        const defaultStyle = this._defaultStyle;
+        let baseX = style.x || 0;
+        let baseY = style.y || 0;
+        const textAlign = style.align || defaultStyle.align || 'left';
+        const verticalAlign = style.verticalAlign || defaultStyle.verticalAlign || 'top';
+
+        calcInnerTextOverflowArea(
+            tmpCITOverflowAreaOut, defaultStyle.overflowRect, baseX, baseY, textAlign, verticalAlign
+        );
+        baseX = tmpCITOverflowAreaOut.baseX;
+        baseY = tmpCITOverflowAreaOut.baseY;
+
         const text = getStyleText(style);
-        const contentBlock = parsePlainText(text, style);
+        const contentBlock = parsePlainText(
+            text,
+            style,
+            tmpCITOverflowAreaOut.outerWidth,
+            tmpCITOverflowAreaOut.outerHeight
+        );
         const needDrawBg = needDrawBackground(style);
         const bgColorDrawn = !!(style.backgroundColor);
 
@@ -501,14 +533,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         const textLines = contentBlock.lines;
         const lineHeight = contentBlock.lineHeight;
 
-        const defaultStyle = this._defaultStyle;
-
         this.isTruncated = !!contentBlock.isTruncated;
-
-        const baseX = style.x || 0;
-        const baseY = style.y || 0;
-        const textAlign = style.align || defaultStyle.align || 'left';
-        const verticalAlign = style.verticalAlign || defaultStyle.verticalAlign || 'top';
 
         let textX = baseX;
         let textY = adjustTextY(baseY, contentBlock.contentHeight, verticalAlign);
@@ -627,21 +652,33 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
 
     private _updateRichTexts() {
         const style = this.style;
+        const defaultStyle = this._defaultStyle;
+
+        const textAlign = style.align || defaultStyle.align;
+        const verticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
+        let baseX = style.x || 0;
+        let baseY = style.y || 0;
+
+        calcInnerTextOverflowArea(
+            tmpCITOverflowAreaOut, defaultStyle.overflowRect, baseX, baseY, textAlign, verticalAlign
+        );
+        baseX = tmpCITOverflowAreaOut.baseX;
+        baseY = tmpCITOverflowAreaOut.baseY;
 
         // TODO Only parse when text changed?
         const text = getStyleText(style);
-        const contentBlock = parseRichText(text, style);
+        const contentBlock = parseRichText(
+            text,
+            style,
+            tmpCITOverflowAreaOut.outerWidth,
+            tmpCITOverflowAreaOut.outerHeight,
+            textAlign
+        );
 
         const contentWidth = contentBlock.width;
         const outerWidth = contentBlock.outerWidth;
         const outerHeight = contentBlock.outerHeight;
         const textPadding = style.padding as number[];
-
-        const baseX = style.x || 0;
-        const baseY = style.y || 0;
-        const defaultStyle = this._defaultStyle;
-        const textAlign = style.align || defaultStyle.align;
-        const verticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
 
         this.isTruncated = !!contentBlock.isTruncated;
 
