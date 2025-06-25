@@ -556,7 +556,7 @@ export function registerSSRDataGetter<T>(getter: ElementSSRDataGetter<T>) {
 /**
  * @type {string}
  */
-export const version = '6.0.0';
+export const version = '6.0.0-rc.1';
 
 
 export interface ZRenderType extends ZRender {};
