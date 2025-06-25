@@ -7521,7 +7521,7 @@
     function registerSSRDataGetter(getter) {
         ssrDataGetter = getter;
     }
-    var version = '6.0.0';
+    var version = '6.0.0-rc.1';
 
     var STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
     var DEFAULT_COMMON_STYLE = {
