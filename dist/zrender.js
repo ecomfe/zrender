@@ -38,7 +38,10 @@
     else if (typeof document === 'undefined' && typeof self !== 'undefined') {
         env.worker = true;
     }
-    else if (!env.hasGlobalWindow || 'Deno' in window) {
+    else if (!env.hasGlobalWindow
+        || 'Deno' in window
+        || (typeof navigator !== 'undefined' && typeof navigator.userAgent === 'string'
+            && navigator.userAgent.indexOf('Node.js') > -1)) {
         env.node = true;
         env.svgSupported = true;
     }
@@ -72,15 +75,17 @@
         env.touchEventsSupported = 'ontouchstart' in window && !browser.ie && !browser.edge;
         env.pointerEventsSupported = 'onpointerdown' in window
             && (browser.edge || (browser.ie && +browser.version >= 11));
-        env.domSupported = typeof document !== 'undefined';
-        var style = document.documentElement.style;
-        env.transform3dSupported = ((browser.ie && 'transition' in style)
-            || browser.edge
-            || (('WebKitCSSMatrix' in window) && ('m11' in new WebKitCSSMatrix()))
-            || 'MozPerspective' in style)
-            && !('OTransition' in style);
-        env.transformSupported = env.transform3dSupported
-            || (browser.ie && +browser.version >= 9);
+        var domSupported = env.domSupported = typeof document !== 'undefined';
+        if (domSupported) {
+            var style = document.documentElement.style;
+            env.transform3dSupported = ((browser.ie && 'transition' in style)
+                || browser.edge
+                || (('WebKitCSSMatrix' in window) && ('m11' in new WebKitCSSMatrix()))
+                || 'MozPerspective' in style)
+                && !('OTransition' in style);
+            env.transformSupported = env.transform3dSupported
+                || (browser.ie && +browser.version >= 9);
+        }
     }
 
     var DEFAULT_FONT_SIZE = 12;
@@ -695,6 +700,7 @@
     }
     function noop() { }
     var RADIAN_TO_DEGREE = 180 / Math.PI;
+    var EPSILON = Number.EPSILON || Math.pow(2, -52);
 
     var util = /*#__PURE__*/Object.freeze({
         __proto__: null,
@@ -747,7 +753,8 @@
         disableUserSelect: disableUserSelect,
         hasOwn: hasOwn,
         noop: noop,
-        RADIAN_TO_DEGREE: RADIAN_TO_DEGREE
+        RADIAN_TO_DEGREE: RADIAN_TO_DEGREE,
+        EPSILON: EPSILON
     });
 
     /*! *****************************************************************************
@@ -1253,6 +1260,11 @@
             el.appendChild(marker);
             markers.push(marker);
         }
+        saved.clearMarkers = function () {
+            each(markers, function (marker) {
+                marker.parentNode && marker.parentNode.removeChild(marker);
+            });
+        };
         return markers;
     }
     function preparePointerTransformer(markers, saved, inverse) {
@@ -1723,14 +1735,22 @@
 
     var mathMin = Math.min;
     var mathMax = Math.max;
+    var mathAbs = Math.abs;
+    var XY = ['x', 'y'];
+    var WH = ['width', 'height'];
     var lt = new Point();
     var rb = new Point();
     var lb = new Point();
     var rt = new Point();
-    var minTv = new Point();
-    var maxTv = new Point();
+    var _intersectCtx = createIntersectContext();
+    var _minTv = _intersectCtx.minTv;
+    var _maxTv = _intersectCtx.maxTv;
+    var _lenMinMax = [0, 0];
     var BoundingRect = (function () {
         function BoundingRect(x, y, width, height) {
+            BoundingRect.set(this, x, y, width, height);
+        }
+        BoundingRect.set = function (target, x, y, width, height) {
             if (width < 0) {
                 x = x + width;
                 width = -width;
@@ -1739,11 +1759,12 @@
                 y = y + height;
                 height = -height;
             }
-            this.x = x;
-            this.y = y;
-            this.width = width;
-            this.height = height;
-        }
+            target.x = x;
+            target.y = y;
+            target.width = width;
+            target.height = height;
+            return target;
+        };
         BoundingRect.prototype.union = function (other) {
             var x = mathMin(other.x, this.x);
             var y = mathMin(other.y, this.y);
@@ -1775,88 +1796,63 @@
             translate(m, m, [b.x, b.y]);
             return m;
         };
-        BoundingRect.prototype.intersect = function (b, mtv) {
-            if (!b) {
+        BoundingRect.prototype.intersect = function (b, mtv, opt) {
+            return BoundingRect.intersect(this, b, mtv, opt);
+        };
+        BoundingRect.intersect = function (a, b, mtv, opt) {
+            if (mtv) {
+                Point.set(mtv, 0, 0);
+            }
+            var outIntersectRect = opt && opt.outIntersectRect || null;
+            var clamp = opt && opt.clamp;
+            if (outIntersectRect) {
+                outIntersectRect.x = outIntersectRect.y = outIntersectRect.width = outIntersectRect.height = NaN;
+            }
+            if (!a || !b) {
                 return false;
             }
+            if (!(a instanceof BoundingRect)) {
+                a = BoundingRect.set(_tmpIntersectA, a.x, a.y, a.width, a.height);
+            }
             if (!(b instanceof BoundingRect)) {
-                b = BoundingRect.create(b);
+                b = BoundingRect.set(_tmpIntersectB, b.x, b.y, b.width, b.height);
             }
-            var a = this;
-            var ax0 = a.x;
-            var ax1 = a.x + a.width;
-            var ay0 = a.y;
-            var ay1 = a.y + a.height;
-            var bx0 = b.x;
-            var bx1 = b.x + b.width;
-            var by0 = b.y;
-            var by1 = b.y + b.height;
+            var useMTV = !!mtv;
+            _intersectCtx.reset(opt, useMTV);
+            var touchThreshold = _intersectCtx.touchThreshold;
+            var ax0 = a.x + touchThreshold;
+            var ax1 = a.x + a.width - touchThreshold;
+            var ay0 = a.y + touchThreshold;
+            var ay1 = a.y + a.height - touchThreshold;
+            var bx0 = b.x + touchThreshold;
+            var bx1 = b.x + b.width - touchThreshold;
+            var by0 = b.y + touchThreshold;
+            var by1 = b.y + b.height - touchThreshold;
+            if (ax0 > ax1 || ay0 > ay1 || bx0 > bx1 || by0 > by1) {
+                return false;
+            }
             var overlap = !(ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
-            if (mtv) {
-                var dMin = Infinity;
-                var dMax = 0;
-                var d0 = Math.abs(ax1 - bx0);
-                var d1 = Math.abs(bx1 - ax0);
-                var d2 = Math.abs(ay1 - by0);
-                var d3 = Math.abs(by1 - ay0);
-                var dx = Math.min(d0, d1);
-                var dy = Math.min(d2, d3);
-                if (ax1 < bx0 || bx1 < ax0) {
-                    if (dx > dMax) {
-                        dMax = dx;
-                        if (d0 < d1) {
-                            Point.set(maxTv, -d0, 0);
-                        }
-                        else {
-                            Point.set(maxTv, d1, 0);
-                        }
-                    }
+            if (useMTV || outIntersectRect) {
+                _lenMinMax[0] = Infinity;
+                _lenMinMax[1] = 0;
+                intersectOneDim(ax0, ax1, bx0, bx1, 0, useMTV, outIntersectRect, clamp);
+                intersectOneDim(ay0, ay1, by0, by1, 1, useMTV, outIntersectRect, clamp);
+                if (useMTV) {
+                    Point.copy(mtv, overlap
+                        ? (_intersectCtx.useDir ? _intersectCtx.dirMinTv : _minTv)
+                        : _maxTv);
                 }
-                else {
-                    if (dx < dMin) {
-                        dMin = dx;
-                        if (d0 < d1) {
-                            Point.set(minTv, d0, 0);
-                        }
-                        else {
-                            Point.set(minTv, -d1, 0);
-                        }
-                    }
-                }
-                if (ay1 < by0 || by1 < ay0) {
-                    if (dy > dMax) {
-                        dMax = dy;
-                        if (d2 < d3) {
-                            Point.set(maxTv, 0, -d2);
-                        }
-                        else {
-                            Point.set(maxTv, 0, d3);
-                        }
-                    }
-                }
-                else {
-                    if (dx < dMin) {
-                        dMin = dx;
-                        if (d2 < d3) {
-                            Point.set(minTv, 0, d2);
-                        }
-                        else {
-                            Point.set(minTv, 0, -d3);
-                        }
-                    }
-                }
-            }
-            if (mtv) {
-                Point.copy(mtv, overlap ? minTv : maxTv);
             }
             return overlap;
         };
-        BoundingRect.prototype.contain = function (x, y) {
-            var rect = this;
+        BoundingRect.contain = function (rect, x, y) {
             return x >= rect.x
                 && x <= (rect.x + rect.width)
                 && y >= rect.y
                 && y <= (rect.y + rect.height);
+        };
+        BoundingRect.prototype.contain = function (x, y) {
+            return BoundingRect.contain(this, x, y);
         };
         BoundingRect.prototype.clone = function () {
             return new BoundingRect(this.x, this.y, this.width, this.height);
@@ -1889,6 +1885,7 @@
             target.y = source.y;
             target.width = source.width;
             target.height = source.height;
+            return target;
         };
         BoundingRect.applyTransform = function (target, source, m) {
             if (!m) {
@@ -1933,6 +1930,127 @@
         };
         return BoundingRect;
     }());
+    var _tmpIntersectA = new BoundingRect(0, 0, 0, 0);
+    var _tmpIntersectB = new BoundingRect(0, 0, 0, 0);
+    function intersectOneDim(a0, a1, b0, b1, updateDimIdx, useMTV, outIntersectRect, clamp) {
+        var d0 = mathAbs(a1 - b0);
+        var d1 = mathAbs(b1 - a0);
+        var d01min = mathMin(d0, d1);
+        var updateDim = XY[updateDimIdx];
+        var zeroDim = XY[1 - updateDimIdx];
+        var wh = WH[updateDimIdx];
+        if (a1 < b0 || b1 < a0) {
+            if (d0 < d1) {
+                if (useMTV) {
+                    _maxTv[updateDim] = -d0;
+                }
+                if (clamp) {
+                    outIntersectRect[updateDim] = a1;
+                    outIntersectRect[wh] = 0;
+                }
+            }
+            else {
+                if (useMTV) {
+                    _maxTv[updateDim] = d1;
+                }
+                if (clamp) {
+                    outIntersectRect[updateDim] = a0;
+                    outIntersectRect[wh] = 0;
+                }
+            }
+        }
+        else {
+            if (outIntersectRect) {
+                outIntersectRect[updateDim] = mathMax(a0, b0);
+                outIntersectRect[wh] = mathMin(a1, b1) - outIntersectRect[updateDim];
+            }
+            if (useMTV) {
+                if (d01min < _lenMinMax[0] || _intersectCtx.useDir) {
+                    _lenMinMax[0] = mathMin(d01min, _lenMinMax[0]);
+                    if (d0 < d1 || !_intersectCtx.bidirectional) {
+                        _minTv[updateDim] = d0;
+                        _minTv[zeroDim] = 0;
+                        if (_intersectCtx.useDir) {
+                            _intersectCtx.calcDirMTV();
+                        }
+                    }
+                    if (d0 >= d1 || !_intersectCtx.bidirectional) {
+                        _minTv[updateDim] = -d1;
+                        _minTv[zeroDim] = 0;
+                        if (_intersectCtx.useDir) {
+                            _intersectCtx.calcDirMTV();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    function createIntersectContext() {
+        var _direction = 0;
+        var _dirCheckVec = new Point();
+        var _dirTmp = new Point();
+        var _ctx = {
+            minTv: new Point(),
+            maxTv: new Point(),
+            useDir: false,
+            dirMinTv: new Point(),
+            touchThreshold: 0,
+            bidirectional: true,
+            negativeSize: false,
+            reset: function (opt, useMTV) {
+                _ctx.touchThreshold = 0;
+                if (opt && opt.touchThreshold != null) {
+                    _ctx.touchThreshold = mathMax(0, opt.touchThreshold);
+                }
+                _ctx.negativeSize = false;
+                if (!useMTV) {
+                    return;
+                }
+                _ctx.minTv.set(Infinity, Infinity);
+                _ctx.maxTv.set(0, 0);
+                _ctx.useDir = false;
+                if (opt && opt.direction != null) {
+                    _ctx.useDir = true;
+                    _ctx.dirMinTv.copy(_ctx.minTv);
+                    _dirTmp.copy(_ctx.minTv);
+                    _direction = opt.direction;
+                    _ctx.bidirectional = opt.bidirectional == null || !!opt.bidirectional;
+                    if (!_ctx.bidirectional) {
+                        _dirCheckVec.set(Math.cos(_direction), Math.sin(_direction));
+                    }
+                }
+            },
+            calcDirMTV: function () {
+                var minTv = _ctx.minTv;
+                var dirMinTv = _ctx.dirMinTv;
+                var squareMag = minTv.y * minTv.y + minTv.x * minTv.x;
+                var dirSin = Math.sin(_direction);
+                var dirCos = Math.cos(_direction);
+                var dotProd = dirSin * minTv.y + dirCos * minTv.x;
+                if (nearZero(dotProd)) {
+                    if (nearZero(minTv.x) && nearZero(minTv.y)) {
+                        dirMinTv.set(0, 0);
+                    }
+                    return;
+                }
+                _dirTmp.x = squareMag * dirCos / dotProd;
+                _dirTmp.y = squareMag * dirSin / dotProd;
+                if (nearZero(_dirTmp.x) && nearZero(_dirTmp.y)) {
+                    dirMinTv.set(0, 0);
+                    return;
+                }
+                if ((_ctx.bidirectional
+                    || _dirCheckVec.dot(_dirTmp) > 0)
+                    && _dirTmp.len() < dirMinTv.len()) {
+                    dirMinTv.copy(_dirTmp);
+                }
+            }
+        };
+        function nearZero(val) {
+            return mathAbs(val) < 1e-10;
+        }
+        return _ctx;
+    }
 
     var SILENT = 'silent';
     function makeEventPacket(eveType, targetInfo, event) {
@@ -2195,7 +2313,7 @@
                     isSilent = true;
                 }
                 var hostEl = el.__hostTarget;
-                el = hostEl ? hostEl : el.parent;
+                el = hostEl ? (el.ignoreHostSilent ? null : hostEl) : el.parent;
             }
             return isSilent ? SILENT : true;
         }
@@ -2795,7 +2913,7 @@
             displayList.length = this._displayListLen;
             sort(displayList, shapeCompareFunc);
         };
-        Storage.prototype._updateAndAddDisplayable = function (el, clipPaths, includeIgnore) {
+        Storage.prototype._updateAndAddDisplayable = function (el, parentClipPaths, includeIgnore) {
             if (el.ignore && !includeIgnore) {
                 return;
             }
@@ -2803,25 +2921,31 @@
             el.update();
             el.afterUpdate();
             var userSetClipPath = el.getClipPath();
-            if (el.ignoreClip) {
-                clipPaths = null;
-            }
-            else if (userSetClipPath) {
-                if (clipPaths) {
-                    clipPaths = clipPaths.slice();
+            var parentHasClipPaths = parentClipPaths && parentClipPaths.length;
+            var clipPathIdx = 0;
+            var thisClipPaths = el.__clipPaths;
+            if (!el.ignoreClip
+                && (parentHasClipPaths || userSetClipPath)) {
+                if (!thisClipPaths) {
+                    thisClipPaths = el.__clipPaths = [];
                 }
-                else {
-                    clipPaths = [];
+                if (parentHasClipPaths) {
+                    for (var idx = 0; idx < parentClipPaths.length; idx++) {
+                        thisClipPaths[clipPathIdx++] = parentClipPaths[idx];
+                    }
                 }
                 var currentClipPath = userSetClipPath;
                 var parentClipPath = el;
                 while (currentClipPath) {
                     currentClipPath.parent = parentClipPath;
                     currentClipPath.updateTransform();
-                    clipPaths.push(currentClipPath);
+                    thisClipPaths[clipPathIdx++] = currentClipPath;
                     parentClipPath = currentClipPath;
                     currentClipPath = currentClipPath.getClipPath();
                 }
+            }
+            if (thisClipPaths) {
+                thisClipPaths.length = clipPathIdx;
             }
             if (el.childrenRef) {
                 var children = el.childrenRef();
@@ -2830,18 +2954,12 @@
                     if (el.__dirty) {
                         child.__dirty |= REDRAW_BIT;
                     }
-                    this._updateAndAddDisplayable(child, clipPaths, includeIgnore);
+                    this._updateAndAddDisplayable(child, thisClipPaths, includeIgnore);
                 }
                 el.__dirty = 0;
             }
             else {
                 var disp = el;
-                if (clipPaths && clipPaths.length) {
-                    disp.__clipPaths = clipPaths;
-                }
-                else if (disp.__clipPaths && disp.__clipPaths.length > 0) {
-                    disp.__clipPaths = [];
-                }
                 if (isNaN(disp.z)) {
                     logInvalidZError();
                     disp.z = 0;
@@ -2858,15 +2976,15 @@
             }
             var decalEl = el.getDecalElement && el.getDecalElement();
             if (decalEl) {
-                this._updateAndAddDisplayable(decalEl, clipPaths, includeIgnore);
+                this._updateAndAddDisplayable(decalEl, thisClipPaths, includeIgnore);
             }
             var textGuide = el.getTextGuideLine();
             if (textGuide) {
-                this._updateAndAddDisplayable(textGuide, clipPaths, includeIgnore);
+                this._updateAndAddDisplayable(textGuide, thisClipPaths, includeIgnore);
             }
             var textEl = el.getTextContent();
             if (textEl) {
-                this._updateAndAddDisplayable(textEl, clipPaths, includeIgnore);
+                this._updateAndAddDisplayable(textEl, thisClipPaths, includeIgnore);
             }
         };
         Storage.prototype.addRoot = function (el) {
@@ -3110,7 +3228,7 @@
 
     var mathPow = Math.pow;
     var mathSqrt = Math.sqrt;
-    var EPSILON = 1e-8;
+    var EPSILON$1 = 1e-8;
     var EPSILON_NUMERIC = 1e-4;
     var THREE_SQRT = mathSqrt(3);
     var ONE_THIRD = 1 / 3;
@@ -3118,10 +3236,10 @@
     var _v1 = create();
     var _v2 = create();
     function isAroundZero(val) {
-        return val > -EPSILON && val < EPSILON;
+        return val > -EPSILON$1 && val < EPSILON$1;
     }
     function isNotAroundZero(val) {
-        return val > EPSILON || val < -EPSILON;
+        return val > EPSILON$1 || val < -EPSILON$1;
     }
     function cubicAt(p0, p1, p2, p3, t) {
         var onet = 1 - t;
@@ -4014,9 +4132,9 @@
         var colorArr = parse(color);
         if (color) {
             colorArr = rgba2hsla(colorArr);
-            h != null && (colorArr[0] = clampCssAngle(h));
-            s != null && (colorArr[1] = parseCssFloat(s));
-            l != null && (colorArr[2] = parseCssFloat(l));
+            h != null && (colorArr[0] = clampCssAngle(isFunction(h) ? h(colorArr[0]) : h));
+            s != null && (colorArr[1] = parseCssFloat(isFunction(s) ? s(colorArr[1]) : s));
+            l != null && (colorArr[2] = parseCssFloat(isFunction(l) ? l(colorArr[2]) : l));
             return stringify(hsla2rgba(colorArr), 'rgba');
         }
     }
@@ -4074,6 +4192,8 @@
 
     var color = /*#__PURE__*/Object.freeze({
         __proto__: null,
+        parseCssInt: parseCssInt,
+        parseCssFloat: parseCssFloat,
         parse: parse,
         lift: lift,
         toHex: toHex,
@@ -4107,9 +4227,9 @@
             opacity: opacity == null ? 1 : opacity
         };
     }
-    var EPSILON$1 = 1e-4;
+    var EPSILON$2 = 1e-4;
     function isAroundZero$1(transform) {
-        return transform < EPSILON$1 && transform > -EPSILON$1;
+        return transform < EPSILON$2 && transform > -EPSILON$2;
     }
     function round3(transform) {
         return mathRound(transform * 1e3) / 1e3;
@@ -5401,9 +5521,9 @@
     var LIGHTER_LABEL_COLOR = '#eee';
 
     var mIdentity = identity;
-    var EPSILON$2 = 5e-5;
+    var EPSILON$3 = 5e-5;
     function isNotAroundZero$1(val) {
-        return val > EPSILON$2 || val < -EPSILON$2;
+        return val > EPSILON$3 || val < -EPSILON$3;
     }
     var scaleTmp = [];
     var tmpTransform = [];
@@ -5641,22 +5761,69 @@
         }
     }
 
-    var textWidthCache = {};
-    function getWidth(text, font) {
-        font = font || DEFAULT_FONT;
-        var cacheOfFont = textWidthCache[font];
-        if (!cacheOfFont) {
-            cacheOfFont = textWidthCache[font] = new LRU(500);
+    function ensureFontMeasureInfo(font) {
+        if (!_fontMeasureInfoCache) {
+            _fontMeasureInfoCache = new LRU(100);
         }
-        var width = cacheOfFont.get(text);
+        font = font || DEFAULT_FONT;
+        var measureInfo = _fontMeasureInfoCache.get(font);
+        if (!measureInfo) {
+            measureInfo = {
+                font: font,
+                strWidthCache: new LRU(500),
+                asciiWidthMap: null,
+                asciiWidthMapTried: false,
+                stWideCharWidth: platformApi.measureText('国', font).width,
+                asciiCharWidth: platformApi.measureText('a', font).width,
+            };
+            _fontMeasureInfoCache.put(font, measureInfo);
+        }
+        return measureInfo;
+    }
+    var _fontMeasureInfoCache;
+    function tryCreateASCIIWidthMap(font) {
+        if (_getASCIIWidthMapLongCount >= GET_ASCII_WIDTH_LONG_COUNT_MAX) {
+            return;
+        }
+        font = font || DEFAULT_FONT;
+        var asciiWidthMap = [];
+        var start = +(new Date());
+        for (var code = 0; code <= 127; code++) {
+            asciiWidthMap[code] = platformApi.measureText(String.fromCharCode(code), font).width;
+        }
+        var cost = +(new Date()) - start;
+        if (cost > 16) {
+            _getASCIIWidthMapLongCount = GET_ASCII_WIDTH_LONG_COUNT_MAX;
+        }
+        else if (cost > 2) {
+            _getASCIIWidthMapLongCount++;
+        }
+        return asciiWidthMap;
+    }
+    var _getASCIIWidthMapLongCount = 0;
+    var GET_ASCII_WIDTH_LONG_COUNT_MAX = 5;
+    function measureCharWidth(fontMeasureInfo, charCode) {
+        if (!fontMeasureInfo.asciiWidthMapTried) {
+            fontMeasureInfo.asciiWidthMap = tryCreateASCIIWidthMap(fontMeasureInfo.font);
+            fontMeasureInfo.asciiWidthMapTried = true;
+        }
+        return (0 <= charCode && charCode <= 127)
+            ? (fontMeasureInfo.asciiWidthMap != null
+                ? fontMeasureInfo.asciiWidthMap[charCode]
+                : fontMeasureInfo.asciiCharWidth)
+            : fontMeasureInfo.stWideCharWidth;
+    }
+    function measureWidth(fontMeasureInfo, text) {
+        var strWidthCache = fontMeasureInfo.strWidthCache;
+        var width = strWidthCache.get(text);
         if (width == null) {
-            width = platformApi.measureText(text, font).width;
-            cacheOfFont.put(text, width);
+            width = platformApi.measureText(text, fontMeasureInfo.font).width;
+            strWidthCache.put(text, width);
         }
         return width;
     }
     function innerGetBoundingRect(text, font, textAlign, textBaseline) {
-        var width = getWidth(text, font);
+        var width = measureWidth(ensureFontMeasureInfo(font), text);
         var height = getLineHeight(font);
         var x = adjustTextX(0, width, textAlign);
         var y = adjustTextY$1(0, height, textBaseline);
@@ -5678,26 +5845,26 @@
             return uniondRect;
         }
     }
-    function adjustTextX(x, width, textAlign) {
+    function adjustTextX(x, width, textAlign, inverse) {
         if (textAlign === 'right') {
-            x -= width;
+            !inverse ? (x -= width) : (x += width);
         }
         else if (textAlign === 'center') {
-            x -= width / 2;
+            !inverse ? (x -= width / 2) : (x += width / 2);
         }
         return x;
     }
-    function adjustTextY$1(y, height, verticalAlign) {
+    function adjustTextY$1(y, height, verticalAlign, inverse) {
         if (verticalAlign === 'middle') {
-            y -= height / 2;
+            !inverse ? (y -= height / 2) : (y += height / 2);
         }
         else if (verticalAlign === 'bottom') {
-            y -= height;
+            !inverse ? (y -= height) : (y += height);
         }
         return y;
     }
     function getLineHeight(font) {
-        return getWidth('国', font);
+        return ensureFontMeasureInfo(font).stWideCharWidth;
     }
     function parsePercent(value, maxValue) {
         if (typeof value === 'string') {
@@ -5814,6 +5981,7 @@
     }, { ignore: false });
     var tmpTextPosCalcRes = {};
     var tmpBoundingRect = new BoundingRect(0, 0, 0, 0);
+    var tmpInnerTextTrans = [];
     var Element = (function () {
         function Element(props) {
             this.id = guid();
@@ -5866,8 +6034,11 @@
                 innerTransformable.parent = isLocal ? this : null;
                 var innerOrigin = false;
                 innerTransformable.copyTransform(textEl);
-                if (textConfig.position != null) {
-                    var layoutRect = tmpBoundingRect;
+                var hasPosition = textConfig.position != null;
+                var autoOverflowArea = textConfig.autoOverflowArea;
+                var layoutRect = void 0;
+                if (autoOverflowArea || hasPosition) {
+                    layoutRect = tmpBoundingRect;
                     if (textConfig.layoutRect) {
                         layoutRect.copy(textConfig.layoutRect);
                     }
@@ -5877,6 +6048,8 @@
                     if (!isLocal) {
                         layoutRect.applyTransform(this.transform);
                     }
+                }
+                if (hasPosition) {
                     if (this.calculateTextPosition) {
                         this.calculateTextPosition(tmpTextPosCalcRes, textConfig, layoutRect);
                     }
@@ -5916,10 +6089,21 @@
                         innerTransformable.originY = -textOffset[1];
                     }
                 }
+                var innerTextDefaultStyle = this._innerTextDefaultStyle || (this._innerTextDefaultStyle = {});
+                if (autoOverflowArea) {
+                    var overflowRect = innerTextDefaultStyle.overflowRect =
+                        innerTextDefaultStyle.overflowRect || new BoundingRect(0, 0, 0, 0);
+                    innerTransformable.getLocalTransform(tmpInnerTextTrans);
+                    invert(tmpInnerTextTrans, tmpInnerTextTrans);
+                    BoundingRect.copy(overflowRect, layoutRect);
+                    overflowRect.applyTransform(tmpInnerTextTrans);
+                }
+                else {
+                    innerTextDefaultStyle.overflowRect = null;
+                }
                 var isInside = textConfig.inside == null
                     ? (typeof textConfig.position === 'string' && textConfig.position.indexOf('inside') >= 0)
                     : textConfig.inside;
-                var innerTextDefaultStyle = this._innerTextDefaultStyle || (this._innerTextDefaultStyle = {});
                 var textFill = void 0;
                 var textStroke = void 0;
                 var autoStroke = void 0;
@@ -6200,16 +6384,15 @@
             }
         };
         Element.prototype.isSilent = function () {
-            var isSilent = this.silent;
-            var ancestor = this.parent;
-            while (!isSilent && ancestor) {
-                if (ancestor.silent) {
-                    isSilent = true;
-                    break;
+            var el = this;
+            while (el) {
+                if (el.silent) {
+                    return true;
                 }
-                ancestor = ancestor.parent;
+                var hostEl = el.__hostTarget;
+                el = hostEl ? (el.ignoreHostSilent ? null : hostEl) : el.parent;
             }
-            return isSilent;
+            return false;
         };
         Element.prototype._updateAnimationTargets = function () {
             for (var i = 0; i < this.animators.length; i++) {
@@ -6573,11 +6756,12 @@
             elProto.name = '';
             elProto.ignore =
                 elProto.silent =
-                    elProto.isGroup =
-                        elProto.draggable =
-                            elProto.dragging =
-                                elProto.ignoreClip =
-                                    elProto.__inHover = false;
+                    elProto.ignoreHostSilent =
+                        elProto.isGroup =
+                            elProto.draggable =
+                                elProto.dragging =
+                                    elProto.ignoreClip =
+                                        elProto.__inHover = false;
             elProto.__dirty = REDRAW_BIT;
             var logs = {};
             function logDeprecatedError(key, xKey, yKey) {
@@ -7337,7 +7521,7 @@
     function registerSSRDataGetter(getter) {
         ssrDataGetter = getter;
     }
-    var version = '5.6.1';
+    var version = '6.0.0-rc.1';
 
     var STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
     var DEFAULT_COMMON_STYLE = {
@@ -7394,7 +7578,7 @@
                 || (m && !m[0] && !m[3])) {
                 return false;
             }
-            if (considerClipPath && this.__clipPaths) {
+            if (considerClipPath && this.__clipPaths && this.__clipPaths.length) {
                 for (var i = 0; i < this.__clipPaths.length; ++i) {
                     if (this.__clipPaths[i].isZeroArea()) {
                         return false;
@@ -7800,7 +7984,7 @@
     var mathMax$2 = Math.max;
     var mathCos$1 = Math.cos;
     var mathSin$1 = Math.sin;
-    var mathAbs = Math.abs;
+    var mathAbs$1 = Math.abs;
     var PI = Math.PI;
     var PI2$1 = PI * 2;
     var hasTypedArray = typeof Float32Array !== 'undefined';
@@ -7856,8 +8040,8 @@
         PathProxy.prototype.setScale = function (sx, sy, segmentIgnoreThreshold) {
             segmentIgnoreThreshold = segmentIgnoreThreshold || 0;
             if (segmentIgnoreThreshold > 0) {
-                this._ux = mathAbs(segmentIgnoreThreshold / devicePixelRatio / sx) || 0;
-                this._uy = mathAbs(segmentIgnoreThreshold / devicePixelRatio / sy) || 0;
+                this._ux = mathAbs$1(segmentIgnoreThreshold / devicePixelRatio / sx) || 0;
+                this._uy = mathAbs$1(segmentIgnoreThreshold / devicePixelRatio / sy) || 0;
             }
         };
         PathProxy.prototype.setDPR = function (dpr) {
@@ -7895,8 +8079,8 @@
             return this;
         };
         PathProxy.prototype.lineTo = function (x, y) {
-            var dx = mathAbs(x - this._xi);
-            var dy = mathAbs(y - this._yi);
+            var dx = mathAbs$1(x - this._xi);
+            var dy = mathAbs$1(y - this._yi);
             var exceedUnit = dx > this._ux || dy > this._uy;
             this.addData(CMD.L, x, y);
             if (this._ctx && exceedUnit) {
@@ -7989,6 +8173,9 @@
             return this._len;
         };
         PathProxy.prototype.setData = function (data) {
+            if (!this._saveData) {
+                return;
+            }
             var len = data.length;
             if (!(this.data && this.data.length === len) && hasTypedArray) {
                 this.data = new Float32Array(len);
@@ -7999,6 +8186,9 @@
             this._len = len;
         };
         PathProxy.prototype.appendPath = function (path) {
+            if (!this._saveData) {
+                return;
+            }
             if (!(path instanceof Array)) {
                 path = [path];
             }
@@ -8008,8 +8198,14 @@
             for (var i = 0; i < len; i++) {
                 appendSize += path[i].len();
             }
-            if (hasTypedArray && (this.data instanceof Float32Array)) {
+            var oldData = this.data;
+            if (hasTypedArray && (oldData instanceof Float32Array || !oldData)) {
                 this.data = new Float32Array(offset + appendSize);
+                if (offset > 0 && oldData) {
+                    for (var k = 0; k < offset; k++) {
+                        this.data[k] = oldData[k];
+                    }
+                }
             }
             for (var i = 0; i < len; i++) {
                 var appendPathData = path[i].data;
@@ -8174,7 +8370,7 @@
                         var y2 = data[i++];
                         var dx = x2 - xi;
                         var dy = y2 - yi;
-                        if (mathAbs(dx) > ux || mathAbs(dy) > uy || i === len - 1) {
+                        if (mathAbs$1(dx) > ux || mathAbs$1(dy) > uy || i === len - 1) {
                             l = Math.sqrt(dx * dx + dy * dy);
                             xi = x2;
                             yi = y2;
@@ -8298,8 +8494,8 @@
                     case CMD.L: {
                         x = d[i++];
                         y = d[i++];
-                        var dx = mathAbs(x - xi);
-                        var dy = mathAbs(y - yi);
+                        var dx = mathAbs$1(x - xi);
+                        var dy = mathAbs$1(y - yi);
                         if (dx > ux || dy > uy) {
                             if (drawPart) {
                                 var l = pathSegLen[segCount++];
@@ -8379,7 +8575,7 @@
                         var psi = d[i++];
                         var anticlockwise = !d[i++];
                         var r = (rx > ry) ? rx : ry;
-                        var isEllipse = mathAbs(rx - ry) > 1e-3;
+                        var isEllipse = mathAbs$1(rx - ry) > 1e-3;
                         var endAngle = startAngle + delta;
                         var breakBuild = false;
                         if (drawPart) {
@@ -8460,6 +8656,9 @@
                 : Array.prototype.slice.call(data);
             newProxy._len = this._len;
             return newProxy;
+        };
+        PathProxy.prototype.canSave = function () {
+            return !!this._saveData;
         };
         PathProxy.CMD = CMD;
         PathProxy.initDefaultProps = (function () {
@@ -8590,9 +8789,9 @@
 
     var CMD$1 = PathProxy.CMD;
     var PI2$4 = Math.PI * 2;
-    var EPSILON$3 = 1e-4;
+    var EPSILON$4 = 1e-4;
     function isAroundEqual(a, b) {
-        return Math.abs(a - b) < EPSILON$3;
+        return Math.abs(a - b) < EPSILON$4;
     }
     var roots = [-1, -1, -1];
     var extrema = [-1, -1];
@@ -9642,16 +9841,19 @@
         var pathProxy = createPathProxyFromString(str);
         var innerOpts = extend({}, opts);
         innerOpts.buildPath = function (path) {
-            if (isPathProxy(path)) {
-                path.setData(pathProxy.data);
+            var beProxy = isPathProxy(path);
+            if (beProxy && path.canSave()) {
+                path.appendPath(pathProxy);
                 var ctx = path.getContext();
                 if (ctx) {
                     path.rebuildPath(ctx, 1);
                 }
             }
             else {
-                var ctx = path;
-                pathProxy.rebuildPath(ctx, 1);
+                var ctx = beProxy ? path.getContext() : path;
+                if (ctx) {
+                    pathProxy.rebuildPath(ctx, 1);
+                }
             }
         };
         innerOpts.applyTransform = function (m) {
@@ -10750,6 +10952,16 @@
                 var stopColor = styleVals.stopColor
                     || stop.getAttribute('stop-color')
                     || '#000000';
+                var stopOpacity = styleVals.stopOpacity
+                    || stop.getAttribute('stop-opacity');
+                if (stopOpacity) {
+                    var rgba = parse(stopColor);
+                    var stopColorOpacity = rgba && rgba[3];
+                    if (stopColorOpacity) {
+                        rgba[3] *= parseCssFloat(stopOpacity);
+                        stopColor = stringify(rgba, 'rgba');
+                    }
+                }
                 gradient.colorStops.push({
                     offset: offset,
                     color: stopColor
@@ -10992,7 +11204,7 @@
     var mathCos$3 = Math.cos;
     var mathACos = Math.acos;
     var mathATan2 = Math.atan2;
-    var mathAbs$1 = Math.abs;
+    var mathAbs$2 = Math.abs;
     var mathSqrt$3 = Math.sqrt;
     var mathMax$3 = Math.max;
     var mathMin$3 = Math.min;
@@ -11097,7 +11309,7 @@
         }
         var cx = shape.cx, cy = shape.cy;
         var clockwise = !!shape.clockwise;
-        var arc = mathAbs$1(endAngle - startAngle);
+        var arc = mathAbs$2(endAngle - startAngle);
         var mod = arc > PI2$5 && arc % PI2$5;
         mod > e && (arc = mod);
         if (!(radius > e)) {
@@ -11138,7 +11350,7 @@
                 if (cornerRadius) {
                     _a = normalizeCornerRadius(cornerRadius), icrStart = _a[0], icrEnd = _a[1], ocrStart = _a[2], ocrEnd = _a[3];
                 }
-                var halfRd = mathAbs$1(radius - innerRadius) / 2;
+                var halfRd = mathAbs$2(radius - innerRadius) / 2;
                 ocrs = mathMin$3(halfRd, ocrStart);
                 ocre = mathMin$3(halfRd, ocrEnd);
                 icrs = mathMin$3(halfRd, icrStart);
@@ -12572,18 +12784,17 @@
     function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
         options = options || {};
         var preparedOpts = extend({}, options);
-        preparedOpts.font = font;
         ellipsis = retrieve2(ellipsis, '...');
         preparedOpts.maxIterations = retrieve2(options.maxIterations, 2);
         var minChar = preparedOpts.minChar = retrieve2(options.minChar, 0);
-        preparedOpts.cnCharWidth = getWidth('国', font);
-        var ascCharWidth = preparedOpts.ascCharWidth = getWidth('a', font);
+        var fontMeasureInfo = preparedOpts.fontMeasureInfo = ensureFontMeasureInfo(font);
+        var ascCharWidth = fontMeasureInfo.asciiCharWidth;
         preparedOpts.placeholder = retrieve2(options.placeholder, '');
         var contentWidth = containerWidth = Math.max(0, containerWidth - 1);
         for (var i = 0; i < minChar && contentWidth >= ascCharWidth; i++) {
             contentWidth -= ascCharWidth;
         }
-        var ellipsisWidth = getWidth(ellipsis, font);
+        var ellipsisWidth = measureWidth(fontMeasureInfo, ellipsis);
         if (ellipsisWidth > contentWidth) {
             ellipsis = '';
             ellipsisWidth = 0;
@@ -12597,14 +12808,14 @@
     }
     function truncateSingleLine(out, textLine, options) {
         var containerWidth = options.containerWidth;
-        var font = options.font;
         var contentWidth = options.contentWidth;
+        var fontMeasureInfo = options.fontMeasureInfo;
         if (!containerWidth) {
             out.textLine = '';
             out.isTruncated = false;
             return;
         }
-        var lineWidth = getWidth(textLine, font);
+        var lineWidth = measureWidth(fontMeasureInfo, textLine);
         if (lineWidth <= containerWidth) {
             out.textLine = textLine;
             out.isTruncated = false;
@@ -12616,12 +12827,12 @@
                 break;
             }
             var subLength = j === 0
-                ? estimateLength(textLine, contentWidth, options.ascCharWidth, options.cnCharWidth)
+                ? estimateLength(textLine, contentWidth, fontMeasureInfo)
                 : lineWidth > 0
                     ? Math.floor(textLine.length * contentWidth / lineWidth)
                     : 0;
             textLine = textLine.substr(0, subLength);
-            lineWidth = getWidth(textLine, font);
+            lineWidth = measureWidth(fontMeasureInfo, textLine);
         }
         if (textLine === '') {
             textLine = options.placeholder;
@@ -12629,27 +12840,34 @@
         out.textLine = textLine;
         out.isTruncated = true;
     }
-    function estimateLength(text, contentWidth, ascCharWidth, cnCharWidth) {
+    function estimateLength(text, contentWidth, fontMeasureInfo) {
         var width = 0;
         var i = 0;
         for (var len = text.length; i < len && width < contentWidth; i++) {
-            var charCode = text.charCodeAt(i);
-            width += (0 <= charCode && charCode <= 127) ? ascCharWidth : cnCharWidth;
+            width += measureCharWidth(fontMeasureInfo, text.charCodeAt(i));
         }
         return i;
     }
-    function parsePlainText(text, style) {
+    function parsePlainText(text, style, defaultOuterWidth, defaultOuterHeight) {
         text != null && (text += '');
         var overflow = style.overflow;
         var padding = style.padding;
+        var paddingH = padding ? padding[1] + padding[3] : 0;
+        var paddingV = padding ? padding[0] + padding[2] : 0;
         var font = style.font;
         var truncate = overflow === 'truncate';
         var calculatedLineHeight = getLineHeight(font);
         var lineHeight = retrieve2(style.lineHeight, calculatedLineHeight);
-        var bgColorDrawn = !!(style.backgroundColor);
         var truncateLineOverflow = style.lineOverflow === 'truncate';
         var isTruncated = false;
         var width = style.width;
+        if (width == null && defaultOuterWidth != null) {
+            width = defaultOuterWidth - paddingH;
+        }
+        var height = style.height;
+        if (height == null && defaultOuterHeight != null) {
+            height = defaultOuterHeight - paddingV;
+        }
         var lines;
         if (width != null && (overflow === 'break' || overflow === 'breakAll')) {
             lines = text ? wrapText(text, style.font, width, overflow === 'breakAll', 0).lines : [];
@@ -12658,11 +12876,14 @@
             lines = text ? text.split('\n') : [];
         }
         var contentHeight = lines.length * lineHeight;
-        var height = retrieve2(style.height, contentHeight);
+        if (height == null) {
+            height = contentHeight;
+        }
         if (contentHeight > height && truncateLineOverflow) {
             var lineCount = Math.floor(height / lineHeight);
             isTruncated = isTruncated || (lines.length > lineCount);
             lines = lines.slice(0, lineCount);
+            contentHeight = lines.length * lineHeight;
         }
         if (text && truncate && width != null) {
             var options = prepareTruncateOptions(width, font, style.ellipsis, {
@@ -12678,21 +12899,16 @@
         }
         var outerHeight = height;
         var contentWidth = 0;
+        var fontMeasureInfo = ensureFontMeasureInfo(font);
         for (var i = 0; i < lines.length; i++) {
-            contentWidth = Math.max(getWidth(lines[i], font), contentWidth);
+            contentWidth = Math.max(measureWidth(fontMeasureInfo, lines[i]), contentWidth);
         }
         if (width == null) {
             width = contentWidth;
         }
-        var outerWidth = contentWidth;
-        if (padding) {
-            outerHeight += padding[0] + padding[2];
-            outerWidth += padding[1] + padding[3];
-            width += padding[1] + padding[3];
-        }
-        if (bgColorDrawn) {
-            outerWidth = width;
-        }
+        var outerWidth = width;
+        outerHeight += paddingV;
+        outerWidth += paddingH;
         return {
             lines: lines,
             height: height,
@@ -12733,14 +12949,23 @@
         }
         return RichTextContentBlock;
     }());
-    function parseRichText(text, style) {
+    function parseRichText(text, style, defaultOuterWidth, defaultOuterHeight, topTextAlign) {
         var contentBlock = new RichTextContentBlock();
         text != null && (text += '');
         if (!text) {
             return contentBlock;
         }
+        var stlPadding = style.padding;
+        var stlPaddingH = stlPadding ? stlPadding[1] + stlPadding[3] : 0;
+        var stlPaddingV = stlPadding ? stlPadding[0] + stlPadding[2] : 0;
         var topWidth = style.width;
+        if (topWidth == null && defaultOuterWidth != null) {
+            topWidth = defaultOuterWidth - stlPaddingH;
+        }
         var topHeight = style.height;
+        if (topHeight == null && defaultOuterHeight != null) {
+            topHeight = defaultOuterHeight - stlPaddingV;
+        }
         var overflow = style.overflow;
         var wrapInfo = (overflow === 'break' || overflow === 'breakAll') && topWidth != null
             ? { width: topWidth, accumWidth: 0, breakAll: overflow === 'breakAll' }
@@ -12761,7 +12986,6 @@
         var pendingList = [];
         var calculatedHeight = 0;
         var calculatedWidth = 0;
-        var stlPadding = style.padding;
         var truncate = overflow === 'truncate';
         var truncateLine = style.lineOverflow === 'truncate';
         var tmpTruncateOut = {};
@@ -12787,7 +13011,7 @@
                 textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
                 token.height = tokenHeight;
                 token.lineHeight = retrieve3(tokenStyle.lineHeight, style.lineHeight, tokenHeight);
-                token.align = tokenStyle && tokenStyle.align || style.align;
+                token.align = tokenStyle && tokenStyle.align || topTextAlign;
                 token.verticalAlign = tokenStyle && tokenStyle.verticalAlign || 'middle';
                 if (truncateLine && topHeight != null && calculatedHeight + token.lineHeight > topHeight) {
                     var originalLength = contentBlock.lines.length;
@@ -12807,7 +13031,7 @@
                 if (typeof styleTokenWidth === 'string' && styleTokenWidth.charAt(styleTokenWidth.length - 1) === '%') {
                     token.percentWidth = styleTokenWidth;
                     pendingList.push(token);
-                    token.contentWidth = getWidth(token.text, font);
+                    token.contentWidth = measureWidth(ensureFontMeasureInfo(font), token.text);
                 }
                 else {
                     if (tokenWidthNotSpecified) {
@@ -12831,11 +13055,11 @@
                             truncateText2(tmpTruncateOut, token.text, remainTruncWidth - paddingH, font, style.ellipsis, { minChar: style.truncateMinChar });
                             token.text = tmpTruncateOut.text;
                             contentBlock.isTruncated = contentBlock.isTruncated || tmpTruncateOut.isTruncated;
-                            token.width = token.contentWidth = getWidth(token.text, font);
+                            token.width = token.contentWidth = measureWidth(ensureFontMeasureInfo(font), token.text);
                         }
                     }
                     else {
-                        token.contentWidth = getWidth(token.text, font);
+                        token.contentWidth = measureWidth(ensureFontMeasureInfo(font), token.text);
                     }
                 }
                 token.width += paddingH;
@@ -12848,10 +13072,8 @@
         contentBlock.outerHeight = contentBlock.height = retrieve2(topHeight, calculatedHeight);
         contentBlock.contentHeight = calculatedHeight;
         contentBlock.contentWidth = calculatedWidth;
-        if (stlPadding) {
-            contentBlock.outerWidth += stlPadding[1] + stlPadding[3];
-            contentBlock.outerHeight += stlPadding[0] + stlPadding[2];
-        }
+        contentBlock.outerWidth += stlPaddingH;
+        contentBlock.outerHeight += stlPaddingV;
         for (var i = 0; i < pendingList.length; i++) {
             var token = pendingList[i];
             var percentWidth = token.percentWidth;
@@ -12887,9 +13109,10 @@
                 strLines = res.lines;
             }
         }
-        else {
+        if (!strLines) {
             strLines = str.split('\n');
         }
+        var fontMeasureInfo = ensureFontMeasureInfo(font);
         for (var i = 0; i < strLines.length; i++) {
             var text = strLines[i];
             var token = new RichTextToken();
@@ -12902,7 +13125,7 @@
             else {
                 token.width = linesWidths
                     ? linesWidths[i]
-                    : getWidth(text, font);
+                    : measureWidth(fontMeasureInfo, text);
             }
             if (!i && !newLine) {
                 var tokens = (lines[lines.length - 1] || (lines[0] = new RichTextLine())).tokens;
@@ -12943,6 +13166,7 @@
         var currentWord = '';
         var currentWordWidth = 0;
         var accumWidth = 0;
+        var fontMeasureInfo = ensureFontMeasureInfo(font);
         for (var i = 0; i < text.length; i++) {
             var ch = text.charAt(i);
             if (ch === '\n') {
@@ -12958,7 +13182,7 @@
                 accumWidth = 0;
                 continue;
             }
-            var chWidth = getWidth(ch, font);
+            var chWidth = measureCharWidth(fontMeasureInfo, ch.charCodeAt(0));
             var inWord = isBreakAll ? false : !isWordBreakChar(ch);
             if (!lines.length
                 ? lastAccumWidth + accumWidth + chWidth > lineWidth
@@ -13018,11 +13242,6 @@
                 line += ch;
             }
         }
-        if (!lines.length && !line) {
-            line = text;
-            currentWord = '';
-            currentWordWidth = 0;
-        }
         if (currentWord) {
             line += currentWord;
         }
@@ -13039,11 +13258,31 @@
             linesWidths: linesWidths
         };
     }
+    function calcInnerTextOverflowArea(out, overflowRect, baseX, baseY, textAlign, textVerticalAlign) {
+        out.baseX = baseX;
+        out.baseY = baseY;
+        out.outerWidth = out.outerHeight = null;
+        if (!overflowRect) {
+            return;
+        }
+        var textWidth = overflowRect.width * 2;
+        var textHeight = overflowRect.height * 2;
+        BoundingRect.set(tmpCITCTextRect, adjustTextX(baseX, textWidth, textAlign), adjustTextY$1(baseY, textHeight, textVerticalAlign), textWidth, textHeight);
+        BoundingRect.intersect(overflowRect, tmpCITCTextRect, null, tmpCITCIntersectRectOpt);
+        var outIntersectRect = tmpCITCIntersectRectOpt.outIntersectRect;
+        out.outerWidth = outIntersectRect.width;
+        out.outerHeight = outIntersectRect.height;
+        out.baseX = adjustTextX(outIntersectRect.x, outIntersectRect.width, textAlign, true);
+        out.baseY = adjustTextY$1(outIntersectRect.y, outIntersectRect.height, textVerticalAlign, true);
+    }
+    var tmpCITCTextRect = new BoundingRect(0, 0, 0, 0);
+    var tmpCITCIntersectRectOpt = { outIntersectRect: {}, clamp: true };
 
     var DEFAULT_RICH_TEXT_COLOR = {
         fill: '#000'
     };
     var DEFAULT_STROKE_LINE_WIDTH = 2;
+    var tmpCITOverflowAreaOut = {};
     var DEFAULT_TEXT_ANIMATION_PROPS = {
         style: defaults({
             fill: true,
@@ -13217,8 +13456,16 @@
             var style = this.style;
             var textFont = style.font || DEFAULT_FONT;
             var textPadding = style.padding;
+            var defaultStyle = this._defaultStyle;
+            var baseX = style.x || 0;
+            var baseY = style.y || 0;
+            var textAlign = style.align || defaultStyle.align || 'left';
+            var verticalAlign = style.verticalAlign || defaultStyle.verticalAlign || 'top';
+            calcInnerTextOverflowArea(tmpCITOverflowAreaOut, defaultStyle.overflowRect, baseX, baseY, textAlign, verticalAlign);
+            baseX = tmpCITOverflowAreaOut.baseX;
+            baseY = tmpCITOverflowAreaOut.baseY;
             var text = getStyleText(style);
-            var contentBlock = parsePlainText(text, style);
+            var contentBlock = parsePlainText(text, style, tmpCITOverflowAreaOut.outerWidth, tmpCITOverflowAreaOut.outerHeight);
             var needDrawBg = needDrawBackground(style);
             var bgColorDrawn = !!(style.backgroundColor);
             var outerHeight = contentBlock.outerHeight;
@@ -13226,12 +13473,7 @@
             var contentWidth = contentBlock.contentWidth;
             var textLines = contentBlock.lines;
             var lineHeight = contentBlock.lineHeight;
-            var defaultStyle = this._defaultStyle;
             this.isTruncated = !!contentBlock.isTruncated;
-            var baseX = style.x || 0;
-            var baseY = style.y || 0;
-            var textAlign = style.align || defaultStyle.align || 'left';
-            var verticalAlign = style.verticalAlign || defaultStyle.verticalAlign || 'top';
             var textX = baseX;
             var textY = adjustTextY$1(baseY, contentBlock.contentHeight, verticalAlign);
             if (needDrawBg || textPadding) {
@@ -13300,17 +13542,20 @@
         };
         ZRText.prototype._updateRichTexts = function () {
             var style = this.style;
+            var defaultStyle = this._defaultStyle;
+            var textAlign = style.align || defaultStyle.align;
+            var verticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
+            var baseX = style.x || 0;
+            var baseY = style.y || 0;
+            calcInnerTextOverflowArea(tmpCITOverflowAreaOut, defaultStyle.overflowRect, baseX, baseY, textAlign, verticalAlign);
+            baseX = tmpCITOverflowAreaOut.baseX;
+            baseY = tmpCITOverflowAreaOut.baseY;
             var text = getStyleText(style);
-            var contentBlock = parseRichText(text, style);
+            var contentBlock = parseRichText(text, style, tmpCITOverflowAreaOut.outerWidth, tmpCITOverflowAreaOut.outerHeight, textAlign);
             var contentWidth = contentBlock.width;
             var outerWidth = contentBlock.outerWidth;
             var outerHeight = contentBlock.outerHeight;
             var textPadding = style.padding;
-            var baseX = style.x || 0;
-            var baseY = style.y || 0;
-            var defaultStyle = this._defaultStyle;
-            var textAlign = style.align || defaultStyle.align;
-            var verticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
             this.isTruncated = !!contentBlock.isTruncated;
             var boxX = adjustTextX(baseX, outerWidth, textAlign);
             var boxY = adjustTextY$1(baseY, outerHeight, verticalAlign);
@@ -14036,10 +14281,14 @@
         return Pattern;
     }());
 
-    var extent = [0, 0];
-    var extent2 = [0, 0];
-    var minTv$1 = new Point();
-    var maxTv$1 = new Point();
+    var mathMin$4 = Math.min;
+    var mathMax$4 = Math.max;
+    var mathAbs$3 = Math.abs;
+    var _extent = [0, 0];
+    var _extent2 = [0, 0];
+    var _intersectCtx$1 = createIntersectContext();
+    var _minTv$1 = _intersectCtx$1.minTv;
+    var _maxTv$1 = _intersectCtx$1.maxTv;
     var OrientedBoundingRect = (function () {
         function OrientedBoundingRect(rect, transform) {
             this._corners = [];
@@ -14079,59 +14328,69 @@
                 this._origin[i] = axes[i].dot(corners[0]);
             }
         };
-        OrientedBoundingRect.prototype.intersect = function (other, mtv) {
+        OrientedBoundingRect.prototype.intersect = function (other, mtv, opt) {
             var overlapped = true;
             var noMtv = !mtv;
-            minTv$1.set(Infinity, Infinity);
-            maxTv$1.set(0, 0);
-            if (!this._intersectCheckOneSide(this, other, minTv$1, maxTv$1, noMtv, 1)) {
+            if (mtv) {
+                Point.set(mtv, 0, 0);
+            }
+            _intersectCtx$1.reset(opt, !noMtv);
+            if (!this._intersectCheckOneSide(this, other, noMtv, 1)) {
                 overlapped = false;
                 if (noMtv) {
                     return overlapped;
                 }
             }
-            if (!this._intersectCheckOneSide(other, this, minTv$1, maxTv$1, noMtv, -1)) {
+            if (!this._intersectCheckOneSide(other, this, noMtv, -1)) {
                 overlapped = false;
                 if (noMtv) {
                     return overlapped;
                 }
             }
-            if (!noMtv) {
-                Point.copy(mtv, overlapped ? minTv$1 : maxTv$1);
+            if (!noMtv && !_intersectCtx$1.negativeSize) {
+                Point.copy(mtv, overlapped
+                    ? (_intersectCtx$1.useDir ? _intersectCtx$1.dirMinTv : _minTv$1)
+                    : _maxTv$1);
             }
             return overlapped;
         };
-        OrientedBoundingRect.prototype._intersectCheckOneSide = function (self, other, minTv, maxTv, noMtv, inverse) {
+        OrientedBoundingRect.prototype._intersectCheckOneSide = function (self, other, noMtv, inverse) {
             var overlapped = true;
             for (var i = 0; i < 2; i++) {
-                var axis = this._axes[i];
-                this._getProjMinMaxOnAxis(i, self._corners, extent);
-                this._getProjMinMaxOnAxis(i, other._corners, extent2);
-                if (extent[1] < extent2[0] || extent[0] > extent2[1]) {
+                var axis = self._axes[i];
+                self._getProjMinMaxOnAxis(i, self._corners, _extent);
+                self._getProjMinMaxOnAxis(i, other._corners, _extent2);
+                if (_intersectCtx$1.negativeSize || _extent[1] < _extent2[0] || _extent[0] > _extent2[1]) {
                     overlapped = false;
-                    if (noMtv) {
+                    if (_intersectCtx$1.negativeSize || noMtv) {
                         return overlapped;
                     }
-                    var dist0 = Math.abs(extent2[0] - extent[1]);
-                    var dist1 = Math.abs(extent[0] - extent2[1]);
-                    if (Math.min(dist0, dist1) > maxTv.len()) {
+                    var dist0 = mathAbs$3(_extent2[0] - _extent[1]);
+                    var dist1 = mathAbs$3(_extent[0] - _extent2[1]);
+                    if (mathMin$4(dist0, dist1) > _maxTv$1.len()) {
                         if (dist0 < dist1) {
-                            Point.scale(maxTv, axis, -dist0 * inverse);
+                            Point.scale(_maxTv$1, axis, -dist0 * inverse);
                         }
                         else {
-                            Point.scale(maxTv, axis, dist1 * inverse);
+                            Point.scale(_maxTv$1, axis, dist1 * inverse);
                         }
                     }
                 }
-                else if (minTv) {
-                    var dist0 = Math.abs(extent2[0] - extent[1]);
-                    var dist1 = Math.abs(extent[0] - extent2[1]);
-                    if (Math.min(dist0, dist1) < minTv.len()) {
-                        if (dist0 < dist1) {
-                            Point.scale(minTv, axis, dist0 * inverse);
+                else if (!noMtv) {
+                    var dist0 = mathAbs$3(_extent2[0] - _extent[1]);
+                    var dist1 = mathAbs$3(_extent[0] - _extent2[1]);
+                    if (_intersectCtx$1.useDir || mathMin$4(dist0, dist1) < _minTv$1.len()) {
+                        if (dist0 < dist1 || !_intersectCtx$1.bidirectional) {
+                            Point.scale(_minTv$1, axis, dist0 * inverse);
+                            if (_intersectCtx$1.useDir) {
+                                _intersectCtx$1.calcDirMTV();
+                            }
                         }
-                        else {
-                            Point.scale(minTv, axis, -dist1 * inverse);
+                        if (dist0 >= dist1 || !_intersectCtx$1.bidirectional) {
+                            Point.scale(_minTv$1, axis, -dist1 * inverse);
+                            if (_intersectCtx$1.useDir) {
+                                _intersectCtx$1.calcDirMTV();
+                            }
                         }
                     }
                 }
@@ -14146,11 +14405,12 @@
             var max = proj;
             for (var i = 1; i < corners.length; i++) {
                 var proj_1 = corners[i].dot(axis) + origin[dim];
-                min = Math.min(proj_1, min);
-                max = Math.max(proj_1, max);
+                min = mathMin$4(proj_1, min);
+                max = mathMax$4(proj_1, max);
             }
-            out[0] = min;
-            out[1] = max;
+            out[0] = min + _intersectCtx$1.touchThreshold;
+            out[1] = max - _intersectCtx$1.touchThreshold;
+            _intersectCtx$1.negativeSize = out[1] < out[0];
         };
         return OrientedBoundingRect;
     }());
@@ -14444,7 +14704,7 @@
                 strokePattern = (dirtyFlag || !el.__canvasStrokePattern)
                     ? createCanvasPattern(ctx, stroke, el)
                     : el.__canvasStrokePattern;
-                el.__canvasStrokePattern = fillPattern;
+                el.__canvasStrokePattern = strokePattern;
             }
             if (hasFillGradient) {
                 ctx.fillStyle = fillGradient;
