@@ -229,13 +229,13 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             }
         }
 
-        if (considerAncestors && this.parent) {
-            let parent = this.parent;
-            while (parent) {
-                if (parent.ignore) {
+        if (considerAncestors) {
+            let node: Element = this;
+            while (node) {
+                if (node.ignore) {
                     return false;
                 }
-                parent = parent.parent;
+                node = node.parent || node.__hostTarget;
             }
         }
 
