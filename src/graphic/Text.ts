@@ -544,6 +544,13 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
             const boxY = adjustTextY(baseY, outerHeight, verticalAlign);
             needDrawBg && this._renderBackground(style, style, boxX, boxY, outerWidth, outerHeight);
         }
+        // PENDING:
+        //  Should text bounding rect contains style.padding, style.width, style.height when NO background
+        //  and border displayed? It depends on how to define "boundingRect". HTML `getBoundingClientRect`
+        //  contains padding in that case. But currently ZRText does not.
+        //  If implement that, an extra invisible Rect may need to be added as the placeholder for the bounding
+        //  rect computation, considering animation of padding. But will it degrade performance for the most
+        //  used plain texts cases?
 
         // `textBaseline` is set as 'middle'.
         textY += lineHeight / 2;
