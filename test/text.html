@@ -8,14 +8,13 @@
 </head>
 <body style="margin:0">
 
-    <div style="margin: 20px;">
+    <div style="position: fixed; top: 0; background: #fff; z-index: 999; padding: 10px; border: 1px solid #ddd; box-shadow: #ddd 0 2px 8px;">
     <button style="color:blue;" onclick="showBoundingRect()">Show boundingRect</button>
+    <button style="color:blue;" onclick="showBoundingRectBeforeAddingToZr()">Show boundingRect before adding to ZR</button>
     </div>
-    <div id="main" style="width:1200px;height:2200px;margin:0;"></div>
+    <div id="main" style="position: relative; width: 1200px; height: 2200px; margin: 0; margin-top: 60px;"></div>
 
     <script type="text/javascript">
-
-    var showBoundingRect;
 
     var Text = zrender.Text;
     var Line = zrender.Line;
@@ -25,7 +24,7 @@
         renderer: window.__ZRENDER__DEFAULT__RENDERER__
     });
 
-    showBoundingRect = function () {
+    function showBoundingRect() {
         console.time('boundingRect');
         zr.storage.traverse(function (el) {
             if (el.type === 'text') {
@@ -53,6 +52,44 @@
         console.timeEnd('boundingRect');
     }
 
+    function showBoundingRectBeforeAddingToZr() {
+        console.time('showBoundingRectBeforeAddingToZr');
+        for (var idx = 0; idx < textNeverAddToZrList.length; idx++) {
+            var el = textNeverAddToZrList[idx];
+            if (el.type === 'text') {
+                var rect = el.getBoundingRect();
+
+                zr.add(new Rect({
+                    shape: {
+                        x: rect.x, y: rect.y, width: rect.width, height: rect.height
+                    },
+                    x: el.x,
+                    y: el.y,
+                    rotation: el.rotation,
+                    scaleX: el.scaleX,
+                    scaleY: el.scaleY,
+                    originX: el.originX,
+                    originY: el.originY,
+                    style: {
+                        fill: null,
+                        stroke: zrender.color.random(),
+                        lineWidth: 1
+                    }
+                }));
+            }
+        }
+        console.timeEnd('showBoundingRectBeforeAddingToZr');
+    }
+
+    function createText(textProps) {
+        var textNeverAddToZr = new Text(zrender.util.clone(textProps));
+        textNeverAddToZrList.push(textNeverAddToZr);
+
+        var textReal = new Text(textProps);
+        zr.add(textReal);
+    }
+
+    var textNeverAddToZrList = [];
     var zrWidth = zr.getWidth();
     var zrHeight = zr.getHeight();
     var unit = 100;
@@ -89,7 +126,7 @@
         }));
     }
 
-    zr.add(new Text({
+    createText({
         style: {
             x: 0,
             y: 0,
@@ -100,9 +137,9 @@
             font: '18px Microsoft Yahei'
         },
         draggable: true
-    }));
+    });
 
-    zr.add(new Text({
+    createText({
         x: 100,
         y: 100,
         style: {
@@ -117,9 +154,9 @@
             font: '18px Microsoft Yahei'
         },
         draggable: true
-    }));
+    });
 
-    zr.add(new Text({
+    createText({
         x: 200,
         y: 100,
         rotation: 2,
@@ -135,9 +172,9 @@
             font: '18px Microsoft Yahei'
         },
         draggable: true
-    }));
+    });
 
-    zr.add(new Text({
+    createText({
         x: 100,
         y: 200,
         rotation: -1,
@@ -157,7 +194,7 @@
             verticalAlign: 'bottom'
         },
         draggable: true
-    }));
+    });
 
     zr.add(new Rect({
         x: 300,
@@ -169,7 +206,7 @@
             fill: '#333'
         }
     }));
-    zr.add(new Text({
+    createText({
         x: 300,
         y: 100,
         style: {
@@ -179,9 +216,9 @@
             fill: '#fff',
             font: '16px Microsoft Yahei'
         }
-    }));
+    });
 
-    zr.add(new Text({
+    createText({
         x: 400,
         y: 50,
         style: {
@@ -192,9 +229,9 @@
             align: 'right',
             verticalAlign: 'middle'
         }
-    }));
+    });
 
-    zr.add(new Text({
+    createText({
         x: 500,
         y: 50,
         style: {
@@ -205,9 +242,9 @@
             align: 'center',
             verticalAlign: 'bottom'
         }
-    }));
+    });
 
-    zr.add(new Text({
+    createText({
         x: 600,
         y: 0,
         style: {
@@ -221,9 +258,9 @@
             textShadowOffsetX: 5,
             textShadowOffsetY: 10
         }
-    }));
+    });
 
-    zr.add(new Text({
+    createText({
         x: 700,
         y: 0,
         style: {
@@ -239,9 +276,9 @@
             textShadowOffsetX: 5,
             textShadowOffsetY: 10
         }
-    }));
+    });
 
-    zr.add(new Text({
+    createText({
         x: 600,
         y: 100,
         rotation: -Math.PI / 16,
@@ -270,10 +307,10 @@
             boxShadowOffsetX: 5,
             boxShadowOffsetY: 10
         }
-    }));
+    });
 
 
-    zr.add(new Text({
+    createText({
         x: 100,
         y: 300,
         style: {
@@ -284,10 +321,10 @@
             padding: [10, 20, 30, 40],
             backgroundColor: 'rgba(124, 0, 123, 0.4)'
         }
-    }));
+    });
 
 
-    zr.add(new Text({
+    createText({
         style: {
             x: 200,
             y: 300,
@@ -412,9 +449,9 @@
             }
         },
         draggable: true
-    }));
+    });
 
-    zr.add(new Text({
+    createText({
         rotation: -0.1,
         x: 500,
         y: 900,
@@ -471,10 +508,10 @@
             }
         },
         draggable: true
-    }));
+    });
 
 
-    zr.add(new Text({
+    createText({
         rotation: -0.1,
         x: 500,
         y: 1300,
@@ -507,12 +544,65 @@
             }
         },
         draggable: true
-    }));
+    });
 
-
-
-
-
+    createText({
+        x: 100,
+        y: 1300,
+        style: {
+            x: 0,
+            y: 0,
+            padding: 10,
+            text: 'Plain text, only padding 10, no visible outer parts',
+            fill: 'rgba(100, 50, 0, 1)',
+            font: '12px Arial'
+        }
+    });
+    createText({
+        x: 100,
+        y: 1400,
+        style: {
+            x: 0,
+            y: 0,
+            width: 10,
+            height: 10,
+            text: 'Plain text, width 10, height: 10,\nno visible outer parts.\noverflow:undefined',
+            fill: 'rgba(100, 50, 0, 1)',
+            font: '12px Arial'
+        }
+    });
+    createText({
+        x: 300,
+        y: 1400,
+        style: {
+            x: 0,
+            y: 0,
+            width: 200,
+            height: 100,
+            text: 'Plain text, width 200, height: 100,\nno visible outer parts.\noverflow:undefined',
+            fill: 'rgba(100, 50, 0, 1)',
+            font: '12px Arial'
+        }
+    });
+    createText({
+        x: 100,
+        y: 1500,
+        style: {
+            x: 0,
+            y: 0,
+            padding: 10,
+            text: 'Rich text, {a|only padding 10}, no visible outer parts',
+            fill: 'rgba(100, 50, 0, 1)',
+            font: '12px Arial',
+            rich: {
+                a: {
+                    font: '12px Arial',
+                    backgroundColor: 'rgba(100, 50, 0, 0.5)',
+                    padding: [15, 0, 0, 0],
+                }
+            }
+        }
+    });
 
 
     function getDotStyle(color) {
@@ -544,7 +634,7 @@
         ['#c23531','#2f4554', '#61a0a8', '#d48265', '#91c7ae','#749f83',  '#ca8622', '#bda29a','#6e7074', '#546570', '#c4ccd3']
     );
 
-    zr.add(new Text({
+    createText({
         rotation: -0.1,
         x: 800,
         y: 1100,
@@ -559,7 +649,7 @@
             rich: styles.rich
         },
         draggable: true
-    }));
+    });
 
     </script>
 </body>
