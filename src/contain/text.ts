@@ -106,7 +106,7 @@ export function measureWidth(fontMeasureInfo: FontMeasureInfo, text: string): nu
 
 
 /**
- *
+ * @deprecated See `getBoundingRect`.
  * Get bounding rect for inner usage(TSpan)
  * Which not include text newline.
  */
@@ -128,6 +128,9 @@ export function innerGetBoundingRect(
 }
 
 /**
+ * @deprecated Use `(new Text(...)).getBoundingRect()` or `(new TSpan(...)).getBoundingRect()` instead.
+ *  This method behaves differently from `Text#getBoundingRect()` - e.g., it does not support the overflow
+ *  strategy, and only has single line height even if multiple lines.
  *
  * Get bounding rect for outer usage. Compatitable with old implementation
  * Which includes text newline.
