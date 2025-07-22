@@ -1,10 +1,10 @@
 import Displayable, { DisplayableProps, DisplayableStatePropNames } from './Displayable';
-import { getBoundingRect } from '../contain/text';
 import BoundingRect from '../core/BoundingRect';
 import { PathStyleProps, DEFAULT_PATH_STYLE } from './Path';
 import { createObject, defaults } from '../core/util';
-import { FontStyle, FontWeight, TextAlign, TextVerticalAlign } from '../core/types';
+import { FontStyle, FontWeight } from '../core/types';
 import { DEFAULT_FONT } from '../core/platform';
+import { tSpanCreateBoundingRect, tSpanHasStroke } from './helper/parseText';
 
 export interface TSpanStyleProps extends PathStyleProps {
 
@@ -53,9 +53,7 @@ class TSpan extends Displayable<TSpanProps> {
     style: TSpanStyleProps
 
     hasStroke() {
-        const style = this.style;
-        const stroke = style.stroke;
-        return stroke != null && stroke !== 'none' && style.lineWidth > 0;
+        return tSpanHasStroke(this.style);
     }
 
     hasFill() {
@@ -81,31 +79,8 @@ class TSpan extends Displayable<TSpanProps> {
     }
 
     getBoundingRect(): BoundingRect {
-        const style = this.style;
-
         if (!this._rect) {
-            let text = style.text;
-            text != null ? (text += '') : (text = '');
-
-            const rect = getBoundingRect(
-                text,
-                style.font,
-                style.textAlign as TextAlign,
-                style.textBaseline as TextVerticalAlign
-            );
-
-            rect.x += style.x || 0;
-            rect.y += style.y || 0;
-
-            if (this.hasStroke()) {
-                const w = style.lineWidth;
-                rect.x -= w / 2;
-                rect.y -= w / 2;
-                rect.width += w;
-                rect.height += w;
-            }
-
-            this._rect = rect;
+            this._rect = tSpanCreateBoundingRect(this.style);
         }
 
         return this._rect;

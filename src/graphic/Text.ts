@@ -6,7 +6,8 @@ import {
     TextAlign, TextVerticalAlign, ImageLike, Dictionary, MapToType, FontWeight, FontStyle, NullUndefined
 } from '../core/types';
 import {
-    parseRichText, parsePlainText, CalcInnerTextOverflowAreaOut, calcInnerTextOverflowArea
+    parseRichText, parsePlainText, CalcInnerTextOverflowAreaOut, calcInnerTextOverflowArea,
+    tSpanCreateBoundingRect2,
 } from './helper/parseText';
 import TSpan, { TSpanStyleProps } from './TSpan';
 import { retrieve2, each, normalizeCssArray, trim, retrieve3, extend, keys, defaults } from '../core/util';
@@ -332,7 +333,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         }
     }
 
-     updateTransform() {
+    updateTransform() {
         const innerTransformable = this.innerTransformable;
         if (innerTransformable) {
             innerTransformable.updateTransform();
@@ -528,7 +529,6 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
 
         const outerHeight = contentBlock.outerHeight;
         const outerWidth = contentBlock.outerWidth;
-        const contentWidth = contentBlock.contentWidth;
 
         const textLines = contentBlock.lines;
         const lineHeight = contentBlock.lineHeight;
@@ -544,6 +544,13 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
             const boxY = adjustTextY(baseY, outerHeight, verticalAlign);
             needDrawBg && this._renderBackground(style, style, boxX, boxY, outerWidth, outerHeight);
         }
+        // PENDING:
+        //  Should text bounding rect contains style.padding, style.width, style.height when NO background
+        //  and border displayed? It depends on how to define "boundingRect". HTML `getBoundingClientRect`
+        //  contains padding in that case. But currently ZRText does not.
+        //  If implement that, an extra invisible Rect may need to be added as the placeholder for the bounding
+        //  rect computation, considering animation of padding. But will it degrade performance for the most
+        //  used plain texts cases?
 
         // `textBaseline` is set as 'middle'.
         textY += lineHeight / 2;
@@ -559,6 +566,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         }
 
         let defaultLineWidth = 0;
+        let usingDefaultStroke = false;
         let useDefaultFill = false;
         const textFill = getFill(
             'fill' in style
@@ -580,15 +588,11 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
                     // we give the auto lineWidth to display the given stoke color.
                     && (!defaultStyle.autoStroke || useDefaultFill)
                 )
-                ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, defaultStyle.stroke)
+                ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, usingDefaultStroke = true, defaultStyle.stroke)
                 : null
         );
 
         const hasShadow = style.textShadowBlur > 0;
-
-        const fixedBoundingRect = style.width != null
-            && (style.overflow === 'truncate' || style.overflow === 'break' || style.overflow === 'breakAll');
-        const calculatedLineHeight = contentBlock.calculatedLineHeight;
 
         for (let i = 0; i < textLines.length; i++) {
             const el = this._getOrCreateChild(TSpan);
@@ -633,19 +637,27 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
 
             textY += lineHeight;
 
-            if (fixedBoundingRect) {
-                el.setBoundingRect(new BoundingRect(
-                    adjustTextX(subElStyle.x, contentWidth, subElStyle.textAlign as TextAlign),
-                    adjustTextY(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline as TextVerticalAlign),
-                    /**
-                     * Text boundary should be the real text width.
-                     * Otherwise, there will be extra space in the
-                     * bounding rect calculated.
-                     */
-                    contentWidth,
-                    calculatedLineHeight
-                ));
-            }
+            // Always set tspan bounding rect to guarantee the consistency if users lays out based
+            // on these bounding rects.
+            el.setBoundingRect(tSpanCreateBoundingRect2(
+                subElStyle,
+                contentBlock.contentWidth,
+                contentBlock.calculatedLineHeight,
+                // Should text bounding rect includes text stroke width?
+                // Pros:
+                //   - Intuitively, and by convention, bounding rect of `Path` always includes stroke width.
+                // Cons:
+                //   - It's unpredictable for users whether "auto stroke" is applied. If stroke width is included
+                //     and multiple texts are laid out based on its bounding rect, the position of texts may vary
+                //     and is unpredictable - especially in limited space (e.g., see echarts pie label cases).
+                //   - "auto stroke" attempts to use the same color as the background to make the border to be
+                //     invisible in most cases, thus it might be more reasonable to be excluded from bounding rect.
+                // Conclusion:
+                //   - If users specifies style.stroke, it will be included into the bounding rect as normal.
+                //     Otherwise, keep the stroke width as `0` in this case to guarantee consistency of bounding
+                //     rect based layout, regardless of whether "auto stroke" is applied.
+                usingDefaultStroke ? 0 : null
+            ));
         }
     }
 
@@ -801,6 +813,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         const defaultStyle = this._defaultStyle;
         let useDefaultFill = false;
         let defaultLineWidth = 0;
+        let usingDefaultStroke = false;
         const textFill = getFill(
             'fill' in tokenStyle ? tokenStyle.fill
                 : 'fill' in style ? style.fill
@@ -812,9 +825,9 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
                 : (
                     !bgColorDrawn
                     && !parentBgColorDrawn
-                    // See the strategy explained above.
+                    // See the strategy explained `_updatePlainTexts`.
                     && (!defaultStyle.autoStroke || useDefaultFill)
-                ) ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, defaultStyle.stroke)
+                ) ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, usingDefaultStroke = true, defaultStyle.stroke)
                 : null
         );
 
@@ -852,14 +865,13 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
             subElStyle.fill = textFill;
         }
 
-        const textWidth = token.contentWidth;
-        const textHeight = token.contentHeight;
         // NOTE: Should not call dirtyStyle after setBoundingRect. Or it will be cleared.
-        el.setBoundingRect(new BoundingRect(
-            adjustTextX(subElStyle.x, textWidth, subElStyle.textAlign as TextAlign),
-            adjustTextY(subElStyle.y, textHeight, subElStyle.textBaseline as TextVerticalAlign),
-            textWidth,
-            textHeight
+        el.setBoundingRect(tSpanCreateBoundingRect2(
+            subElStyle,
+            token.contentWidth,
+            token.contentHeight,
+            // See the strategy explained `_updatePlainTexts`.
+            usingDefaultStroke ? 0 : null
         ));
     }
 

@@ -6,7 +6,8 @@ import {
     reduce,
 } from '../../core/util';
 import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, NullUndefined } from '../../core/types';
-import { DefaultTextStyle, TextStyleProps } from '../Text';
+import type { DefaultTextStyle, TextStyleProps } from '../Text';
+import type { TSpanStyleProps } from '../TSpan';
 import {
     adjustTextX,
     adjustTextY,
@@ -210,12 +211,12 @@ export interface PlainTextContentBlock {
 }
 
 export function parsePlainText(
-    text: string,
+    rawText: unknown,
     style: Omit<TextStyleProps, 'align' | 'verticalAlign'>, // Exclude props in DefaultTextStyle
     defaultOuterWidth: number | NullUndefined,
     defaultOuterHeight: number | NullUndefined
 ): PlainTextContentBlock {
-    text != null && (text += '');
+    const text = formatText(rawText);
 
     // textPadding has been normalized
     const overflow = style.overflow;
@@ -382,7 +383,7 @@ type WrapInfo = {
  * If styleName is undefined, it is plain text.
  */
 export function parseRichText(
-    text: string,
+    rawText: unknown,
     style: Omit<TextStyleProps, 'align' | 'verticalAlign'>, // Exclude props in DefaultTextStyle
     defaultOuterWidth: number | NullUndefined,
     defaultOuterHeight: number | NullUndefined,
@@ -390,7 +391,7 @@ export function parseRichText(
 ): RichTextContentBlock {
     const contentBlock = new RichTextContentBlock();
 
-    text != null && (text += '');
+    const text = formatText(rawText);
     if (!text) {
         return contentBlock;
     }
@@ -889,4 +890,62 @@ export type CalcInnerTextOverflowAreaOut = {
     outerWidth: number | NullUndefined
     outerHeight: number | NullUndefined
 };
+
+// For backward compatibility, and possibly loose type.
+function formatText(text: unknown): string {
+    return text != null ? (text += '') : (text = '');
+}
+
+export function tSpanCreateBoundingRect(
+    style: Pick<TSpanStyleProps, 'text' | 'font' | 'x' | 'y' | 'textAlign' | 'textBaseline' | 'lineWidth'>,
+): BoundingRect {
+    // Should follow the same way as `parsePlainText` to guarantee the consistency of the result.
+    const text = formatText(style.text);
+    const font = style.font;
+    const contentWidth = measureWidth(ensureFontMeasureInfo(font), text);
+    const contentHeight = getLineHeight(font);
+
+    return tSpanCreateBoundingRect2(
+        style,
+        contentWidth,
+        contentHeight,
+        null
+    );
+}
+
+export function tSpanCreateBoundingRect2(
+    style: Pick<TSpanStyleProps, 'x' | 'y' | 'textAlign' | 'textBaseline' | 'lineWidth'>,
+    contentWidth: number,
+    contentHeight: number,
+    forceLineWidth: number | NullUndefined,
+): BoundingRect {
+    const rect = new BoundingRect(
+        adjustTextX(style.x || 0, contentWidth, style.textAlign as TextAlign),
+        adjustTextY(style.y || 0, contentHeight, style.textBaseline as TextVerticalAlign),
+        /**
+         * Text boundary should be the real text width.
+         * Otherwise, there will be extra space in the
+         * bounding rect calculated.
+         */
+        contentWidth,
+        contentHeight
+    );
+
+    const lineWidth = forceLineWidth != null
+        ? forceLineWidth
+        : (tSpanHasStroke(style) ? style.lineWidth : 0);
+    if (lineWidth > 0) {
+        rect.x -= lineWidth / 2;
+        rect.y -= lineWidth / 2;
+        rect.width += lineWidth;
+        rect.height += lineWidth;
+    }
+
+    return rect;
+}
+
+export function tSpanHasStroke(style: TSpanStyleProps): boolean {
+    const stroke = style.stroke;
+    return stroke != null && stroke !== 'none' && style.lineWidth > 0;
+}
 
