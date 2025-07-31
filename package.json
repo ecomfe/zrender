@@ -1,6 +1,6 @@
 {
   "name": "zrender",
-  "version": "6.0.0-rc.1",
+  "version": "6.0.0",
   "description": "A lightweight graphic library providing 2d draw for Apache ECharts",
   "keywords": [
     "canvas",
