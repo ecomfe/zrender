@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>SVG Gradient</title>
+    <script src="./lib/config.js"></script>
+    <script src="../dist/zrender.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+    <div id="main-svg" style="display: inline-block;"></div>
+    <div id="main-canvas" style="display: inline-block;"></div>
+
+    <script type="text/javascript">
+        var zrSVG = zrender.init(document.getElementById('main-svg'), {
+            renderer: 'svg',
+            width: 200,
+            height: 200
+        });
+
+        var zrCanvas = zrender.init(document.getElementById('main-canvas'), {
+            renderer: 'canvas',
+            width: 200,
+            height: 200
+        });
+
+        render(zrSVG)
+        render(zrCanvas)
+
+        function render(zr) {
+            zr.setBackgroundColor('navajowhite');
+
+            var linearGradient1 = new zrender.LinearGradient(0, 0, 0, 1);
+            linearGradient1.addColorStop(0, 'transparent');
+            linearGradient1.addColorStop(1, 'orange');
+
+            var linearGradient2 = new zrender.LinearGradient(0, 0, 0, 1);
+            linearGradient2.addColorStop(0, 'none');
+            linearGradient2.addColorStop(1, 'orange');
+
+            var linearGradient3 = new zrender.LinearGradient(0, 0, 0, 1);
+            linearGradient3.addColorStop(0, '');
+            linearGradient3.addColorStop(1, 'orange');
+
+            zr.add(
+                new zrender.Rect({
+                    shape: {
+                        x: 20,
+                        y: 50,
+                        width: 20,
+                        height: 100,
+                    },
+                    style: {
+                        fill: linearGradient1
+                    }
+                })
+            );
+
+            zr.add(
+                new zrender.Rect({
+                    shape: {
+                        x: 60,
+                        y: 50,
+                        width: 20,
+                        height: 100,
+                    },
+                    style: {
+                        fill: linearGradient2
+                    }
+                })
+            );
+
+            zr.add(
+                new zrender.Rect({
+                    shape: {
+                        x: 100,
+                        y: 50,
+                        width: 20,
+                        height: 100,
+                    },
+                    style: {
+                        fill: linearGradient3
+                    }
+                })
+            );
+        }
+    </script>
+</body>
+</html>
