@@ -734,6 +734,14 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
                 leftIndex++;
             }
 
+            while (leftIndex < tokenCount
+                && (token = tokens[leftIndex], !token.align || token.align === 'right')) {
+                remainedWidth -= token.width;
+                lineXLeft += token.width;
+                this._placeToken(token, style, lineHeight, lineTop, lineXLeft, 'right', bgColorDrawn);
+                leftIndex++;
+            }
+  
             while (
                 rightIndex >= 0
                 && (token = tokens[rightIndex], token.align === 'right')
@@ -743,7 +751,14 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
                 lineXRight -= token.width;
                 rightIndex--;
             }
-
+            while (rightIndex >= 0
+              && (token = tokens[rightIndex], token.align === 'left')) {
+              lineXRight -= token.width;
+              this._placeToken(token, style, lineHeight, lineTop, lineXRight, 'left', bgColorDrawn);
+              remainedWidth -= token.width;
+              rightIndex--;
+            }
+            
             // The other tokens are placed as textAlign 'center' if there is enough space.
             lineXLeft += (contentWidth - (lineXLeft - xLeft) - (xRight - lineXRight) - remainedWidth) / 2;
             while (leftIndex <= rightIndex) {
