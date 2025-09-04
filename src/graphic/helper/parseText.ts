@@ -818,7 +818,7 @@ function wrapText(
         // Move lastCh to the next line together with ch
         line = lastCh + ch;
         accumWidth = lastChWidth + chWidth;
-    }
+    };
 
     for (let i = 0; i < text.length; i++) {
 
@@ -845,9 +845,6 @@ function wrapText(
             ? lastAccumWidth + accumWidth + chWidth > lineWidth
             : accumWidth + chWidth > lineWidth
         ) {
-            if (text === '中文标点测试，逗号不应位于句首') {
-                debugger;
-            }
             const isProhibitedStart = isProhibitedLineStartChar(ch);
             if (isProhibitedStart) {
                 processProhibitedLineStart(ch, chWidth);
