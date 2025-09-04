@@ -23,13 +23,13 @@
 
         #css, #main {
             position: absolute;
-            top: 40px;
+            top: 70px;
             width: 100%;
-            height: 800px;
+            height: 1500px;
         }
 
         #css {
-            opacity: 0.5;
+            opacity: 0.3;
         }
 
         hr {
@@ -39,7 +39,11 @@
         h2 {
             font-size: 24px;
             margin: 20px 20px 0 20px;
-            color: #777;
+            color: #f00;
+        }
+
+        p {
+            margin: 10px 20px;
         }
 
         h2.main-h2 {
@@ -54,7 +58,7 @@
             text-align: left;
             vertical-align: top;
             font-size: 20px;
-            color: #777;
+            color: #f00;
             line-height: 1;
         }
 
@@ -130,6 +134,7 @@
 
     <div id="content">
         <h2>CSS Reference</h2>
+        <p>[*] means it's expected to be different from CSS</p>
         <div id="css"></div>
         <hr />
         <h2 class="main-h2">ZRender</h2>
@@ -137,6 +142,19 @@
     </div>
 
     <script>
+        function isAlphabeticLetter(ch) {
+            // Unicode Character Ranges
+            // https://jrgraphix.net/research/unicode_blocks.php
+            // The following ranges may not cover all letter ranges but only the more
+            // popular ones. Developers could make pull requests when they find those
+            // not covered.
+            let code = ch.charCodeAt(0);
+            return code >= 0x20 && code <= 0x24F // Latin
+                || code >= 0x370 && code <= 0x10FF // Greek, Coptic, Cyrilic, and etc.
+                || code >= 0x1200 && code <= 0x13FF // Ethiopic and Cherokee
+                || code >= 0x1E00 && code <= 0x206F; // Latin and Greek extended
+        }
+
         const cssContainer = document.getElementById('css');
         const dom = document.getElementById('main');
         const zr = zrender.init(dom, {
@@ -156,114 +174,39 @@
             text: '中文空格测试， 左边的空格不应该位于句首。',
             width: 140
         }, {
-            text: '中文空格测试，  第二行句首有一个空格。（预期和 CSS 不一致）',
-            width: 150
+            text: '中文多空格测试，  第二行句首有一个空格。[*]',
+            width: 160
         }, {
-            text: ' 中文空格测试，第一行的句首有一个空格（预期和 CSS 不一致）',
+            text: ' 中文空格测试，第一行的句首有一个空格[*]',
             width: 120
         }, {
             text: 'English space test, there should be no space at the begining of the second line',
             width: 180
         }, {
-            text: 'English space test,  there should be one space at the begining (Expected to be different from CSS)',
+            text: 'English space test,  there should be one space at the begining[*]',
             width: 180
         }, {
-            text: 'English space test there should be no space at the begining',
+            text: ' English space test there should a space at the begining of the first line[*]',
             width: 174
         }, {
-            text: '中文标点测试，逗号不应位于句首',
-            width: 120
+            text: '中文标点测试！！！！！所有感叹号不应位于句首。',
+            width: 160
         }, {
-            text: '中文标点测试。句号不应位于句首',
-            width: 120
-        }, {
-            text: '中文标点测试：冒号不应位于句首',
-            width: 120
-        }, {
-            text: '中文标点测试；分号不应位于句首',
-            width: 120
-        }, {
-            text: '中文标点测试！感叹号不应位于句首。',
-            width: 120
-        }, {
-            text: '中文标点测试？问号不应位于句首。',
-            width: 120
-        }, {
-            text: '中文标点测试（括号可以位于句首）',
-            width: 120
-        }, {
-            text: '中文标点测试）右括号不应位于句首',
-            width: 120
-        }, {
-            text: '中文标点测试“左引号不应位于句首',
-            width: 120
-        }, {
-            text: '中文标点测试”右引号不应位于句首',
-            width: 120
-        }, {
-            text: '中文标点测试『书名号可以位于句首',
-            width: 120
-        }, {
-            text: '中文标点测试』右书名号不应位于句首',
-            width: 120
-        }, {
-            text: '中文标点测试【方括号可以位于句首',
-            width: 120
-        }, {
-            text: '中文标点测试】右方括号不应位于句首',
-            width: 120
-        }, {
-            text: '中文标点测试、顿号不应位于句首。',
-            width: 120
-        }, {
-            text: '中文标点测试…省略号不应位于句首',
-            width: 120
-        }, {
-            text: '中文标点测试——破折号可以位于句首',
-            width: 120
-        }, {
-            text: 'English punct testi comma should not be at line start.',
-            width: 163
-        }, {
-            text: 'English punct test. period should not be at line start.',
-            width: 163
-        }, {
-            text: 'English punct test: colon should not be at line start.',
-            width: 163
-        }, {
-            text: 'English punct test; semicolon should not be at line start.',
-            width: 163
-        }, {
-            text: 'English punct test! exclamation should not be at line start.',
-            width: 163
-        }, {
-            text: 'English punct test? question mark should not be at line start.',
-            width: 163
-        }, {
-            text: 'English punct test (parenthesis can be at line start)',
-            width: 163
-        }, {
-            text: 'English punct test) right paren should not be at line start',
-            width: 163
-        }, {
-            text: 'English punct test "quote can be at line start"',
-            width: 163
-        }, {
-            text: 'English punct test" right quote should not be at line start',
-            width: 163
-        }, {
-            text: 'English punct test [bracket can be at line start]',
-            width: 163
-        }, {
-            text: 'English punct test] right bracket should not be at line start',
-            width: 163
-        }, {
-            text: 'English punct test... ellipsis should not be at line start',
-            width: 163
-        }, {
-            text: 'English punct test - dash can be at line start',
-            width: 163
+            text: '中文标点测试！！！！！！！！[*]',
+            width: 80
         }];
+
+        const prohibitedLineStartChars = '.,!?:;)}]"\'。，、：；！？）］｝》」』“”‘’）〕》〉】…';
+        for (let i = 0; i < prohibitedLineStartChars.length; i++) {
+            texts.push({
+                text: '标点句首测试' + prohibitedLineStartChars[i] + '不应位于句首。',
+                width: 120
+            });
+            texts.push({
+                text: 'English words' + prohibitedLineStartChars[i] + ' prohibited at line start.',
+                width: 130
+            });
+        }
 
         function renderAll() {
             // Clear previous renders
