@@ -698,6 +698,26 @@ function isWordBreakChar(ch: string) {
     return true;
 }
 
+// Create a dictionary of characters that shouldn't start a new line
+// Group ASCII, fullwidth and CJK punctuation together
+const prohibitedLineStartChars =
+    '.,!?:;)}]"\'。，、：；！？）］｝》」』“”‘’）〕》〉】…';
+
+const prohibitedLineStartCharMap = reduce(prohibitedLineStartChars.split(''), function (obj, ch) {
+    obj[ch] = true;
+    return obj;
+}, {} as Dictionary<boolean>);
+
+/**
+ * Determines if a character is prohibited from appearing at the beginning of a line.
+ * This implements line breaking rules in typography, especially important for
+ * CJK (Chinese, Japanese, Korean) text where certain punctuation marks should not
+ * start a new line.
+ */
+function isProhibitedLineStartChar(ch: string) {
+    return prohibitedLineStartCharMap[ch];
+}
+
 /**
  * NOTE: The current strategy is that if no enough space, all the text is
  * still displayed, regardless of overflow.
@@ -717,6 +737,88 @@ function wrapText(
     let currentWordWidth = 0;
     let accumWidth = 0;
     const fontMeasureInfo = ensureFontMeasureInfo(font);
+
+    /**
+     * When a prohibited character is at the beginning of a line, we should move
+     * it to the end of the previous line, if possible.
+     * @param ch The prohibited character that is at the beginning of a new line.
+     * @param chWidth The width of the prohibited character.
+     * Also uses outer closure variables of wrapText.
+     */
+    const processProhibitedLineStart = (ch: string, chWidth: number) => {
+        /**
+         * If we have a current word, it should stay together with the prohibited character.
+         * i.e., text is "I am happy, and you?"; line is "I am "; currentWord is "happy"; ch is ','
+         * Then we should move "happy," to be at the next line.
+         */
+        if (currentWord) {
+            // Make (currentWord + ch) to be at the next line
+            lines.push(line);
+            linesWidths.push(accumWidth);
+            line = currentWord + ch;
+            accumWidth = currentWordWidth + chWidth;
+            currentWord = '';
+            currentWordWidth = 0;
+            return;
+        }
+
+        /**
+         * No current word situations include:
+         * - The line is empty, i.e., the prohibited character is at the beginning of the text or after a '\n'.
+         *       No need to move it to the next line.
+         *
+         * - The last character of the line is also a prohibited character.
+         *       i.e., text is "Hello world!!"; line is "Hello world!"; currentWord is ""; ch is '!'
+         *          Then we should move "world!!" to be at the next line.
+         *
+         * - The last character is a CJK character.
+         *      i.e., text is "你呢？"; line is "你呢"; currentWord is ""; ch is '？'
+         *          Then we should move "呢？" to be at the next line.
+         */
+        if (!line) {
+            /**
+             * When line is empty and the ch still can not fit in the line, this means the container width
+             * is probably very small. We just put the ch in the line.
+             *
+             * TODO: Or we can ignore it, or provide an option to let developers decide?
+             */
+            lines.push(ch);
+            linesWidths.push(chWidth);
+            return;
+        }
+
+        // Find the last prohibited characters of the line
+        let lastCh = '';
+        for (let i = line.length - 1; i >= 0; i--) {
+            // Find the last non-prohibited character
+            const c = line.charAt(i);
+            lastCh = c + lastCh;
+            if (!isProhibitedLineStartChar(c)) {
+                break;
+            }
+        }
+
+        /**
+         * If lastCh equals line, which means the whole line is prohibited characters,
+         * in this case, we leave the line as is, and put the ch in the next line.
+         */
+        if (lastCh === line) {
+            lines.push(line);
+            linesWidths.push(accumWidth);
+            line = ch;
+            accumWidth = chWidth;
+            return;
+        }
+
+        // Remove it from the current line
+        lines.push(line.slice(0, line.length - lastCh.length));
+        const lastChWidth = measureWidth(fontMeasureInfo, lastCh);
+        linesWidths.push(accumWidth - lastChWidth);
+
+        // Move lastCh to the next line together with ch
+        line = lastCh + ch;
+        accumWidth = lastChWidth + chWidth;
+    }
 
     for (let i = 0; i < text.length; i++) {
 
@@ -743,7 +845,14 @@ function wrapText(
             ? lastAccumWidth + accumWidth + chWidth > lineWidth
             : accumWidth + chWidth > lineWidth
         ) {
-            if (!accumWidth) {  // If nothing appended yet.
+            if (text === '中文标点测试，逗号不应位于句首') {
+                debugger;
+            }
+            const isProhibitedStart = isProhibitedLineStartChar(ch);
+            if (isProhibitedStart) {
+                processProhibitedLineStart(ch, chWidth);
+            }
+            else if (!accumWidth) {  // If nothing appended to current line yet.
                 if (inWord) {
                     // The word length is still too long for one line
                     // Force break the word
@@ -760,7 +869,18 @@ function wrapText(
                 }
             }
             else if (line || currentWord) {
-                if (inWord) {
+                if (ch === ' ') {
+                    // If space is too wide for current line, ignore it because
+                    // we don't want a space at the beginning of a line.
+                    lines.push(line + currentWord);
+                    linesWidths.push(accumWidth + currentWordWidth);
+
+                    line = '';
+                    accumWidth = 0;
+                    currentWord = '';
+                    currentWordWidth = 0;
+                }
+                else if (inWord) {
                     if (!line) {
                         // The one word is still too long for one line
                         // Force break the word
