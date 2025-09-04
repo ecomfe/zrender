@@ -25,7 +25,7 @@
             position: absolute;
             top: 70px;
             width: 100%;
-            height: 1500px;
+            height: 3000px;
         }
 
         #css {
@@ -142,19 +142,6 @@
     </div>
 
     <script>
-        function isAlphabeticLetter(ch) {
-            // Unicode Character Ranges
-            // https://jrgraphix.net/research/unicode_blocks.php
-            // The following ranges may not cover all letter ranges but only the more
-            // popular ones. Developers could make pull requests when they find those
-            // not covered.
-            let code = ch.charCodeAt(0);
-            return code >= 0x20 && code <= 0x24F // Latin
-                || code >= 0x370 && code <= 0x10FF // Greek, Coptic, Cyrilic, and etc.
-                || code >= 0x1200 && code <= 0x13FF // Ethiopic and Cherokee
-                || code >= 0x1E00 && code <= 0x206F; // Latin and Greek extended
-        }
-
         const cssContainer = document.getElementById('css');
         const dom = document.getElementById('main');
         const zr = zrender.init(dom, {
@@ -196,14 +183,29 @@
             width: 80
         }];
 
-        const prohibitedLineStartChars = '.,!?:;)}]"\'。，、：；！？）］｝》」』“”‘’）〕》〉】…';
+        const prohibitedLineStartChars = '.,!?:;)}]"\'。，、：；！？）］｝》」』”’）〕》〉】…';
         for (let i = 0; i < prohibitedLineStartChars.length; i++) {
+            const char = prohibitedLineStartChars[i];
             texts.push({
-                text: '标点句首测试' + prohibitedLineStartChars[i] + '不应位于句首。',
+                text: '标点句首测试' + char + '不应位于句首。',
                 width: 120
             });
             texts.push({
-                text: 'English words' + prohibitedLineStartChars[i] + ' prohibited at line start.',
+                text: 'English words' + char + ' prohibited at line start.',
+                width: 130
+            });
+        }
+
+        const allowedStartChars = '([{《「『【(（“‘';
+        for (let i = 0; i < allowedStartChars.length; i++) {
+            const char = allowedStartChars[i];
+            const isDiff = char === '“' || char === '‘';
+            texts.push({
+                text: '标点句首测试' + char + '可以位于句首。' + (isDiff ? '[*]' : ''),
+                width: 120
+            });
+            texts.push({
+                text: 'English words ' + char + 'allowed at line start.' + (isDiff ? '[*]' : ''),
                 width: 130
             });
         }

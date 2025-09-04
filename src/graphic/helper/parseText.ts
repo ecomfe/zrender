@@ -699,9 +699,8 @@ function isWordBreakChar(ch: string) {
 }
 
 // Create a dictionary of characters that shouldn't start a new line
-// Group ASCII, fullwidth and CJK punctuation together
 const prohibitedLineStartChars =
-    '.,!?:;)}]"\'。，、：；！？）］｝》」』“”‘’）〕》〉】…';
+    '.,!?:;)}]"\'。，、：；！？）］｝》」』”’）〕》〉】…';
 
 const prohibitedLineStartCharMap = reduce(prohibitedLineStartChars.split(''), function (obj, ch) {
     obj[ch] = true;
