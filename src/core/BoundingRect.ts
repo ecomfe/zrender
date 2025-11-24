@@ -1,10 +1,8 @@
 import * as matrix from './matrix';
 import Point, { PointLike } from './Point';
 import { NullUndefined } from './types';
+import { mathMin, mathMax, mathAbs, mathCos, mathSin } from './math';
 
-const mathMin = Math.min;
-const mathMax = Math.max;
-const mathAbs = Math.abs;
 
 const XY = ['x', 'y'] as const;
 const WH = ['width', 'height'] as const;
@@ -458,7 +456,7 @@ export function createIntersectContext() {
                 _direction = opt.direction;
                 _ctx.bidirectional = opt.bidirectional == null || !!opt.bidirectional;
                 if (!_ctx.bidirectional) {
-                    _dirCheckVec.set(Math.cos(_direction), Math.sin(_direction));
+                    _dirCheckVec.set(mathCos(_direction), mathSin(_direction));
                 }
             }
         },
@@ -467,8 +465,8 @@ export function createIntersectContext() {
             const minTv = _ctx.minTv;
             const dirMinTv = _ctx.dirMinTv;
             const squareMag = minTv.y * minTv.y + minTv.x * minTv.x;
-            const dirSin = Math.sin(_direction);
-            const dirCos = Math.cos(_direction);
+            const dirSin = mathSin(_direction);
+            const dirCos = mathCos(_direction);
             const dotProd = dirSin * minTv.y + dirCos * minTv.x;
 
             if (nearZero(dotProd)) {

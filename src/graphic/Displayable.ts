@@ -9,10 +9,11 @@ import Path from './Path';
 import { keys, extend, createObject } from '../core/util';
 import Animator from '../animation/Animator';
 import { REDRAW_BIT, STYLE_CHANGED_BIT } from './constants';
+import { mathRandom, mathRound, mathMin, mathAbs, mathFloor, mathCeil } from '../core/math';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
-const STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
+const STYLE_MAGIC_KEY = '__zr_style_' + mathRound(mathRandom() * 10);
 
 export interface CommonStyleProps {
     shadowBlur?: number
@@ -285,20 +286,20 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
             }
 
             if (shadowSize || shadowOffsetX || shadowOffsetY) {
-                rect.width += shadowSize * 2 + Math.abs(shadowOffsetX);
-                rect.height += shadowSize * 2 + Math.abs(shadowOffsetY);
-                rect.x = Math.min(rect.x, rect.x + shadowOffsetX - shadowSize);
-                rect.y = Math.min(rect.y, rect.y + shadowOffsetY - shadowSize);
+                rect.width += shadowSize * 2 + mathAbs(shadowOffsetX);
+                rect.height += shadowSize * 2 + mathAbs(shadowOffsetY);
+                rect.x = mathMin(rect.x, rect.x + shadowOffsetX - shadowSize);
+                rect.y = mathMin(rect.y, rect.y + shadowOffsetY - shadowSize);
 
             }
 
             // For the accuracy tolerance of text height or line joint point
             const tolerance = this.dirtyRectTolerance;
             if (!rect.isZero()) {
-                rect.x = Math.floor(rect.x - tolerance);
-                rect.y = Math.floor(rect.y - tolerance);
-                rect.width = Math.ceil(rect.width + 1 + tolerance * 2);
-                rect.height = Math.ceil(rect.height + 1 + tolerance * 2);
+                rect.x = mathFloor(rect.x - tolerance);
+                rect.y = mathFloor(rect.y - tolerance);
+                rect.width = mathCeil(rect.width + 1 + tolerance * 2);
+                rect.height = mathCeil(rect.height + 1 + tolerance * 2);
             }
         }
         return rect;

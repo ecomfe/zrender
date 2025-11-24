@@ -1,4 +1,6 @@
-let wmUniqueIndex = Math.round(Math.random() * 9);
+import { mathRound, mathRandom } from './math';
+
+let wmUniqueIndex = mathRound(mathRandom() * 9);
 
 const supportDefineProperty = typeof Object.defineProperty === 'function';
 

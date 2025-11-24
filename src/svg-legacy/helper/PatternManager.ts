@@ -11,6 +11,7 @@ import {createOrUpdateImage} from '../../graphic/helper/image';
 import WeakMap from '../../core/WeakMap';
 import { getIdURL, isPattern, isSVGPattern } from '../../svg/helper';
 import { createElement } from '../../svg/core';
+import { RADIAN_TO_DEGREE } from '../../core/math';
 
 const patternDomMap = new WeakMap<PatternObject, SVGElement>();
 
@@ -194,7 +195,7 @@ export default class PatternManager extends Definable {
 
         const x = pattern.x || 0;
         const y = pattern.y || 0;
-        const rotation = (pattern.rotation || 0) / Math.PI * 180;
+        const rotation = (pattern.rotation || 0) * RADIAN_TO_DEGREE;
         const scaleX = pattern.scaleX || 1;
         const scaleY = pattern.scaleY || 1;
         const transform = `translate(${x}, ${y}) rotate(${rotation}) scale(${scaleX}, ${scaleY})`;

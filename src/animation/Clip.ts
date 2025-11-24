@@ -16,6 +16,7 @@ import easingFuncs, {AnimationEasing} from './easing';
 import type Animation from './Animation';
 import { isFunction, noop } from '../core/util';
 import { createCubicEasingFunc } from './cubicEasing';
+import { mathMin } from '../core/math';
 
 type OnframeCallback = (percent: number) => void;
 type ondestroyCallback = () => void
@@ -100,7 +101,7 @@ export default class Clip {
             percent = 0;
         }
 
-        percent = Math.min(percent, 1);
+        percent = mathMin(percent, 1);
 
         const easingFunc = this.easingFunc;
         const schedule = easingFunc ? easingFunc(percent) : percent;

@@ -4,10 +4,7 @@
  */
 
 import Path, { PathProps } from '../Path';
-
-const sin = Math.sin;
-const cos = Math.cos;
-const radian = Math.PI / 180;
+import { DEGREE_TO_RADIAN, mathSin, mathCos } from '../../core/math';
 
 export class RoseShape {
     cx = 0
@@ -58,12 +55,12 @@ class Rose extends Path<RoseProps> {
 
             for (let j = 0; j <= 360 * n; j++) {
                 x = r
-                        * sin(k / n * j % 360 * radian)
-                        * cos(j * radian)
+                        * mathSin(k / n * j % 360 * DEGREE_TO_RADIAN)
+                        * mathCos(j * DEGREE_TO_RADIAN)
                         + x0;
                 y = r
-                        * sin(k / n * j % 360 * radian)
-                        * sin(j * radian)
+                        * mathSin(k / n * j % 360 * DEGREE_TO_RADIAN)
+                        * mathSin(j * DEGREE_TO_RADIAN)
                         + y0;
                 ctx.lineTo(x, y);
             }

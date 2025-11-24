@@ -3,10 +3,8 @@
  */
 
 import Path, { PathProps } from '../Path';
+import { PI_OVER_2, PI2, mathSin, mathCos } from '../../core/math';
 
-const PI = Math.PI;
-const sin = Math.sin;
-const cos = Math.cos;
 
 export class IsogonShape {
     x = 0
@@ -40,13 +38,13 @@ class Isogon extends Path<IsogonProps> {
         const y = shape.y;
         const r = shape.r;
 
-        const dStep = 2 * PI / n;
-        let deg = -PI / 2;
+        const dStep = PI2 / n;
+        let deg = -PI_OVER_2;
 
-        ctx.moveTo(x + r * cos(deg), y + r * sin(deg));
+        ctx.moveTo(x + r * mathCos(deg), y + r * mathSin(deg));
         for (let i = 0, end = n - 1; i < end; i++) {
             deg += dStep;
-            ctx.lineTo(x + r * cos(deg), y + r * sin(deg));
+            ctx.lineTo(x + r * mathCos(deg), y + r * mathSin(deg));
         }
 
         ctx.closePath();

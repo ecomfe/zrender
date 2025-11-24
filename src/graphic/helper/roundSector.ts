@@ -1,17 +1,10 @@
 import PathProxy from '../../core/PathProxy';
 import { isArray } from '../../core/util';
+import {
+    PI, PI2, EPSILON4,
+    mathSin, mathCos, mathACos, mathATan2, mathAbs, mathSqrt, mathMax, mathMin,
+} from '../../core/math';
 
-const PI = Math.PI;
-const PI2 = PI * 2;
-const mathSin = Math.sin;
-const mathCos = Math.cos;
-const mathACos = Math.acos;
-const mathATan2 = Math.atan2;
-const mathAbs = Math.abs;
-const mathSqrt = Math.sqrt;
-const mathMax = Math.max;
-const mathMin = Math.min;
-const e = 1e-4;
 
 function intersect(
     x0: number, y0: number,
@@ -24,7 +17,7 @@ function intersect(
     const dx32 = x3 - x2;
     const dy32 = y3 - y2;
     let t = dy32 * dx10 - dx32 * dy10;
-    if (t * t < e) {
+    if (t * t < EPSILON4) {
         return;
     }
     t = (dx32 * (y0 - y2) - dy32 * (x0 - x2)) / t;
@@ -155,21 +148,21 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
 
     let arc = mathAbs(endAngle - startAngle);
     const mod = arc > PI2 && arc % PI2;
-    mod > e && (arc = mod);
+    mod > EPSILON4 && (arc = mod);
 
     // is a point
-    if (!(radius > e)) {
+    if (!(radius > EPSILON4)) {
         ctx.moveTo(cx, cy);
     }
     // is a circle or annulus
-    else if (arc > PI2 - e) {
+    else if (arc > PI2 - EPSILON4) {
         ctx.moveTo(
             cx + radius * mathCos(startAngle),
             cy + radius * mathSin(startAngle)
         );
         ctx.arc(cx, cy, radius, startAngle, endAngle, !clockwise);
 
-        if (innerRadius > e) {
+        if (innerRadius > EPSILON4) {
             ctx.moveTo(
                 cx + innerRadius * mathCos(endAngle),
                 cy + innerRadius * mathSin(endAngle)
@@ -204,7 +197,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         const xire = innerRadius * mathCos(endAngle);
         const yire = innerRadius * mathSin(endAngle);
 
-        const hasArc = arc > e;
+        const hasArc = arc > EPSILON4;
         if (hasArc) {
             const cornerRadius = shape.cornerRadius;
             if (cornerRadius) {
@@ -221,7 +214,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
             limitedIcrMax = icrMax = mathMax(icrs, icre);
 
             // draw corner radius
-            if (ocrMax > e || icrMax > e) {
+            if (ocrMax > EPSILON4 || icrMax > EPSILON4) {
                 xre = radius * mathCos(endAngle);
                 yre = radius * mathSin(endAngle);
                 xirs = innerRadius * mathCos(startAngle);
@@ -252,7 +245,7 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
             ctx.moveTo(cx + xrs, cy + yrs);
         }
         // the outer ring has corners
-        else if (limitedOcrMax > e) {
+        else if (limitedOcrMax > EPSILON4) {
             const crStart = mathMin(ocrStart, limitedOcrMax);
             const crEnd = mathMin(ocrEnd, limitedOcrMax);
             const ct0 = computeCornerTangents(xirs, yirs, xrs, yrs, radius, crStart, clockwise);
@@ -282,11 +275,11 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
         }
 
         // no inner ring, is a circular sector
-        if (!(innerRadius > e) || !hasArc) {
+        if (!(innerRadius > EPSILON4) || !hasArc) {
             ctx.lineTo(cx + xire, cy + yire);
         }
         // the inner ring has corners
-        else if (limitedIcrMax > e) {
+        else if (limitedIcrMax > EPSILON4) {
             const crStart = mathMin(icrStart, limitedIcrMax);
             const crEnd = mathMin(icrEnd, limitedIcrMax);
             const ct0 = computeCornerTangents(xire, yire, xre, yre, innerRadius, -crEnd, clockwise);

@@ -1,11 +1,10 @@
 import { PathStyleProps } from '../Path';
+import { mathMax, mathRound } from '../../core/math';
 
 /**
  * Sub-pixel optimize for canvas rendering, prevent from blur
  * when rendering a thin vertical/horizontal line.
  */
-
-const round = Math.round;
 
 type LineShape = {
     x1: number
@@ -53,10 +52,10 @@ export function subPixelOptimizeLine(
         return outputShape as LineShape;
     }
 
-    if (round(x1 * 2) === round(x2 * 2)) {
+    if (mathRound(x1 * 2) === mathRound(x2 * 2)) {
         outputShape.x1 = outputShape.x2 = subPixelOptimize(x1, lineWidth, true);
     }
-    if (round(y1 * 2) === round(y2 * 2)) {
+    if (mathRound(y1 * 2) === mathRound(y2 * 2)) {
         outputShape.y1 = outputShape.y2 = subPixelOptimize(y1, lineWidth, true);
     }
 
@@ -97,11 +96,11 @@ export function subPixelOptimizeRect(
 
     outputShape.x = subPixelOptimize(originX, lineWidth, true);
     outputShape.y = subPixelOptimize(originY, lineWidth, true);
-    outputShape.width = Math.max(
+    outputShape.width = mathMax(
         subPixelOptimize(originX + originWidth, lineWidth, false) - outputShape.x,
         originWidth === 0 ? 0 : 1
     );
-    outputShape.height = Math.max(
+    outputShape.height = mathMax(
         subPixelOptimize(originY + originHeight, lineWidth, false) - outputShape.y,
         originHeight === 0 ? 0 : 1
     );
@@ -127,8 +126,8 @@ export function subPixelOptimize(
     }
     // Assure that (position + lineWidth / 2) is near integer edge,
     // otherwise line will be fuzzy in canvas.
-    const doubledPosition = round(position * 2);
-    return (doubledPosition + round(lineWidth)) % 2 === 0
+    const doubledPosition = mathRound(position * 2);
+    return (doubledPosition + mathRound(lineWidth)) % 2 === 0
         ? doubledPosition / 2
         : (doubledPosition + (positiveOrNegative ? 1 : -1)) / 2;
 }

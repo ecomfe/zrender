@@ -41,8 +41,8 @@ import { hasSeparateFont, parseFontSize } from '../graphic/Text';
 import { DEFAULT_FONT, DEFAULT_FONT_FAMILY } from '../core/platform';
 import { createCSSEmphasis } from './cssEmphasis';
 import { getElementSSRData } from '../zrender';
+import { mathPow, mathRound } from '../core/math';
 
-const round = Math.round;
 
 function isImageLike(val: any): val is HTMLImageElement {
     return val && isString(val.src);
@@ -105,7 +105,7 @@ function setTransform(attrs: SVGVNodeAttrs, m: MatrixArray, compress?: boolean) 
         const mul = compress ? 10 : 1e4;
         // Use translate possible to reduce the size a bit.
         attrs.transform = noRotateScale(m)
-            ? `translate(${round(m[4] * mul) / mul} ${round(m[5] * mul) / mul})` : getMatrixStr(m);
+            ? `translate(${mathRound(m[4] * mul) / mul} ${mathRound(m[5] * mul) / mul})` : getMatrixStr(m);
     }
 }
 
@@ -117,8 +117,8 @@ function convertPolyShape(shape: Polygon['shape'], attrs: SVGVNodeAttrs, mul: nu
     const points = shape.points;
     const strArr = [];
     for (let i = 0; i < points.length; i++) {
-        strArr.push(round(points[i][0] * mul) / mul);
-        strArr.push(round(points[i][1] * mul) / mul);
+        strArr.push(mathRound(points[i][0] * mul) / mul);
+        strArr.push(mathRound(points[i][1] * mul) / mul);
     }
     attrs.points = strArr.join(' ');
 }
@@ -137,7 +137,7 @@ function createAttrsConvert(desc: ShapeMapDesc): ConvertShapeToAttr {
             const item = normalizedDesc[i];
             const val = shape[item[0]];
             if (val != null) {
-                attrs[item[1]] = round(val * mul) / mul;
+                attrs[item[1]] = mathRound(val * mul) / mul;
             }
         }
     };
@@ -186,7 +186,7 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
         && !(strokePercent < 1)
     ) {
         svgElType = el.type;
-        const mul = Math.pow(10, precision);
+        const mul = mathPow(10, precision);
         builtinShpDef[0](shape, attrs, mul);
     }
     else {

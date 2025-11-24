@@ -8,6 +8,7 @@ import Rect from '../graphic/shape/Rect';
 import Sector from '../graphic/shape/Sector';
 import { pathToPolygons } from './convertPath';
 import { clonePath } from './path';
+import { PI2, mathAbs, mathCeil, mathFloor, mathMax, mathSqrt } from '../core/math';
 
 // Default shape dividers
 // TODO divide polygon by grids.
@@ -22,9 +23,9 @@ function getDividingGrids(dimSize: number[], rowDim: number, count: number) {
     const rowSize = dimSize[rowDim];
     const columnSize = dimSize[1 - rowDim];
 
-    const ratio = Math.abs(rowSize / columnSize);
-    let rowCount = Math.ceil(Math.sqrt(ratio * count));
-    let columnCount = Math.floor(count / rowCount);
+    const ratio = mathAbs(rowSize / columnSize);
+    let rowCount = mathCeil(mathSqrt(ratio * count));
+    let columnCount = mathFloor(count / rowCount);
     if (columnCount === 0) {
         columnCount = 1;
         rowCount = count;
@@ -38,7 +39,7 @@ function getDividingGrids(dimSize: number[], rowDim: number, count: number) {
     // Distribute the remaind grid evenly on each row.
     const remained = count - currentCount;
     if (remained > 0) {
-        // const stride = Math.max(Math.floor(rowCount / remained), 1);
+        // const stride = mathMax(mathFloor(rowCount / remained), 1);
         for (let i = 0; i < remained; i++) {
             grids[i % rowCount] += 1;
         }
@@ -53,11 +54,11 @@ function divideSector(sectorShape: Sector['shape'], count: number, outShapes: Se
     const r = sectorShape.r;
     const startAngle = sectorShape.startAngle;
     const endAngle = sectorShape.endAngle;
-    const angle = Math.abs(endAngle - startAngle);
+    const angle = mathAbs(endAngle - startAngle);
     const arcLen = angle * r;
     const deltaR = r - r0;
 
-    const isAngleRow = arcLen > Math.abs(deltaR);
+    const isAngleRow = arcLen > mathAbs(deltaR);
     const grids = getDividingGrids([arcLen, deltaR], isAngleRow ? 0 : 1, count);
 
     const rowSize = (isAngleRow ? angle : deltaR) / grids.length;
@@ -132,7 +133,7 @@ function lineLineIntersect(
     const ny = b2y - b1y;
 
     const nmCrossProduct = crossProduct2d(nx, ny, mx, my);
-    if (Math.abs(nmCrossProduct) < 1e-6) {
+    if (mathAbs(nmCrossProduct) < 1e-6) {
         return null;
     }
 
@@ -275,7 +276,7 @@ function binaryDivideRecursive<T extends Path['shape']>(
         out.push(shape);
     }
     else {
-        const mid = Math.floor(count / 2);
+        const mid = mathFloor(count / 2);
         const sub = divider(shape);
         binaryDivideRecursive(divider, sub[0], mid, out);
         binaryDivideRecursive(divider, sub[1], count - mid, out);
@@ -325,14 +326,14 @@ export function split(
             break;
         case 'circle':
             divideSector({
-                r0: 0, r: shape.r, startAngle: 0, endAngle: Math.PI * 2,
+                r0: 0, r: shape.r, startAngle: 0, endAngle: PI2,
                 cx: shape.cx, cy: shape.cy
             } as Sector['shape'], count, outShapes as Sector['shape'][]);
             OutShapeCtor = Sector;
             break;
         default:
             const m = path.getComputedTransform();
-            const scale = m ? Math.sqrt(Math.max(m[0] * m[0] + m[1] * m[1], m[2] * m[2] + m[3] * m[3])) : 1;
+            const scale = m ? mathSqrt(mathMax(m[0] * m[0] + m[1] * m[1], m[2] * m[2] + m[3] * m[3])) : 1;
             const polygons = map(
                 pathToPolygons(path.getUpdatedPathProxy(), scale),
                 poly => polygonConvert(poly)
@@ -373,7 +374,7 @@ export function split(
 
                     const selfCount = i === polygonCount - 1
                         ? left   // Use the last piece directly
-                        : Math.ceil(item.area / totalArea * count);
+                        : mathCeil(item.area / totalArea * count);
 
                     if (selfCount < 0) {
                         continue;

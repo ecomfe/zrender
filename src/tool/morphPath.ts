@@ -11,6 +11,7 @@ import Transformable from '../core/Transformable';
 import { ZRenderType } from '../zrender';
 import { split } from './dividePath';
 import { pathToBezierCurves } from './convertPath';
+import { PI, mathMin, mathMax, mathRound, mathCeil, mathAbs, mathSin, mathCos } from '../core/math';
 
 function alignSubpath(subpath1: number[], subpath2: number[]): [number[], number[]] {
     const len1 = subpath1.length;
@@ -22,12 +23,12 @@ function alignSubpath(subpath1: number[], subpath2: number[]): [number[], number
     const tmpSegY: number[] = [];
 
     const shorterPath = len1 < len2 ? subpath1 : subpath2;
-    const shorterLen = Math.min(len1, len2);
+    const shorterLen = mathMin(len1, len2);
     // Should divide excatly
-    const diff = Math.abs(len2 - len1) / 6;
+    const diff = mathAbs(len2 - len1) / 6;
     const shorterBezierCount = (shorterLen - 2) / 6;
     // Add `diff` number of beziers
-    const eachCurveSubDivCount = Math.ceil(diff / shorterBezierCount) + 1;
+    const eachCurveSubDivCount = mathCeil(diff / shorterBezierCount) + 1;
 
     const newSubpath = [shorterPath[0], shorterPath[1]];
     let remained = diff;
@@ -47,7 +48,7 @@ function alignSubpath(subpath1: number[], subpath2: number[]): [number[], number
             continue;
         }
 
-        let actualSubDivCount = Math.min(remained, eachCurveSubDivCount - 1) + 1;
+        let actualSubDivCount = mathMin(remained, eachCurveSubDivCount - 1) + 1;
         for (let k = 1; k <= actualSubDivCount; k++) {
             const p = k / actualSubDivCount;
 
@@ -101,7 +102,7 @@ export function alignBezierCurves(array1: number[][], array2: number[][]) {
     let newArray1 = [];
     let newArray2 = [];
 
-    for (let i = 0; i < Math.max(array1.length, array2.length); i++) {
+    for (let i = 0; i < mathMax(array1.length, array2.length); i++) {
         const subpath1 = array1[i];
         const subpath2 = array2[i];
 
@@ -277,8 +278,8 @@ function findBestMorphingRotation(
         if (searchAngleIteration > 0) {
             const step = searchAngleRange / searchAngleIteration;
             for (let angle = -searchAngleRange / 2; angle <= searchAngleRange / 2; angle += step) {
-                const sa = Math.sin(angle);
-                const ca = Math.cos(angle);
+                const sa = mathSin(angle);
+                const ca = mathCos(angle);
                 let score = 0;
 
                 for (let k = 0; k < fromSubpathBezier.length; k += 2) {
@@ -298,7 +299,7 @@ function findBestMorphingRotation(
                     const dy = newY1 - y0;
 
                     // Use dot product to have min direction change.
-                    // const d = Math.sqrt(x0 * x0 + y0 * y0);
+                    // const d = mathSqrt(x0 * x0 + y0 * y0);
                     // score += x0 * dx / d + y0 * dy / d;
                     score += dx * dx + dy * dy;
                 }
@@ -414,7 +415,7 @@ function prepareMorphPath(
     saveAndModifyMethod(toPath, 'updateTransform', { replace: updateIdentityTransform });
     toPath.transform = null;
 
-    const morphingData = findBestMorphingRotation(fromBezierCurves, toBezierCurves, 10, Math.PI);
+    const morphingData = findBestMorphingRotation(fromBezierCurves, toBezierCurves, 10, PI);
 
     const tmpArr: number[] = [];
 
@@ -431,8 +432,8 @@ function prepareMorphPath(
             const angle = item.rotation * t;
             const fromCp = item.fromCp;
             const toCp = item.toCp;
-            const sa = Math.sin(angle);
-            const ca = Math.cos(angle);
+            const sa = mathSin(angle);
+            const ca = mathCos(angle);
 
             lerp(newCp, fromCp, toCp, t);
 
@@ -532,8 +533,8 @@ export function morphPath(
 // function zOrder(x: number, y: number, minX: number, minY: number, maxX: number, maxY: number) {
 //     // Normalize coords to 0 - 1
 //     // The transformed into non-negative 15-bit integer range
-//     x = (maxX === minX) ? 0 : Math.round(32767 * (x - minX) / (maxX - minX));
-//     y = (maxY === minY) ? 0 : Math.round(32767 * (y - minY) / (maxY - minY));
+//     x = (maxX === minX) ? 0 : mathRound(32767 * (x - minX) / (maxX - minX));
+//     y = (maxY === minY) ? 0 : mathRound(32767 * (y - minY) / (maxY - minY));
 
 //     x = (x | (x << 8)) & 0x00FF00FF;
 //     x = (x | (x << 4)) & 0x0F0F0F0F;
@@ -552,8 +553,8 @@ export function morphPath(
 // https://jsfiddle.net/pissang/xdnbzg6v/
 function hilbert(x: number, y: number, minX: number, minY: number, maxX: number, maxY: number) {
     const bits = 16;
-    x = (maxX === minX) ? 0 : Math.round(32767 * (x - minX) / (maxX - minX));
-    y = (maxY === minY) ? 0 : Math.round(32767 * (y - minY) / (maxY - minY));
+    x = (maxX === minX) ? 0 : mathRound(32767 * (x - minX) / (maxX - minX));
+    y = (maxY === minY) ? 0 : mathRound(32767 * (y - minY) / (maxY - minY));
 
     let d = 0;
     let tmp: number;
@@ -596,10 +597,10 @@ function sortPaths(pathList: Path[]): Path[] {
         const m = path.getComputedTransform();
         const x = rect.x + rect.width / 2 + (m ? m[4] : 0);
         const y = rect.y + rect.height / 2 + (m ? m[5] : 0);
-        xMin = Math.min(x, xMin);
-        yMin = Math.min(y, yMin);
-        xMax = Math.max(x, xMax);
-        yMax = Math.max(y, yMax);
+        xMin = mathMin(x, xMin);
+        yMin = mathMin(y, yMin);
+        xMax = mathMax(x, xMax);
+        yMax = mathMax(y, yMax);
         return [x, y];
     });
 

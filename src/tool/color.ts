@@ -1,6 +1,7 @@
 import LRU from '../core/LRU';
 import { extend, isFunction, isGradientObject, isString, map } from '../core/util';
 import { GradientObject } from '../graphic/Gradient';
+import { mathCeil, mathFloor, mathMax, mathMin, mathRandom, mathRound } from '../core/math';
 
 const kCSSColorTable = {
     'transparent': [0, 0, 0, 0], 'aliceblue': [240, 248, 255, 1],
@@ -80,12 +81,12 @@ const kCSSColorTable = {
 };
 
 function clampCssByte(i: number): number {  // Clamp to integer 0 .. 255.
-    i = Math.round(i);  // Seems to be what Chrome does (vs truncation).
+    i = mathRound(i);  // Seems to be what Chrome does (vs truncation).
     return i < 0 ? 0 : i > 255 ? 255 : i;
 }
 
 function clampCssAngle(i: number): number {  // Clamp to integer 0 .. 360.
-    i = Math.round(i);  // Seems to be what Chrome does (vs truncation).
+    i = mathRound(i);  // Seems to be what Chrome does (vs truncation).
     return i < 0 ? 0 : i > 360 ? 360 : i;
 }
 
@@ -312,8 +313,8 @@ function rgba2hsla(rgba: number[]): number[] {
     const G = rgba[1] / 255;
     const B = rgba[2] / 255;
 
-    const vMin = Math.min(R, G, B); // Min. value of RGB
-    const vMax = Math.max(R, G, B); // Max. value of RGB
+    const vMin = mathMin(R, G, B); // Min. value of RGB
+    const vMax = mathMax(R, G, B); // Max. value of RGB
     const delta = vMax - vMin; // Delta RGB value
 
     const L = (vMax + vMin) / 2;
@@ -413,8 +414,8 @@ export function fastLerp(
     out = out || [];
 
     const value = normalizedValue * (colors.length - 1);
-    const leftIndex = Math.floor(value);
-    const rightIndex = Math.ceil(value);
+    const leftIndex = mathFloor(value);
+    const rightIndex = mathCeil(value);
     const leftColor = colors[leftIndex];
     const rightColor = colors[rightIndex];
     const dv = value - leftIndex;
@@ -465,8 +466,8 @@ export function lerp(
     }
 
     const value = normalizedValue * (colors.length - 1);
-    const leftIndex = Math.floor(value);
-    const rightIndex = Math.ceil(value);
+    const leftIndex = mathFloor(value);
+    const rightIndex = mathCeil(value);
     const leftColor = parse(colors[leftIndex]);
     const rightColor = parse(colors[rightIndex]);
     const dv = value - leftIndex;
@@ -568,9 +569,9 @@ export function lum(color: string, backgroundLum: number) {
  */
 export function random(): string {
     return stringify([
-        Math.round(Math.random() * 255),
-        Math.round(Math.random() * 255),
-        Math.round(Math.random() * 255)
+        mathRound(mathRandom() * 255),
+        mathRound(mathRandom() * 255),
+        mathRound(mathRandom() * 255)
     ], 'rgb');
 }
 

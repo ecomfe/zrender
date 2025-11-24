@@ -4,9 +4,8 @@
  */
 
 import Path, { PathProps } from '../Path';
+import { DEGREE_TO_RADIAN, mathSin, mathCos } from '../../core/math';
 
-const cos = Math.cos;
-const sin = Math.sin;
 
 export class TrochoidShape {
     cx = 0
@@ -59,10 +58,10 @@ class Trochoid extends Path<TrochoidProps> {
         let i = 1;
         let theta;
 
-        x1 = (R + delta * r) * cos(0)
-            - delta * d * cos(0) + offsetX;
-        y1 = (R + delta * r) * sin(0)
-            - d * sin(0) + offsetY;
+        x1 = (R + delta * r) * mathCos(0)
+            - delta * d * mathCos(0) + offsetX;
+        y1 = (R + delta * r) * mathSin(0)
+            - d * mathSin(0) + offsetY;
 
         ctx.moveTo(x1, y1);
 
@@ -73,12 +72,12 @@ class Trochoid extends Path<TrochoidProps> {
         while ((r * num) % (R + delta * r) !== 0);
 
         do {
-            theta = Math.PI / 180 * i;
-            x2 = (R + delta * r) * cos(theta)
-                    - delta * d * cos((R / r + delta) * theta)
+            theta = DEGREE_TO_RADIAN * i;
+            x2 = (R + delta * r) * mathCos(theta)
+                    - delta * d * mathCos((R / r + delta) * theta)
                     + offsetX;
-            y2 = (R + delta * r) * sin(theta)
-                    - d * sin((R / r + delta) * theta)
+            y2 = (R + delta * r) * mathSin(theta)
+                    - d * mathSin((R / r + delta) * theta)
                     + offsetY;
             ctx.lineTo(x2, y2);
             i++;

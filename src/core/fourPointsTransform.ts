@@ -6,7 +6,9 @@
  * "cv::getPerspectiveTransform", "Direct Linear Transformation".
  */
 
-const LN2 = Math.log(2);
+import { mathLog, mathRound } from './math';
+
+const LN2 = mathLog(2);
 
 function determinant(
     rows: number[][],
@@ -25,7 +27,7 @@ function determinant(
 
     if (rank === 1) {
         // In this case the colMask must be like: `11101111`. We can find the place of `0`.
-        const colStart = Math.round(Math.log(((1 << fullRank) - 1) & ~colMask) / LN2);
+        const colStart = mathRound(mathLog(((1 << fullRank) - 1) & ~colMask) / LN2);
         return rows[rowStart][colStart];
     }
 

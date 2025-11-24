@@ -1,10 +1,11 @@
 import env from './core/env';
+import { mathMax } from './core/math';
 
 let dpr = 1;
 
 // If in browser environment
 if (env.hasGlobalWindow) {
-    dpr = Math.max(
+    dpr = mathMax(
         window.devicePixelRatio
         || (window.screen && (window.screen as any).deviceXDPI / (window.screen as any).logicalXDPI)
         || 1, 1

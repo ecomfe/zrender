@@ -1,3 +1,4 @@
+import { mathAbs } from '../core/math';
 
 /**
  * 线段包含判断
@@ -35,7 +36,7 @@ export function containStroke(
         _b = (x0 * y1 - x1 * y0) / (x0 - x1);
     }
     else {
-        return Math.abs(x - x0) <= _l / 2;
+        return mathAbs(x - x0) <= _l / 2;
     }
     const tmp = _a * x - y + _b;
     const _s = tmp * tmp / (_a * _a + 1);

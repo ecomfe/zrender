@@ -18,6 +18,7 @@ import { lum } from '../tool/color';
 import { DARK_LABEL_COLOR, LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, LIGHTER_LABEL_COLOR } from '../config';
 import { REDRAW_BIT, SHAPE_CHANGED_BIT, STYLE_CHANGED_BIT } from './constants';
 import { TRANSFORMABLE_PROPS } from '../core/Transformable';
+import { mathMax } from '../core/math';
 
 
 export interface PathStyleProps extends CommonStyleProps {
@@ -370,7 +371,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
                 // Only add extra hover lineWidth when there are no fill
                 if (!this.hasFill()) {
                     const strokeContainThreshold = this.strokeContainThreshold;
-                    w = Math.max(w, strokeContainThreshold == null ? 4 : strokeContainThreshold);
+                    w = mathMax(w, strokeContainThreshold == null ? 4 : strokeContainThreshold);
                 }
                 // Consider line width
                 // Line scale can't be 0;
@@ -405,7 +406,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
                 if (lineScale > 1e-10) {
                     // Only add extra hover lineWidth when there are no fill
                     if (!this.hasFill()) {
-                        lineWidth = Math.max(lineWidth, this.strokeContainThreshold);
+                        lineWidth = mathMax(lineWidth, this.strokeContainThreshold);
                     }
                     if (pathContain.containStroke(
                         pathProxy, lineWidth / lineScale, x, y

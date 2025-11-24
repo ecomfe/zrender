@@ -1,10 +1,10 @@
 import windingLine from './windingLine';
 import { VectorArray } from '../core/vector';
+import { EPSILON8, mathAbs } from '../core/math';
 
-const EPSILON = 1e-8;
 
 function isAroundEqual(a: number, b: number): boolean {
-    return Math.abs(a - b) < EPSILON;
+    return mathAbs(a - b) < EPSILON8;
 }
 
 export function contain(points: VectorArray[], x: number, y: number) {

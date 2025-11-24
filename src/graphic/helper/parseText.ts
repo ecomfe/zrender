@@ -14,6 +14,7 @@ import {
     ensureFontMeasureInfo, FontMeasureInfo, getLineHeight, measureCharWidth, measureWidth, parsePercent,
 } from '../../contain/text';
 import BoundingRect, { BoundingRectIntersectOpt } from '../../core/BoundingRect';
+import { mathFloor, mathMax } from '../../core/math';
 
 const STYLE_REG = /\{([a-zA-Z0-9_]+)\|([^}]*)\}/g;
 
@@ -103,7 +104,7 @@ function prepareTruncateOptions(
 
     // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
     // Example 2: minChar: 3, text: '维度', truncate result: '维', but not: '...'.
-    let contentWidth = containerWidth = Math.max(0, containerWidth - 1); // Reserve some gap.
+    let contentWidth = containerWidth = mathMax(0, containerWidth - 1); // Reserve some gap.
     for (let i = 0; i < minChar && contentWidth >= ascCharWidth; i++) {
         contentWidth -= ascCharWidth;
     }
@@ -156,7 +157,7 @@ function truncateSingleLine(
         const subLength = j === 0
             ? estimateLength(textLine, contentWidth, fontMeasureInfo)
             : lineWidth > 0
-            ? Math.floor(textLine.length * contentWidth / lineWidth)
+            ? mathFloor(textLine.length * contentWidth / lineWidth)
             : 0;
 
         textLine = textLine.substr(0, subLength);
@@ -256,7 +257,7 @@ export function parsePlainText(
 
     // Truncate lines.
     if (contentHeight > height && truncateLineOverflow) {
-        const lineCount = Math.floor(height / lineHeight);
+        const lineCount = mathFloor(height / lineHeight);
 
         isTruncated = isTruncated || (lines.length > lineCount);
         lines = lines.slice(0, lineCount);
@@ -291,7 +292,7 @@ export function parsePlainText(
     let contentWidth = 0;
     const fontMeasureInfo = ensureFontMeasureInfo(font);
     for (let i = 0; i < lines.length; i++) {
-        contentWidth = Math.max(measureWidth(fontMeasureInfo, lines[i]), contentWidth);
+        contentWidth = mathMax(measureWidth(fontMeasureInfo, lines[i]), contentWidth);
     }
     if (width == null) {
         // When width is not explicitly set, use contentWidth as width.
@@ -445,7 +446,7 @@ export function parseRichText(
         line.width = lineWidth;
         line.lineHeight = lineHeight;
         calculatedHeight += lineHeight;
-        calculatedWidth = Math.max(calculatedWidth, lineWidth);
+        calculatedWidth = mathMax(calculatedWidth, lineWidth);
     }
     // Calculate layout info of tokens.
     outer: for (let i = 0; i < contentBlock.lines.length; i++) {
@@ -521,7 +522,7 @@ export function parseRichText(
                         bgImg = imageHelper.findExistImage(bgImg);
                         if (imageHelper.isImageReady(bgImg)) {
                             // Update token width from image size.
-                            token.width = Math.max(token.width, bgImg.width * tokenHeight / bgImg.height);
+                            token.width = mathMax(token.width, bgImg.width * tokenHeight / bgImg.height);
                         }
                     }
                 }
@@ -553,7 +554,7 @@ export function parseRichText(
             token.width += paddingH;
 
             lineWidth += token.width;
-            tokenStyle && (lineHeight = Math.max(lineHeight, token.lineHeight));
+            tokenStyle && (lineHeight = mathMax(lineHeight, token.lineHeight));
 
             // prevToken = token;
         }

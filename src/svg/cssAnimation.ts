@@ -11,6 +11,7 @@ import CompoundPath from '../graphic/CompoundPath';
 import { AnimationEasing } from '../animation/easing';
 import { createCubicEasingFunc } from '../animation/cubicEasing';
 import { getClassId } from './cssClassId';
+import { mathRound } from '../core/math';
 
 export const EASING_MAP: Record<string, string> = {
     // From https://easings.net/
@@ -210,7 +211,7 @@ export function createCSSAnimation(
                     if (attrName) {
                         for (let i = 0; i < kfs.length; i++) {
                             const kf = kfs[i];
-                            const percent = Math.round(kf.time / maxTime * 100) + '%';
+                            const percent = mathRound(kf.time / maxTime * 100) + '%';
                             const kfEasing = getEasingFunc(kf.easing);
                             const rawValue = kf.rawValue;
 

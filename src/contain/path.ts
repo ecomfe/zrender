@@ -5,14 +5,12 @@ import * as quadratic from './quadratic';
 import * as arc from './arc';
 import * as curve from '../core/curve';
 import windingLine from './windingLine';
+import { PI, PI2, PI_OVER_2, EPSILON4, mathAbs, mathSqrt, mathATan2, mathCos, mathSin } from '../core/math';
 
 const CMD = PathProxy.CMD;
-const PI2 = Math.PI * 2;
-
-const EPSILON = 1e-4;
 
 function isAroundEqual(a: number, b: number) {
-    return Math.abs(a - b) < EPSILON;
+    return mathAbs(a - b) < EPSILON4;
 }
 
 // 临时数组
@@ -151,15 +149,15 @@ function windingArc(
     if (y > r || y < -r) {
         return 0;
     }
-    const tmp = Math.sqrt(r * r - y * y);
+    const tmp = mathSqrt(r * r - y * y);
     roots[0] = -tmp;
     roots[1] = tmp;
 
-    const dTheta = Math.abs(startAngle - endAngle);
-    if (dTheta < 1e-4) {
+    const dTheta = mathAbs(startAngle - endAngle);
+    if (dTheta < EPSILON4) {
         return 0;
     }
-    if (dTheta >= PI2 - 1e-4) {
+    if (dTheta >= PI2 - EPSILON4) {
         // Is a circle
         startAngle = 0;
         endAngle = PI2;
@@ -189,7 +187,7 @@ function windingArc(
     for (let i = 0; i < 2; i++) {
         const x_ = roots[i];
         if (x_ + cx > x) {
-            let angle = Math.atan2(y, x_);
+            let angle = mathATan2(y, x_);
             let dir = anticlockwise ? 1 : -1;
             if (angle < 0) {
                 angle = PI2 + angle;
@@ -198,7 +196,7 @@ function windingArc(
                 (angle >= startAngle && angle <= endAngle)
                 || (angle + PI2 >= startAngle && angle + PI2 <= endAngle)
             ) {
-                if (angle > Math.PI / 2 && angle < Math.PI * 1.5) {
+                if (angle > PI_OVER_2 && angle < PI * 1.5) {
                     dir = -dir;
                 }
                 w += dir;
@@ -320,8 +318,8 @@ function containPath(
                 // TODO Arc 旋转
                 i += 1;
                 const anticlockwise = !!(1 - data[i++]);
-                x1 = Math.cos(theta) * rx + cx;
-                y1 = Math.sin(theta) * ry + cy;
+                x1 = mathCos(theta) * rx + cx;
+                y1 = mathSin(theta) * ry + cy;
                 // 不是直接使用 arc 命令
                 if (!isFirst) {
                     w += windingLine(xi, yi, x1, y1, x, y);
@@ -347,8 +345,8 @@ function containPath(
                         _x, y
                     );
                 }
-                xi = Math.cos(theta + dTheta) * rx + cx;
-                yi = Math.sin(theta + dTheta) * ry + cy;
+                xi = mathCos(theta + dTheta) * rx + cx;
+                yi = mathSin(theta + dTheta) * ry + cy;
                 break;
             case CMD.R:
                 x0 = xi = data[i++];

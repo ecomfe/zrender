@@ -3,6 +3,7 @@
  */
 
 import Path, { PathProps } from '../Path';
+import { PI2 } from '../../core/math';
 
 export class RingShape {
     cx = 0
@@ -29,7 +30,6 @@ class Ring extends Path<RingProps> {
     buildPath(ctx: CanvasRenderingContext2D, shape: RingShape) {
         const x = shape.cx;
         const y = shape.cy;
-        const PI2 = Math.PI * 2;
         ctx.moveTo(x + shape.r, y);
         ctx.arc(x, y, shape.r, 0, PI2, false);
         ctx.moveTo(x + shape.r0, y);

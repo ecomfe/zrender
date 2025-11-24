@@ -1,10 +1,11 @@
 import { cubicSubdivide } from '../core/curve';
 import PathProxy from '../core/PathProxy';
+import { PI_OVER_2, EPSILON5, mathAbs, mathTan, mathCos, mathSin, mathMax, mathMin, mathSqrt } from '../core/math';
 
 const CMD = PathProxy.CMD;
 
 function aroundEqual(a: number, b: number) {
-    return Math.abs(a - b) < 1e-5;
+    return mathAbs(a - b) < EPSILON5;
 }
 
 export function pathToBezierCurves(path: PathProxy) {
@@ -36,14 +37,14 @@ export function pathToBezierCurves(path: PathProxy) {
 
     function addArc(startAngle: number, endAngle: number, cx: number, cy: number, rx: number, ry: number) {
         // https://stackoverflow.com/questions/1734745/how-to-create-circle-with-b%C3%A9zier-curves
-        const delta = Math.abs(endAngle - startAngle);
-        const len = Math.tan(delta / 4) * 4 / 3;
+        const delta = mathAbs(endAngle - startAngle);
+        const len = mathTan(delta / 4) * 4 / 3;
         const dir = endAngle < startAngle ? -1 : 1;
 
-        const c1 = Math.cos(startAngle);
-        const s1 = Math.sin(startAngle);
-        const c2 = Math.cos(endAngle);
-        const s2 = Math.sin(endAngle);
+        const c1 = mathCos(startAngle);
+        const s1 = mathSin(startAngle);
+        const c2 = mathCos(endAngle);
+        const s2 = mathSin(endAngle);
 
         const x1 = c1 * rx + cx;
         const y1 = s1 * ry + cy;
@@ -134,8 +135,8 @@ export function pathToBezierCurves(path: PathProxy) {
                 i += 1;
                 const anticlockwise = !data[i++];
 
-                x1 = Math.cos(startAngle) * rx + cx;
-                y1 = Math.sin(startAngle) * ry + cy;
+                x1 = mathCos(startAngle) * rx + cx;
+                y1 = mathSin(startAngle) * ry + cy;
                 if (isFirst) {
                     // 直接使用 arc 命令
                     // 第一个命令起点还未定义
@@ -148,14 +149,14 @@ export function pathToBezierCurves(path: PathProxy) {
                     addLine(xi, yi, x1, y1);
                 }
 
-                xi = Math.cos(endAngle) * rx + cx;
-                yi = Math.sin(endAngle) * ry + cy;
+                xi = mathCos(endAngle) * rx + cx;
+                yi = mathSin(endAngle) * ry + cy;
 
-                const step = (anticlockwise ? -1 : 1) * Math.PI / 2;
+                const step = (anticlockwise ? -1 : 1) * PI_OVER_2;
 
                 for (let angle = startAngle; anticlockwise ? angle > endAngle : angle < endAngle; angle += step) {
-                    const nextAngle = anticlockwise ? Math.max(angle + step, endAngle)
-                        : Math.min(angle + step, endAngle);
+                    const nextAngle = anticlockwise ? mathMax(angle + step, endAngle)
+                        : mathMin(angle + step, endAngle);
                     addArc(angle, nextAngle, cx, cy, rx, ry);
                 }
 
@@ -204,7 +205,7 @@ function adpativeBezier(
     // Determine if curve is straight enough
     let dx = x3 - x0;
     let dy = y3 - y0;
-    const d = Math.sqrt(dx * dx + dy * dy);
+    const d = mathSqrt(dx * dx + dy * dy);
     dx /= d;
     dy /= d;
 

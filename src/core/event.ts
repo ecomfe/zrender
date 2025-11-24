@@ -6,6 +6,7 @@ import Eventful from './Eventful';
 import env from './env';
 import { ZRRawEvent } from './types';
 import {isCanvasEl, transformCoordWithViewport} from './dom';
+import { mathAbs } from './math';
 
 const MOUSE_EVENT_REG = /^(?:mouse|pointer|contextmenu|drag|drop)|click/;
 const _calcOut: number[] = [];
@@ -221,7 +222,7 @@ function getWheelDeltaMayPolyfill(e: ZRRawEvent): number {
     // Test in Chrome and Safari (MacOS):
     // The sign is corrent.
     // The abs value is 99% corrent (inconsist case only like 62~63, 125~126 ...)
-    const delta = deltaY !== 0 ? Math.abs(deltaY) : Math.abs(deltaX);
+    const delta = deltaY !== 0 ? mathAbs(deltaY) : mathAbs(deltaX);
     const sign = deltaY > 0 ? -1
         : deltaY < 0 ? 1
         : deltaX > 0 ? -1
