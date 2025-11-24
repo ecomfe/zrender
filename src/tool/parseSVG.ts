@@ -20,6 +20,7 @@ import Gradient, { GradientObject } from '../graphic/Gradient';
 import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import { parseXML } from './parseXML';
 import * as colorTool from './color';
+import { DEGREE_TO_RADIAN, mathMin, mathTan } from '../core/math';
 
 
 interface SVGParserOption {
@@ -829,7 +830,6 @@ function splitNumberSequence(rawStr: string): string[] {
 
 
 const transformRegex = /(translate|scale|rotate|skewX|skewY|matrix)\(([\-\s0-9\.eE,]*)\)/g;
-const DEGREE_TO_ANGLE = Math.PI / 180;
 
 function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
     let transform = xmlNode.getAttribute('transform');
@@ -856,17 +856,17 @@ function parseTransformAttribute(xmlNode: SVGElement, node: Element): void {
                     break;
                 case 'rotate':
                     // TODO: zrender use different hand in coordinate system.
-                    matrix.rotate(mt, mt, -parseFloat(valueArr[0]) * DEGREE_TO_ANGLE, [
+                    matrix.rotate(mt, mt, -parseFloat(valueArr[0]) * DEGREE_TO_RADIAN, [
                         parseFloat(valueArr[1] || '0'),
                         parseFloat(valueArr[2] || '0')
                     ]);
                     break;
                 case 'skewX':
-                    const sx = Math.tan(parseFloat(valueArr[0]) * DEGREE_TO_ANGLE);
+                    const sx = mathTan(parseFloat(valueArr[0]) * DEGREE_TO_RADIAN);
                     matrix.mul(mt, [1, 0, sx, 1, 0, 0], mt);
                     break;
                 case 'skewY':
-                    const sy = Math.tan(parseFloat(valueArr[0]) * DEGREE_TO_ANGLE);
+                    const sy = mathTan(parseFloat(valueArr[0]) * DEGREE_TO_RADIAN);
                     matrix.mul(mt, [1, sy, 0, 1, 0, 0], mt);
                     break;
                 case 'matrix':
@@ -945,7 +945,7 @@ export function makeViewBoxTransform(viewBoxRect: RectLike, boundingRect: RectLi
 } {
     const scaleX = boundingRect.width / viewBoxRect.width;
     const scaleY = boundingRect.height / viewBoxRect.height;
-    const scale = Math.min(scaleX, scaleY);
+    const scale = mathMin(scaleX, scaleY);
     // preserveAspectRatio 'xMidYMid'
 
     return {

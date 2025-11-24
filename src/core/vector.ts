@@ -3,6 +3,7 @@
  * Use zrender.Point class instead
  */
 import { MatrixArray } from './matrix';
+import { mathMax, mathMin, mathSqrt } from './math';
 
 /* global Float32Array */
 
@@ -80,7 +81,7 @@ export function sub<T extends VectorArray>(out: T, v1: VectorArray, v2: VectorAr
  * 向量长度
  */
 export function len(v: VectorArray): number {
-    return Math.sqrt(lenSquare(v));
+    return mathSqrt(lenSquare(v));
 }
 export const length = len;
 
@@ -146,7 +147,7 @@ export function normalize<T extends VectorArray>(out: T, v: VectorArray): T {
  * 计算向量间距离
  */
 export function distance(v1: VectorArray, v2: VectorArray): number {
-    return Math.sqrt(
+    return mathSqrt(
         (v1[0] - v2[0]) * (v1[0] - v2[0])
         + (v1[1] - v2[1]) * (v1[1] - v2[1])
     );
@@ -195,8 +196,8 @@ export function applyTransform<T extends VectorArray>(out: T, v: VectorArray, m:
  * 求两个向量最小值
  */
 export function min<T extends VectorArray>(out: T, v1: VectorArray, v2: VectorArray): T {
-    out[0] = Math.min(v1[0], v2[0]);
-    out[1] = Math.min(v1[1], v2[1]);
+    out[0] = mathMin(v1[0], v2[0]);
+    out[1] = mathMin(v1[1], v2[1]);
     return out;
 }
 
@@ -204,7 +205,7 @@ export function min<T extends VectorArray>(out: T, v1: VectorArray, v2: VectorAr
  * 求两个向量最大值
  */
 export function max<T extends VectorArray>(out: T, v1: VectorArray, v2: VectorArray): T {
-    out[0] = Math.max(v1[0], v2[0]);
-    out[1] = Math.max(v1[1], v2[1]);
+    out[0] = mathMax(v1[0], v2[0]);
+    out[1] = mathMax(v1[1], v2[1]);
     return out;
 }

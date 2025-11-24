@@ -3,6 +3,7 @@ import { RadialGradientObject } from '../graphic/RadialGradient';
 import { GradientObject } from '../graphic/Gradient';
 import { RectLike } from '../core/BoundingRect';
 import Path from '../graphic/Path';
+import { mathMin } from '../core/math';
 
 function isSafeNum(num: number) {
     // NaN、Infinity、undefined、'xx'
@@ -46,7 +47,7 @@ export function createRadialGradient(
 ) {
     const width = rect.width;
     const height = rect.height;
-    const min = Math.min(width, height);
+    const min = mathMin(width, height);
 
     let x = obj.x == null ? 0.5 : obj.x;
     let y = obj.y == null ? 0.5 : obj.y;

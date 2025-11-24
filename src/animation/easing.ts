@@ -4,6 +4,8 @@
  * @exports zrender/animation/easing
  */
 
+import { PI_OVER_2, PI2, PI, mathCos, mathSin, mathPow, mathSqrt, mathASin } from '../core/math';
+
 type easingFunc = (percent: number) => number;
 
 export type AnimationEasing = keyof typeof easingFuncs | easingFunc;
@@ -126,21 +128,21 @@ const easingFuncs = {
     * @return {number}
     */
     sinusoidalIn(k: number) {
-        return 1 - Math.cos(k * Math.PI / 2);
+        return 1 - mathCos(k * PI_OVER_2);
     },
     /**
     * @param {number} k
     * @return {number}
     */
     sinusoidalOut(k: number) {
-        return Math.sin(k * Math.PI / 2);
+        return mathSin(k * PI_OVER_2);
     },
     /**
     * @param {number} k
     * @return {number}
     */
     sinusoidalInOut(k: number) {
-        return 0.5 * (1 - Math.cos(Math.PI * k));
+        return 0.5 * (1 - mathCos(PI * k));
     },
 
     // 指数曲线的缓动（2^t）
@@ -149,14 +151,14 @@ const easingFuncs = {
     * @return {number}
     */
     exponentialIn(k: number) {
-        return k === 0 ? 0 : Math.pow(1024, k - 1);
+        return k === 0 ? 0 : mathPow(1024, k - 1);
     },
     /**
     * @param {number} k
     * @return {number}
     */
     exponentialOut(k: number) {
-        return k === 1 ? 1 : 1 - Math.pow(2, -10 * k);
+        return k === 1 ? 1 : 1 - mathPow(2, -10 * k);
     },
     /**
     * @param {number} k
@@ -170,9 +172,9 @@ const easingFuncs = {
             return 1;
         }
         if ((k *= 2) < 1) {
-            return 0.5 * Math.pow(1024, k - 1);
+            return 0.5 * mathPow(1024, k - 1);
         }
-        return 0.5 * (-Math.pow(2, -10 * (k - 1)) + 2);
+        return 0.5 * (-mathPow(2, -10 * (k - 1)) + 2);
     },
 
     // 圆形曲线的缓动（sqrt(1-t^2)）
@@ -181,14 +183,14 @@ const easingFuncs = {
     * @return {number}
     */
     circularIn(k: number) {
-        return 1 - Math.sqrt(1 - k * k);
+        return 1 - mathSqrt(1 - k * k);
     },
     /**
     * @param {number} k
     * @return {number}
     */
     circularOut(k: number) {
-        return Math.sqrt(1 - (--k * k));
+        return mathSqrt(1 - (--k * k));
     },
     /**
     * @param {number} k
@@ -196,9 +198,9 @@ const easingFuncs = {
     */
     circularInOut(k: number) {
         if ((k *= 2) < 1) {
-            return -0.5 * (Math.sqrt(1 - k * k) - 1);
+            return -0.5 * (mathSqrt(1 - k * k) - 1);
         }
-        return 0.5 * (Math.sqrt(1 - (k -= 2) * k) + 1);
+        return 0.5 * (mathSqrt(1 - (k -= 2) * k) + 1);
     },
 
     // 创建类似于弹簧在停止前来回振荡的动画
@@ -221,10 +223,10 @@ const easingFuncs = {
             s = p / 4;
         }
         else {
-            s = p * Math.asin(1 / a) / (2 * Math.PI);
+            s = p * mathASin(1 / a) / PI2;
         }
-        return -(a * Math.pow(2, 10 * (k -= 1))
-                    * Math.sin((k - s) * (2 * Math.PI) / p));
+        return -(a * mathPow(2, 10 * (k -= 1))
+                    * mathSin((k - s) * PI2 / p));
     },
     /**
     * @param {number} k
@@ -245,38 +247,38 @@ const easingFuncs = {
             s = p / 4;
         }
         else {
-            s = p * Math.asin(1 / a) / (2 * Math.PI);
+            s = p * mathASin(1 / a) / PI2;
         }
-        return (a * Math.pow(2, -10 * k)
-                    * Math.sin((k - s) * (2 * Math.PI) / p) + 1);
+        return (a * mathPow(2, -10 * k)
+                    * mathSin((k - s) * PI2 / p) + 1);
     },
     /**
     * @param {number} k
     * @return {number}
     */
     elasticInOut(k: number) {
-        let s;
-        let a = 0.1;
-        let p = 0.4;
         if (k === 0) {
             return 0;
         }
         if (k === 1) {
             return 1;
         }
+        let s;
+        let a = 0.1;
+        const p = 0.4;
         if (!a || a < 1) {
             a = 1;
             s = p / 4;
         }
         else {
-            s = p * Math.asin(1 / a) / (2 * Math.PI);
+            s = p * mathASin(1 / a) / PI2;
         }
         if ((k *= 2) < 1) {
-            return -0.5 * (a * Math.pow(2, 10 * (k -= 1))
-                * Math.sin((k - s) * (2 * Math.PI) / p));
+            return -0.5 * (a * mathPow(2, 10 * (k -= 1))
+                * mathSin((k - s) * PI2 / p));
         }
-        return a * Math.pow(2, -10 * (k -= 1))
-                * Math.sin((k - s) * (2 * Math.PI) / p) * 0.5 + 1;
+        return a * mathPow(2, -10 * (k -= 1))
+                * mathSin((k - s) * PI2 / p) * 0.5 + 1;
 
     },
 
@@ -286,7 +288,7 @@ const easingFuncs = {
     * @return {number}
     */
     backIn(k: number) {
-        let s = 1.70158;
+        const s = 1.70158;
         return k * k * ((s + 1) * k - s);
     },
     /**
@@ -294,7 +296,7 @@ const easingFuncs = {
     * @return {number}
     */
     backOut(k: number) {
-        let s = 1.70158;
+        const s = 1.70158;
         return --k * k * ((s + 1) * k + s) + 1;
     },
     /**
@@ -302,7 +304,7 @@ const easingFuncs = {
     * @return {number}
     */
     backInOut(k: number) {
-        let s = 1.70158 * 1.525;
+        const s = 1.70158 * 1.525;
         if ((k *= 2) < 1) {
             return 0.5 * (k * k * ((s + 1) * k - s));
         }

@@ -1,4 +1,5 @@
 import PathProxy from '../../core/PathProxy';
+import { PI, PI_OVER_2 } from '../../core/math';
 
 export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     x: number
@@ -77,11 +78,11 @@ export function buildPath(ctx: CanvasRenderingContext2D | PathProxy, shape: {
     }
     ctx.moveTo(x + r1, y);
     ctx.lineTo(x + width - r2, y);
-    r2 !== 0 && ctx.arc(x + width - r2, y + r2, r2, -Math.PI / 2, 0);
+    r2 !== 0 && ctx.arc(x + width - r2, y + r2, r2, -PI_OVER_2, 0);
     ctx.lineTo(x + width, y + height - r3);
-    r3 !== 0 && ctx.arc(x + width - r3, y + height - r3, r3, 0, Math.PI / 2);
+    r3 !== 0 && ctx.arc(x + width - r3, y + height - r3, r3, 0, PI_OVER_2);
     ctx.lineTo(x + r4, y + height);
-    r4 !== 0 && ctx.arc(x + r4, y + height - r4, r4, Math.PI / 2, Math.PI);
+    r4 !== 0 && ctx.arc(x + r4, y + height - r4, r4, PI_OVER_2, PI);
     ctx.lineTo(x, y + r1);
-    r1 !== 0 && ctx.arc(x + r1, y + r1, r1, Math.PI, Math.PI * 1.5);
+    r1 !== 0 && ctx.arc(x + r1, y + r1, r1, PI, PI * 1.5);
 }

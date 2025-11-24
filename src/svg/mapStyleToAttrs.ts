@@ -5,11 +5,11 @@ import TSpan, { TSpanStyleProps } from '../graphic/TSpan';
 import { getLineDash } from '../canvas/dashStyle';
 import { map } from '../core/util';
 import { normalizeColor } from './helper';
+import { mathRound } from '../core/math';
 
 type AllStyleOption = PathStyleProps | TSpanStyleProps | ImageStyleProps;
 
 const NONE = 'none';
-const mathRound = Math.round;
 
 function pathHasFill(style: AllStyleOption): style is PathStyleProps {
     const fill = (style as PathStyleProps).fill;

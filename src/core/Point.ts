@@ -1,4 +1,5 @@
 import { MatrixArray } from './matrix';
+import { mathSqrt } from './math';
 
 export interface PointLike {
     x: number
@@ -86,7 +87,7 @@ export default class Point {
      * Get length of point
      */
     len() {
-        return Math.sqrt(this.x * this.x + this.y * this.y);
+        return mathSqrt(this.x * this.x + this.y * this.y);
     }
 
     /**
@@ -112,7 +113,7 @@ export default class Point {
     distance(other: PointLike) {
         const dx = this.x - other.x;
         const dy = this.y - other.y;
-        return Math.sqrt(dx * dx + dy * dy);
+        return mathSqrt(dx * dx + dy * dy);
     }
 
     /**
@@ -169,7 +170,7 @@ export default class Point {
     }
 
     static len(p: PointLike) {
-        return Math.sqrt(p.x * p.x + p.y * p.y);
+        return mathSqrt(p.x * p.x + p.y * p.y);
     }
 
     static lenSquare(p: PointLike) {

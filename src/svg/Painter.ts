@@ -29,6 +29,7 @@ import patch, { updateAttrs } from './patch';
 import { getSize } from '../canvas/helper';
 import { GradientObject } from '../graphic/Gradient';
 import { PatternObject } from '../graphic/Pattern';
+import { mathMax } from '../core/math';
 
 let svgId = 0;
 
@@ -222,7 +223,7 @@ class SVGPainter implements PainterBase {
                 const prevLen = prevClipPaths && prevClipPaths.length || 0;
                 let lca;
                 // Find the lowest common ancestor
-                for (lca = Math.max(len - 1, prevLen - 1); lca >= 0; lca--) {
+                for (lca = mathMax(len - 1, prevLen - 1); lca >= 0; lca--) {
                     if (clipPaths && prevClipPaths
                         && clipPaths[lca] === prevClipPaths[lca]
                     ) {

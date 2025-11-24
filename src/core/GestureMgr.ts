@@ -5,6 +5,7 @@
 import * as eventUtil from './event';
 import { ZRRawTouchEvent, ZRPinchEvent, Dictionary } from './types';
 import Displayable from '../graphic/Displayable';
+import { mathSqrt } from './math';
 
 interface TrackItem {
     points: number[][]
@@ -69,7 +70,7 @@ function dist(pointPair: number[][]): number {
     const dx = pointPair[1][0] - pointPair[0][0];
     const dy = pointPair[1][1] - pointPair[0][1];
 
-    return Math.sqrt(dx * dx + dy * dy);
+    return mathSqrt(dx * dx + dy * dy);
 }
 
 function center(pointPair: number[][]): number[] {

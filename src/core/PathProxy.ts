@@ -12,6 +12,7 @@ import BoundingRect from './BoundingRect';
 import {devicePixelRatio as dpr} from '../config';
 import { fromLine, fromCubic, fromQuadratic, fromArc } from './bbox';
 import { cubicLength, cubicSubdivide, quadraticLength, quadraticSubdivide } from './curve';
+import { PI, PI2, mathMin, mathMax, mathCos, mathSin, mathAbs, mathRound, mathSqrt } from './math';
 
 const CMD = {
     M: 1,
@@ -45,14 +46,6 @@ const min: number[] = [];
 const max: number[] = [];
 const min2: number[] = [];
 const max2: number[] = [];
-const mathMin = Math.min;
-const mathMax = Math.max;
-const mathCos = Math.cos;
-const mathSin = Math.sin;
-const mathAbs = Math.abs;
-
-const PI = Math.PI;
-const PI2 = PI * 2;
 
 const hasTypedArray = typeof Float32Array !== 'undefined';
 
@@ -60,7 +53,7 @@ const tmpAngles: number[] = [];
 
 function modPI2(radian: number) {
     // It's much more stable to mod N instedof PI
-    const n = Math.round(radian / PI * 1e8) / 1e8;
+    const n = mathRound(radian / PI * 1e8) / 1e8;
     return (n % 2) * PI;
 }
 /**
@@ -647,7 +640,7 @@ export default class PathProxy {
                     const dx = x2 - xi;
                     const dy = y2 - yi;
                     if (mathAbs(dx) > ux || mathAbs(dy) > uy || i === len - 1) {
-                        l = Math.sqrt(dx * dx + dy * dy);
+                        l = mathSqrt(dx * dx + dy * dy);
                         xi = x2;
                         yi = y2;
                     }
@@ -695,7 +688,7 @@ export default class PathProxy {
                     }
 
                     // TODO Ellipse
-                    l = mathMax(rx, ry) * mathMin(PI2, Math.abs(delta));
+                    l = mathMax(rx, ry) * mathMin(PI2, mathAbs(delta));
 
                     xi = mathCos(endAngle) * rx + cx;
                     yi = mathSin(endAngle) * ry + cy;
@@ -711,7 +704,7 @@ export default class PathProxy {
                 case CMD.Z: {
                     const dx = x0 - xi;
                     const dy = y0 - yi;
-                    l = Math.sqrt(dx * dx + dy * dy);
+                    l = mathSqrt(dx * dx + dy * dy);
 
                     xi = x0;
                     yi = y0;

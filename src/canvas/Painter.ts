@@ -14,6 +14,7 @@ import BoundingRect from '../core/BoundingRect';
 import { REDRAW_BIT } from '../graphic/constants';
 import { getSize } from './helper';
 import type IncrementalDisplayable from '../graphic/IncrementalDisplayable';
+import { mathRandom } from '../core/math';
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 const CANVAS_ZLEVEL = 314159;
@@ -236,7 +237,7 @@ export default class CanvasPainter implements PainterBase {
 
         const zlevelList = this._zlevelList;
 
-        this._redrawId = Math.random();
+        this._redrawId = mathRandom();
 
         this._paintList(list, prevList, paintAll, this._redrawId);
 

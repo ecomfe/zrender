@@ -7,12 +7,8 @@ import {
     distSquare as v2DistSquare,
     VectorArray
 } from './vector';
+import { EPSILON4, EPSILON8, mathACos, mathCos, mathPow, mathSin, mathSqrt } from './math';
 
-const mathPow = Math.pow;
-const mathSqrt = Math.sqrt;
-
-const EPSILON = 1e-8;
-const EPSILON_NUMERIC = 1e-4;
 
 const THREE_SQRT = mathSqrt(3);
 const ONE_THIRD = 1 / 3;
@@ -23,10 +19,10 @@ const _v1 = v2Create();
 const _v2 = v2Create();
 
 function isAroundZero(val: number) {
-    return val > -EPSILON && val < EPSILON;
+    return val > -EPSILON8 && val < EPSILON8;
 }
 function isNotAroundZero(val: number) {
-    return val > EPSILON || val < -EPSILON;
+    return val > EPSILON8 || val < -EPSILON8;
 }
 /**
  * 计算三次贝塞尔值
@@ -112,13 +108,13 @@ export function cubicRootAt(p0: number, p1: number, p2: number, p3: number, val:
         }
         else {
             const T = (2 * A * b - 3 * a * B) / (2 * mathSqrt(A * A * A));
-            const theta = Math.acos(T) / 3;
+            const theta = mathACos(T) / 3;
             const ASqrt = mathSqrt(A);
-            const tmp = Math.cos(theta);
+            const tmp = mathCos(theta);
 
             const t1 = (-b - 2 * ASqrt * tmp) / (3 * a);
-            const t2 = (-b + ASqrt * (tmp + THREE_SQRT * Math.sin(theta))) / (3 * a);
-            const t3 = (-b + ASqrt * (tmp - THREE_SQRT * Math.sin(theta))) / (3 * a);
+            const t2 = (-b + ASqrt * (tmp + THREE_SQRT * mathSin(theta))) / (3 * a);
+            const t3 = (-b + ASqrt * (tmp - THREE_SQRT * mathSin(theta))) / (3 * a);
             if (t1 >= 0 && t1 <= 1) {
                 roots[n++] = t1;
             }
@@ -230,7 +226,7 @@ export function cubicProjectPoint(
 
     // At most 32 iteration
     for (let i = 0; i < 32; i++) {
-        if (interval < EPSILON_NUMERIC) {
+        if (interval < EPSILON4) {
             break;
         }
         prev = t - interval;
@@ -291,7 +287,7 @@ export function cubicLength(
         const dx = x - px;
         const dy = y - py;
 
-        d += Math.sqrt(dx * dx + dy * dy);
+        d += mathSqrt(dx * dx + dy * dy);
 
         px = x;
         py = y;
@@ -430,7 +426,7 @@ export function quadraticProjectPoint(
 
     // At most 32 iteration
     for (let i = 0; i < 32; i++) {
-        if (interval < EPSILON_NUMERIC) {
+        if (interval < EPSILON4) {
             break;
         }
         const prev = t - interval;
@@ -490,7 +486,7 @@ export function quadraticLength(
         const dx = x - px;
         const dy = y - py;
 
-        d += Math.sqrt(dx * dx + dy * dy);
+        d += mathSqrt(dx * dx + dy * dy);
 
         px = x;
         py = y;

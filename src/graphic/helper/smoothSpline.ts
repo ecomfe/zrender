@@ -3,6 +3,7 @@
  */
 
 import {distance as v2Distance, VectorArray} from '../../core/vector';
+import { mathFloor } from '../../core/math';
 
 function interpolate(
     p0: number, p1: number, p2: number, p3: number, t: number, t2: number, t3: number
@@ -27,7 +28,7 @@ export default function smoothSpline(points: VectorArray[], isLoop?: boolean): V
     segs = segs < len ? len : segs;
     for (let i = 0; i < segs; i++) {
         const pos = i / (segs - 1) * (isLoop ? len : len - 1);
-        const idx = Math.floor(pos);
+        const idx = mathFloor(pos);
 
         const w = pos - idx;
 

@@ -12,6 +12,7 @@ import Storage from './Storage';
 import Element, {ElementEvent} from './Element';
 import CanvasPainter from './canvas/Painter';
 import BoundingRect from './core/BoundingRect';
+import { PI, PI2, mathCos, mathSin } from './core/math';
 
 /**
  * [The interface between `Handler` and `HandlerProxy`]:
@@ -382,12 +383,11 @@ class Handler extends Eventful {
              */
             if (candidates.length) {
                 const rStep = 4;
-                const thetaStep = Math.PI / 12;
-                const PI2 = Math.PI * 2;
+                const thetaStep = PI / 12;
                 for (let r = 0; r < targetSizeHalf; r += rStep) {
                     for (let theta = 0; theta < PI2; theta += thetaStep) {
-                        const x1 = x + r * Math.cos(theta);
-                        const y1 = y + r * Math.sin(theta);
+                        const x1 = x + r * mathCos(theta);
+                        const y1 = y + r * mathSin(theta);
                         setHoverTarget(candidates, out, x1, y1, exclude);
                         if (out.target) {
                             return out;

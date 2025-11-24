@@ -1,7 +1,6 @@
 
 import {normalizeRadian} from './util';
-
-const PI2 = Math.PI * 2;
+import { PI2, EPSILON4, mathAbs, mathSqrt, mathATan2 } from '../core/math';
 
 /**
  * 圆弧描边包含判断
@@ -19,13 +18,13 @@ export function containStroke(
 
     x -= cx;
     y -= cy;
-    const d = Math.sqrt(x * x + y * y);
+    const d = mathSqrt(x * x + y * y);
 
     if ((d - _l > r) || (d + _l < r)) {
         return false;
     }
     // TODO
-    if (Math.abs(startAngle - endAngle) % PI2 < 1e-4) {
+    if (mathAbs(startAngle - endAngle) % PI2 < EPSILON4) {
         // Is a circle
         return true;
     }
@@ -42,7 +41,7 @@ export function containStroke(
         endAngle += PI2;
     }
 
-    let angle = Math.atan2(y, x);
+    let angle = mathATan2(y, x);
     if (angle < 0) {
         angle += PI2;
     }

@@ -6,6 +6,7 @@
 /* global Float32Array */
 
 import {VectorArray} from './vector';
+import { mathCos, mathSin } from './math';
 
 export type MatrixArray = number[]
 /**
@@ -92,8 +93,8 @@ export function rotate(
     const ab = a[1];
     const ad = a[3];
     const aty = a[5];
-    const st = Math.sin(rad);
-    const ct = Math.cos(rad);
+    const st = mathSin(rad);
+    const ct = mathCos(rad);
 
     out[0] = aa * ct + ab * st;
     out[1] = -aa * st + ab * ct;

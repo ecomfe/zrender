@@ -3,13 +3,14 @@
  */
 
 import Path, { PathProps } from '../Path';
+import { mathCos, mathMax, mathSin, PI2 } from '../../core/math';
 
 export class ArcShape {
     cx = 0;
     cy = 0;
     r = 0;
     startAngle = 0;
-    endAngle = Math.PI * 2
+    endAngle = PI2
     clockwise? = true
 }
 
@@ -40,13 +41,13 @@ class Arc extends Path<ArcProps> {
 
         const x = shape.cx;
         const y = shape.cy;
-        const r = Math.max(shape.r, 0);
+        const r = mathMax(shape.r, 0);
         const startAngle = shape.startAngle;
         const endAngle = shape.endAngle;
         const clockwise = shape.clockwise;
 
-        const unitX = Math.cos(startAngle);
-        const unitY = Math.sin(startAngle);
+        const unitX = mathCos(startAngle);
+        const unitY = mathSin(startAngle);
 
         ctx.moveTo(unitX * r + x, unitY * r + y);
         ctx.arc(x, y, r, startAngle, endAngle, !clockwise);

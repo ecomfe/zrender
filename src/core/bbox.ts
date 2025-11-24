@@ -4,12 +4,7 @@
 
 import * as vec2 from './vector';
 import * as curve from './curve';
-
-const mathMin = Math.min;
-const mathMax = Math.max;
-const mathSin = Math.sin;
-const mathCos = Math.cos;
-const PI2 = Math.PI * 2;
+import { PI2, PI_OVER_2, mathMin, mathMax, mathSin, mathCos, EPSILON4, mathAbs } from './math';
 
 const start = vec2.create();
 const end = vec2.create();
@@ -130,10 +125,10 @@ export function fromArc(
     const vec2Min = vec2.min;
     const vec2Max = vec2.max;
 
-    const diff = Math.abs(startAngle - endAngle);
+    const diff = mathAbs(startAngle - endAngle);
 
 
-    if (diff % PI2 < 1e-4 && diff > 1e-4) {
+    if (diff % PI2 < EPSILON4 && diff > EPSILON4) {
         // Is a circle
         min[0] = x - rx;
         min[1] = y - ry;
@@ -175,7 +170,7 @@ export function fromArc(
 
     // const number = 0;
     // const step = (anticlockwise ? -Math.PI : Math.PI) / 2;
-    for (let angle = 0; angle < endAngle; angle += Math.PI / 2) {
+    for (let angle = 0; angle < endAngle; angle += PI_OVER_2) {
         if (angle > startAngle) {
             extremity[0] = mathCos(angle) * rx + x;
             extremity[1] = mathSin(angle) * ry + y;

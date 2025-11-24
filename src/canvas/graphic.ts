@@ -11,7 +11,7 @@ import Path, { PathStyleProps } from '../graphic/Path';
 import ZRImage, { ImageStyleProps } from '../graphic/Image';
 import TSpan, {TSpanStyleProps} from '../graphic/TSpan';
 import { MatrixArray } from '../core/matrix';
-import { RADIAN_TO_DEGREE } from '../core/util';
+import { mathMax, mathMin, RADIAN_TO_DEGREE } from '../core/math';
 import { getLineDash } from './dashStyle';
 import { REDRAW_BIT, SHAPE_CHANGED_BIT } from '../graphic/constants';
 import type IncrementalDisplayable from '../graphic/IncrementalDisplayable';
@@ -383,7 +383,7 @@ function bindCommonProps(
         flushPathDrawn(ctx, scope);
         styleChanged = true;
         // Ensure opacity is between 0 ~ 1. Invalid opacity will lead to a failure set and use the leaked opacity from the previous.
-        const opacity = Math.max(Math.min(style.opacity, 1), 0);
+        const opacity = mathMax(mathMin(style.opacity, 1), 0);
         ctx.globalAlpha = isNaN(opacity) ? DEFAULT_COMMON_STYLE.opacity : opacity;
     }
 

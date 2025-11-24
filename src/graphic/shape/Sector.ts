@@ -1,5 +1,6 @@
 import Path, { PathProps } from '../Path';
 import * as roundSectorHelper from '../helper/roundSector';
+import { PI2 } from '../../core/math';
 
 export class SectorShape {
     cx = 0
@@ -7,7 +8,7 @@ export class SectorShape {
     r0 = 0
     r = 0
     startAngle = 0
-    endAngle = Math.PI * 2
+    endAngle = PI2
     clockwise = true
     /**
      * Corner radius of sector

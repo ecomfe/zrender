@@ -2,7 +2,7 @@
 
 import { MatrixArray } from '../core/matrix';
 import Transformable, { TransformProp } from '../core/Transformable';
-import { RADIAN_TO_DEGREE, retrieve2, logError, isFunction } from '../core/util';
+import { retrieve2, logError, isFunction } from '../core/util';
 import Displayable from '../graphic/Displayable';
 import { GradientObject } from '../graphic/Gradient';
 import { LinearGradientObject } from '../graphic/LinearGradient';
@@ -11,8 +11,7 @@ import { ImagePatternObject, PatternObject, SVGPatternObject } from '../graphic/
 import { RadialGradientObject } from '../graphic/RadialGradient';
 import { parse } from '../tool/color';
 import env from '../core/env';
-
-const mathRound = Math.round;
+import { RADIAN_TO_DEGREE, mathRound, mathMax, mathLog, mathCeil, EPSILON4 } from '../core/math';
 
 export function normalizeColor(color: string): { color: string; opacity: number; } {
     let opacity;
@@ -32,9 +31,12 @@ export function normalizeColor(color: string): { color: string; opacity: number;
         opacity: opacity == null ? 1 : opacity
     };
 }
-const EPSILON = 1e-4;
+
+/**
+ * EPSILON: 1e-4
+ */
 export function isAroundZero(transform: number) {
-    return transform < EPSILON && transform > -EPSILON;
+    return transform < EPSILON4 && transform > -EPSILON4;
 }
 
 export function round3(transform: number) {
@@ -140,8 +142,8 @@ export function getIdURL(id: string) {
 
 export function getPathPrecision(el: Path) {
     const scale = el.getGlobalScale();
-    const size = Math.max(scale[0], scale[1]);
-    return Math.max(Math.ceil(Math.log(size) / Math.log(10)), 1);
+    const size = mathMax(scale[0], scale[1]);
+    return mathMax(mathCeil(mathLog(size) / mathLog(10)), 1);
 }
 
 export function getSRTTransformString(

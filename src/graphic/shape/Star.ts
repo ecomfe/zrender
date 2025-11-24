@@ -4,10 +4,8 @@
  */
 
 import Path, { PathProps } from '../Path';
+import { PI, PI2, mathSin, mathCos, PI_OVER_2 } from '../../core/math';
 
-const PI = Math.PI;
-const cos = Math.cos;
-const sin = Math.sin;
 
 export class StarShape {
     cx = 0
@@ -49,22 +47,22 @@ class Star extends Path<StarProps> {
             r0 = n > 4
                 // 相隔的外部顶点的连线的交点，
                 // 被取为内部交点，以此计算r0
-                ? r * cos(2 * PI / n) / cos(PI / n)
+                ? r * mathCos(PI2 / n) / mathCos(PI / n)
                 // 二三四角星的特殊处理
                 : r / 3;
         }
 
         const dStep = PI / n;
-        let deg = -PI / 2;
-        const xStart = x + r * cos(deg);
-        const yStart = y + r * sin(deg);
+        let deg = -PI_OVER_2;
+        const xStart = x + r * mathCos(deg);
+        const yStart = y + r * mathSin(deg);
         deg += dStep;
 
         // 记录边界点，用于判断inside
         ctx.moveTo(xStart, yStart);
         for (let i = 0, end = n * 2 - 1, ri; i < end; i++) {
             ri = i % 2 === 0 ? r0 : r;
-            ctx.lineTo(x + ri * cos(deg), y + ri * sin(deg));
+            ctx.lineTo(x + ri * mathCos(deg), y + ri * mathSin(deg));
             deg += dStep;
         }
 

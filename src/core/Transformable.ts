@@ -1,5 +1,6 @@
 import * as matrix from './matrix';
 import * as vector from './vector';
+import { PI_OVER_2, EPSILON10, mathAbs, mathSqrt, mathTan, mathATan2, mathCos } from './math';
 
 const mIdentity = matrix.identity;
 
@@ -12,7 +13,6 @@ function isNotAroundZero(val: number) {
 const scaleTmp: vector.VectorArray = [];
 const tmpTransform: matrix.MatrixArray = [];
 const originTransform = matrix.create();
-const abs = Math.abs;
 
 class Transformable {
 
@@ -190,11 +190,11 @@ class Transformable {
         let sx = m[0] * m[0] + m[1] * m[1];
         let sy = m[2] * m[2] + m[3] * m[3];
 
-        const rotation = Math.atan2(m[1], m[0]);
+        const rotation = mathATan2(m[1], m[0]);
 
-        const shearX = Math.PI / 2 + rotation - Math.atan2(m[3], m[2]);
-        sy = Math.sqrt(sy) * Math.cos(shearX);
-        sx = Math.sqrt(sx);
+        const shearX = PI_OVER_2 + rotation - mathATan2(m[3], m[2]);
+        sy = mathSqrt(sy) * mathCos(shearX);
+        sx = mathSqrt(sx);
 
         this.skewX = shearX;
         this.skewY = 0;
@@ -248,8 +248,8 @@ class Transformable {
             out[1] = 1;
             return out;
         }
-        out[0] = Math.sqrt(m[0] * m[0] + m[1] * m[1]);
-        out[1] = Math.sqrt(m[2] * m[2] + m[3] * m[3]);
+        out[0] = mathSqrt(m[0] * m[0] + m[1] * m[1]);
+        out[1] = mathSqrt(m[2] * m[2] + m[3] * m[3]);
         if (m[0] < 0) {
             out[0] = -out[0];
         }
@@ -289,8 +289,8 @@ class Transformable {
         // Determinant of `m` means how much the area is enlarged by the
         // transformation. So its square root can be used as a scale factor
         // for width.
-        return m && abs(m[0] - 1) > 1e-10 && abs(m[3] - 1) > 1e-10
-            ? Math.sqrt(abs(m[0] * m[3] - m[2] * m[1]))
+        return m && mathAbs(m[0] - 1) > EPSILON10 && mathAbs(m[3] - 1) > EPSILON10
+            ? mathSqrt(mathAbs(m[0] * m[3] - m[2] * m[1]))
             : 1;
     }
 
@@ -311,9 +311,9 @@ class Transformable {
         const rotation = target.rotation || 0;
         const x = target.x;
         const y = target.y;
-        const skewX = target.skewX ? Math.tan(target.skewX) : 0;
+        const skewX = target.skewX ? mathTan(target.skewX) : 0;
         // TODO: zrender use different hand in coordinate system and y axis is inversed.
-        const skewY = target.skewY ? Math.tan(-target.skewY) : 0;
+        const skewY = target.skewY ? mathTan(-target.skewY) : 0;
 
         // The order of transform (-anchor * -origin * scale * skew * rotate * origin * translate).
         // We merge (-origin * scale * skew) into one. Also did identity in these operations.

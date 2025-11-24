@@ -20,10 +20,8 @@
 import Point, { PointLike } from './Point';
 import BoundingRect, { BoundingRectIntersectOpt, createIntersectContext } from './BoundingRect';
 import { MatrixArray } from './matrix';
+import { mathMin, mathMax, mathAbs } from './math';
 
-const mathMin = Math.min;
-const mathMax = Math.max;
-const mathAbs = Math.abs;
 
 const _extent = [0, 0];
 const _extent2 = [0, 0];

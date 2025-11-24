@@ -1,12 +1,6 @@
 import { PathRebuilder } from '../core/PathProxy';
 import { isAroundZero } from './helper';
-
-const mathSin = Math.sin;
-const mathCos = Math.cos;
-const PI = Math.PI;
-const PI2 = Math.PI * 2;
-const degree = 180 / PI;
-
+import { PI, PI2, mathSin, mathCos, RADIAN_TO_DEGREE, mathPow, mathAbs, mathRound } from '../core/math';
 
 export default class SVGPathRebuilder implements PathRebuilder {
     private _d: (string | number)[]
@@ -22,7 +16,7 @@ export default class SVGPathRebuilder implements PathRebuilder {
         this._d = [];
         this._str = '';
 
-        this._p = Math.pow(10, precision || 4);
+        this._p = mathPow(10, precision || 4);
     }
     moveTo(x: number, y: number) {
         this._add('M', x, y);
@@ -50,7 +44,7 @@ export default class SVGPathRebuilder implements PathRebuilder {
         let dTheta = endAngle - startAngle;
         const clockwise = !anticlockwise;
 
-        const dThetaPositive = Math.abs(dTheta);
+        const dThetaPositive = mathAbs(dTheta);
         const isCircle = isAroundZero(dThetaPositive - PI2)
             || (clockwise ? dTheta >= PI2 : -dTheta >= PI2);
 
@@ -80,7 +74,7 @@ export default class SVGPathRebuilder implements PathRebuilder {
             this._add('M', x0, y0);
         }
 
-        const xRot = Math.round(psi * degree);
+        const xRot = mathRound(psi * RADIAN_TO_DEGREE);
         // It will not draw if start point and end point are exactly the same
         // We need to add two arcs
         if (isCircle) {
@@ -135,7 +129,7 @@ export default class SVGPathRebuilder implements PathRebuilder {
                 this._invalid = true;
                 return;
             }
-            vals.push(Math.round(val * p) / p);
+            vals.push(mathRound(val * p) / p);
         }
         this._d.push(cmd + vals.join(' '));
         this._start = cmd === 'Z';

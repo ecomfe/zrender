@@ -21,6 +21,7 @@ import easingFuncs, { AnimationEasing } from './easing';
 import Animation from './Animation';
 import { createCubicEasingFunc } from './cubicEasing';
 import { isLinearGradient, isRadialGradient } from '../svg/helper';
+import { mathFloor, mathMax, mathMin } from '../core/math';
 
 type NumberArray = ArrayLike<number>
 type InterpolatableType = string | number | NumberArray | NumberArray[];
@@ -120,9 +121,9 @@ function fillColorStops(val0: ParsedColorStop[], val1: ParsedColorStop[]) {
     const len1 = val1.length;
 
     const shorterArr = len0 > len1 ? val1 : val0;
-    const shorterLen = Math.min(len0, len1);
+    const shorterLen = mathMin(len0, len1);
     const last = shorterArr[shorterLen - 1] || { color: [0, 0, 0, 0], offset: 0 };
-    for (let i = shorterLen; i < Math.max(len0, len1); i++) {
+    for (let i = shorterLen; i < mathMax(len0, len1); i++) {
         // Use last color stop to fill the shorter array
         shorterArr.push({
             offset: last.offset,
@@ -195,9 +196,9 @@ export function cloneValue(value: InterpolatableType) {
 }
 
 function rgba2String(rgba: number[]): string {
-    rgba[0] = Math.floor(rgba[0]) || 0;
-    rgba[1] = Math.floor(rgba[1]) || 0;
-    rgba[2] = Math.floor(rgba[2]) || 0;
+    rgba[0] = mathFloor(rgba[0]) || 0;
+    rgba[1] = mathFloor(rgba[1]) || 0;
+    rgba[2] = mathFloor(rgba[2]) || 0;
     rgba[3] = rgba[3] == null ? 1 : rgba[3];
 
     return 'rgba(' + rgba.join(',') + ')';
@@ -468,7 +469,6 @@ class Track {
         // find kf2 and kf3 and do interpolation
         let frameIdx;
         const lastFrame = this._lastFr;
-        const mathMin = Math.min;
         let frame;
         let nextFrame;
         if (kfsNum === 1) {
@@ -787,7 +787,7 @@ export default class Animator<T> {
             }
             track.addKeyframe(time, cloneValue(props[propName]), easing);
         }
-        this._maxTime = Math.max(this._maxTime, time);
+        this._maxTime = mathMax(this._maxTime, time);
         return this;
     }
 

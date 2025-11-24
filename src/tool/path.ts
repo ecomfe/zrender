@@ -4,6 +4,7 @@ import transformPath from './transformPath';
 import { VectorArray } from '../core/vector';
 import { MatrixArray } from '../core/matrix';
 import { extend } from '../core/util';
+import { PI, PI2, mathSqrt, mathSin, mathCos, mathRound, mathACos } from '../core/math';
 
 // command chars
 // const cc = [
@@ -11,20 +12,15 @@ import { extend } from '../core/util';
 //     'c', 'C', 'q', 'Q', 't', 'T', 's', 'S', 'a', 'A'
 // ];
 
-const mathSqrt = Math.sqrt;
-const mathSin = Math.sin;
-const mathCos = Math.cos;
-const PI = Math.PI;
-
 function vMag(v: VectorArray): number {
-    return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
+    return mathSqrt(v[0] * v[0] + v[1] * v[1]);
 };
 function vRatio(u: VectorArray, v: VectorArray): number {
     return (u[0] * v[0] + u[1] * v[1]) / (vMag(u) * vMag(v));
 };
 function vAngle(u: VectorArray, v: VectorArray): number {
     return (u[0] * v[1] < u[1] * v[0] ? -1 : 1)
-            * Math.acos(vRatio(u, v));
+            * mathACos(vRatio(u, v));
 };
 
 function processArc(
@@ -75,9 +71,9 @@ function processArc(
     }
 
     if (dTheta < 0) {
-        const n = Math.round(dTheta / PI * 1e6) / 1e6;
+        const n = mathRound(dTheta / PI * 1e6) / 1e6;
         // Convert to positive
-        dTheta = PI * 2 + (n % 2) * PI;
+        dTheta = PI2 + (n % 2) * PI;
     }
 
     path.addData(cmd, cx, cy, rx, ry, theta, dTheta, psi, fs);

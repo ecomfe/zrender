@@ -1,12 +1,11 @@
 import PathProxy from '../core/PathProxy';
 import {applyTransform as v2ApplyTransform, VectorArray} from '../core/vector';
 import { MatrixArray } from '../core/matrix';
+import { mathSqrt, mathATan2 } from '../core/math';
 
 const CMD = PathProxy.CMD;
 
 const points: VectorArray[] = [[], [], []];
-const mathSqrt = Math.sqrt;
-const mathAtan2 = Math.atan2;
 
 export default function transformPath(path: PathProxy, m: MatrixArray) {
     if (!m) {
@@ -52,7 +51,7 @@ export default function transformPath(path: PathProxy, m: MatrixArray) {
                 const y = m[5];
                 const sx = mathSqrt(m[0] * m[0] + m[1] * m[1]);
                 const sy = mathSqrt(m[2] * m[2] + m[3] * m[3]);
-                const angle = mathAtan2(-m[1] / sy, m[0] / sx);
+                const angle = mathATan2(-m[1] / sy, m[0] / sx);
                 // cx
                 data[i] *= sx;
                 data[i++] += x;

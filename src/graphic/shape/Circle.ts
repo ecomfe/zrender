@@ -3,6 +3,7 @@
  */
 
 import Path, { PathProps } from '../Path';
+import { PI2 } from '../../core/math';
 
 export class CircleShape {
     cx = 0
@@ -29,7 +30,7 @@ class Circle extends Path<CircleProps> {
         // Use moveTo to start a new sub path.
         // Or it will be connected to other subpaths when in CompoundPath
         ctx.moveTo(shape.cx + shape.r, shape.cy);
-        ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2);
+        ctx.arc(shape.cx, shape.cy, shape.r, 0, PI2);
     }
 };
 
