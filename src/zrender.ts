@@ -76,8 +76,10 @@ class ZRender {
     animation: Animation
 
     private _sleepAfterStill = 10;
+    private _adaptiveSleepThreshold = 10;
 
     private _stillFrameAccum = 0;
+    private _lastRenderTime = 0;
 
     private _needsRefresh = true
     private _needsRefreshHover = true
@@ -246,6 +248,12 @@ class ZRender {
         if (this._disposed) {
             return;
         }
+        
+        // Avoid unnecessary refresh if already marked for refresh
+        if (this._needsRefresh) {
+            return;
+        }
+        
         this._needsRefresh = true;
         // Active the animation again.
         this.animation.start();
@@ -278,16 +286,34 @@ class ZRender {
 
         if (triggerRendered) {
             this._stillFrameAccum = 0;
+            this._lastRenderTime = end - start;
+            
+            // Adaptive sleep threshold based on render complexity
+            const renderTime = end - start;
+            if (renderTime > 16) { // More than 16ms (60fps threshold)
+                // For complex scenes, sleep sooner to reduce CPU usage
+                this._adaptiveSleepThreshold = Math.max(3, this._sleepAfterStill - 5);
+            } else {
+                // For simple scenes, use normal threshold
+                this._adaptiveSleepThreshold = this._sleepAfterStill;
+            }
+            
             this.trigger('rendered', {
-                elapsedTime: end - start
+                elapsedTime: renderTime
             } as RenderedEvent);
         }
         else if (this._sleepAfterStill > 0) {
             this._stillFrameAccum++;
-            // Stop the animation after still for 10 frames.
-            if (this._stillFrameAccum > this._sleepAfterStill) {
+            // Use adaptive threshold for complex scenes
+            const sleepThreshold = this._adaptiveSleepThreshold;
+            if (this._stillFrameAccum > sleepThreshold) {
                 this.animation.stop();
             }
+        }
+        
+        // Debug: Log continuous refresh issue
+        if (process.env.NODE_ENV !== 'production' && triggerRendered && this._stillFrameAccum === 0) {
+            console.warn('ZRender: Continuous refresh detected. Check for elements causing unnecessary re-renders.');
         }
     }
 
@@ -315,6 +341,10 @@ class ZRender {
      * Refresh hover in next frame
      */
     refreshHover() {
+        // Avoid unnecessary hover refresh if already marked
+        if (this._needsRefreshHover) {
+            return;
+        }
         this._needsRefreshHover = true;
     }
 
