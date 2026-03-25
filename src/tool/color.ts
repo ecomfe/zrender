@@ -575,13 +575,13 @@ export function random(): string {
 }
 
 const liftedColorCache = new LRU<string>(100);
-export function liftColor(color: GradientObject): GradientObject;
-export function liftColor(color: string): string;
-export function liftColor(color: string | GradientObject): string | GradientObject {
+export function liftColor(color: GradientObject, level?: number): GradientObject;
+export function liftColor(color: string, level?: number): string;
+export function liftColor(color: string | GradientObject, level: number = -0.1): string | GradientObject {
     if (isString(color)) {
         let liftedColor = liftedColorCache.get(color);
         if (!liftedColor) {
-            liftedColor = lift(color, -0.1);
+            liftedColor = lift(color, level);
             liftedColorCache.put(color, liftedColor);
         }
         return liftedColor;
@@ -590,7 +590,7 @@ export function liftColor(color: string | GradientObject): string | GradientObje
         const ret = extend({}, color) as GradientObject;
         ret.colorStops = map(color.colorStops, stop => ({
             offset: stop.offset,
-            color: lift(stop.color, -0.1)
+            color: lift(stop.color, level)
         }));
         return ret;
     }
