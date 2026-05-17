@@ -178,7 +178,7 @@ export interface TextStyleProps extends TextStylePropsPart {
      * truncate: truncate the text and show ellipsis
      * Do nothing if not set
      */
-    overflow?: 'break' | 'breakAll' | 'truncate' | 'none'
+    overflow?: 'break' | 'breakAll' | 'truncate' | 'fit' | 'none'
 
     /**
      * Strategy when text lines exceeds textHeight.
@@ -635,6 +635,23 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
             subElStyle.font = textFont;
             setSeparateFont(subElStyle, style);
 
+            // Apply horizontal scaling when overflow is 'fit'.
+            // The scaleX transform stretches or compresses text glyphs to exactly fill the target width.
+            if (contentBlock.fitScaleX != null && contentBlock.fitScaleX !== 1) {
+                el.scaleX = contentBlock.fitScaleX;
+                el.scaleY = 1;
+                // Adjust the x-origin so that the text scales from the correct anchor point
+                // based on textAlign. For 'left' alignment, origin is the text x position.
+                // For 'center', the origin should be the center; for 'right', the right edge.
+                el.originX = subElStyle.x;
+                el.originY = subElStyle.y;
+            }
+            else {
+                // Reset to avoid stale transforms from previous updates
+                el.scaleX = 1;
+                el.scaleY = 1;
+            }
+
             textY += lineHeight;
 
             // Always set tspan bounding rect to guarantee the consistency if users lays out based
@@ -728,7 +745,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
                 leftIndex < tokenCount
                 && (token = tokens[leftIndex], !token.align || token.align === 'left')
             ) {
-                this._placeToken(token, style, lineHeight, lineTop, lineXLeft, 'left', bgColorDrawn);
+                this._placeToken(token, style, lineHeight, lineTop, lineXLeft, 'left', bgColorDrawn, contentBlock.fitScaleX);
                 remainedWidth -= token.width;
                 lineXLeft += token.width;
                 leftIndex++;
@@ -738,7 +755,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
                 rightIndex >= 0
                 && (token = tokens[rightIndex], token.align === 'right')
             ) {
-                this._placeToken(token, style, lineHeight, lineTop, lineXRight, 'right', bgColorDrawn);
+                this._placeToken(token, style, lineHeight, lineTop, lineXRight, 'right', bgColorDrawn, contentBlock.fitScaleX);
                 remainedWidth -= token.width;
                 lineXRight -= token.width;
                 rightIndex--;
@@ -751,7 +768,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
                 // Consider width specified by user, use 'center' rather than 'left'.
                 this._placeToken(
                     token, style, lineHeight, lineTop,
-                    lineXLeft + token.width / 2, 'center', bgColorDrawn
+                    lineXLeft + token.width / 2, 'center', bgColorDrawn, contentBlock.fitScaleX
                 );
                 lineXLeft += token.width;
                 leftIndex++;
@@ -768,7 +785,8 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         lineTop: number,
         x: number,
         textAlign: string,
-        parentBgColorDrawn: boolean
+        parentBgColorDrawn: boolean,
+        fitScaleX?: number
     ) {
         const tokenStyle = style.rich[token.styleName] || {};
         tokenStyle.text = token.text;
@@ -863,6 +881,18 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         }
         if (textFill) {
             subElStyle.fill = textFill;
+        }
+
+        // Apply horizontal scaling when overflow is 'fit'.
+        if (fitScaleX != null && fitScaleX !== 1) {
+            el.scaleX = fitScaleX;
+            el.scaleY = 1;
+            el.originX = subElStyle.x;
+            el.originY = subElStyle.y;
+        }
+        else {
+            el.scaleX = 1;
+            el.scaleY = 1;
         }
 
         // NOTE: Should not call dirtyStyle after setBoundingRect. Or it will be cleared.
