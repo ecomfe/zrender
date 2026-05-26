@@ -33,7 +33,7 @@
   "module": "index.js",
   "main": "dist/zrender.js",
   "dependencies": {
-    "tslib": "2.3.0"
+    "tslib": "^2.8.1"
   },
   "sideEffects": [
     "lib/canvas/canvas.js",
