@@ -13,6 +13,7 @@ type PendingWrap = {
 
 type CachedImageObj = {
     image: ImageLike
+    loading: boolean
     pending: PendingWrap[]
 }
 
@@ -62,7 +63,7 @@ export function createOrUpdateImage<T>(
 
         if (cachedImgObj) {
             image = cachedImgObj.image;
-            !isImageReady(image) && cachedImgObj.pending.push(pendingWrap);
+            cachedImgObj.loading && cachedImgObj.pending.push(pendingWrap);
         }
         else {
             image = platformApi.loadImage(
@@ -74,6 +75,7 @@ export function createOrUpdateImage<T>(
                 newImageOrSrc,
                 (image as any).__cachedImgObj = {
                     image: image,
+                    loading: true,
                     pending: [pendingWrap]
                 }
             );
@@ -89,6 +91,7 @@ export function createOrUpdateImage<T>(
 
 function imageOnLoad(this: any) {
     const cachedImgObj = this.__cachedImgObj;
+    cachedImgObj.loading = false;
     this.onload = this.onerror = this.__cachedImgObj = null;
 
     for (let i = 0; i < cachedImgObj.pending.length; i++) {
