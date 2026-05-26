@@ -46,7 +46,9 @@ class Rect extends Path<RectProps> {
         let height: number;
 
         if (this.subPixelOptimize) {
-            const optimizedShape = subPixelOptimizeRect(subPixelOptimizeOutputShape, shape, this.style);
+            const optimizedShape = subPixelOptimizeRect(
+                subPixelOptimizeOutputShape, shape, this.style, this.transform[0], this.transform[3]
+            );
             x = optimizedShape.x;
             y = optimizedShape.y;
             width = optimizedShape.width;

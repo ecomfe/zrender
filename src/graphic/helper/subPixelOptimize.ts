@@ -32,7 +32,9 @@ type RectShape = {
 export function subPixelOptimizeLine(
     outputShape: Partial<LineShape>,
     inputShape: LineShape,
-    style: Pick<PathStyleProps, 'lineWidth'>   // DO not optimize when lineWidth is 0
+    style: Pick<PathStyleProps, 'lineWidth'>,   // DO not optimize when lineWidth is 0
+    scaleX: number,
+    scaleY: number
 ): LineShape {
     if (!inputShape) {
         return;
@@ -53,11 +55,11 @@ export function subPixelOptimizeLine(
         return outputShape as LineShape;
     }
 
-    if (round(x1 * 2) === round(x2 * 2)) {
-        outputShape.x1 = outputShape.x2 = subPixelOptimize(x1, lineWidth, true);
+    if (round(x1 * 2 * scaleX) === round(x2 * 2 * scaleX)) {
+        outputShape.x1 = outputShape.x2 = subPixelOptimize(x1 * scaleX, lineWidth, true) / scaleX;
     }
-    if (round(y1 * 2) === round(y2 * 2)) {
-        outputShape.y1 = outputShape.y2 = subPixelOptimize(y1, lineWidth, true);
+    if (round(y1 * 2 * scaleY) === round(y2 * 2 * scaleY)) {
+        outputShape.y1 = outputShape.y2 = subPixelOptimize(y1 * scaleY, lineWidth, true) / scaleY;
     }
 
     return outputShape as LineShape;
@@ -74,7 +76,9 @@ export function subPixelOptimizeLine(
 export function subPixelOptimizeRect(
     outputShape: Partial<RectShape>,
     inputShape: RectShape,
-    style: Pick<PathStyleProps, 'lineWidth'>   // DO not optimize when lineWidth is 0
+    style: Pick<PathStyleProps, 'lineWidth'>,   // DO not optimize when lineWidth is 0
+    scaleX: number,
+    scaleY: number
 ): RectShape {
     if (!inputShape) {
         return;
@@ -95,14 +99,14 @@ export function subPixelOptimizeRect(
         return outputShape as RectShape;
     }
 
-    outputShape.x = subPixelOptimize(originX, lineWidth, true);
-    outputShape.y = subPixelOptimize(originY, lineWidth, true);
+    outputShape.x = subPixelOptimize(originX * scaleX, lineWidth, true) / scaleY;
+    outputShape.y = subPixelOptimize(originY * scaleY, lineWidth, true) / scaleY;
     outputShape.width = Math.max(
-        subPixelOptimize(originX + originWidth, lineWidth, false) - outputShape.x,
+        subPixelOptimize((originX + originWidth) * scaleX, lineWidth, false) / scaleX - outputShape.x,
         originWidth === 0 ? 0 : 1
     );
     outputShape.height = Math.max(
-        subPixelOptimize(originY + originHeight, lineWidth, false) - outputShape.y,
+        subPixelOptimize((originY + originHeight) * scaleX, lineWidth, false) / scaleY - outputShape.y,
         originHeight === 0 ? 0 : 1
     );
 
