@@ -8,6 +8,7 @@ import BoundingRect from '../core/BoundingRect';
 import { ImageLike, MapToType } from '../core/types';
 import { defaults, createObject } from '../core/util';
 import { ElementCommonState } from '../Element';
+import {isImageReady} from "./helper/image";
 
 export interface ImageStyleProps extends CommonStyleProps {
     image?: string | ImageLike
@@ -117,7 +118,14 @@ class ZRImage extends Displayable<ImageProps> {
                 style.x || 0, style.y || 0, this.getWidth(), this.getHeight()
             );
         }
-        return this._rect;
+
+        const rect = this._rect;
+        //If the image hasn't loaded, ensure to obtain the correct value next time.
+        if (this.__image && !isImageReady(this.__image)) {
+            this._rect = null
+        }
+
+        return rect;
     }
 }
 
