@@ -208,6 +208,10 @@ export interface PlainTextContentBlock {
     // Be `true` if and only if the result text is modified due to overflow, due to
     // settings on either `overflow` or `lineOverflow`
     isTruncated: boolean
+
+    // Horizontal scale factor when overflow is 'fit'.
+    // Text glyphs will be horizontally scaled by this factor to exactly fill the target width.
+    fitScaleX?: number
 }
 
 export function parsePlainText(
@@ -302,6 +306,13 @@ export function parsePlainText(
     outerHeight += paddingV;
     outerWidth += paddingH;
 
+    // When overflow is 'fit', compute the horizontal scale factor to stretch/compress
+    // the text glyphs so they exactly fill the target width. No truncation or wrapping is applied.
+    let fitScaleX: number;
+    if (overflow === 'fit' && contentWidth > 0) {
+        fitScaleX = width / contentWidth;
+    }
+
     return {
         lines: lines,
         height: height,
@@ -312,7 +323,8 @@ export function parsePlainText(
         contentWidth: contentWidth,
         contentHeight: contentHeight,
         width: width,
-        isTruncated: isTruncated
+        isTruncated: isTruncated,
+        fitScaleX: fitScaleX
     };
 }
 
@@ -370,6 +382,8 @@ export class RichTextContentBlock {
     // Be `true` if and only if the result text is modified due to overflow, due to
     // settings on either `overflow` or `lineOverflow`
     isTruncated: boolean = false
+    // Horizontal scale factor when overflow is 'fit'.
+    fitScaleX?: number
 }
 
 type WrapInfo = {
@@ -574,6 +588,12 @@ export function parseRichText(
         const percentWidth = token.percentWidth;
         // Should not base on outerWidth, because token can not be placed out of padding.
         token.width = parseInt(percentWidth, 10) / 100 * contentBlock.width;
+    }
+
+    // When overflow is 'fit', compute the horizontal scale factor to stretch/compress
+    // the text glyphs so they exactly fill the target width.
+    if (overflow === 'fit' && topWidth != null && calculatedWidth > 0) {
+        contentBlock.fitScaleX = topWidth / calculatedWidth;
     }
 
     return contentBlock;
@@ -948,4 +968,3 @@ export function tSpanHasStroke(style: TSpanStyleProps): boolean {
     const stroke = style.stroke;
     return stroke != null && stroke !== 'none' && style.lineWidth > 0;
 }
-
