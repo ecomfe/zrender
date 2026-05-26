@@ -62,7 +62,12 @@ export function createOrUpdateImage<T>(
 
         if (cachedImgObj) {
             image = cachedImgObj.image;
-            !isImageReady(image) && cachedImgObj.pending.push(pendingWrap);
+            if (isImageReady(image)) {
+                onload && onload(image, cbPayload);
+            }
+            else {
+                cachedImgObj.pending.push(pendingWrap);
+            }
         }
         else {
             image = platformApi.loadImage(
