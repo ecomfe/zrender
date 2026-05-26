@@ -19,6 +19,10 @@ type FirefoxMouseEvent = {
     layerY: number
 }
 
+type DispatchedEvent = {
+  dispatchedOffsetX: number
+  dispatchedOffsetY: number
+}
 
 /**
  * Get the `zrX` and `zrY`, which are relative to the top-left of
@@ -45,19 +49,22 @@ type FirefoxMouseEvent = {
  */
 export function clientToLocal(
     el: HTMLElement,
-    e: ZRRawEvent | FirefoxMouseEvent | Touch,
+    e: ZRRawEvent | FirefoxMouseEvent | Touch | DispatchedEvent,
     out: {zrX?: number, zrY?: number},
     calculate?: boolean
 ) {
     out = out || {};
-
+    if ((e as DispatchedEvent).dispatchedOffsetX) {
+      out.zrX = (e as DispatchedEvent).dispatchedOffsetX;
+      out.zrY = (e as DispatchedEvent).dispatchedOffsetY;
+    }
     // According to the W3C Working Draft, offsetX and offsetY should be relative
     // to the padding edge of the target element. The only browser using this convention
     // is IE. Webkit uses the border edge, Opera uses the content edge, and FireFox does
     // not support the properties.
     // (see http://www.jacklmoore.com/notes/mouse-position/)
     // In zr painter.dom, padding edge equals to border edge.
-    if (calculate) {
+    else if (calculate) {
         calculateZrXY(el, e as ZRRawEvent, out);
     }
     // Caution: In FireFox, layerX/layerY Mouse position relative to the closest positioned
