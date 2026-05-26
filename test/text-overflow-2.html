@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Text Overflow</title>
+    <script src="../dist/zrender.js"></script>
+    <script src="lib/config.js"></script>
+    <script src="data/text.js"></script>
+</head>
+<body>
+    <style>
+        html, body {
+            width: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        #content {
+            position: relative;
+        }
+
+        #css, #main {
+            position: absolute;
+            top: 70px;
+            width: 100%;
+            height: 3000px;
+        }
+
+        #css {
+            opacity: 0.3;
+        }
+
+        hr {
+            margin: 20px;
+        }
+
+        h2 {
+            font-size: 24px;
+            margin: 20px 20px 0 20px;
+            color: #f00;
+        }
+
+        p {
+            margin: 10px 20px;
+        }
+
+        h2.main-h2 {
+            position: absolute;
+            top: -20px;
+            left: 250px;
+            color: #00f;
+        }
+
+        .css-text-box {
+            display: inline-block;
+            text-align: left;
+            vertical-align: top;
+            font-size: 20px;
+            color: #f00;
+            line-height: 1;
+        }
+
+        .toggle-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-label {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 12px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+
+    <div class="toggle-container">
+        <span class="toggle-label">Standalone Text</span>
+        <label class="toggle-switch">
+            <input type="checkbox" id="renderModeToggle">
+            <span class="slider"></span>
+        </label>
+        <span class="toggle-label">Rect Text</span>
+    </div>
+
+    <div id="content">
+        <h2>CSS Reference</h2>
+        <p>[*] means it's expected to be different from CSS</p>
+        <div id="css"></div>
+        <hr />
+        <h2 class="main-h2">ZRender</h2>
+        <div id="main"></div>
+    </div>
+
+    <script>
+        const cssContainer = document.getElementById('css');
+        const dom = document.getElementById('main');
+        const zr = zrender.init(dom, {
+            renderer: window.__ZRENDER__DEFAULT__RENDERER__
+        });
+        const canvasWidth = dom.clientWidth;
+        const canvasHeight = dom.clientHeight;
+
+        const fontSize = 20;
+        let isRectMode = false; // false for standalone, true for rect
+
+        // Store all created elements for easy management
+        const standaloneTexts = [];
+        const rectElements = [];
+
+        const texts = [{
+            text: '中文空格测试， 左边的空格不应该位于句首。',
+            width: 140
+        }, {
+            text: '中文多空格测试，  第二行句首有一个空格。[*]',
+            width: 160
+        }, {
+            text: ' 中文空格测试，第一行的句首有一个空格[*]',
+            width: 120
+        }, {
+            text: 'English space test, there should be no space at the begining of the second line',
+            width: 180
+        }, {
+            text: 'English space test,  there should be one space at the begining[*]',
+            width: 180
+        }, {
+            text: ' English space test there should a space at the begining of the first line[*]',
+            width: 174
+        }, {
+            text: '中文标点测试！！！！！所有感叹号不应位于句首。',
+            width: 160
+        }, {
+            text: '中文标点测试！！！！！！！！[*]',
+            width: 80
+        }];
+
+        const prohibitedLineStartChars = '.,!?:;)}]"\'。，、：；！？）］｝》」』”’）〕》〉】…';
+        for (let i = 0; i < prohibitedLineStartChars.length; i++) {
+            const char = prohibitedLineStartChars[i];
+            texts.push({
+                text: '标点句首测试' + char + '不应位于句首。',
+                width: 120
+            });
+            texts.push({
+                text: 'English words' + char + ' prohibited at line start.',
+                width: 130
+            });
+        }
+
+        const allowedStartChars = '([{《「『【(（“‘';
+        for (let i = 0; i < allowedStartChars.length; i++) {
+            const char = allowedStartChars[i];
+            const isDiff = char === '“' || char === '‘';
+            texts.push({
+                text: '标点句首测试' + char + '可以位于句首。' + (isDiff ? '[*]' : ''),
+                width: 120
+            });
+            texts.push({
+                text: 'English words ' + char + 'allowed at line start.' + (isDiff ? '[*]' : ''),
+                width: 130
+            });
+        }
+
+        function renderAll() {
+            // Clear previous renders
+            cssContainer.innerHTML = '';
+            zr.clear();
+            standaloneTexts.length = 0;
+            rectElements.length = 0;
+
+            const margin = 20;
+            const boxHeight = 120;
+
+            // Combined CSS and ZRender rendering
+            let cssLeft = margin;
+            let cssTop = margin;
+            let textLeft = margin;
+            let textTop = margin;
+
+            for (let i = 0; i < texts.length; i++) {
+                const item = texts[i];
+
+                // Check if we need to wrap to next line for CSS
+                if (cssLeft + item.width + margin > canvasWidth) {
+                    cssLeft = margin;
+                    cssTop += boxHeight + margin;
+                }
+
+                // Check if we need to wrap to next line for ZRender
+                if (textLeft + item.width + margin > canvasWidth) {
+                    textLeft = margin;
+                    textTop += boxHeight + margin;
+                }
+
+                // CSS rendering (always shown for reference)
+                const cssDiv = document.createElement('div');
+                cssDiv.className = 'css-text-box';
+                cssDiv.style.width = item.width + 'px';
+                cssDiv.style.height = boxHeight + 'px';
+                cssDiv.style.position = 'absolute';
+                cssDiv.style.left = cssLeft + 'px';
+                cssDiv.style.top = cssTop + 'px';
+                cssDiv.textContent = item.text;
+                cssContainer.appendChild(cssDiv);
+
+                // Create both standalone text and rect text, add both to ZRender
+
+                // Standalone text mode
+                const standaloneText = new zrender.Text({
+                    style: {
+                        text: item.text,
+                        fontSize: fontSize,
+                        fill: '#00f',
+                        width: item.width,
+                        overflow: 'break',
+                        lineOverflow: 'truncate',
+                        align: 'left',
+                        verticalAlign: 'top'
+                    },
+                    x: textLeft,
+                    y: textTop,
+                    ignore: isRectMode // Hide when in rect mode
+                });
+                zr.add(standaloneText);
+                standaloneTexts.push(standaloneText);
+
+                // Border rect for standalone text
+                const standaloneBorderRect = new zrender.Rect({
+                    shape: {
+                        x: textLeft,
+                        y: textTop,
+                        width: item.width,
+                        height: boxHeight
+                    },
+                    style: {
+                        fill: 'none',
+                        stroke: '#00f'
+                    },
+                    ignore: isRectMode // Hide when in rect mode
+                });
+                zr.add(standaloneBorderRect);
+                standaloneTexts.push(standaloneBorderRect); // Store border with standalone elements
+
+                // Rect text mode
+                const rect = new zrender.Rect({
+                    shape: {
+                        x: textLeft,
+                        y: textTop,
+                        width: item.width,
+                        height: boxHeight
+                    },
+                    style: {
+                        stroke: '#00f',
+                        fill: 'none',
+                        lineWidth: 1
+                    },
+                    ignore: !isRectMode // Hide when in standalone mode
+                });
+
+                const rectText = new zrender.Text({
+                    style: {
+                        text: item.text,
+                        fontSize: fontSize,
+                        fill: '#00f',
+                        width: item.width,
+                        overflow: 'break',
+                        lineOverflow: 'truncate',
+                        align: 'left',
+                        verticalAlign: 'top'
+                    }
+                });
+
+                rect.setTextContent(rectText);
+                rect.setTextConfig({
+                    position: 'inside',
+                    distance: 0,
+                    position: [2.5, 2.5]
+                });
+
+                zr.add(rect);
+                rectElements.push(rect);
+
+                // Update positions for next iteration
+                cssLeft += item.width + margin;
+                textLeft += item.width + margin;
+            }
+        }
+
+        function toggleMode() {
+            // Toggle ignore state for all elements
+            standaloneTexts.forEach(element => {
+                element.ignore = isRectMode;
+                element.dirty(); // Mark element as dirty to ensure re-render
+            });
+            rectElements.forEach(element => {
+                element.ignore = !isRectMode;
+                element.dirty(); // Mark element as dirty to ensure re-render
+            });
+
+            // Force immediate refresh
+            zr.refreshImmediately();
+        }        // Toggle functionality
+        const toggleSwitch = document.getElementById('renderModeToggle');
+        toggleSwitch.addEventListener('change', function() {
+            isRectMode = this.checked;
+            toggleMode();
+        });
+
+        // Initial render
+        renderAll();
+    </script>
+</body>
+</html>
