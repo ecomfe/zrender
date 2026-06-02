@@ -2,6 +2,8 @@
  * SVG Painter
  */
 
+/* global document */
+
 import {
     brush,
     setClipPath,

@@ -1,3 +1,5 @@
+/* global document, window */
+
 declare const wx: {
     getSystemInfoSync: Function
 };

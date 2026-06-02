@@ -611,7 +611,7 @@ function sortPaths(pathList: Path[]): Path[] {
         };
     });
 
-    return items.sort((a, b) => a.z - b.z).map(item => item.path);
+    return map(items.sort((a, b) => a.z - b.z), item => item.path);
 }
 
 export interface DividePathParams {

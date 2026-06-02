@@ -1,3 +1,5 @@
+/* eslint-disable no-var */
+
 // Myers' Diff Algorithm
 // Modified from https://github.com/kpdecker/jsdiff/blob/master/src/diff/base.js
 type EqualFunc<T> = (a: T, b: T) => boolean;

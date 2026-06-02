@@ -1,3 +1,4 @@
+import { indexOf } from '../core/util';
 import Displayable from '../graphic/Displayable';
 import { liftColor } from '../tool/color';
 import { BrushScope, SVGVNodeAttrs } from './core';
@@ -28,7 +29,7 @@ export function createCSSEmphasis(
                 const selectFill = el.states.select
                     && el.states.select.style
                     && el.states.select.style.fill;
-                const fromFill = el.currentStates.indexOf('select') >= 0
+                const fromFill = indexOf(el.currentStates, 'select') >= 0
                     ? (selectFill || normalFill)
                     : normalFill;
                 if (fromFill) {

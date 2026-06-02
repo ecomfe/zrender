@@ -187,9 +187,8 @@ export function extend<
     T extends Dictionary<any>,
     S extends Dictionary<any>
 >(target: T, source: S): T & S {
-    // @ts-ignore
     if (Object.assign) {
-        // @ts-ignore
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         Object.assign(target, source);
     }
     else {
@@ -256,6 +255,7 @@ export const createCanvas = platformApi.createCanvas;
 export function indexOf<T>(array: T[] | readonly T[] | ArrayLike<T>, value: T): number {
     if (array) {
         if ((array as T[]).indexOf) {
+            // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
             return (array as T[]).indexOf(value);
         }
         for (let i = 0, len = array.length; i < len; i++) {
@@ -294,6 +294,7 @@ export function mixin<T, S>(target: T | Function, source: S | Function, override
     // If build target is ES6 class. prototype methods is not enumerable. Use getOwnPropertyNames instead
     // TODO: Determine if source is ES6 class?
     if (Object.getOwnPropertyNames) {
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         const keyList = Object.getOwnPropertyNames(source);
         for (let i = 0; i < keyList.length; i++) {
             const key = keyList[i];
@@ -344,6 +345,7 @@ export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayL
         return;
     }
     if ((arr as any).forEach && (arr as any).forEach === nativeForEach) {
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         (arr as any).forEach(cb, context);
     }
     else if (arr.length === +arr.length) {
@@ -381,6 +383,7 @@ export function map<T, R, Context>(
         return slice(arr) as unknown[] as R[];
     }
     if (arr.map && arr.map === nativeMap) {
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         return arr.map(cb, context);
     }
     else {
@@ -426,6 +429,7 @@ export function filter<T, Context>(
         return slice(arr);
     }
     if (arr.filter && arr.filter === nativeFilter) {
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         return arr.filter(cb, context);
     }
     else {
@@ -471,6 +475,7 @@ export function keys<T extends object>(obj: T): (KeyOfDistributive<T> & string)[
     // `Object.keys` only return string rather than `number | string`.
     type TKeys = KeyOfDistributive<T> & string;
     if (Object.keys) {
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         return Object.keys(obj) as TKeys[];
     }
     let keyList: TKeys[] = [];
@@ -507,6 +512,7 @@ function bindPolyfill<Ctx, Fn extends(...args: any) => any>(
     };
 }
 export const bind: FunctionBind = (protoFunction && isFunction(protoFunction.bind))
+    // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
     ? protoFunction.call.bind(protoFunction.bind)
     : bindPolyfill;
 
@@ -530,6 +536,7 @@ export {curry};
 
 export function isArray(value: any): value is any[] {
     if (Array.isArray) {
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         return Array.isArray(value);
     }
     return objToString.call(value) === '[object Array]';
@@ -735,6 +742,7 @@ class MapPolyfill<T, KEY extends string | number = string | number> implements M
 
 // We want to use native Map if it is available, but we do not want to polyfill the global scope
 // in case users ship their own polyfills or patch the native map object in any way.
+// eslint-disable-next-line no-restricted-globals
 const isNativeMapSupported = typeof Map === 'function';
 function maybeNativeMap<T, KEY extends string | number = string | number>(): MapInterface<T, KEY> {
     // Map may be a native class if we are running in an ES6 compatible environment.
@@ -824,6 +832,7 @@ export function createObject<T>(proto?: object, properties?: T): T {
     // https://jsperf.com/style-strategy-proto-or-others
     let obj: T;
     if (Object.create) {
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         obj = Object.create(proto);
     }
     else {

@@ -4,6 +4,8 @@ import { GradientObject } from '../graphic/Gradient';
 import { RectLike } from '../core/BoundingRect';
 import Path from '../graphic/Path';
 
+/* global document */
+
 function isSafeNum(num: number) {
     // NaN、Infinity、undefined、'xx'
     return isFinite(num);

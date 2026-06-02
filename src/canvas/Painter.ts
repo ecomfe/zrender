@@ -18,6 +18,7 @@ import { REDRAW_BIT } from '../graphic/constants';
 import { getSize } from './helper';
 import { platformApi } from '../core/platform';
 
+/* global document */
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 // zlevel for the case that `Painter['_singleCanvas']` is `true`.

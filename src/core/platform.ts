@@ -2,6 +2,8 @@ export const DEFAULT_FONT_SIZE = 12;
 export const DEFAULT_FONT_FAMILY = 'sans-serif';
 export const DEFAULT_FONT = `${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`;
 
+/* global document, Image */
+
 interface Platform {
     // TODO CanvasLike?
     createCanvas(): HTMLCanvasElement
@@ -104,6 +106,7 @@ export const platformApi: Platform = {
 
     getTime(): number {
         // Indicatively, Date.now can be executed in 13,025,305 ops/second in a certain env.
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         return Date.now ? Date.now() : +(new Date());
     }
 };

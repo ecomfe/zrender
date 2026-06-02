@@ -17,6 +17,7 @@ export default class WeakMap<K extends object, V> {
     set(key: K, value: V): WeakMap<K, V> {
         const target = this._guard(key) as any;
         if (supportDefineProperty) {
+            // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
             Object.defineProperty(target, this._id, {
                 value: value,
                 enumerable: false,
