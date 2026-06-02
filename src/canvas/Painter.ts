@@ -539,6 +539,15 @@ export default class CanvasPainter implements PainterBase {
                 return;
             }
 
+            // [DIRTY_RECT_WITH_INCREMENTAL_REDNDERING]
+            // PENDING: Currently, dirty rect is not supported on incremental layers.
+            // The following issues need to be considered before adding support:
+            // (1) May unnecessary: There might not be a compelling use case for partial updates in an
+            //  incremental layer, since the most common partial-update cases have already been handled
+            //  by the hover layer.
+            // (2) If dirty rects changes, incremental rendering may need to restart.
+            // (3) Rendering a display list against dirty rects involves a nested loop, which needs to
+            //  be able to yield at an appropriate point without causing any element to miss a dirty rect.
             const repaintRects = (painter._opts.useDirtyRect && !isIncrementalLayer(layer))
                 ? layer.createRepaintRects(list, prevList, painter._width, painter._height) : null;
 
@@ -577,22 +586,25 @@ export default class CanvasPainter implements PainterBase {
         layer: Layer,
         layerCursor: LayerDrawCursor,
         list: Displayable[],
+        // null/undefined means dirty rect is disabled.
         repaintRects: BoundingRect[] | NullUndefined,
         contentRetained: boolean
         // Return `finished`
     ): boolean {
         const ctx = layer.ctx;
 
+        const cursorCurrDrawIdx = layerCursor.drawIdx;
+        const notClearIdx = layerCursor.notClearIdx;
+        const idxLoopStart = notClearIdx >= 0 ? Math.min(notClearIdx, cursorCurrDrawIdx) : cursorCurrDrawIdx;
+        const idxLoopEnd = layerCursor.endIdx;
+        let resultIdx;
+
         if (repaintRects) {
-            if (!repaintRects.length) {
-                layerCursor.drawIdx = layerCursor.endIdx; // Nothing to repaint, mark as finished
-            }
-            else {
+            if (repaintRects.length) {
                 const dpr = this.dpr;
                 // Set repaintRect as clipPath
                 for (let r = 0; r < repaintRects.length; ++r) {
                     const rect = repaintRects[r];
-
                     ctx.save();
                     ctx.beginPath();
                     ctx.rect(
@@ -602,28 +614,44 @@ export default class CanvasPainter implements PainterBase {
                         rect.height * dpr
                     );
                     ctx.clip();
-                    this._paintPerCursorInRect(layer, layerCursor, list, rect, contentRetained);
+                    this._paintPerCursorInRect(
+                        list, layer, idxLoopStart, idxLoopEnd, cursorCurrDrawIdx,
+                        false, // Do not use timer. @see DIRTY_RECT_WITH_INCREMENTAL_REDNDERING
+                        rect, contentRetained
+                    );
                     ctx.restore();
                 }
             }
+            // NOTE: If `repaintRects.length === 0`, nothing needs repaint.
+            resultIdx = idxLoopEnd;
         }
         else {
-            // Paint all once
             ctx.save();
-            this._paintPerCursorInRect(layer, layerCursor, list, null, contentRetained);
+            resultIdx = this._paintPerCursorInRect(
+                list, layer, idxLoopStart, idxLoopEnd, cursorCurrDrawIdx,
+                isIncrementalLayer(layer), // Use timer only on incremental layers.
+                null, contentRetained
+            );
             ctx.restore();
         }
 
-        return layerCursor.drawIdx >= layerCursor.endIdx;
+        // NOTE: `resultIdx` may be less than `cursorCurrDrawIdx` due to `notClearIdx`.
+        layerCursor.drawIdx = Math.max(resultIdx, cursorCurrDrawIdx);
+
+        return layerCursor.drawIdx >= idxLoopEnd;
     }
 
     private _paintPerCursorInRect(
-        layer: Layer,
-        layerCursor: LayerDrawCursor,
         list: Displayable[],
+        layer: Layer,
+        idxLoopStart: number,
+        idxLoopEnd: number,
+        cursorCurrDrawIdx: number,
+        useTimer: boolean,
+        // null/undefined means dirty rect is disabled.
         repaintRect: BoundingRect | NullUndefined,
         contentRetained: boolean,
-    ): void {
+    ): number {
         const scope: BrushScope = {
             inHover: false,
             allClipped: false,
@@ -633,18 +661,16 @@ export default class CanvasPainter implements PainterBase {
             beforeBrushParam: {contentRetained}
         };
         const ctx = layer.ctx;
-        const useTimer = isIncrementalLayer(layer);
         const startTime = useTimer && platformApi.getTime();
+        let idx = idxLoopStart;
 
-        // NOTICE: This loop is performance-sensitive, especially for large data.
-        const drawIdxBegin = layerCursor.drawIdx;
-        const notClearIdx = layerCursor.notClearIdx;
-        let idx = notClearIdx >= 0 ? Math.min(notClearIdx, drawIdxBegin) : drawIdxBegin;
-        for (; idx < layerCursor.endIdx; idx++) {
+        for (; idx < idxLoopEnd; idx++) {
             const el = list[idx];
 
-            if (idx < drawIdxBegin && !el.notClear) {
-                // In this portion, all non-`notClear` elements do not need to be painted.
+            if (idx < cursorCurrDrawIdx && !el.notClear) {
+                // `notClear` elements should always be brushed -- its draw index and incremental
+                // rendering is self-maintained. @see CANVAS_INCREMENTAL_CASE_SINGLE_ELEMENT .
+                // non-`notClear` elements should not be re-brushed.
                 continue;
             }
 
@@ -685,9 +711,10 @@ export default class CanvasPainter implements PainterBase {
                 }
             }
         }
+        // This loop is allowed to break only if `useTimer: true`.
         brushLoopFinalize(ctx, scope);
 
-        layerCursor.drawIdx = Math.max(idx, drawIdxBegin); // `idx` may < `drawIdxBegin` due to `notClearIdx`.
+        return idx;
     }
 
     /**
@@ -870,8 +897,8 @@ export default class CanvasPainter implements PainterBase {
      * @tutorial [CANVAS_INCREMENTAL_LAYER_USE_CASES]
      *  Two use patterns are covered per incremental layer:
      *  [CANVAS_INCREMENTAL_CASE_SINGLE_ELEMENT]
-     *    An single incremental element with a customized `buildPath`, using `Displayable['notClear']`
-     *    to retain the rendered content.
+     *    An single incremental element with a customized `buildPath` and self-maintained draw index,
+     *    using `Displayable['notClear']` to retain the rendered content.
      *  [CANVAS_INCREMENTAL_CASE_MULTIPLE_ELEMENTS]
      *    A run of consecutive incremental elements, progressively drawing per frame in `_paintList`. This
      *    is not an optimal approach for rendering due to the increasing cost of updating and sorting
