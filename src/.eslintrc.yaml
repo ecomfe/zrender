@@ -312,8 +312,8 @@ rules:
         # benefits compression.
         - {name: "Map", message: "Use `HashMap` in `zrender/src/core/util.ts` instead."}
         - {name: "Set", message: "Use `HashMap` in `zrender/src/core/util.ts` instead."}
-        - {name: "WeakMap", message: "No polyfill for it. Typically it is not necessary. Use `makeInner` or `src/util/cycleCache` instead."}
-        - {name: "WeakSet", message: "No polyfill for it. Typically it is not necessary. Use `makeInner` or `src/util/cycleCache` instead."}
+        - {name: "WeakMap", message: "No polyfill for it. Typically it is not necessary. Use `zrender/src/core/WeakMap` instead."}
+        - {name: "WeakSet", message: "No polyfill for it. Typically it is not necessary. Use `zrender/src/core/WeakMap` instead."}
         - {name: "Symbol", message: "No polyfill for it. Typically it is not necessary."}
         - {name: "Proxy", message: "No polyfill for it. Typically it is not necessary."}
         - {name: "Reflect", message: "No polyfill for it. Typically it is not necessary."}
