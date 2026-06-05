@@ -4,7 +4,7 @@ import { ImagePatternObject } from '../graphic/Pattern';
 import CanvasPainter from './Painter';
 import { GradientObject, InnerGradientObject } from '../graphic/Gradient';
 import {
-    INCREMENTAL_ID_FALSE, IncrementalId, ZLevel, ZLevel2, ZLEVEL2_NORMAL_BELOW,
+    INCREMENTAL_ID_FALSE, IncrementalId, NullUndefined, ZLevel, ZLevel2, ZLEVEL2_NORMAL_BELOW,
     ZRCanvasRenderingContext
 } from '../core/types';
 import Eventful from '../core/Eventful';
@@ -22,7 +22,8 @@ function createDom(id: string, painter: CanvasPainter, dpr: number) {
     const height = painter.getHeight();
 
     const newDomStyle = newDom.style;
-    if (newDomStyle) {  // In node or some other non-browser environment
+    // `newDom` may not have `style`, @see CAUTION_ZRENDER_PLATFORM_CREATE_CANVAS
+    if (newDomStyle) {
         newDomStyle.position = 'absolute';
         newDomStyle.left = '0';
         newDomStyle.top = '0';
@@ -50,6 +51,10 @@ function getStartEndFromCursor(layer: Layer): LayerDrawCursorStartEnd {
         endIdx: cursor ? cursor.endIdx : 0,
     };
 }
+
+export const LAYER_LAST_CLEARED_ALL = 1;
+export const LAYER_LAST_CLEARED_DIRTY_RECTS = 2;
+type LayerLastCleared = typeof LAYER_LAST_CLEARED_ALL | typeof LAYER_LAST_CLEARED_DIRTY_RECTS;
 
 export interface LayerConfig {
     // 每次清空画布的颜色
@@ -93,10 +98,10 @@ export default class Layer extends Eventful {
     id: string
 
     dom: HTMLCanvasElement
-    domBack: HTMLCanvasElement
+    domBack?: HTMLCanvasElement
 
     ctx: CanvasRenderingContext2D
-    ctxBack: CanvasRenderingContext2D
+    ctxBack?: CanvasRenderingContext2D
 
     painter: CanvasPainter
 
@@ -132,6 +137,13 @@ export default class Layer extends Eventful {
     maxRepaintRectCount = 5
 
     private _paintRects: BoundingRect[]
+
+    /**
+     * Valid only immediately after `clear` is called.
+     * NOTE: This private member is introduced instead of modifying `clear` method
+     * in order to avoid breaking potentail user monkey-patches to `clear`.
+     */
+    lastCleared?: LayerLastCleared | NullUndefined
 
     // `__dirty` means need clear the canvas.
     __dirty = true
@@ -428,7 +440,7 @@ export default class Layer extends Eventful {
      * 清空该层画布
      */
     clear(
-        clearAll?: boolean,
+        ignoreMotionBlur?: boolean,
         clearColor?: string | GradientObject | ImagePatternObject,
         repaintRects?: BoundingRect[]
     ) {
@@ -438,26 +450,31 @@ export default class Layer extends Eventful {
         const height = dom.height;
 
         clearColor = clearColor || this.clearColor;
-        const haveMotionBLur = this.motionBlur && !clearAll;
         const lastFrameAlpha = this.lastFrameAlpha;
 
         const dpr = this.dpr;
         const self = this;
 
-        if (haveMotionBLur) {
-            if (!this.domBack) {
+        let haveMotionBlur = this.motionBlur && !ignoreMotionBlur;
+        let domBack = this.domBack;
+        if (haveMotionBlur) {
+            if (!domBack) {
                 this.createBackBuffer();
+                domBack = this.domBack;
             }
-
-            this.ctxBack.globalCompositeOperation = 'copy';
-            this.ctxBack.drawImage(
+            if (!domBack) {
+                haveMotionBlur = false;
+            }
+        }
+        if (haveMotionBlur) {
+            const ctxBack = this.ctxBack;
+            ctxBack.globalCompositeOperation = 'copy';
+            ctxBack.drawImage(
                 dom, 0, 0,
                 width / dpr,
                 height / dpr
             );
         }
-
-        const domBack = this.domBack;
 
         function doClear(x: number, y: number, width: number, height: number) {
             ctx.clearRect(x, y, width, height);
@@ -504,7 +521,7 @@ export default class Layer extends Eventful {
                 ctx.restore();
             }
 
-            if (haveMotionBLur) {
+            if (haveMotionBlur) {
                 ctx.save();
                 ctx.globalAlpha = lastFrameAlpha;
                 ctx.drawImage(domBack, x, y, width, height);
@@ -512,13 +529,15 @@ export default class Layer extends Eventful {
             }
         };
 
-        if (!repaintRects || haveMotionBLur) {
+        let lastCleared: LayerLastCleared;
+        if (!repaintRects || haveMotionBlur) {
             // Clear the full canvas
             doClear(0, 0, width, height);
+            lastCleared = LAYER_LAST_CLEARED_ALL;
         }
         else if (repaintRects.length) {
             // Clear the repaint areas
-            util.each(repaintRects, rect => {
+            util.each(repaintRects, function (rect) {
                 doClear(
                     rect.x * dpr,
                     rect.y * dpr,
@@ -526,7 +545,9 @@ export default class Layer extends Eventful {
                     rect.height * dpr
                 );
             });
+            lastCleared = LAYER_LAST_CLEARED_DIRTY_RECTS;
         }
+        this.lastCleared = lastCleared;
     }
 
     // Interface of refresh

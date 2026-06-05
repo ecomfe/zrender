@@ -1,6 +1,6 @@
 import {devicePixelRatio} from '../config';
 import * as util from '../core/util';
-import Layer, { isIncrementalLayer, LayerConfig, LayerDrawCursor } from './Layer';
+import Layer, { isIncrementalLayer, LAYER_LAST_CLEARED_DIRTY_RECTS, LayerConfig, LayerDrawCursor } from './Layer';
 import requestAnimationFrame from '../animation/requestAnimationFrame';
 import env from '../core/env';
 import Displayable from '../graphic/Displayable';
@@ -212,6 +212,10 @@ export default class CanvasPainter implements PainterBase {
 
     type = 'canvas'
 
+    /**
+     * NOTICE: Effectively, it may be a canvas-like instance, rather than a `HTMLElement`.
+     * See CAUTION_ZRENDER_PLATFORM_CREATE_CANVAS for more info.
+     */
     root: HTMLElement
 
     dpr: number
@@ -262,15 +266,18 @@ export default class CanvasPainter implements PainterBase {
             layers: [],
         };
 
-        // In node environment using node-canvas
-        const singleCanvas = !root.nodeName // In node ?
+        // NOTICE:
+        //  - `singleCanvas` can be `true` in the `node-canvas` project, where `root` is an canvas
+        //    instance created by the project `node-canvas`, and no `nodeName` field.
+        //  - `singleCanvas` can be `true` in the `echarts-for-weixin` project, where `root`
+        //    is a canvas-like instance and no `nodeName` field.
+        const singleCanvas = this._singleCanvas =
+            !root.nodeName
             || root.nodeName.toUpperCase() === 'CANVAS';
 
         this._opts = opts = util.extend({}, opts || {}) as CanvasPainterOption;
 
         this.dpr = opts.devicePixelRatio || devicePixelRatio;
-
-        this._singleCanvas = singleCanvas;
 
         this.root = root;
 
@@ -549,7 +556,7 @@ export default class CanvasPainter implements PainterBase {
             // (2) If dirty rects changes, incremental rendering may need to restart.
             // (3) Rendering a display list against dirty rects involves a nested loop, which needs to
             //  be able to yield at an appropriate point without causing any element to miss a dirty rect.
-            const repaintRects = (painter._opts.useDirtyRect && !isIncrementalLayer(layer))
+            let repaintRects = (painter._opts.useDirtyRect && !isIncrementalLayer(layer))
                 ? layer.createRepaintRects(list, prevList, painter._width, painter._height) : null;
 
             const firstLayerKey = painter._i.layerStack[0];
@@ -561,6 +568,10 @@ export default class CanvasPainter implements PainterBase {
                 const clearColor = (layer.zlevel === firstLayerKey.zl && layer.zlevel2 === firstLayerKey.zl2)
                     ? painter._backgroundColor : null;
                 layer.clear(false, clearColor, repaintRects);
+                if (layer.lastCleared !== LAYER_LAST_CLEARED_DIRTY_RECTS) {
+                    // layer may be still cleared all even if `repaintRects` is provided.
+                    repaintRects = null;
+                }
             }
 
             eachCursorInLayer(layer, function (cursor) {
@@ -1191,6 +1202,9 @@ export default class CanvasPainter implements PainterBase {
 
     configLayer(zlevel: number, config: LayerConfig) {
         if (config) {
+            // PENDING: Only props in `LayerConfig` is allowed to be set,
+            // it's dangerous to modify other props of the `layer` instance.
+            // But for historical reason, no restriction is enforced.
             const layerConfig = this._layerConfig;
             if (!layerConfig[zlevel]) {
                 layerConfig[zlevel] = config;
@@ -1199,8 +1213,13 @@ export default class CanvasPainter implements PainterBase {
                 util.merge(layerConfig[zlevel], config, true);
             }
 
-            eachLayer(this._i, function (layer, zlevel) {
-                util.merge(layer, layerConfig[zlevel], true);
+            eachLayer(this._i, function (layer, zlv, zlv2) {
+                if (zlv === zlevel) {
+                    util.merge(layer, layerConfig[zlv], true);
+                    if (zlv2 === ZLEVEL2_INCREMENTAL) {
+                        layer.motionBlur = false;
+                    }
+                }
             });
         }
     }
