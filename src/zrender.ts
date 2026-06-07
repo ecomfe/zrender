@@ -65,7 +65,10 @@ function isDarkMode(backgroundColor: string | GradientObject | PatternObject): b
 
 class ZRender {
     /**
-     * Not necessary if using SSR painter like svg-ssr
+     * NOTICE:
+     *  - It is not necessary if using SSR painter like svg-ssr.
+     *  - Effectively, it may be a canvas-like instance, rather than a `HTMLElement`.
+     *    See CAUTION_ZRENDER_PLATFORM_CREATE_CANVAS for more info.
      */
     dom?: HTMLElement
 
@@ -94,9 +97,6 @@ class ZRender {
     constructor(id: number, dom?: HTMLElement, opts?: ZRenderInitOpt) {
         opts = opts || {};
 
-        /**
-         * @type {HTMLDomElement}
-         */
         this.dom = dom;
 
         this.id = id;

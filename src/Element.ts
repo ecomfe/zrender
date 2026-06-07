@@ -414,10 +414,9 @@ class Element<Props extends ElementProps = ElementProps> {
     __isRendered: boolean;
 
     /**
-     * Whether this element has been moved to the hover layer.
-     * If so, dirty will only trigger the zrender refresh hover layer.
+     * This flag indicates whether this element requests rendering on a hover layer.
      *
-     * Hover layer is typically useful for progressive rendering case,
+     * Hover layer is typically useful for large data case (including progressive rendering case),
      * where the underlying layers can remain not dirty for most hovering
      * interactions.
      *

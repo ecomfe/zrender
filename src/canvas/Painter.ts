@@ -29,12 +29,13 @@ type HoverLayerDirty =
     typeof HOVER_LAYER_DIRTY_NO
     | typeof HOVER_LAYER_DIRTY_REPAINT_IF_EXISTING
     | typeof HOVER_LAYER_DIRTY_REPAINT
-// Do noting to hover layer.
+// Do nothing to the hover layer.
 const HOVER_LAYER_DIRTY_NO: undefined = undefined;
-// Repaint only if existing. In most cases hover layer is not used,
-// do not need to travel one more time to detect hover state.
+// Repaint only if the hover layer exists. In most cases, hover layer is
+// not used, thereby avoiding its creation.
 const HOVER_LAYER_DIRTY_REPAINT_IF_EXISTING = 1;
-// Create a hover layer if not existing, and repaint.
+// Repaint the hover layer. Create a hover layer if not existing.
+// This is the only flag that can create a hover layer.
 const HOVER_LAYER_DIRTY_REPAINT = 2;
 
 
@@ -688,14 +689,15 @@ export default class CanvasPainter implements PainterBase {
 
             if (el.__inHover) {
                 // To avoid repeatedly repaint hover layer in progressive rendering,
-                // set HOVER_LAYER_DIRTY_REPAINT only when needed.
-                // Notice rendered el may not be traveled here again if the layer is not dirty,
-                // in this case HOVER_LAYER_DIRTY_REPAINT is set via markRedraw() calling
-                // zr.refreshHover().
+                // HOVER_LAYER_DIRTY_REPAINT should be set only when needed.
+                // Notice rendered elements may not be traveled here again if the layer is not dirty,
+                // in this case HOVER_LAYER_DIRTY_REPAINT can be set via `markRedraw()`, which calls
+                // `zr.refreshHover()`.
                 this._hoverLayerDirty = HOVER_LAYER_DIRTY_REPAINT;
-                // NOTE: To ensure a consistent composited visual effect, `el` should be
-                // always painted to normal layers regardless of whether it will be painted
-                // to a hover layer.
+                // NOTE: Hover state is typically triggered after an element is painted to a normal layer,
+                // and then painted to the hover layer, forming a composited visual effect if translucent.
+                // To ensure a consistent composited visual effect, that element should always be repainted
+                // to both a normal layer and a hover layer if it is dirty.
             }
 
             if (repaintRect != null) {
@@ -1177,6 +1179,7 @@ export default class CanvasPainter implements PainterBase {
                     // should be respected.
                     cursor.drawIdx = cursor.startIdx;
                 });
+                // If any layer needs to repaint, the hover layer should repaint accordingly.
                 if (painter._hoverLayerDirty === HOVER_LAYER_DIRTY_NO) {
                     painter._hoverLayerDirty = HOVER_LAYER_DIRTY_REPAINT_IF_EXISTING;
                 }

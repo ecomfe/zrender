@@ -98,9 +98,15 @@ export default class Layer extends Eventful {
     id: string
 
     dom: HTMLCanvasElement
+    /**
+     * For motion blur.
+     */
     domBack?: HTMLCanvasElement
 
     ctx: CanvasRenderingContext2D
+    /**
+     * For motion blur.
+     */
     ctxBack?: CanvasRenderingContext2D
 
     painter: CanvasPainter
@@ -111,7 +117,9 @@ export default class Layer extends Eventful {
      */
     clearColor: string | GradientObject | ImagePatternObject
     /**
-     * 是否开启动态模糊
+     * Whether to enable motion blur.
+     * This parameter represents a requirement from users, and it can be
+     * directly modified by users via `Painter['configLayer']`.
      */
     motionBlur = false
     /**
@@ -207,6 +215,9 @@ export default class Layer extends Eventful {
         this.__firstTimePaint = true;
     }
 
+    /**
+     * For motion blur.
+     */
     createBackBuffer() {
         const dpr = this.dpr;
 
