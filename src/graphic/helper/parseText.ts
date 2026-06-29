@@ -153,11 +153,22 @@ function truncateSingleLine(
             break;
         }
 
-        const subLength = j === 0
+        let subLength = j === 0
             ? estimateLength(textLine, contentWidth, fontMeasureInfo)
             : lineWidth > 0
             ? Math.floor(textLine.length * contentWidth / lineWidth)
             : 0;
+
+        // `subLength` is a UTF-16 code unit count, so it can fall between the
+        // two halves of a surrogate pair (for example CJK Extension B characters
+        // such as U+20BB7). Slicing there would leave an orphaned lead surrogate
+        // and corrupt the character, so step back to the pair boundary.
+        if (subLength > 0 && subLength < textLine.length) {
+            const lastCharCode = textLine.charCodeAt(subLength - 1);
+            if (lastCharCode >= 0xD800 && lastCharCode <= 0xDBFF) {
+                subLength -= 1;
+            }
+        }
 
         textLine = textLine.substr(0, subLength);
         lineWidth = measureWidth(fontMeasureInfo, textLine);
