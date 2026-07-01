@@ -10,10 +10,8 @@ import Eventful from '../core/Eventful';
 import requestAnimationFrame from './requestAnimationFrame';
 import Animator from './Animator';
 import Clip from './Clip';
+import { platformApi } from '../core/platform';
 
-export function getTime() {
-    return new Date().getTime();
-}
 
 interface Stage {
     update?: () => void
@@ -133,7 +131,7 @@ export default class Animation extends Eventful {
     }
 
     update(notTriggerFrameAndStageUpdate?: boolean) {
-        const time = getTime() - this._pausedTime;
+        const time = platformApi.getTime() - this._pausedTime;
         const delta = time - this._time;
         let clip = this._head;
 
@@ -188,7 +186,7 @@ export default class Animation extends Eventful {
             return;
         }
 
-        this._time = getTime();
+        this._time = platformApi.getTime();
         this._pausedTime = 0;
 
         this._startLoop();
@@ -206,7 +204,7 @@ export default class Animation extends Eventful {
      */
     pause() {
         if (!this._paused) {
-            this._pauseStart = getTime();
+            this._pauseStart = platformApi.getTime();
             this._paused = true;
         }
     }
@@ -216,7 +214,7 @@ export default class Animation extends Eventful {
      */
     resume() {
         if (this._paused) {
-            this._pausedTime += getTime() - this._pauseStart;
+            this._pausedTime += platformApi.getTime() - this._pauseStart;
             this._paused = false;
         }
     }

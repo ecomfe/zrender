@@ -1,3 +1,8 @@
+/**
+ * CAUTION:
+ *  This is the most underlying module. Do not import any other modules.
+ */
+
 export const DEFAULT_FONT_SIZE = 12;
 export const DEFAULT_FONT_FAMILY = 'sans-serif';
 export const DEFAULT_FONT = `${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`;
@@ -81,6 +86,7 @@ function getTextWidthMap(mapStr: string): Record<string, number> {
 
 export const DEFAULT_TEXT_WIDTH_MAP = getTextWidthMap(defaultWidthMapStr);
 
+
 export const platformApi: Platform = {
 
     createCanvas() {
@@ -151,4 +157,11 @@ export function setPlatformAPI(newPlatformApis: Partial<Platform>) {
             (platformApi as any)[key] = (newPlatformApis as any)[key];
         }
     }
+}
+
+/**
+ * Export it to users for possible restore.
+ */
+export function getPlatformAPI(method: keyof Platform): Platform[keyof Platform] {
+    return platformApi[method];
 }

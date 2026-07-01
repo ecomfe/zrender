@@ -13,6 +13,8 @@ import env from '../core/env';
 import { Dictionary, ZRRawEvent, ZRRawMouseEvent } from '../core/types';
 import { VectorArray } from '../core/vector';
 import Handler from '../Handler';
+import { platformApi } from '../core/platform';
+
 
 type DomHandlersMap = Dictionary<(this: HandlerDomProxy, event: ZRRawEvent) => void>
 
@@ -276,7 +278,7 @@ const localDOMHandlers: DomHandlersMap = {
 
         markTouch(event);
 
-        this.__lastTouchMoment = new Date();
+        this.__lastTouchMoment = platformApi.getTime();
 
         this.handler.processGesture(event, 'start');
 
@@ -320,7 +322,7 @@ const localDOMHandlers: DomHandlersMap = {
 
         // click event should always be triggered no matter whether
         // there is gestrue event. System click can not be prevented.
-        if (+new Date() - (+this.__lastTouchMoment) < TOUCH_CLICK_DELAY) {
+        if (platformApi.getTime() - this.__lastTouchMoment < TOUCH_CLICK_DELAY) {
             localDOMHandlers.click.call(this, event);
         }
     },
@@ -570,7 +572,7 @@ export default class HandlerDomProxy extends Eventful {
     private _localHandlerScope: DOMHandlerScope
     private _globalHandlerScope: DOMHandlerScope
 
-    __lastTouchMoment: Date
+    __lastTouchMoment: number
 
     // See [DRAG_OUTSIDE] in `Handler.ts`.
     __pointerCapturing = false

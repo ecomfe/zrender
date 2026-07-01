@@ -61,12 +61,12 @@ function tryCreateASCIIWidthMap(font: string): FontMeasureInfo['asciiWidthMap'] 
     }
     font = font || DEFAULT_FONT;
     const asciiWidthMap = [];
-    const start = +(new Date());
+    const start = platformApi.getTime();
     // 0~31 and 127 may also have width, and may vary in some fonts.
     for (let code = 0; code <= 127; code++) {
         asciiWidthMap[code] = platformApi.measureText(String.fromCharCode(code), font).width;
     }
-    const cost = +(new Date()) - start;
+    const cost = platformApi.getTime() - start;
     if (cost > 16) {
         _getASCIIWidthMapLongCount = GET_ASCII_WIDTH_LONG_COUNT_MAX;
     }

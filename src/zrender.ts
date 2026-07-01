@@ -13,7 +13,7 @@ import * as zrUtil from './core/util';
 import Handler from './Handler';
 import Storage from './Storage';
 import {PainterBase} from './PainterBase';
-import Animation, {getTime} from './animation/Animation';
+import Animation from './animation/Animation';
 import HandlerProxy from './dom/HandlerProxy';
 import Element, { ElementEventCallback } from './Element';
 import { Dictionary, ElementEventName, RenderedEvent, WithThisType } from './core/types';
@@ -26,6 +26,7 @@ import { lum } from './tool/color';
 import { DARK_MODE_THRESHOLD } from './config';
 import Group from './graphic/Group';
 import { CanvasPainterRefreshOpt } from './canvas/Painter';
+import { platformApi } from './core/platform';
 
 
 type PainterBaseCtor = {
@@ -282,7 +283,7 @@ class ZRender {
     private _flush(animationUpdate: boolean) {
         let triggerRendered;
 
-        const start = getTime();
+        const start = platformApi.getTime();
         const needsRefresh = this._needsRefresh;
         const needsRefreshHover = this._needsRefreshHover;
 
@@ -294,7 +295,7 @@ class ZRender {
                 refreshHover: needsRefreshHover,
             });
         }
-        const end = getTime();
+        const end = platformApi.getTime();
 
         if (triggerRendered) {
             this._stillFrameAccum = 0;
