@@ -47,7 +47,10 @@ interface ParsedRadialGradientObject extends ParsedGradientObject {
 const arraySlice = Array.prototype.slice;
 
 function interpolateNumber(p0: number, p1: number, percent: number): number {
-    return (p1 - p0) * percent + p0;
+    // Considered rounding error introduced by ieee754 when `percent === 1`,
+    // `p1 - p0 + p0` does not necessarily equal `p0`;
+    // e.g., `0.1 - 0.987 + 0.987` get `0.09999999999999998`.
+    return percent === 1 ? p1 : (p1 - p0) * percent + p0
 }
 function interpolate1DArray(
     out: NumberArray,
@@ -652,6 +655,16 @@ export default class Animator<T> {
 
     __fromStateTransition?: string
 
+    // Injected by `Element['animateTo']`
+    // An done callback created by `Element['animateTo']`.
+    __aTDn?: DoneCallback
+    // An aborted callback created by `Element['animateTo']`.
+    __aTAb?: AbortCallback
+    // a during (onframe) callback created by `Element['animateTo']`.
+    __aTDr?: OnframeCallback<T>
+    // This is the owner, where `animator.during(animator.__aTDr)` has been called.
+    __aTDrOw?: boolean;
+
     private _tracks: Dictionary<Track> = {}
     private _trackKeys: string[] = []
 
@@ -744,7 +757,7 @@ export default class Animator<T> {
     }
 
 
-    // Fast path for add keyframes of aniamteTo
+    // Fast path for add keyframes of animateTo
     whenWithKeys(time: number, props: Dictionary<any>, propNames: string[], easing?: AnimationEasing) {
         const tracks = this._tracks;
         for (let i = 0; i < propNames.length; i++) {
@@ -909,6 +922,7 @@ export default class Animator<T> {
             }
         }
         // Add during callback on the last clip
+        // When `_force: true` there might be no track added.
         if (tracks.length || this._force) {
             const clip = new Clip({
                 life: maxTime,
@@ -1027,6 +1041,28 @@ export default class Animator<T> {
             this._abortedCbs.push(cb);
         }
         return this;
+    }
+
+    /**
+     * Currently only callbacks added by `el.animateTo`/`el.animateFrom`
+     * need to be cleaned.
+     */
+    cleanCb() {
+        clean(this._doneCbs, this.__aTDn);
+        clean(this._abortedCbs, this.__aTAb);
+        clean(this._onframeCbs, this.__aTDr);
+        this.__aTDn = this.__aTAb = this.__aTDr = null;
+
+        function clean(cbs: Function[], cb: Function) {
+            if (!cbs || !cb) {
+                return;
+            }
+            for (let i = cbs.length - 1; i >= 0; i--) {
+                if (cbs[i] === cb) {
+                    cbs.splice(i, 1);
+                }
+            }
+        }
     }
 
     getClip() {

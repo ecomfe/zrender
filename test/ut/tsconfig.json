@@ -1,13 +1,12 @@
 {
     "compilerOptions": {
-        "target": "ES3",
+        "target": "ES6",
         "noImplicitAny": true,
         "strictBindCallApply": true,
 
         "noImplicitThis": true,
 
-        // https://github.com/ezolenko/rollup-plugin-typescript2/issues/12#issuecomment-536173372
-        "moduleResolution": "Node",
+        "esModuleInterop": true,
 
         "pretty": true
     },

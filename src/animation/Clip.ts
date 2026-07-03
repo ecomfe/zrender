@@ -14,7 +14,7 @@
 
 import easingFuncs, {AnimationEasing} from './easing';
 import type Animation from './Animation';
-import { isFunction, noop } from '../core/util';
+import { isFunction, noop, retrieve2 } from '../core/util';
 import { createCubicEasingFunc } from './cubicEasing';
 
 type OnframeCallback = (percent: number) => void;
@@ -63,7 +63,7 @@ export default class Clip {
 
     constructor(opts: ClipProps) {
 
-        this._life = opts.life || 1000;
+        this._life = retrieve2(opts.life, 1000);
         this._delay = opts.delay || 0;
 
         this.loop = opts.loop || false;

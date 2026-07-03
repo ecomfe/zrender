@@ -1,4 +1,5 @@
 module.exports = {
+    displayName: "zrenderUT",
     preset: 'ts-jest',
     testEnvironment: 'jsdom',
     rootDir: __dirname,
