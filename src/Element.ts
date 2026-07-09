@@ -5,6 +5,7 @@ import { ZRenderType } from './zrender';
 import {
     Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes,
     TextVerticalAlign, TextAlign, MapToType,
+    NullUndefined,
 } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
@@ -50,6 +51,9 @@ export interface ElementAnimateConfig {
      * NOTICE:
      *  Calling with `percent: 0` does not necessary occur.
      *  Calling with `percent: 1` must occur if this animation completes normally.
+     *  That is, if both `done` and `during` are registered, `during(1)` is called
+     *  if and only if `done` is called, even if values are assigned directly with
+     *  no animation occurs. And `during(1)` is called before `done`.
      */
     during?: (percent: number) => void
     /**
@@ -117,51 +121,9 @@ export interface ElementAnimateConfig {
  *  - ELEMENT_ANIMATION_PROPS_NONE (`0`) is designated as a sign to stop all given props
  *    (considered backward compatibility).
  *    @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
- *
- *
- * @tutorial [ZR_ELEMENT_STOP_ANIMATION_ON_PROPS]:
- *  To stop animations of specific props while allowing other animations to continue, we can simply
- *  Pass `0` to `animationProps`. This approach is more precise than `el.stopAnimation()`.
- *    - el.animateTo(props, cfg, 0);
- *      Values in `props` are assigned to `el` immediately, and existing animations on `props` are stopped.
- *    - el.animateFrom(props, cfg, 0);
- *      `el` retains its current values, and existing animations on `props` are stopped.
- *      In this case, only keys in `props` are used.
- *  For example,
- *    ```js
- *    el.animateTo({x: 10, style: {opacity: 1}}}, null, ELEMENT_ANIMATION_PROPS_NONE);
- *    // NOTE: `duration` can be omitted if passing ELEMENT_ANIMATION_PROPS_NONE.
- *    ```
- *  NOTICE:
- *    - `cfg.additive` must be falsy, otherwise nothing can be stopped.
- *    - Callbacks (`done`, `aborted`, `during`) will be called normally if provided,
- *      - `cfg.force: true`: they are called in an later frame.
- *      - Otherwise, they are called immediately in this frame.
- *  IMPL_MEMO:
- *    - The following sentences behave the same way:
- *      ```js
- *      el.animateTo({x: 10, style: {opacity: 1}}}, null, ELEMENT_ANIMATION_PROPS_NONE);
- *      el.animateTo({x: 10, style: {opacity: 1}}}, null, {style: {}});
- *      // NOTE: When indending to disable all animations, if using empty objects instead of
- *      // ELEMENT_ANIMATION_PROPS_NONE, every level needs an empty object, which is inconvenient.
- *      ```
- *    - `duration: 0` does not necessarily behave the same way as ELEMENT_ANIMATION_PROPS_NONE.
- *      ```ts
- *      // `x` will be changed immediately:
- *      el.animateTo({x: 10}, null, ELEMENT_ANIMATION_PROPS_NONE);
- *      // `x` will be modified to the final value in the next frame, rather than changing immediately:
- *      el.animateTo({x: 10}, {duration: 0});
- *      // `x` will be modified to the final value in a frame after 1000ms:
- *      el.animateTo({x: 10}, {duration: 0, delay: 1000});
- *      // `x` will be modified to the final value immediately, but animators may still be created, although
- *      // effectively not necessary - there is no special optimization for `duration: 0, delay: 0, setToFinal: true`,
- *      // since we opt to support ELEMENT_ANIMATION_PROPS_NONE.
- *      el.animateTo({x: 10}, {duration: 0, setToFinal: true});
- *      ```
- *  @test <zrender/test/animation-api-cases.html>
  */
 type ElementAnimationProps<Props extends ElementProps = ElementProps> =
-    MapToType<Props, boolean> | boolean | 0;
+    MapToType<Props, boolean> | boolean | typeof ELEMENT_ANIMATION_PROPS_NONE | NullUndefined;
 // @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
 export const ELEMENT_ANIMATION_PROPS_NONE = 0;
 
@@ -479,6 +441,16 @@ class Element<Props extends ElementProps = ElementProps> {
 
     parent: Group
 
+    /**
+     * CAUTION: Do not visit it from outside directly except you
+     * can clearly manage the risk. For example,
+     *  ```js
+     *  el.animateTo(target);
+     *  el.animators[0].during(cb); // This is INCORRECT!
+     *  // el.animators[0] is not necessarily created by this call to `el.animateTo`,
+     *  // but actually, for example, created by previous state change.
+     *  ```
+     */
     animators: Animator<any>[] = []
 
     /**
@@ -1952,7 +1924,9 @@ mixin(Element, Transformable);
  *      ```
  *  This subtlety is likely to confuse users. To avoid this issue, a pattern can be used if `done`/`during` need
  *  to be used:
- *    - Always use `cleanCb: true` and always provide callbacks for each call to `el.animateTo`/`el.animateFrom`.
+ *    - Ensure previous callbacks can be removed per call to `el.animateTo`/`el.animateFrom`, which can be achieved by
+ *      - either ensure keys of props are always the same;
+ *      - or always use `cleanCb: true`.
  *    - Do not use `aborted`.
  *    - Ensure `props` passed to `el.animateTo`/`el.animateForm` are not fully contained by `props` passed to
  *      `el.useState` (intersection is allowed). See DEFAULT_PATH_ANIMATION_PROPS. The reason is, `el.useState`
@@ -1971,7 +1945,88 @@ mixin(Element, Transformable);
  *  This difference may affect the caller's logic.
  *
  *
- * @see_also ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
+ * @tutorial [ZR_ELEMENT_STOP_ANIMATION_ON_PROPS]:
+ *  - [ZR_ELEMENT_ANIMATE_RETARGET_EXISTING_ANIMATION]:
+ *    ```js
+ *    el.animateTo({x: 100}, {during: 1000});
+ *    // Then animation on `x` is started.
+ *    el.animateTo({x: 200}, {during: 1000});
+ *    // Then the existing animations on `x` are retargetd.
+ *    // That is, a new animator are created (based on the current and target value),
+ *    // and `x` is removed from the existing animator.
+ *    ```
+ *  - [ZR_ELEMENT_ANIMATE_CURRENT_TARGET_VALUE_THE_SAME]:
+ *    If `force` is falsy, animation will not be created if the current value and the target value are the same.
+ *    `done` and `during(1)` will be called immediately. This is a historicall behavior and keep compatible.
+ *    PENDING:
+ *      One except is 2d Array does not perform this comparison. This is a historical behavior. However it affects
+ *      the timing of callback `done` and `during(1)` invocation, which may confuse users.
+ *  - [ELEMENT_ANIMATION_PROPS_NONE]:
+ *    To stop animations of specific props while allowing other animations to continue, we can simply
+ *    Pass ELEMENT_ANIMATION_PROPS_NONE to `animationProps`. This approach is more precise than `el.stopAnimation()`.
+ *      - el.animateTo(props, cfg, 0);
+ *        Values in `props` are assigned to `el` immediately, and existing animations on `props` are stopped.
+ *      - el.animateFrom(props, cfg, 0);
+ *        `el` retains its current values, and existing animations on `props` are stopped.
+ *        In this case, only keys in `props` are used.
+ *    For example,
+ *      ```js
+ *      el.animateTo({x: 10, style: {opacity: 1}}}, null, ELEMENT_ANIMATION_PROPS_NONE);
+ *      // NOTE: `duration` can be omitted if passing ELEMENT_ANIMATION_PROPS_NONE.
+ *      ```
+ *  - [ZR_ELEMENT_ANIMATE_PROP_NULL_UNDEFINED]:
+ *    If the target value or the current value is null/undefined (non-animatable), animations are not created and
+ *    existing animations on these props (if any) will be stopped.
+ *    ```js
+ *    el.animateTo({shape: {__myPts: [[111, 3], [222, 5]]}}, {duration: 300});
+ *    // Previously, `__myPts` is `undefined`. Therefore, the new value is assigned directly and
+ *    // no animation is created.
+ *    el.animateTo({shape: {__myPts: [[151, 37], [252, 57]]}}, {duration: 300});
+ *    // Animation on `__myPts` is created.
+ *    el.animateTo({shape: {__myPts: null}, {duration: 300});
+ *    // `__myPts` is directly set to `null` and the existing animation is stopped and discarded.
+ *    ```
+ *  - NOTICE:
+ *    - `cfg.additive` must be falsy, otherwise nothing can be stopped.
+ *    - Callbacks (`done`, `aborted`, `during`) will be called normally if provided,
+ *      - `cfg.force: true`: they are called in an later frame.
+ *      - Otherwise, they are called immediately in this frame.
+ *  - IMPL_MEMO:
+ *    - The following sentences behave the same way:
+ *      ```js
+ *      el.animateTo({x: 10, style: {opacity: 1}}}, null, ELEMENT_ANIMATION_PROPS_NONE);
+ *      el.animateTo({x: 10, style: {opacity: 1}}}, null, {style: {}});
+ *      // NOTE: When indending to disable all animations, if using empty objects instead of
+ *      // ELEMENT_ANIMATION_PROPS_NONE, every level needs an empty object, which is inconvenient.
+ *      ```
+ *    - `duration: 0` does not necessarily behave the same way as ELEMENT_ANIMATION_PROPS_NONE.
+ *      ```ts
+ *      // `x` will be changed immediately:
+ *      el.animateTo({x: 10}, null, ELEMENT_ANIMATION_PROPS_NONE);
+ *      // `x` will be modified to the final value in the next frame, rather than changing immediately:
+ *      el.animateTo({x: 10}, {duration: 0});
+ *      // `x` will be modified to the final value in a frame after 1000ms:
+ *      el.animateTo({x: 10}, {duration: 0, delay: 1000});
+ *      // `x` will be modified to the final value immediately, but animators may still be created, although
+ *      // effectively not necessary - there is no special optimization for `duration: 0, delay: 0, setToFinal: true`,
+ *      // since we opt to support ELEMENT_ANIMATION_PROPS_NONE.
+ *      el.animateTo({x: 10}, {duration: 0, setToFinal: true});
+ *      ```
+ *  @test <zrender/test/animation-api-cases.html>
+ *
+ *
+ * @tutorial [ZR_ELEMENT_ANIMATE_PROP_OBJECT_REFERENCE_CHANGE]
+ *  ```js
+ *  const points1 = [[11, 3], [21, 5], [31, 7]];
+ *  const points2 = [[311, 33], [321, 35], [331, 37]];
+ *  el.setShape({points: points1});
+ *  el.animateTo({shape: {points: points2}}, cfg); // or `el.animateFrom`
+ *  // Then `el.shape.points` may be `points1` or `points2` - this is not garanteed.
+ *  // But thereafter, `el.shape.points` will never change to another object if no more explicit call.
+ *  // That is, the animating value of `el.shape.points` can be used externally.
+ *  // For example, shared by another element:
+ *  const el2 = new Polygon({shape: {points: el.shape.points}});
+ *  ```
  */
 function animateTo<Props>(
     animatable: Element<Props>,
@@ -2163,6 +2218,7 @@ function isValueSame(val1: any, val2: any) {
     return val1 === val2
         // Only check 1 dimension array
         || isArrayLike(val1) && isArrayLike(val2) && is1DArraySame(val1, val2);
+    // PENDING: 2d array behave differently? @see ZR_ELEMENT_ANIMATE_CURRENT_TARGET_VALUE_THE_SAME
 }
 
 function is1DArraySame(arr0: ArrayLike<number>, arr1: ArrayLike<number>) {

@@ -5,7 +5,7 @@ import zrAnimationAPITest from '../../../animation-api-cases.js';
 
 describe('zr_element_animation_api', function () {
 
-    const TIME_OUT = 60 * 60 * 1000; // A large value to disable time-out.
+    const TIME_OUT = 60 * 1000;
 
     function consoleLog() {
         // @ts-ignore
