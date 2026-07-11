@@ -219,6 +219,22 @@ export interface ElementEvent {
     pinchY: number,
     pinchScale: number,
     wheelDelta: number,
+    /**
+     * Raw `WheelEvent.deltaX`. Only available in the zrender "mousewheel"
+     * event, which is fired by the native "wheel" event.
+     */
+    deltaX?: number,
+    /**
+     * Raw `WheelEvent.deltaY`. Only available in the zrender "mousewheel"
+     * event, which is fired by the native "wheel" event.
+     */
+    deltaY?: number,
+    /**
+     * Raw `WheelEvent.deltaMode` (0: pixel, 1: line, 2: page).
+     * Only available in the zrender "mousewheel" event, which is
+     * fired by the native "wheel" event.
+     */
+    deltaMode?: number,
     zrByTouch: boolean,
     which: number,
     stop: (this: ElementEvent) => void
