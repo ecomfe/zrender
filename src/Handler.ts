@@ -7,7 +7,9 @@ import {GestureMgr} from './core/GestureMgr';
 import Displayable from './graphic/Displayable';
 import {PainterBase} from './PainterBase';
 import HandlerDomProxy, { HandlerProxyInterface } from './dom/HandlerProxy';
-import { ZRRawEvent, ZRPinchEvent, ElementEventName, ElementEventNameWithOn, ZRRawTouchEvent } from './core/types';
+import {
+    ZRRawEvent, ZRPinchEvent, ZRRawWheelEvent, ElementEventName, ElementEventNameWithOn, ZRRawTouchEvent
+} from './core/types';
 import Storage from './Storage';
 import Element, {ElementEvent} from './Element';
 import CanvasPainter from './canvas/Painter';
@@ -96,6 +98,9 @@ function makeEventPacket(eveType: ElementEventName, targetInfo: {
         pinchY: (event as ZRPinchEvent).pinchY,
         pinchScale: (event as ZRPinchEvent).pinchScale,
         wheelDelta: event.zrDelta,
+        deltaX: (event as ZRRawWheelEvent).deltaX,
+        deltaY: (event as ZRRawWheelEvent).deltaY,
+        deltaMode: (event as ZRRawWheelEvent).deltaMode,
         zrByTouch: event.zrByTouch,
         which: event.which,
         stop: stopEvent

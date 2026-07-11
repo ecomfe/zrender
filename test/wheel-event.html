@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Wheel Event: raw deltaX / deltaY / deltaMode</title>
+    <script src="../dist/zrender.js"></script>
+    <script src="lib/config.js"></script>
+    <style>
+        body { font-family: monospace; }
+        #log { white-space: pre; font-size: 12px; }
+        table { border-collapse: collapse; margin: 10px 0; }
+        td, th { border: 1px solid #999; padding: 4px 10px; text-align: right; }
+    </style>
+</head>
+<body>
+    <p>Scroll the mouse wheel / trackpad over the rectangle.
+       The zrender "mousewheel" event carries the raw <b>deltaX / deltaY / deltaMode</b>
+       of the native WheelEvent, along with the normalized <b>wheelDelta</b>.</p>
+    <div id="main" style="width:600px;height:300px;"></div>
+    <table>
+        <tr>
+            <th>deltaX</th><th>deltaY</th><th>deltaMode</th><th>wheelDelta</th>
+        </tr>
+        <tr id="valueRow">
+            <td>-</td><td>-</td><td>-</td><td>-</td>
+        </tr>
+    </table>
+    <div id="log"></div>
+    <script type="text/javascript">
+        var zr = zrender.init(document.getElementById('main'), {
+            renderer: window.__ZRENDER__DEFAULT__RENDERER__
+        });
+        zr.add(new zrender.Rect({
+            shape: { x: 0, y: 0, width: 600, height: 300 },
+            style: { fill: '#8fd3e8' }
+        }));
+
+        var logEl = document.getElementById('log');
+        var lines = [];
+
+        zr.on('mousewheel', function (e) {
+            var cells = document.getElementById('valueRow').getElementsByTagName('td');
+            var values = [e.deltaX, e.deltaY, e.deltaMode, e.wheelDelta];
+            for (var i = 0; i < values.length; i++) {
+                cells[i].textContent = values[i];
+            }
+
+            lines.unshift(
+                'deltaX=' + e.deltaX
+                + ' deltaY=' + e.deltaY
+                + ' deltaMode=' + e.deltaMode
+                + ' wheelDelta=' + e.wheelDelta
+            );
+            lines = lines.slice(0, 20);
+            logEl.textContent = lines.join('\n');
+        });
+    </script>
+</body>
+</html>
