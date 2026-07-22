@@ -79,6 +79,24 @@ function createRoot(width: number, height: number) {
     return domRoot;
 }
 
+function createExportBrushScope(viewWidth: number, viewHeight: number): BrushScope {
+    return {
+        inHover: false,
+        viewWidth,
+        viewHeight,
+        beforeBrushParam: {},
+    };
+}
+
+function renderLayerToCanvas(ctx: CanvasRenderingContext2D, layer: Layer): void {
+    ctx.save();
+    // A previous displayable may leave its transform on the export context.
+    // Custom layers receive an identity transform in the normal compositing path.
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    layer.renderToCanvas(ctx);
+    ctx.restore();
+}
+
 function createBuiltinLayer(
     id: string | HTMLCanvasElement,
     painter: CanvasPainter,
@@ -1250,7 +1268,7 @@ export default class CanvasPainter implements PainterBase {
                 domRoot.style.width = width + 'px';
                 domRoot.style.height = height + 'px';
 
-                eachLayer(this._i, function (layer) {
+                eachLayer(this._i, (layer) => {
                     layer.resize(width as number, height as number, this.dpr);
                 });
 
@@ -1312,25 +1330,51 @@ export default class CanvasPainter implements PainterBase {
                     ctx.drawImage(layer.dom, 0, 0, width, height);
                 }
                 else if (layer.renderToCanvas) {
-                    ctx.save();
-                    layer.renderToCanvas(ctx);
-                    ctx.restore();
+                    renderLayerToCanvas(ctx, layer);
                 }
             });
         }
         else {
-            // PENDING, echarts-gl and incremental rendering.
-            const scope: BrushScope = {
-                inHover: false,
-                viewWidth: this._width,
-                viewHeight: this._height,
-                beforeBrushParam: {},
-            };
+            let scope = createExportBrushScope(this._width, this._height);
             const displayList = this.storage.getDisplayList(true);
+
+            const otherLayers: {layer: Layer, zlevel: ZLevel}[] = [];
+            eachLayer(this._i, function (layer, zlevel) {
+                if (layer.renderToCanvas) {
+                    otherLayers.push({layer, zlevel});
+                }
+            }, EACH_LAYER_NOT_BUILTIN);
+
+            let otherLayerIdx = 0;
+            const renderOtherLayersBefore = (zlevel: ZLevel) => {
+                const firstOtherLayerIdx = otherLayerIdx;
+                while (otherLayerIdx < otherLayers.length
+                    && otherLayers[otherLayerIdx].zlevel <= zlevel
+                ) {
+                    otherLayerIdx++;
+                }
+
+                if (otherLayerIdx > firstOtherLayerIdx) {
+                    // Custom layers are not included in storage's display list. Flush
+                    // pending batches and clipping before inserting them in z-order.
+                    brushLoopFinalize(ctx, scope);
+                    for (let i = firstOtherLayerIdx; i < otherLayerIdx; i++) {
+                        renderLayerToCanvas(ctx, otherLayers[i].layer);
+                    }
+                    scope = createExportBrushScope(this._width, this._height);
+                }
+            };
+
+            let prevZlevel: ZLevel;
             for (let i = 0, len = displayList.length; i < len; i++) {
                 const el = displayList[i];
+                if (el.zlevel !== prevZlevel) {
+                    prevZlevel = el.zlevel;
+                    renderOtherLayersBefore(el.zlevel);
+                }
                 brush(ctx, el, scope);
             }
+            renderOtherLayersBefore(Infinity);
             brushLoopFinalize(ctx, scope);
         }
 
