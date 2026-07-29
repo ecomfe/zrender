@@ -48,6 +48,9 @@ export interface ElementAnimateConfig {
     easing?: AnimationEasing
 
     /**
+     * `percent` is a 0~1 value, on which a easing function (if any) has been applied, i.e.,
+     * it is not linear if easing function is not linear.
+     *
      * NOTICE:
      *  Calling with `percent: 0` does not necessary occur.
      *  Calling with `percent: 1` must occur if this animation completes normally.
@@ -1964,9 +1967,9 @@ mixin(Element, Transformable);
  *  - [ELEMENT_ANIMATION_PROPS_NONE]:
  *    To stop animations of specific props while allowing other animations to continue, we can simply
  *    Pass ELEMENT_ANIMATION_PROPS_NONE to `animationProps`. This approach is more precise than `el.stopAnimation()`.
- *      - el.animateTo(props, cfg, 0);
+ *      - el.animateTo(props, cfg, ELEMENT_ANIMATION_PROPS_NONE);
  *        Values in `props` are assigned to `el` immediately, and existing animations on `props` are stopped.
- *      - el.animateFrom(props, cfg, 0);
+ *      - el.animateFrom(props, cfg, ELEMENT_ANIMATION_PROPS_NONE);
  *        `el` retains its current values, and existing animations on `props` are stopped.
  *        In this case, only keys in `props` are used.
  *    For example,

@@ -91,6 +91,8 @@ export default class Clip {
         const life = this._life;
         let elapsedTime = globalTime - this._startTime - this._pausedTime;
         let percent = elapsedTime / life;
+        // If `_life` is `Infinity`, `precent` is always `0` here. This is required to
+        // suport to create a infinite animator by `duration: Infinity`.
 
         // PENDING: Not begin yet. Still run the loop.
         // In the case callback needs to be invoked.
