@@ -46,12 +46,13 @@ interface ParsedRadialGradientObject extends ParsedGradientObject {
 
 const arraySlice = Array.prototype.slice;
 
-function interpolateNumber(p0: number, p1: number, percent: number): number {
+export function interpolateNumber(p0: number, p1: number, percent: number): number {
     // Considered rounding error introduced by ieee754 when `percent === 1`,
     // `p1 - p0 + p0` does not necessarily equal `p0`;
     // e.g., `0.1 - 0.987 + 0.987` get `0.09999999999999998`.
     return percent === 1 ? p1 : (p1 - p0) * percent + p0
 }
+
 function interpolate1DArray(
     out: NumberArray,
     p0: NumberArray,
