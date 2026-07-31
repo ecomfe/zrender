@@ -57,6 +57,8 @@ export interface ElementAnimateConfig {
      *  That is, if both `done` and `during` are registered, `during(1)` is called
      *  if and only if `done` is called, even if values are assigned directly with
      *  no animation occurs. And `during(1)` is called before `done`.
+     *
+     * @see ZR_SYNC_MULTIPLE_ANIMATIONS
      */
     during?: (percent: number) => void
     /**
@@ -2030,6 +2032,10 @@ mixin(Element, Transformable);
  *  // For example, shared by another element:
  *  const el2 = new Polygon({shape: {points: el.shape.points}});
  *  ```
+ *
+ *
+ * @tutorial [ZR_SYNC_MULTIPLE_ANIMATIONS]
+ *  If intending to update other elements in multiple `during`s, `SBarrier` can be used to sync them.
  */
 function animateTo<Props>(
     animatable: Element<Props>,
