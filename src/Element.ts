@@ -83,17 +83,17 @@ export interface ElementAnimateConfig {
     cleanCb?: boolean
 
     scope?: string
+
     /**
-     * `force` is mainly for ensure `done` and `during` callback is able to be called in
-     * a later JS task even if animation is not necessary.
-     * In this case, animators will always be created.
      * @see ZR_ELEMENT_ANIMATION_CALLBACK_WHEN_NO_ANIMATION
      */
     force?: boolean
+
     /**
      * Whether to use additive animation.
      */
     additive?: boolean
+
     /**
      * Whether to set to final state before animation started.
      * It can be useful if something you want to calculate depends on the final state of element.
@@ -123,7 +123,7 @@ export interface ElementAnimateConfig {
  *      el.animateTo({x: 10, style: {opacity: 1}}}, null, {x: true});
  *      // `style.opacity` should not animate, since `style` is absent or falsy in `animationProps`.
  *      ```
- *  - ELEMENT_ANIMATION_PROPS_NONE (`0`) is designated as a sign to stop all given props
+ *  - ELEMENT_ANIMATION_PROPS_NONE (`0`) is designated as a sentinel to stop all given props
  *    (considered backward compatibility).
  *    @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
  */
@@ -1942,12 +1942,22 @@ mixin(Element, Transformable);
  *
  *
  * @tutorial [ZR_ELEMENT_ANIMATION_CALLBACK_WHEN_NO_ANIMATION]:
- *  When animation is not needed (e.g., target values are the same as the initial values, or disabled by
- *  `animationProps`),
- *  - If `cfg.force: true`, `done` and `during` (with percent `1`) are called on a later JS task.
- *  - if `cfg.force` is a falsy value, `done` and `during` (with percent `1`) is called in the same JS task
- *    where `el.animateTo`/`el.animateFrom` is called. This is a historical behavior; we keep compatible.
- *  This difference may affect the caller's logic.
+ *  Caller's code arrangement may be affected by the following difference:
+ *  - If `cfg.force` is a falsy value (the default):
+ *    In some cases animators are not created (e.g., when target values are the same as the initial values, or
+ *    animation is disabled by `animationProps`). In this cases, `done` and `during` (with percent `1`) are called
+ *    immediately in the call to `el.animateTo`/`el.animateFrom`. This is a historical behavior; we keep compatible.
+ *  - Otherwise (if `cfg.force` is a truthy value):
+ *    At least one animator is created, and `done` and `during` are not called immediately, but are called when the
+ *    clip of the animator is handled, typically in next frames.
+ *    There are additional nuances in this case:
+ *    - If the animation is disabled by ELEMENT_ANIMATION_PROPS_NONE:
+ *      `during` is called only once, and `percent: 1` is passed. Otherwise, calls to `during` with `percent` less
+ *      then `1` is inconsistent with the semantics of "no animation", and cause unexpected effect if `during` is
+ *      used to update other elements.
+ *    - Otherwise:
+ *      `during` is called normally with percent increasing gradually. This feature can be used to create an
+ *      animator and handle all updates in `during`.
  *
  *
  * @tutorial [ZR_ELEMENT_STOP_ANIMATION_ON_PROPS]:
@@ -2063,6 +2073,8 @@ function animateTo<Props>(
         // So we use a small positive duration (`1`) instead of `0`. Otherwise, we have
         // to handle `0` duration everywhere (e.g., when calculating percent or interpolation).
         // And this strategy is fine since no need to be precise here.
+        // NOTICE: `1` is also smaller than the default `ZRender['_sleepAfterStill']`, otherwise
+        // the `during` may not be called when ELEMENT_ANIMATION_PROPS_NONE is used.
         duration = 1;
     }
 
@@ -2291,9 +2303,12 @@ function animateToShallow<Props>(
 
         const animateOnInnerKey = animateByDict
             ? (animationProps as Dictionary<any>)[innerKey]
-            : ( // Determine whether to animate all given props or animate nothing.
+            // Determine whether to animate all given props or animate nothing.
+            : (
                 animationProps !== ELEMENT_ANIMATION_PROPS_NONE
-                && ( // See the reason in the comments of `ElementAnimationProps`
+                && (
+                    // The outermost level have a different behavior. See the reason in
+                    // the comments of `ElementAnimationProps`.
                     isOutermostLevel || !!animationProps
                 )
             );
@@ -2423,7 +2438,7 @@ function animateToShallow<Props>(
             function (animator) {
                 return animator.targetName === topKey;
             }
-        ) : null);
+        ) : null, animationProps === ELEMENT_ANIMATION_PROPS_NONE);
 
         animator.targetName = topKey;
         if (cfg.scope) {

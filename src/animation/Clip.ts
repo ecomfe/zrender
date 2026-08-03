@@ -29,6 +29,7 @@ export interface ClipProps {
     delay?: number
     loop?: boolean
     easing?: AnimationEasing
+    noAni?: boolean
 
     onframe?: OnframeCallback
     ondestroy?: ondestroyCallback
@@ -45,6 +46,8 @@ export default class Clip {
 
     private _pausedTime = 0
     private _paused = false
+
+    private _noAni: boolean
 
     animation: Animation
 
@@ -65,6 +68,7 @@ export default class Clip {
 
         this._life = retrieve2(opts.life, 1000);
         this._delay = opts.delay || 0;
+        this._noAni = opts.noAni;
 
         this.loop = opts.loop || false;
 
@@ -107,7 +111,10 @@ export default class Clip {
         const easingFunc = this.easingFunc;
         const schedule = easingFunc ? easingFunc(percent) : percent;
 
-        this.onframe(schedule);
+        // @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
+        if (!this._noAni || percent === 1) {
+            this.onframe(schedule);
+        }
 
         // 结束
         if (percent === 1) {

@@ -27,7 +27,7 @@ describe('zr_element_animation_api', function () {
     for (let caseIdx = 0; caseIdx < testSuite.cases.length; caseIdx++) {
         // Test detailed Element animation APIs.
         it('zr_element_animation_api_' + caseIdx, () => {
-            return testSuite.cases[caseIdx]();
+            return testSuite.cases[caseIdx].caseFn();
         }, TIME_OUT);
     }
 

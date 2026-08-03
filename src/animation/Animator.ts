@@ -698,6 +698,8 @@ export default class Animator<T> {
 
     private _additiveAnimators: Animator<any>[]
 
+    private _noAni: boolean;
+
     private _doneCbs: DoneCallback[]
     private _onframeCbs: OnframeCallback<T>[]
 
@@ -709,7 +711,8 @@ export default class Animator<T> {
         target: T,
         loop: boolean,
         allowDiscreteAnimation?: boolean,  // If doing discrete animation on the values can't be interpolated
-        additiveTo?: Animator<any>[]
+        additiveTo?: Animator<any>[],
+        noAni?: boolean, // No animation.
     ) {
         this._target = target;
         this._loop = loop;
@@ -720,6 +723,8 @@ export default class Animator<T> {
         this._additiveAnimators = additiveTo;
 
         this._allowDiscrete = allowDiscreteAnimation;
+
+        this._noAni = noAni;
     }
 
     getMaxTime() {
@@ -929,6 +934,7 @@ export default class Animator<T> {
                 life: maxTime,
                 loop: this._loop,
                 delay: this._delay || 0,
+                noAni: this._noAni,
                 onframe(percent: number) {
                     self._started = 2;
                     // Remove additived animator if it's finished.
