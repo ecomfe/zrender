@@ -1246,7 +1246,7 @@
                         {
                             force: cfgForce,
                             done: prepared.done1, aborted: prepared.aborted1, during: prepared.during1,
-                            duration: DURATION
+                            duration: DURATION / 2
                         }
                     );
                     record.checkCfgForceFalse1 = function () {
@@ -1263,7 +1263,7 @@
                         assert(countInList(prepared.log, 'during1_percent:0') === 0);
                     }
 
-                    return promisifiedTimeOut(DURATION * 1.1);
+                    return promisifiedTimeOut(DURATION / 2 * 1.1);
 
                 }).then(function () {
                     if (!cfgForce) {
@@ -1289,16 +1289,26 @@
          * Test `during`: Only `during` is used but ELEMENT_ANIMATION_PROPS_NONE (force: true | false).
          */
         addTestCase('during_with_ELEMENT_ANIMATION_PROPS_NONE', function () {
-            function testSingle(method, cfgForce) {
+            function testSingle(method, cfgForce, changeInnerOrOuterProp) {
                 var prepared;
                 var record = {};
+
+                function checkFinalValue() {
+                    if (method === elAnimateTo) {
+                        changeInnerOrOuterProp ? assert(prepared.el.shape.y === 100) : assert(prepared.el.x === 100);
+                    }
+                    else {
+                        changeInnerOrOuterProp ? assert(prepared.el.shape.y === 10) : assert(prepared.el.x === 0);
+                    }
+                }
 
                 return Promise.resolve().then(function () {
                     prepared = prepare();
                     prepared.el.x = 0;
+                    prepared.el.shape.y = 10;
                     method(
                         prepared.el,
-                        {x: 100},
+                        changeInnerOrOuterProp ? {shape: {y: 100}} : {x: 100},
                         {
                             force: cfgForce,
                             done: prepared.done1, aborted: prepared.aborted1, during: prepared.during1
@@ -1306,9 +1316,7 @@
                         ELEMENT_ANIMATION_PROPS_NONE
                     );
                     record.checkCfgForceFalse1 = function () {
-                        if (method === elAnimateTo) {
-                            assert(prepared.el.x === 100);
-                        }
+                        checkFinalValue();
                         assert(countInList(prepared.log, 'during1_percent:1') === 1);
                         assert(countInList(prepared.log, 'done1') === 1);
                         assert(countInList(prepared.log, 'during1_percent:0') === 0);
@@ -1317,9 +1325,7 @@
                         record.checkCfgForceFalse1();
                     }
                     else {
-                        if (method === elAnimateTo) {
-                            assert(prepared.el.x === 100);
-                        }
+                        checkFinalValue();
                         assert(countInList(prepared.log, 'during1_percent:1') === 0);
                         assert(countInList(prepared.log, 'done1') === 0);
                         assert(countInList(prepared.log, 'during1_percent:0') === 0);
@@ -1342,10 +1348,14 @@
             }
 
             return Promise.resolve()
-                .then(function () { return testSingle(elAnimateTo, false); })
-                .then(function () { return testSingle(elAnimateFrom, false); })
-                .then(function () { return testSingle(elAnimateTo, true); })
-                .then(function () { return testSingle(elAnimateFrom, true); });
+                .then(function () { return testSingle(elAnimateTo, false, true); })
+                .then(function () { return testSingle(elAnimateFrom, false, true); })
+                .then(function () { return testSingle(elAnimateTo, false, false); })
+                .then(function () { return testSingle(elAnimateFrom, false, false); })
+                .then(function () { return testSingle(elAnimateTo, true, true); })
+                .then(function () { return testSingle(elAnimateFrom, true, true); })
+                .then(function () { return testSingle(elAnimateTo, true, false); })
+                .then(function () { return testSingle(elAnimateFrom, true, false); });
         });
 
         /**

@@ -112,18 +112,18 @@ export interface ElementAnimateConfig {
  *    `true | false | null | undefined` indicate animating all given props (for historical reasons).
  *    e.g., consider cases:
  *      ```js
- *      el.animateTo({x: 10, style: {opacity: 1}}}, null, undefined);
+ *      el.animateTo({x: 10, style: {opacity: 1}}, null, undefined);
  *      // All the given props should animate, since `animationProps` is `undefined`.
  *      ```
  *  - For inner levels of `animationProps`:
  *    Only truthy values indcate animating all given props.
  *    e.g., consider cases:
  *      ```js
- *      el.animateTo({x: 10, style: {opacity: 1}}}, null, {x: true, style: undefined});
- *      el.animateTo({x: 10, style: {opacity: 1}}}, null, {x: true});
+ *      el.animateTo({x: 10, style: {opacity: 1}}, null, {x: true, style: undefined});
+ *      el.animateTo({x: 10, style: {opacity: 1}}, null, {x: true});
  *      // `style.opacity` should not animate, since `style` is absent or falsy in `animationProps`.
  *      ```
- *  - ELEMENT_ANIMATION_PROPS_NONE (`0`) is designated as a sentinel to stop all given props
+ *  - ELEMENT_ANIMATION_PROPS_NONE (`0`, a falsy value) is designated as a sentinel to stop all given props
  *    (considered backward compatibility).
  *    @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
  */
@@ -1986,7 +1986,7 @@ mixin(Element, Transformable);
  *        In this case, only keys in `props` are used.
  *    For example,
  *      ```js
- *      el.animateTo({x: 10, style: {opacity: 1}}}, null, ELEMENT_ANIMATION_PROPS_NONE);
+ *      el.animateTo({x: 10, style: {opacity: 1}}, null, ELEMENT_ANIMATION_PROPS_NONE);
  *      // NOTE: `duration` can be omitted if passing ELEMENT_ANIMATION_PROPS_NONE.
  *      ```
  *  - [ZR_ELEMENT_ANIMATE_PROP_NULL_UNDEFINED]:
@@ -2009,8 +2009,8 @@ mixin(Element, Transformable);
  *  - IMPL_MEMO:
  *    - The following sentences behave the same way:
  *      ```js
- *      el.animateTo({x: 10, style: {opacity: 1}}}, null, ELEMENT_ANIMATION_PROPS_NONE);
- *      el.animateTo({x: 10, style: {opacity: 1}}}, null, {style: {}});
+ *      el.animateTo({x: 10, style: {opacity: 1}}, null, ELEMENT_ANIMATION_PROPS_NONE);
+ *      el.animateTo({x: 10, style: {opacity: 1}}, null, {style: {}});
  *      // NOTE: When indending to disable all animations, if using empty objects instead of
  *      // ELEMENT_ANIMATION_PROPS_NONE, every level needs an empty object, which is inconvenient.
  *      ```
@@ -2301,17 +2301,14 @@ function animateToShallow<Props>(
         const targetVal = target[innerKey];
         let directlyAssignAndStop = false;
 
-        const animateOnInnerKey = animateByDict
-            ? (animationProps as Dictionary<any>)[innerKey]
-            // Determine whether to animate all given props or animate nothing.
-            : (
-                animationProps !== ELEMENT_ANIMATION_PROPS_NONE
-                && (
-                    // The outermost level have a different behavior. See the reason in
-                    // the comments of `ElementAnimationProps`.
-                    isOutermostLevel || !!animationProps
-                )
-            );
+        const animateOnInnerKey =
+            animateByDict ? (animationProps as Dictionary<any>)[innerKey]
+            // Otherwise, determine whether to animate all given props or animate nothing.
+            // ELEMENT_ANIMATION_PROPS_NONE may need to be passed to `animateToShallow` recursively.
+            : animationProps === ELEMENT_ANIMATION_PROPS_NONE ? ELEMENT_ANIMATION_PROPS_NONE
+            // The outermost level have a different behavior. See the reason in
+            // the comments of `ElementAnimationProps`.
+            : (isOutermostLevel || !!animationProps);
 
         if (isObject(targetVal)
             && !isArrayLike(targetVal)
