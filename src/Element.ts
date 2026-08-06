@@ -48,19 +48,22 @@ export interface ElementAnimateConfig {
     easing?: AnimationEasing
 
     /**
-     * `percent` is a 0~1 value, on which a easing function (if any) has been applied, i.e.,
-     * it is not linear if easing function is not linear.
-     *
      * NOTICE:
-     *  Calling with `percent: 0` does not necessary occur.
-     *  Calling with `percent: 1` must occur if this animation completes normally.
-     *  That is, if both `done` and `during` are registered, `during(1)` is called
-     *  if and only if `done` is called, even if values are assigned directly with
-     *  no animation occurs. And `during(1)` is called before `done`.
+     *  - `rawPercent` ranges from 0 to 1 and increase monotonically over time.
+     *  - `percent` is the result after applying a easing function (if any). Therefore, it is probably not linear
+     *    and may not monotonic, and does not necessarily range from 0 to 1 (may less than 0 or greater than 1 in
+     *    certain moments), which depends on the easing function.
+     *    The last call to `during` must pass `percent: 1, rawPercent: 1` if animation completes with no abortion.
+     *  - Calling with `percent: 1, rawPercent: 1` (`during(1, 1)`) occurs if and only if this animation completes
+     *    with no abortion or values are assigned directly with no animation, and this `during` call is immediately
+     *    before a `done` call.
+     *    But only `rawPercent === 1` can be used to determine the animation completion, since
+     *    `percent: 1, rawPercent < 1` may occur in a non-monotonic easing.
+     *  - Calling with `rawPercent: 0` does not necessarily occur.
      *
      * @see ZR_SYNC_MULTIPLE_ANIMATIONS
      */
-    during?: (percent: number) => void
+    during?: (percent: number, rawPercent: number) => void
     /**
      * `done` will be called when all of the animations of the target props are
      * "done" or "aborted", and at least one "done" happened.
@@ -68,12 +71,12 @@ export interface ElementAnimateConfig {
      * The calling of `animationTo` done rather than aborted if at least one done happened.
      * @see ZR_ELEMENT_ANIMATE_TO_DONE_CB_ISSUE
      */
-    done?: Function
+    done?: () => void
     /**
      * `aborted` is called when all of the animations of the target props are "aborted".
      * @see ZR_ELEMENT_ANIMATE_TO_DONE_CB_ISSUE
      */
-    aborted?: Function
+    aborted?: () => void
     /**
      * Whether to discard all previous callbacks (`during`, `done`, `aborted`) regardless of
      * whether new callbacks are provided.
@@ -1945,16 +1948,16 @@ mixin(Element, Transformable);
  *  Caller's code arrangement may be affected by the following difference:
  *  - If `cfg.force` is a falsy value (the default):
  *    In some cases animators are not created (e.g., when target values are the same as the initial values, or
- *    animation is disabled by `animationProps`). In this cases, `done` and `during` (with percent `1`) are called
+ *    animation is disabled by `animationProps`). In this cases, `done` and `during` (with `rawPercent: 1`) are called
  *    immediately in the call to `el.animateTo`/`el.animateFrom`. This is a historical behavior; we keep compatible.
  *  - Otherwise (if `cfg.force` is a truthy value):
  *    At least one animator is created, and `done` and `during` are not called immediately, but are called when the
  *    clip of the animator is handled, typically in next frames.
  *    There are additional nuances in this case:
  *    - If the animation is disabled by ELEMENT_ANIMATION_PROPS_NONE:
- *      `during` is called only once, and `percent: 1` is passed. Otherwise, calls to `during` with `percent` less
- *      then `1` is inconsistent with the semantics of "no animation", and cause unexpected effect if `during` is
- *      used to update other elements.
+ *      `during` is called only once, and `rawPercent: 1` is passed. Otherwise, calls to `during` with `rawPercent`
+ *      less then `1` is inconsistent with the semantics of "no animation", and cause unexpected effect if `during`
+ *      is used to update other elements.
  *    - Otherwise:
  *      `during` is called normally with percent increasing gradually. This feature can be used to create an
  *      animator and handle all updates in `during`.
@@ -2098,7 +2101,7 @@ function animateTo<Props>(
 
     if (!newAnimatorsLength) {
         // @see ZR_ELEMENT_ANIMATION_CALLBACK_WHEN_NO_ANIMATION
-        cfgDuring && cfgDuring(1);
+        cfgDuring && cfgDuring(1, 1);
         cfgDone && cfgDone();
         return newAnimators;
     }
@@ -2170,11 +2173,11 @@ function animateToCreateDoneAbortedCb(cfg: ElementAnimateConfig, finishCount: nu
 
 function animateToCreateDuringCb<Props>(cfg: ElementAnimateConfig) {
     const cfgDuring = cfg.during;
-    function duringCb(target: Element<Props>, percent: number) {
+    function duringCb(target: Element<Props>, percent: number, rawPercent: number): void {
         // Considering part of animators may be discarded by later `el.animateTo`/`el.animateFrom`,
         // during is added to every animators, and `cfg.during` should be triggered only once
-        // for each `percent`.
-        cfgDuring(percent);
+        // for each `rawPercent`.
+        cfgDuring(percent, rawPercent);
     }
     duringCb.__zrAniTo = true;
 

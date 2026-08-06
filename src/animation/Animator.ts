@@ -8,7 +8,6 @@ import {
     eqNaN,
     extend,
     isArrayLike,
-    isFunction,
     isGradientObject,
     isNumber,
     isString,
@@ -17,9 +16,8 @@ import {
     map
 } from '../core/util';
 import {ArrayLike, Dictionary} from '../core/types';
-import easingFuncs, { AnimationEasing } from './easing';
+import { AnimationEasing, callEasing, EasingHost, setEasing } from './easing';
 import Animation from './Animation';
-import { createCubicEasingFunc } from './cubicEasing';
 import { isLinearGradient, isRadialGradient } from '../svg/helper';
 
 type NumberArray = ArrayLike<number>
@@ -225,14 +223,13 @@ type ValueType = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 type Keyframe = {
     time: number
     value: unknown
+    // This is a raw percent with no easing applied.
     percent: number
     // Raw value for discrete animation.
     rawValue: unknown
 
-    easing?: AnimationEasing    // Raw easing
-    easingFunc?: (percent: number) => number
     additiveValue?: unknown
-}
+} & EasingHost;
 
 
 function isGradientValueType(valType: ValueType): valType is 4 | 5 {
@@ -371,11 +368,7 @@ class Track {
             percent: 0
         };
         if (easing) {
-            // Save the raw easing name to be used in css animation output
-            kf.easing = easing;
-            kf.easingFunc = isFunction(easing)
-                ? easing
-                : easingFuncs[easing] || createCubicEasingFunc(easing);
+            setEasing(kf, easing);
         }
         // Not check if value equal here.
         keyframes.push(kf);
@@ -520,9 +513,10 @@ class Track {
 
         // Apply different easing of each keyframe.
         // Use easing specified in target frame.
-        if (nextFrame.easingFunc) {
-            w = nextFrame.easingFunc(w);
-        }
+        w = callEasing(nextFrame, w);
+        // PENDING: The input `percent` has been applied `clip.easing` (if any).
+        // If easings are both passed to `animator.start(easing)` and keyframes, a raw percent
+        // will apply easings multiple times, which may not produce an expected result.
 
         // If value is arr
         let targetArr = isAdditive ? this._additiveValue
@@ -641,7 +635,7 @@ class Track {
 
 type DoneCallback = () => void;
 type AbortCallback = () => void;
-export type OnframeCallback<T> = (target: T, percent: number) => void;
+export type OnframeCallback<T> = (target: T, percent: number, rawPercent: number) => void;
 
 export type AnimationPropGetter<T> = (target: T, key: string) => InterpolatableType;
 export type AnimationPropSetter<T> = (target: T, key: string, value: InterpolatableType) => void;
@@ -927,6 +921,7 @@ export default class Animator<T> {
                 }
             }
         }
+        const noAni = this._noAni;
         // Add during callback on the last clip
         // When `_force: true` there might be no track added.
         if (tracks.length || this._force) {
@@ -934,8 +929,12 @@ export default class Animator<T> {
                 life: maxTime,
                 loop: this._loop,
                 delay: this._delay || 0,
-                noAni: this._noAni,
-                onframe(percent: number) {
+                onframe(percent: number, rawPercent: number) {
+                    // @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
+                    if (noAni && rawPercent !== 1) {
+                        return;
+                    }
+
                     self._started = 2;
                     // Remove additived animator if it's finished.
                     // For the purpose of memory effeciency.
@@ -962,7 +961,7 @@ export default class Animator<T> {
                     const onframeList = self._onframeCbs;
                     if (onframeList) {
                         for (let i = 0; i < onframeList.length; i++) {
-                            onframeList[i](self._target, percent);
+                            onframeList[i](self._target, percent, rawPercent);
                         }
                     }
                 },
@@ -976,9 +975,7 @@ export default class Animator<T> {
                 this.animation.addClip(clip);
             }
 
-            if (easing) {
-                clip.setEasing(easing);
-            }
+            setEasing(clip, easing);
         }
         else {
             // This optimization will help the case that in the upper application
@@ -1000,7 +997,7 @@ export default class Animator<T> {
         const clip = this._clip;
         if (forwardToLast) {
             // Move to last frame before stop
-            clip.onframe(1);
+            clip.onframe(1, 1);
         }
 
         this._abortedCallback();

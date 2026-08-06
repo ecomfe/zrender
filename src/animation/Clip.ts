@@ -12,12 +12,12 @@
  * TODO pause
  */
 
-import easingFuncs, {AnimationEasing} from './easing';
+import { callEasing, EasingHost } from './easing';
 import type Animation from './Animation';
-import { isFunction, noop, retrieve2 } from '../core/util';
-import { createCubicEasingFunc } from './cubicEasing';
+import { noop, retrieve2 } from '../core/util';
 
-type OnframeCallback = (percent: number) => void;
+
+type OnframeCallback = (percent: number, rawPercent: number) => void;
 type ondestroyCallback = () => void
 type onrestartCallback = () => void
 
@@ -28,7 +28,6 @@ export interface ClipProps {
     life?: number
     delay?: number
     loop?: boolean
-    easing?: AnimationEasing
     noAni?: boolean
 
     onframe?: OnframeCallback
@@ -36,7 +35,9 @@ export interface ClipProps {
     onrestart?: onrestartCallback
 }
 
-export default class Clip {
+interface Clip extends EasingHost {}
+
+class Clip {
 
     private _life: number
     private _delay: number
@@ -47,14 +48,9 @@ export default class Clip {
     private _pausedTime = 0
     private _paused = false
 
-    private _noAni: boolean
-
     animation: Animation
 
     loop: boolean
-
-    easing: AnimationEasing
-    easingFunc: (p: number) => number
 
     // For linked list. Readonly
     next: Clip
@@ -68,15 +64,12 @@ export default class Clip {
 
         this._life = retrieve2(opts.life, 1000);
         this._delay = opts.delay || 0;
-        this._noAni = opts.noAni;
 
         this.loop = opts.loop || false;
 
         this.onframe = opts.onframe || noop;
         this.ondestroy = opts.ondestroy || noop;
         this.onrestart = opts.onrestart || noop;
-
-        opts.easing && this.setEasing(opts.easing);
     }
 
     step(globalTime: number, deltaTime: number): boolean {
@@ -108,13 +101,7 @@ export default class Clip {
 
         percent = Math.min(percent, 1);
 
-        const easingFunc = this.easingFunc;
-        const schedule = easingFunc ? easingFunc(percent) : percent;
-
-        // @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
-        if (!this._noAni || percent === 1) {
-            this.onframe(schedule);
-        }
+        this.onframe(callEasing(this, percent), percent);
 
         // 结束
         if (percent === 1) {
@@ -142,10 +129,6 @@ export default class Clip {
         this._paused = false;
     }
 
-    setEasing(easing: AnimationEasing) {
-        this.easing = easing;
-        this.easingFunc = isFunction(easing)
-            ? easing
-            : easingFuncs[easing] || createCubicEasingFunc(easing);
-    }
 }
+
+export default Clip;

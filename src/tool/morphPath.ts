@@ -509,9 +509,9 @@ export function morphPath(
     toPath.animateTo({
         __morphT: 1
     } as any, defaults({
-        during(p) {
+        during(p, rp) {
             toPath.dirtyShape();
-            oldDuring && oldDuring(p);
+            oldDuring && oldDuring(p, rp);
         },
         done() {
             restoreToPath();
@@ -777,13 +777,13 @@ export function combineMorph(
         toPath.animateTo({
             __morphT: 1
         } as any, defaults({
-            during(p) {
+            during(p, rp) {
                 for (let i = 0; i < toLen; i++) {
                     const child = toSubPathList[i] as MorphingPath;
                     child.__morphT = (toPath as MorphingPath).__morphT;
                     child.dirtyShape();
                 }
-                oldDuring && oldDuring(p);
+                oldDuring && oldDuring(p, rp);
             },
             done() {
                 restoreToPath();

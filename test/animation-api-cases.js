@@ -15,7 +15,7 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function () {
 
     // For debugging test cases.
-    // var ONLY_RUN_SINGLE_TEST_ID = 'during_with_ELEMENT_ANIMATION_PROPS_NONE';
+    // var ONLY_RUN_SINGLE_TEST_ID = 'during_with_easing';
     var ONLY_RUN_SINGLE_TEST_ID = null;
 
 
@@ -336,22 +336,37 @@
                 // consoleLog('aborted3');
                 log.push('aborted3');
             }
-            function during1(percent) {
+            function during1(percent, rawPercent) {
                 // consoleLog('during1', percent);
+                assert(percent != null && rawPercent != null && rawPercent <= 1 && rawPercent >= 0);
+                if (rawPercent === 1) {
+                    assert(percent === 1);
+                }
                 log.push('during1');
                 log.push('during1_percent:' + percent);
+                log.push('during1_rawPercent:' + rawPercent);
                 zr.refresh(); // Prevent zr from sleeping.
             }
-            function during2(percent) {
+            function during2(percent, rawPercent) {
                 // consoleLog('during2', percent);
+                assert(percent != null && rawPercent != null && rawPercent <= 1 && rawPercent >= 0);
+                if (rawPercent === 1) {
+                    assert(percent === 1);
+                }
                 log.push('during2');
                 log.push('during2_percent:' + percent);
+                log.push('during2_rawPercent:' + rawPercent);
                 zr.refresh(); // Prevent zr from sleeping.
             }
-            function during3(percent) {
+            function during3(percent, rawPercent) {
                 // consoleLog('during3', percent);
+                assert(percent != null && rawPercent != null && rawPercent <= 1 && rawPercent >= 0);
+                if (rawPercent === 1) {
+                    assert(percent === 1);
+                }
                 log.push('during3');
                 log.push('during3_percent:' + percent);
+                log.push('during3_rawPercent:' + rawPercent);
                 zr.refresh(); // Prevent zr from sleeping.
             }
             return {
@@ -549,6 +564,7 @@
                         shape: findAnimatorByTargetNameCheckCount(prepared.el.animators, 'shape', 1)[0]
                     };
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'done1') === 0);
 
                     if (method === elAnimateTo || method === elAnimateToCleanCb) {
@@ -578,6 +594,7 @@
                         shape: findAnimatorByTargetNameCheckCount(prepared.el.animators, 'shape', 1)[0]
                     };
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'done1') === 0);
 
                     assert(!countInList([5, record.first.elOldVals.scaleX], prepared.el.scaleX));
@@ -591,6 +608,7 @@
                 }).then(function () { // After animation completes.
                     assert(prepared.el.animators.length === 0);
                     assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'done1') === 1);
 
                     if (method === elAnimateTo || method === elAnimateToCleanCb) {
@@ -644,6 +662,7 @@
                     style: findAnimatorByTargetNameCheckCount(prepared.el.animators, 'style', 1)[0]
                 };
                 assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                 assert(countInList(prepared.log, 'done1') === 0);
 
                 record.first = {elOldVals: elOldVals, existingAnimators: existingAnimators};
@@ -672,8 +691,10 @@
                 assert(countInList(existingAnimatorsList2['style'], record.first.existingAnimators['style']) === 0);
 
                 assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                 assert(countInList(prepared.log, 'done1') === 0);
                 assert(countInList(prepared.log, 'during2_percent:1') === 0);
+                assert(countInList(prepared.log, 'during2_rawPercent:1') === 0);
                 assert(countInList(prepared.log, 'done2') === 0);
 
                 if (method === elAnimateTo || method === elAnimateToCleanCb) {
@@ -716,9 +737,11 @@
                     classifyMethodByCleanCb(method, function (isCleanCb) {
                         // Some props in call1 are not stopped, so done1 can occur, but aborted1 does not occur.
                         assert(countInList(prepared.log, 'during1_percent:1') === (isCleanCb ? 0 : 1));
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === (isCleanCb ? 0 : 1));
                         assert(countInList(prepared.log, 'done1') === (isCleanCb ? 0 : 1));
                     });
                     assert(countInList(prepared.log, 'during2_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during2_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'done2') === 1);
 
                     classifyMethodByToFrom(method, function (isTo) {
@@ -811,6 +834,7 @@
                         shape: findAnimatorByTargetNameCheckCount(prepared.el.animators, 'shape', 1)[0]
                     };
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'done1') === 0);
 
                     record.first = {elOldVals: elOldVals, existingAnimators: existingAnimators};
@@ -838,8 +862,10 @@
                     assert(existingAnimators['shape'] !== record.first.existingAnimators['shape']);
 
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'done1') === 0);
                     assert(countInList(prepared.log, 'during2_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during2_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'done2') === 0);
 
                     if (method === elAnimateTo || method === elAnimateToCleanCb) {
@@ -872,10 +898,12 @@
                     classifyMethodByCleanCb(method, function (isCleanCb) {
                         // done1 and during1 will never occur, since they are aborted.
                         assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                         assert(countInList(prepared.log, 'done1') === 0);
                         assert(countInList(prepared.log, 'aborted1') === (isCleanCb ? 0 : 1));
                     });
                     assert(countInList(prepared.log, 'during2_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during2_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'done2') === 1);
 
                     classifyMethodByToFrom(method, function (isTo) {
@@ -927,6 +955,7 @@
                         '': findAnimatorByTargetNameCheckCount(prepared.el.animators, '', 1)[0]
                     };
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'done1') === 0);
 
                     record.first = {elOldVals: elOldVals, existingAnimators: existingAnimators};
@@ -951,8 +980,10 @@
                     assert(countInList(existingAnimatorsList[''], record.first.existingAnimators['']) === 1);
 
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'done1') === 0);
                     assert(countInList(prepared.log, 'during2_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during2_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'done2') === 0);
 
                     if (method === elAnimateTo || method === elAnimateToCleanCb) {
@@ -987,9 +1018,11 @@
                     // None props in call1 are stopped, so done1 can occur, but aborted1 does not occur.
                     classifyMethodByCleanCb(method, function (isCleanCb) {
                         assert(countInList(prepared.log, 'during1_percent:1') === (isCleanCb ? 0 : 1));
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === (isCleanCb ? 0 : 1));
                         assert(countInList(prepared.log, 'done1') === (isCleanCb ? 0 : 1));
                     });
                     assert(countInList(prepared.log, 'during2_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during2_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'done2') === 1);
 
                     classifyMethodByToFrom(method, function (isTo) {
@@ -1029,12 +1062,14 @@
 
                     assert(countInList(prepared.log, 'done1') === 1);
                     assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'aborted1') === 0);
                 }
 
                 function checkNoCbCalled() {
                     assert(countInList(prepared.log, 'done1') === 0);
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'aborted1') === 0);
                 }
 
@@ -1122,7 +1157,9 @@
                     // Check no during call immediately in this JS task.
                     assert(countInList(prepared.log, 'during1') === 0);
                     assert(countInList(prepared.log, 'during1_percent:0') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:0') === 0);
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
 
                     assert(prepared.el.animators.length === 2);
                     var existingAnimatorsList = {
@@ -1136,7 +1173,9 @@
                 }).then(function () {
                     assert(countInList(prepared.log, 'during1') > 4);
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                     assert(noDuplicateString(prepared.log, 'during1_percent:'));
+                    assert(noDuplicateString(prepared.log, 'during1_rawPercent:'));
 
                     cleanLog(prepared.log); // clean previous `during1` logs.
 
@@ -1167,7 +1206,9 @@
                     assert(countInList(prepared.log, 'during1') === 0);
                     assert(countInList(prepared.log, 'during2') > 4);
                     assert(countInList(prepared.log, 'during2_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during2_rawPercent:1') === 0);
                     assert(noDuplicateString(prepared.log, 'during2_percent:'));
+                    assert(noDuplicateString(prepared.log, 'during2_rawPercent:'));
 
                     cleanLog(prepared.log); // clean previous `during1` `during2` logs.
 
@@ -1208,16 +1249,21 @@
                     });
                     assert(countInList(prepared.log, 'during3') > 4);
                     assert(countInList(prepared.log, 'during3_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during3_rawPercent:1') === 0);
                     assert(noDuplicateString(prepared.log, 'during3_percent:'));
+                    assert(noDuplicateString(prepared.log, 'during3_rawPercent:'));
 
                     return promisifiedTimeOut(DURATION * 3.1);
 
                 }).then(function () {
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                     classifyMethodByCleanCb(method, function (isCleanCb) {
                         assert(countInList(prepared.log, 'during2_percent:1') === (isCleanCb ? 0 : 1));
+                        assert(countInList(prepared.log, 'during2_rawPercent:1') === (isCleanCb ? 0 : 1));
                     });
                     assert(countInList(prepared.log, 'during3_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during3_rawPercent:1') === 1);
                 });
             }
 
@@ -1227,6 +1273,64 @@
                 .then(function () { return testSingle(elAnimateToSetToFinal); })
                 .then(function () { return testSingle(elAnimateFrom); })
                 .then(function () { return testSingle(elAnimateFromCleanCb); });
+        });
+
+        /**
+         * Test `during` with easing applied
+         */
+        addTestCase('during_with_easing', function () {
+            function testSingle(method, easing, checkNonMonotonic) {
+                var prepared = prepare();
+                var record = {};
+
+                function wrapDuring(originalDuring) {
+                    var lastRawPercent = 0;
+                    return function (percent, rawPercent) {
+                        assert(percent != null && rawPercent != null && rawPercent <= 1 && rawPercent >= 0);
+                        if (rawPercent === 1) {
+                            assert(percent === 1);
+                        }
+                        assert(lastRawPercent <= rawPercent); // Check monotonic.
+                        lastRawPercent = rawPercent;
+                        originalDuring(percent, rawPercent);
+                    }
+                }
+
+                prepared.el.x = 10;
+                return Promise.resolve().then(function () {
+                    method(
+                        prepared.el,
+                        {x: 100},
+                        {
+                            done: prepared.done1, aborted: prepared.aborted1, during: wrapDuring(prepared.during1),
+                            duration: DURATION / 2,
+                            easing: easing
+                        }
+                    );
+
+                    return promisifiedTimeOut(DURATION / 2 * 1.1);
+
+                }).then(function () {
+                    assert(countInList(prepared.log, 'during1') > 3);
+                    assert(countInList(prepared.log, 'during1_percent:1') >= 1);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
+                    if (checkNonMonotonic) {
+                        assert(countInList(prepared.log, 'during1_percent:1') > 1);
+                    }
+                });
+            }
+
+            function customizedEasing(val) {
+                return val === 0 ? 0 : 1;
+            }
+
+            return Promise.resolve()
+                .then(function () { return testSingle(elAnimateTo, 'sinusoidalIn', false); })
+                .then(function () { return testSingle(elAnimateFrom, 'sinusoidalIn', false); })
+                .then(function () { return testSingle(elAnimateTo, 'elasticOut', false); })
+                .then(function () { return testSingle(elAnimateFrom, 'elasticOut', false); })
+                .then(function () { return testSingle(elAnimateTo, customizedEasing, true); })
+                .then(function () { return testSingle(elAnimateFrom, customizedEasing, true); });
         });
 
         /**
@@ -1251,16 +1355,20 @@
                     );
                     record.checkCfgForceFalse1 = function () {
                         assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                         assert(countInList(prepared.log, 'done1') === 1);
                         assert(countInList(prepared.log, 'during1_percent:0') === 0);
+                        assert(countInList(prepared.log, 'during1_rawPercent:0') === 0);
                     }
                     if (!cfgForce) {
                         record.checkCfgForceFalse1();
                     }
                     else {
                         assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                         assert(countInList(prepared.log, 'done1') === 0);
                         assert(countInList(prepared.log, 'during1_percent:0') === 0);
+                        assert(countInList(prepared.log, 'during1_rawPercent:0') === 0);
                     }
 
                     return promisifiedTimeOut(DURATION / 2 * 1.1);
@@ -1272,8 +1380,10 @@
                     else {
                         assert(countInList(prepared.log, 'during1') > 4);
                         assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                         assert(countInList(prepared.log, 'done1') === 1);
                         assert(noDuplicateString(prepared.log, 'during1_percent:'));
+                        assert(noDuplicateString(prepared.log, 'during1_rawPercent:'));
                     }
                 });
             }
@@ -1318,8 +1428,10 @@
                     record.checkCfgForceFalse1 = function () {
                         checkFinalValue();
                         assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                         assert(countInList(prepared.log, 'done1') === 1);
                         assert(countInList(prepared.log, 'during1_percent:0') === 0);
+                        assert(countInList(prepared.log, 'during1_rawPercent:0') === 0);
                     }
                     if (!cfgForce) {
                         record.checkCfgForceFalse1();
@@ -1327,8 +1439,10 @@
                     else {
                         checkFinalValue();
                         assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                         assert(countInList(prepared.log, 'done1') === 0);
                         assert(countInList(prepared.log, 'during1_percent:0') === 0);
+                        assert(countInList(prepared.log, 'during1_rawPercent:0') === 0);
                     }
 
                     return promisifiedTimeOut(DURATION * 1.1);
@@ -1341,7 +1455,9 @@
                         // Test `during` is called only once, and `percent:1` is passed.
                         assert(countInList(prepared.log, 'during1') === 1);
                         assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                         assert(countInList(prepared.log, 'during1_percent:0') === 0);
+                        assert(countInList(prepared.log, 'during1_rawPercent:0') === 0);
                         assert(countInList(prepared.log, 'done1') === 1);
                     }
                 });
@@ -1383,6 +1499,7 @@
 
                     assert(prepared.el.animators.length === 0);
                     assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'done1') === 1);
                     assert(countInList(prepared.log, 'aborted1') === 0);
 
@@ -1422,12 +1539,14 @@
                     );
 
                     assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'done1') === 1);
                     assert(countInList(prepared.log, 'aborted1') === 0);
                     if (!cfgForce) {
                         // Should have no animation and callbacks have been called.
                         assert(prepared.el.animators.length === 0);
                         assert(countInList(prepared.log, 'during2_percent:1') === 1);
+                        assert(countInList(prepared.log, 'during2_rawPercent:1') === 1);
                         assert(countInList(prepared.log, 'done2') === 1);
                         assert(countInList(prepared.log, 'aborted2') === 0);
                     }
@@ -1435,6 +1554,7 @@
                         // Should have one animate for callbacks when force: true
                         assert(prepared.el.animators.length === 1);
                         assert(countInList(prepared.log, 'during2_percent:1') === 0);
+                        assert(countInList(prepared.log, 'during2_rawPercent:1') === 0);
                         assert(countInList(prepared.log, 'done2') === 0);
                         assert(countInList(prepared.log, 'aborted2') === 0);
                     }
@@ -1461,9 +1581,11 @@
                 }).then(function () {
                     assert(prepared.el.animators.length === 0);
                     assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'done1') === 1);
                     assert(countInList(prepared.log, 'aborted1') === 0);
                     assert(countInList(prepared.log, 'during2_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during2_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'done2') === 1);
                     assert(countInList(prepared.log, 'aborted2') === 0);
 
@@ -1534,6 +1656,7 @@
                     );
 
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'done1') === 0);
                     if (method === elAnimateTo || method === elAnimateToSetToFinal || method === elAnimateFrom) {
                         assert(countInList(prepared.log, 'aborted1') === 1);
@@ -1541,6 +1664,7 @@
                     if (!cfgForce) {
                         assert(prepared.el.animators.length === 0);
                         assert(countInList(prepared.log, 'during2_percent:1') === 1);
+                        assert(countInList(prepared.log, 'during2_rawPercent:1') === 1);
                         assert(countInList(prepared.log, 'done2') === 1);
                         assert(countInList(prepared.log, 'aborted2') === 0);
                     }
@@ -1555,6 +1679,7 @@
                             ], prepared.el.animators[0]) // A new animator is created for `force: true`.
                         );
                         assert(countInList(prepared.log, 'during2_percent:1') === 0);
+                        assert(countInList(prepared.log, 'during2_rawPercent:1') === 0);
                         assert(countInList(prepared.log, 'done2') === 0);
                         assert(countInList(prepared.log, 'aborted2') === 0);
                     }
@@ -1579,6 +1704,7 @@
 
                     function checkFinalCbAndAnimators() {
                         assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                         assert(countInList(prepared.log, 'done1') === 0);
                         if (method === elAnimateTo || method === elAnimateToSetToFinal || method === elAnimateFrom) {
                             assert(countInList(prepared.log, 'aborted1') === 1);
@@ -1586,6 +1712,7 @@
                         if (!cfgForce) {
                             assert(prepared.el.animators.length === 0);
                             assert(countInList(prepared.log, 'during2_percent:1') === 1);
+                            assert(countInList(prepared.log, 'during2_rawPercent:1') === 1);
                             assert(countInList(prepared.log, 'done2') === 1);
                             assert(countInList(prepared.log, 'aborted2') === 0);
                         }
@@ -1593,6 +1720,7 @@
                             // force: true created animator should have been completed.
                             assert(prepared.el.animators.length === 0);
                             assert(countInList(prepared.log, 'during2_percent:1') === 1);
+                            assert(countInList(prepared.log, 'during2_rawPercent:1') === 1);
                             assert(countInList(prepared.log, 'done2') === 1);
                             assert(countInList(prepared.log, 'aborted2') === 0);
                         }
@@ -1636,21 +1764,25 @@
 
                 function checkAnimatorsComplete_Yes_call1() {
                     assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'done1') === 1);
                     assert(countInList(prepared.log, 'aborted1') === 0);
                 }
                 function checkAnimatorsComplete_No_call1() {
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'done1') === 0);
                     assert(countInList(prepared.log, 'aborted1') === 0);
                 }
                 function checkAnimatorsComplete_Yes_call2() {
                     assert(countInList(prepared.log, 'during2_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during2_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'done2') === 1);
                     assert(countInList(prepared.log, 'aborted2') === 0);
                 }
                 function checkAnimatorsComplete_No_call2() {
                     assert(countInList(prepared.log, 'during2_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during2_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'done2') === 0);
                     assert(countInList(prepared.log, 'aborted2') === 0);
                 }
@@ -1804,6 +1936,7 @@
                     };
 
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'done1') === 0);
 
                     if (method === elAnimateTo || method === elAnimateToCleanCb) {
@@ -1834,6 +1967,7 @@
                     assert(prepared.el.animators.length === 0);
 
                     assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'done1') === 1);
 
                     classifyMethodByToFrom(method, function (isTo) {
@@ -1884,6 +2018,7 @@
                 }).then(function () {
                     assert(countInList(prepared.log, 'done1') === 0);
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
 
                     var elOldVals = retrieveElCurrValues(prepared.el);
 
@@ -1903,6 +2038,7 @@
                     function checkValuesNotChange() {
                         assert(countInList(prepared.log, 'done2') === 0);
                         assert(countInList(prepared.log, 'during2_percent:1') === 0);
+                        assert(countInList(prepared.log, 'during2_rawPercent:1') === 0);
 
                         if (method === elAnimateTo || method === elAnimateToCleanCb) {
                             // Check that values are not changed in this frame. They should be changed in the next frame.
@@ -1921,12 +2057,14 @@
                             // done1 will never occur, since it has been discarded.
                             assert(countInList(prepared.log, 'done1') === 0);
                             assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                            assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                             classifyMethodByCleanCb(method, function (isCleanCb) {
                                 assert(countInList(prepared.log, 'aborted1') === (isCleanCb ? 0 : 1));
                             });
                         }
                         assert(countInList(prepared.log, 'done2') === 1);
                         assert(countInList(prepared.log, 'during2_percent:1') === 1);
+                        assert(countInList(prepared.log, 'during2_rawPercent:1') === 1);
 
                         classifyMethodByToFrom(method, function (isTo) {
                             if (isTo) {
@@ -1999,6 +2137,7 @@
                     function checkValuesNotChange() {
                         assert(countInList(prepared.log, 'done1') === 0);
                         assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
 
                         assert(propsDeepContain(prepared.el, elOldVals));
                     }
@@ -2006,6 +2145,7 @@
                     function checkValuesChanged() {
                         assert(countInList(prepared.log, 'done1') === 1);
                         assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                         assert(propsDeepContain(prepared.el, {x: 155, shape: {width: 211}}));
                     }
 
@@ -2058,6 +2198,7 @@
                         assert(prepared.el.animators.length === 0);
                         assert(countInList(prepared.log, 'done1') === 1);
                         assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                         assert(JSON.stringify(prepared.el.shape.__myPts) === targetPointsStr);
                     }
                     check();
@@ -2087,6 +2228,7 @@
                         assert(prepared.el.animators.length === 1);
                         assert(countInList(prepared.log, 'done2') === 0);
                         assert(countInList(prepared.log, 'during2_percent:1') === 0);
+                        assert(countInList(prepared.log, 'during2_rawPercent:1') === 0);
                     }
                     check();
                     assert(propsDeepContain(prepared.el, elOldVals));
@@ -2117,8 +2259,10 @@
                     assert(prepared.el.animators.length === 0);
                     assert(countInList(prepared.log, 'done2') === 0);
                     assert(countInList(prepared.log, 'during2_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during2_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'done3') === 1);
                     assert(countInList(prepared.log, 'during3_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during3_rawPercent:1') === 1);
                     assert(prepared.el.shape.__myPts == null);
                 });
             }
@@ -2152,6 +2296,7 @@
                         assert(prepared.el.animators.length === 0);
                         assert(countInList(prepared.log, 'done1') === 1);
                         assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                         assert(propsDeepContain(prepared.el, elOldVals));
                     }
                     checkNothingHappen();
@@ -2181,8 +2326,10 @@
                         };
                         assert(countInList(prepared.log, 'done1') === 1);
                         assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                         assert(countInList(prepared.log, 'done2') === 0);
                         assert(countInList(prepared.log, 'during2_percent:1') === 0);
+                        assert(countInList(prepared.log, 'during2_rawPercent:1') === 0);
                     }
                     checkNothingHappen();
 
@@ -2210,6 +2357,7 @@
                         record.second.checkNothingHappen();
                         assert(countInList(prepared.log, 'done3') === 1);
                         assert(countInList(prepared.log, 'during3_percent:1') === 1);
+                        assert(countInList(prepared.log, 'during3_rawPercent:1') === 1);
                     }
                     checkNothingHappen();
                     assert(propsDeepContain(prepared.el, elOldVals));
@@ -2226,10 +2374,13 @@
                     assert(prepared.el.animators.length === 0);
                     assert(countInList(prepared.log, 'done1') === 1);
                     assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'done2') === 1);
                     assert(countInList(prepared.log, 'during2_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during2_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'done3') === 1);
                     assert(countInList(prepared.log, 'during3_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during3_rawPercent:1') === 1);
                 });
             }
 
@@ -2368,11 +2519,11 @@
                         {x: 1},
                         {
                             done: prepared.done1, aborted: prepared.aborted1,
-                            during: function (percent) {
+                            during: function (percent, rawPercent) {
                                 if (percent !== 0) {
                                     shouldFail = true;
                                 }
-                                prepared.during1(percent);
+                                prepared.during1(percent, rawPercent);
                             },
                             duration: Infinity
                         }
@@ -2383,8 +2534,10 @@
                 }).then(function () {
                     assert(!shouldFail);
                     assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
                     assert(countInList(prepared.log, 'done1') === 0);
                     assert(countInList(prepared.log, 'during1_percent:0') > 1);
+                    assert(countInList(prepared.log, 'during1_rawPercent:0') > 1);
 
                     cleanLog(prepared.log); // clean previous logs.
 
@@ -2398,6 +2551,7 @@
                         ELEMENT_ANIMATION_PROPS_NONE
                     );
                     assert(countInList(prepared.log, 'during2_percent:1') === 1);
+                    assert(countInList(prepared.log, 'during2_rawPercent:1') === 1);
                     assert(countInList(prepared.log, 'done2') === 1);
 
                     cleanLog(prepared.log); // clean previous logs.
