@@ -202,32 +202,44 @@ export function extend<
     return target as T & S;
 }
 
+export const ASSIGN_PROPS_OMIT_NULL_UNDEFINED = 1;
+type AssignPropsOpt = typeof ASSIGN_PROPS_OMIT_NULL_UNDEFINED;
+
 export function assignProps<
     TSrc extends Dictionary<any>,
     TCommonKey extends keyof TSrc
 >(
     tar: NullUndefined,
     src: TSrc,
-    props: readonly TCommonKey[]
+    props: readonly TCommonKey[],
+    opt?: AssignPropsOpt
 ): Pick<TSrc, TCommonKey>;
 export function assignProps<
     TTar extends Dictionary<any>,
     TSrc extends Dictionary<any>,
-    TCommonKey extends keyof TSrc & keyof TTar
+    TCommonKey extends keyof TSrc & keyof TTar,
 >(
     tar: TTar,
-    src: TSrc & { [P in TCommonKey]: TTar[P] },
-    props: readonly TCommonKey[]
+    src: TSrc & { [P in TCommonKey]?: TTar[P] },
+    props: readonly TCommonKey[],
+    opt?: AssignPropsOpt
 ): TTar;
 export function assignProps(
     tar: any,
     src: any,
-    props: readonly string[]
+    props: readonly string[],
+    opt?: AssignPropsOpt
 ) {
     tar = (tar || {});
     for (let idx = 0; idx < props.length; idx++) {
         const prop = props[idx];
-        tar[prop] = src[prop];
+        if (!opt
+            || (opt === ASSIGN_PROPS_OMIT_NULL_UNDEFINED
+                && src[prop] != null
+            )
+        ) {
+            tar[prop] = src[prop];
+        }
     }
     return tar;
 }
