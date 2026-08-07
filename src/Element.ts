@@ -1,11 +1,11 @@
 import Transformable, {TRANSFORMABLE_PROPS, TransformProp} from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
-import Animator, {cloneValue} from './animation/Animator';
+import Animator, {copyAnimatableValue} from './animation/Animator';
 import { ZRenderType } from './zrender';
 import {
     Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes,
     TextVerticalAlign, TextAlign, MapToType,
-    NullUndefined,
+    NullUndefined, ArrayLike
 } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
@@ -21,7 +21,6 @@ import {
     logError,
     mixin,
     isArrayLike,
-    isTypedArray,
     isGradientObject,
     filter,
     reduce,
@@ -2184,60 +2183,6 @@ function animateToCreateDuringCb<Props>(cfg: ElementAnimateConfig) {
     return duringCb;
 }
 
-
-function copyArrShallow(source: number[], target: number[], len: number) {
-    for (let i = 0; i < len; i++) {
-        source[i] = target[i];
-    }
-}
-
-function is2DArray(value: any[]): value is number[][] {
-    return isArrayLike(value[0]);
-}
-
-function copyValue(target: Dictionary<any>, source: Dictionary<any>, key: string) {
-    if (isArrayLike(source[key])) {
-        if (!isArrayLike(target[key])) {
-            target[key] = [];
-        }
-
-        if (isTypedArray(source[key])) {
-            const len = source[key].length;
-            if (target[key].length !== len) {
-                target[key] = new (source[key].constructor)(len);
-                copyArrShallow(target[key], source[key], len);
-            }
-        }
-        else {
-            const sourceArr = source[key] as any[];
-            const targetArr = target[key] as any[];
-
-            const len0 = sourceArr.length;
-            if (is2DArray(sourceArr)) {
-                // NOTE: each item should have same length
-                const len1 = sourceArr[0].length;
-
-                for (let i = 0; i < len0; i++) {
-                    if (!targetArr[i]) {
-                        targetArr[i] = Array.prototype.slice.call(sourceArr[i]);
-                    }
-                    else {
-                        copyArrShallow(targetArr[i], sourceArr[i], len1);
-                    }
-                }
-            }
-            else {
-                copyArrShallow(targetArr, sourceArr, len0);
-            }
-
-            targetArr.length = sourceArr.length;
-        }
-    }
-    else {
-        target[key] = source[key];
-    }
-}
-
 function isValueSame(val1: any, val2: any) {
     return val1 === val2
         // Only check 1 dimension array
@@ -2425,10 +2370,10 @@ function animateToShallow<Props>(
             for (let i = 0; i < keyLen; i++) {
                 const innerKey = animationKeys[i];
                 // NOTE: Must clone source after the stopTracks. The property may be modified in stopTracks.
-                sourceClone[innerKey] = cloneValue(animateObj[innerKey]);
+                sourceClone[innerKey] = copyAnimatableValue(null, animateObj[innerKey]);
                 // Use copy, not change the original reference
                 // Copy from target to source.
-                copyValue(animateObj, target, innerKey);
+                animateObj[innerKey] = copyAnimatableValue(animateObj[innerKey], target[innerKey]);
             }
         }
 

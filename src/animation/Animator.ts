@@ -7,15 +7,17 @@ import * as color from '../tool/color';
 import {
     eqNaN,
     extend,
+    isArray,
     isArrayLike,
     isGradientObject,
     isNumber,
     isString,
+    isTypedArray,
     keys,
     logError,
     map
 } from '../core/util';
-import {ArrayLike, Dictionary} from '../core/types';
+import {ArrayLike, Dictionary, NullUndefined} from '../core/types';
 import { AnimationEasing, callEasing, EasingHost, setEasing } from './easing';
 import Animation from './Animation';
 import { isLinearGradient, isRadialGradient } from '../svg/helper';
@@ -179,21 +181,67 @@ function fillArray(
     }
 }
 
-export function cloneValue(value: InterpolatableType) {
-    if (isArrayLike(value)) {
-        const len = value.length;
-        if (isArrayLike(value[0])) {
-            const ret = [];
-            for (let i = 0; i < len; i++) {
-                ret.push(arraySlice.call(value[i]));
-            }
-            return ret;
-        }
-
-        return arraySlice.call(value);
+/**
+ * If `target` is null/undefined, it behaves as `clone`.
+ * Only copy or clone `ArrayLike`, assuming other values are primitive and transfer directly.
+ *
+ * @usage
+ *  ```js
+ *  target = copyAnimatableValue(target, source); // Copy to target
+ *  // Or
+ *  target = copyAnimatableValue(null, source); // Clone
+ *  ```
+ */
+export function copyAnimatableValue(
+    target: InterpolatableType | NullUndefined,
+    source: InterpolatableType
+): InterpolatableType {
+    if (!isArrayLike(source)) {
+        return source;
     }
 
-    return value;
+    const len0 = source.length;
+
+    if (isTypedArray(source)) {
+        // Performance-sensitive. `source` may contain numerous points.
+        if (!isTypedArray(target)
+            || target.constructor !== source.constructor
+            || (target as ArrayLike<unknown>).length !== len0
+        ) {
+            target = new (source.constructor as any)(len0);
+        }
+        (target as any).set(source);
+    }
+    else {
+        if (!isArray(target)) {
+            target = [];
+        }
+        if (guessArrayDim(source) === VALUE_TYPE_2D_ARRAY) {
+            // Assume each item is a plain array with the same length; not a TypedArray and not nullish
+            // (no such case yet, typically each item is a "point").
+            const len1 = (source[0] as ArrayLike<unknown>).length;
+            for (let i = 0; i < len0; i++) {
+                let targetItem = target[i] as unknown[];
+                if (!isArray(targetItem)) {
+                    targetItem = target[i] = [];
+                }
+                copyArrShallow(targetItem as unknown[], source[i] as ArrayLike<unknown>, len1);
+                targetItem.length = len1;
+            }
+        }
+        else { // VALUE_TYPE_1D_ARRAY
+            copyArrShallow(target, source, len0);
+        }
+        target.length = len0;
+    }
+
+    return target;
+}
+
+function copyArrShallow(target: ArrayLike<unknown>, source: ArrayLike<unknown>, len: number): void {
+    for (let i = 0; i < len; i++) {
+        target[i] = source[i];
+    }
 }
 
 function rgba2String(rgba: number[]): string {
@@ -205,8 +253,10 @@ function rgba2String(rgba: number[]): string {
     return 'rgba(' + rgba.join(',') + ')';
 }
 
-function guessArrayDim(value: ArrayLike<unknown>): 1 | 2 {
-    return isArrayLike(value && (value as ArrayLike<unknown>)[0]) ? 2 : 1;
+function guessArrayDim(value: ArrayLike<unknown>):
+    typeof VALUE_TYPE_1D_ARRAY | typeof VALUE_TYPE_2D_ARRAY {
+    // Typically each item is a "point".
+    return isArrayLike(value && (value as ArrayLike<unknown>)[0]) ? VALUE_TYPE_2D_ARRAY : VALUE_TYPE_1D_ARRAY;
 }
 
 const VALUE_TYPE_NUMBER = 0;
@@ -216,9 +266,17 @@ const VALUE_TYPE_COLOR = 3;
 const VALUE_TYPE_LINEAR_GRADIENT = 4;
 const VALUE_TYPE_RADIAL_GRADIENT = 5;
 // Other value type that can only use discrete animation.
-const VALUE_TYPE_UNKOWN = 6;
+const VALUE_TYPE_UNKNOWN = 6;
 
-type ValueType = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+type ValueType =
+    | typeof VALUE_TYPE_NUMBER
+    | typeof VALUE_TYPE_1D_ARRAY
+    | typeof VALUE_TYPE_2D_ARRAY
+    | typeof VALUE_TYPE_COLOR
+    | typeof VALUE_TYPE_LINEAR_GRADIENT
+    | typeof VALUE_TYPE_RADIAL_GRADIENT
+    | typeof VALUE_TYPE_UNKNOWN
+
 
 type Keyframe = {
     time: number
@@ -232,10 +290,12 @@ type Keyframe = {
 } & EasingHost;
 
 
-function isGradientValueType(valType: ValueType): valType is 4 | 5 {
+function isGradientValueType(valType: ValueType):
+    valType is typeof VALUE_TYPE_LINEAR_GRADIENT | typeof VALUE_TYPE_RADIAL_GRADIENT {
     return valType === VALUE_TYPE_LINEAR_GRADIENT || valType === VALUE_TYPE_RADIAL_GRADIENT;
 }
-function isArrayValueType(valType: ValueType): valType is 1 | 2 {
+function isArrayValueType(valType: ValueType):
+    valType is typeof VALUE_TYPE_1D_ARRAY | typeof VALUE_TYPE_2D_ARRAY {
     return valType === VALUE_TYPE_1D_ARRAY || valType === VALUE_TYPE_2D_ARRAY;
 }
 
@@ -304,7 +364,7 @@ class Track {
         let len = keyframes.length;
 
         let discrete = false;
-        let valType: ValueType = VALUE_TYPE_UNKOWN;
+        let valType: ValueType = VALUE_TYPE_UNKNOWN;
         let value = rawValue;
 
         // Handling values only if it's possible to be interpolated.
@@ -312,8 +372,8 @@ class Track {
             let arrayDim = guessArrayDim(rawValue);
             valType = arrayDim;
             // Not a number array.
-            if (arrayDim === 1 && !isNumber(rawValue[0])
-                || arrayDim === 2 && !isNumber(rawValue[0][0])) {
+            if (arrayDim === VALUE_TYPE_1D_ARRAY && !isNumber(rawValue[0])
+                || arrayDim === VALUE_TYPE_2D_ARRAY && !isNumber(rawValue[0][0])) {
                 discrete = true;
             }
         }
@@ -355,7 +415,7 @@ class Track {
             this.valType = valType;
         }
          // Not same value type or can't be interpolated.
-        else if (valType !== this.valType || valType === VALUE_TYPE_UNKOWN) {
+        else if (valType !== this.valType || valType === VALUE_TYPE_UNKNOWN) {
             discrete = true;
         }
 
@@ -793,12 +853,12 @@ export default class Animator<T> {
                 // Else
                 //  Initialize value from current prop value
                 if (time > 0) {
-                    track.addKeyframe(0, cloneValue(initialValue), easing);
+                    track.addKeyframe(0, copyAnimatableValue(null, initialValue), easing);
                 }
 
                 this._trackKeys.push(propName);
             }
-            track.addKeyframe(time, cloneValue(props[propName]), easing);
+            track.addKeyframe(time, copyAnimatableValue(null, props[propName]), easing);
         }
         this._maxTime = Math.max(this._maxTime, time);
         return this;
@@ -1155,7 +1215,7 @@ export default class Animator<T> {
             if (kf) {
                 // TODO CLONE?
                 // Use raw value without parse.
-                (target as any)[propName] = cloneValue(kf.rawValue as any);
+                (target as any)[propName] = copyAnimatableValue(null, kf.rawValue as any);
             }
         }
     }
