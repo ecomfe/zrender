@@ -287,7 +287,11 @@ export function parsePlainText(
     }
 
     // Calculate real text width and height
-    let outerHeight = height;
+    // Use contentHeight (actual rendered text height) for outerHeight
+    // instead of style.height (which may be the truncation boundary).
+    // style.height should only serve as the truncation boundary;
+    // outerHeight is used for vertical alignment placement.
+    let outerHeight = contentHeight;
     let contentWidth = 0;
     const fontMeasureInfo = ensureFontMeasureInfo(font);
     for (let i = 0; i < lines.length; i++) {
@@ -562,7 +566,11 @@ export function parseRichText(
     }
 
     contentBlock.outerWidth = contentBlock.width = retrieve2(topWidth, calculatedWidth);
-    contentBlock.outerHeight = contentBlock.height = retrieve2(topHeight, calculatedHeight);
+    // Separating outerHeight (used for vertical alignment) from height (used for truncation).
+    // outerHeight should be the actual rendered text height, not the style.height
+    // which may be the truncation boundary set by e.g. Treemap beforeUpdate.
+    contentBlock.height = retrieve2(topHeight, calculatedHeight);
+    contentBlock.outerHeight = calculatedHeight;
     contentBlock.contentHeight = calculatedHeight;
     contentBlock.contentWidth = calculatedWidth;
 
