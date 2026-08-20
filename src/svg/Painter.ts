@@ -328,7 +328,7 @@ class SVGPainter implements PainterBase {
 
     dispose() {
         if (this.root) {
-            this.root.innerHTML = '';
+            this.root.textContent = '';
         }
 
         this._svgDom =
@@ -340,7 +340,7 @@ class SVGPainter implements PainterBase {
     }
     clear() {
         if (this._svgDom) {
-            this._svgDom.innerHTML = null;
+            this._svgDom.textContent = '';
         }
         this._oldVNode = null;
     }
