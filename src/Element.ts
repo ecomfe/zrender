@@ -414,7 +414,8 @@ class Element<Props extends ElementProps = ElementProps> {
     name: string
 
     /**
-     * If ignore drawing and events of the element object
+     * Whether to ignore drawing and events of this element and the descendants,
+     * including its `decalElement`s, `textContent`s and `textGuideLine`s.
      */
     ignore: boolean
 
@@ -446,6 +447,10 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     dragging: boolean
 
+    /**
+     * NOTICE: `textContent` and `textGuideLine` use this `parent` pointing to their
+     * `__hostTarget` iff `textConfig.local` is truthy.
+     */
     parent: Group
 
     /**
@@ -1501,13 +1506,15 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Set layout of attached text. Will merge with the previous.
      */
-    setTextConfig(cfg: ElementTextConfig) {
+    setTextConfig(cfg?: ElementTextConfig) {
         // TODO hide cfg property?
         if (!this.textConfig) {
             this.textConfig = {};
         }
-        extend(this.textConfig, cfg);
-        this.markRedraw();
+        if (cfg) {
+            extend(this.textConfig, cfg);
+        }
+        this.markRedraw(); // For backward compatibility, markRedraw even if empty cfg.
     }
 
     /**
@@ -1781,14 +1788,15 @@ class Element<Props extends ElementProps = ElementProps> {
     protected _transitionState(
         stateName: string, target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>
     ) {
-        const animators = animateTo(this, target, cfg, animationProps);
-        for (let i = 0; i < animators.length; i++) {
-            animators[i].__fromStateTransition = stateName;
-        }
+        animateTo(this, target, cfg, animationProps, false, stateName);
     }
 
     /**
      * Interface of getting the minimum bounding box.
+     *
+     * NOTICE:
+     *  - Never return `null | undefined`.
+     *  - Must not modify the returned object.
      */
     getBoundingRect(): BoundingRect {
         return null;
@@ -2055,8 +2063,9 @@ function animateTo<Props>(
     cfg: ElementAnimateConfig,
     // @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
     animationProps: ElementAnimationProps<Props>,
-    reverse?: boolean
-) {
+    reverse?: boolean,
+    stateName?: string
+): void {
     cfg = cfg || {};
 
     if (cfg.cleanCb) {
@@ -2080,7 +2089,6 @@ function animateTo<Props>(
         duration = 1;
     }
 
-    const newAnimators: Animator<any>[] = [];
     animateToShallow(
         animatable,
         '', // topmost `topKey` must be '', which is used in test cases.
@@ -2089,20 +2097,24 @@ function animateTo<Props>(
         cfg,
         duration,
         animationProps,
-        newAnimators,
-        reverse
+        tmpNewAnimators,
+        reverse,
+        stateName
     );
 
-    let newAnimatorsLength = newAnimators.length;
+    let newAnimatorsLength = tmpNewAnimators.length;
     const cfgDone = cfg.done;
     const cfgAborted = cfg.aborted;
     const cfgDuring = cfg.during;
 
+    // Also need to optimize for ELEMENT_ANIMATION_PROPS_NONE case,
+    // because their may be large data.
     if (!newAnimatorsLength) {
         // @see ZR_ELEMENT_ANIMATION_CALLBACK_WHEN_NO_ANIMATION
         cfgDuring && cfgDuring(1, 1);
         cfgDone && cfgDone();
-        return newAnimators;
+        tmpNewAnimators.length = 0;
+        return;
     }
 
     const cbDoneAborted = (cfgDone || cfgAborted)
@@ -2115,7 +2127,7 @@ function animateTo<Props>(
     // Start after all animators created
     // Incase any animator is done immediately when all animation properties are not changed
     for (let i = 0; i < newAnimatorsLength; i++) {
-        const animator = newAnimators[i];
+        const animator = tmpNewAnimators[i];
 
         if (process.env.NODE_ENV !== 'production') {
             // Using `__aTDn` `__aTAb` `__aTDr` is based on the fact that residual animators
@@ -2142,9 +2154,9 @@ function animateTo<Props>(
 
         animator.start(cfg.easing);
     }
-
-    return newAnimators;
+    tmpNewAnimators.length = 0;
 }
+const tmpNewAnimators: Animator<Element>[] = [];
 
 function animateToCreateDoneAbortedCb(cfg: ElementAnimateConfig, finishCount: number) {
     const cfgDone = cfg.done;
@@ -2215,7 +2227,8 @@ function animateToShallow<Props>(
     // Output. All new added animators.
     newAnimators: Animator<any>[],
     // If `true`, animate from the `target` to current state.
-    reverse: boolean
+    reverse: boolean,
+    stateName: string | NullUndefined
 ): void {
     // IMPL_NOTE:
     //  - animators are organized according to `animateObj` object tree.
@@ -2240,9 +2253,11 @@ function animateToShallow<Props>(
     const existingAnimators = animatable.animators;
     const animateByDict = isObject(animationProps);
 
-    let animationKeys: string[] = [];
-    const stopKeys: string[] = [];
     const isOutermostLevel = !topKey;
+    const animationKeys = tmpAniKeys[isOutermostLevel ? 0 : 1]; // At most 2 depth.
+    animationKeys.length = 0;
+    const stopKeys = tmpStopKeys[isOutermostLevel ? 0 : 1];
+    stopKeys.length = 0;
 
     for (let k = 0; k < targetKeys.length; k++) {
         const innerKey = targetKeys[k] as string;
@@ -2281,7 +2296,8 @@ function animateToShallow<Props>(
                     duration,
                     animateOnInnerKey,
                     newAnimators,
-                    reverse
+                    reverse,
+                    stateName
                 );
             }
         }
@@ -2324,13 +2340,18 @@ function animateToShallow<Props>(
         }
     }
 
-    // Ignore values not changed.
+    // Ignore values not changed, required as an optimization for scenarios involving frequent and rapid updates.
     // NOTE: Must filter it after previous animation stopped
     // and make sure the value to compare is using initial frame if animation is not started yet when setToFinal is used.
     if (!cfg.force) {
-        animationKeys = filter(animationKeys, function (key) {
-            return !isValueSame(target[key], animateObj[key]);
-        });
+        let keysIdx = 0;
+        for (let idx = 0; idx < animationKeys.length; idx++) {
+            const key = animationKeys[idx];
+            if (!isValueSame(target[key], animateObj[key])) {
+                animationKeys[keysIdx++] = key;
+            }
+        }
+        animationKeys.length = keysIdx;
     }
     const keyLen = animationKeys.length;
 
@@ -2385,6 +2406,8 @@ function animateToShallow<Props>(
             }
         ) : null, animationProps === ELEMENT_ANIMATION_PROPS_NONE);
 
+        animator.__fromStateTransition = stateName;
+
         animator.targetName = topKey;
         if (cfg.scope) {
             animator.scope = cfg.scope;
@@ -2407,6 +2430,8 @@ function animateToShallow<Props>(
         newAnimators.push(animator);
     }
 }
+const tmpAniKeys: string[][] = [[], []];
+const tmpStopKeys: string[][] = [[], []];
 
 function animateToChooseNextDuringOwner(
     removedOwner: Animator<Element>,
