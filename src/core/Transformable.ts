@@ -166,17 +166,21 @@ class Transformable {
      * Get computed global transform
      * NOTE: this method will force update transform on all ancestors.
      * Please be aware of the potential performance cost.
+     *
+     * NOTICE:
+     *  - May return `null | undefined`.
+     *  - Must not modify the returned object.
      */
     getComputedTransform() {
         let transformNode: Transformable = this;
-        const ancestors: Transformable[] = [];
+        tmpGCTAncestors.length = 0;
         while (transformNode) {
-            ancestors.push(transformNode);
+            tmpGCTAncestors.push(transformNode);
             transformNode = transformNode.parent;
         }
 
         // Update from topdown.
-        while (transformNode = ancestors.pop()) {
+        while (transformNode = tmpGCTAncestors.pop()) {
             transformNode.updateTransform();
         }
 
@@ -362,6 +366,8 @@ class Transformable {
         proto.anchorY = 0;
     })()
 };
+
+const tmpGCTAncestors: Transformable[] = []; // A quick optimization.
 
 export const transformableGetLocalTransform = Transformable.getLocalTransform;
 

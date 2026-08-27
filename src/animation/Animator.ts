@@ -183,7 +183,8 @@ function fillArray(
 
 /**
  * If `target` is null/undefined, it behaves as `clone`.
- * Only copy or clone `ArrayLike`, assuming other values are primitive and transfer directly.
+ * Only copy or clone `ArrayLike`, assuming other values are primitive and transfer them directly.
+ * The input `target` is returned only if suitable for copy, otherwise a new `target` is created and returned.
  *
  * @usage
  *  ```js
@@ -193,8 +194,13 @@ function fillArray(
  *  ```
  */
 export function copyAnimatableValue(
-    target: InterpolatableType | NullUndefined,
-    source: InterpolatableType
+    target: InterpolatableType | NullUndefined, source: NullUndefined
+): NullUndefined; // Avoid to return `any`.
+export function copyAnimatableValue<TSrc extends InterpolatableType>(
+    target: InterpolatableType | NullUndefined, source: TSrc | NullUndefined
+): TSrc;
+export function copyAnimatableValue(
+    target: InterpolatableType | NullUndefined, source: InterpolatableType | NullUndefined
 ): InterpolatableType {
     if (!isArrayLike(source)) {
         return source;
@@ -203,7 +209,7 @@ export function copyAnimatableValue(
     const len0 = source.length;
 
     if (isTypedArray(source)) {
-        // Performance-sensitive. `source` may contain numerous points.
+        // Performance-sensitive. `source` may contain numerous points in a flat form.
         if (!isTypedArray(target)
             || target.constructor !== source.constructor
             || (target as ArrayLike<unknown>).length !== len0
@@ -222,10 +228,17 @@ export function copyAnimatableValue(
             const len1 = (source[0] as ArrayLike<unknown>).length;
             for (let i = 0; i < len0; i++) {
                 let targetItem = target[i] as unknown[];
+                const sourceItem = source[i] as ArrayLike<unknown>;
                 if (!isArray(targetItem)) {
                     targetItem = target[i] = [];
                 }
-                copyArrShallow(targetItem as unknown[], source[i] as ArrayLike<unknown>, len1);
+                if (len1 === 2) { // Quick optimize for the most common case in large data.
+                    targetItem[0] = sourceItem[0];
+                    targetItem[1] = sourceItem[1];
+                }
+                else {
+                    copyArrShallow(targetItem, sourceItem, len1);
+                }
                 targetItem.length = len1;
             }
         }

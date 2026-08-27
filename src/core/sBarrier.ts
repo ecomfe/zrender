@@ -105,7 +105,7 @@ function sBarrierTryCall<TArgs extends SBarrierArgsBase>(barrier: SBarrier<TArgs
         const args = sBarrierInner(barrier).args.slice() as TArgs;
         // Reset before call `cb` in case of error thrown of `cb`.
         sBarrierInner(barrier).c = sBarrierInner(barrier).args.length = 0;
-        barrier.cb(args);
+        barrier.cb && barrier.cb(args);
     }
 }
 

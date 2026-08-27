@@ -241,7 +241,7 @@ class ZRender {
     }) {
         if (opt.animUpdate) {
             // Update animation if refreshImmediately is invoked from outside.
-            // Not trigger stage update to call flush again. Which may refresh twice
+            // Use `true` to prevent from triggering `stage.update`, otherwise `_flush` will be called twice.
             this.animation.update(true);
         }
 
@@ -277,6 +277,10 @@ class ZRender {
         if (this._disposed) {
             return;
         }
+        // The explicit call to `flush()` needs to advance the animation by one step. Upstream application
+        // (like echarts) is likely to call `el.animateTo`/`el.animateFrom` with `setToFinal`, where the
+        // final value is convenient for their subsequent handling, but they should not be renderered. An
+        // animation advance can override those final values.
         this._flush(true);
     }
 

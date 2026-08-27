@@ -49,9 +49,10 @@ export default class Storage {
     /**
      * get a list of elements to be rendered
      *
-     * @param {boolean} update whether to update elements before return
-     * @param {DisplayParams} params options
-     * @return {Displayable[]} a list of elements
+     * @param update whether to update elements before return
+     * @param includeIgnore CAUTION: Currently there is probably no case uses this parameter,
+     *                      and it may bahave incorrectly.
+     *                      PENDING: Remove it?
      */
     getDisplayList(update?: boolean, includeIgnore?: boolean): Displayable[] {
         includeIgnore = includeIgnore || false;
