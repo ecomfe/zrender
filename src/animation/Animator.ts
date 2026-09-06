@@ -5,6 +5,7 @@
 import Clip from './Clip';
 import * as color from '../tool/color';
 import {
+    copyArrShallow2,
     eqNaN,
     extend,
     isArray,
@@ -188,9 +189,8 @@ function fillArray(
  *
  * @usage
  *  ```js
- *  target = copyAnimatableValue(target, source); // Copy to target
- *  // Or
- *  target = copyAnimatableValue(null, source); // Clone
+ *  // Copy to target if target exists, otherwise create a target according to source.
+ *  target = copyAnimatableValue(target, source);
  *  ```
  */
 export function copyAnimatableValue(
@@ -237,24 +237,18 @@ export function copyAnimatableValue(
                     targetItem[1] = sourceItem[1];
                 }
                 else {
-                    copyArrShallow(targetItem, sourceItem, len1);
+                    copyArrShallow2(targetItem, sourceItem, len1);
                 }
                 targetItem.length = len1;
             }
         }
         else { // VALUE_TYPE_1D_ARRAY
-            copyArrShallow(target, source, len0);
+            copyArrShallow2(target, source, len0);
         }
         target.length = len0;
     }
 
     return target;
-}
-
-function copyArrShallow(target: ArrayLike<unknown>, source: ArrayLike<unknown>, len: number): void {
-    for (let i = 0; i < len; i++) {
-        target[i] = source[i];
-    }
 }
 
 function rgba2String(rgba: number[]): string {
@@ -994,7 +988,6 @@ export default class Animator<T> {
                 }
             }
         }
-        const noAni = this._noAni;
         // Add during callback on the last clip
         // When `_force: true` there might be no track added.
         if (tracks.length || this._force) {
@@ -1002,11 +995,8 @@ export default class Animator<T> {
                 life: maxTime,
                 loop: this._loop,
                 delay: this._delay || 0,
+                noAni: this._noAni,
                 onframe(percent: number, rawPercent: number) {
-                    // @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
-                    if (noAni && rawPercent !== 1) {
-                        return;
-                    }
 
                     self._started = 2;
                     // Remove additived animator if it's finished.

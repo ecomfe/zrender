@@ -5,6 +5,7 @@
 import Element, {
     ElementProps, ElementStatePropNames, ElementAnimateConfig, ElementCommonState,
     IN_HOVER_LAYER_KIND_ONLY_STYLE_CHANGE,
+    ApplyStateObjTransOpt,
 } from '../Element';
 import BoundingRect from '../core/BoundingRect';
 import { PropType, Dictionary, MapToType, IncrementalIdCompat } from '../core/types';
@@ -507,7 +508,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         state: DisplayableState,
         normalState: DisplayableState,
         keepCurrentStates: boolean,
-        transition: boolean,
+        transition: ApplyStateObjTransOpt,
         animationCfg: ElementAnimateConfig
     ) {
         super._applyStateObj(stateName, state, normalState, keepCurrentStates, transition, animationCfg);

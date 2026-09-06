@@ -70,13 +70,29 @@ export function sBarrierCreate<TArgs extends SBarrierArgsBase = never>(): SBarri
 
 /**
  * Enable or disable a party dynamically.
+ * Idempotent.
+ *
+ * NOTICE: When disabling, there is no automatic call to `cb`, otherwise idempotency
+ * can not be guaranteed.
+ * So `sBarrierArrive` should be explicitly called immediately before disabling,
+ * otherwise a `cb` call is missing.
+ *  ```ts
+ *  // Sample 1:
+ *  sBarrierArrive(barrier, partyIdx, args);
+ *  sBarrierEnableParty(barrier, partyIdx, false);
+ *  // Sample 2:
+ *  el.animateTo(props, {
+ *      during: function () { sBarrierArrive(barrier, partyIdx, args) },
+ *      done: function () { sBarrierEnableParty(barrier, partyIdx, false); },
+ *      duration: 200,
+ *  });
+ *  ```
  */
 export function sBarrierEnableParty<TArgs extends SBarrierArgsBase, TPartyIdx extends number>(
     barrier: SBarrier<TArgs>, partyIdx: NumberLiteral<TPartyIdx>, enable: boolean
 ): void {
     if (process.env.NODE_ENV !== 'production') {
         checkPartyIdx(partyIdx);
-        assert(partyIdx >= 0 && partyIdx < 32);
     }
     sBarrierInner(barrier).args[partyIdx] = undefined;
     if (enable) {
@@ -84,7 +100,6 @@ export function sBarrierEnableParty<TArgs extends SBarrierArgsBase, TPartyIdx ex
     }
     else { // Disable
         sBarrierInner(barrier).t &= ~(1 << partyIdx);
-        sBarrierTryCall(barrier);
     }
 }
 

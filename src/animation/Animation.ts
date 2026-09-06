@@ -135,6 +135,12 @@ export default class Animation extends Eventful {
         const delta = time - this._time;
         let clip = this._head;
 
+        /** @tutorial [ZR_CALL_FIRST_FRAME_BEFORE_FIRST_REFRESH]: */
+        // Guaranteed the first frame is called before the first painter `refresh` call after
+        // any element update occurs, otherwise visual artefacts may be introduced, since
+        // `setToFinal` pattern is widely used by upstream application.
+        // @see ZR_ANIMATION_SET_TO_FINAL_PATTERN
+
         while (clip) {
             // Save the nextClip before step.
             // So the loop will not been affected if the clip is removed in the callback
@@ -153,7 +159,6 @@ export default class Animation extends Eventful {
         this._time = time;
 
         if (!notTriggerFrameAndStageUpdate) {
-
             // 'frame' should be triggered before stage, because upper application
             // depends on the sequence (e.g., echarts-stream and finish
             // event judge)

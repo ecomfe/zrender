@@ -38,9 +38,8 @@ export interface ElementAnimateConfig {
     /**
      * Special values:
      *  - If `duration` is `null | undefined`, a default value can be set internally.
-     *  - `duration: 0` means complete the animation in the next animation frame.
-     *    NOTICE: `duration: 0` is not necessarily the same as `animationProps: 0`.
-     *    @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS for details.
+     *  - `duration: 0` is supported by not the same as `ELEMENT_ANIMATION_PROPS_NONE`.
+     *    @see ZR_ELEMENT_ANIMATE_DURATION_ZERO for details.
      */
     duration?: number
     delay?: number
@@ -97,11 +96,9 @@ export interface ElementAnimateConfig {
     additive?: boolean
 
     /**
-     * Whether to set to final state before animation started.
-     * It can be useful if something you want to calculate depends on the final state of element.
-     * Like bounding rect for text layout.
-     *
+     * Whether to set to final values before animation started.
      * Only available in `el.animateTo`.
+     * @see ZR_ANIMATION_SET_TO_FINAL_PATTERN
      */
     setToFinal?: boolean
 }
@@ -133,6 +130,45 @@ type ElementAnimationProps<Props extends ElementProps = ElementProps> =
     MapToType<Props, boolean> | boolean | typeof ELEMENT_ANIMATION_PROPS_NONE | NullUndefined;
 // @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
 export const ELEMENT_ANIMATION_PROPS_NONE = 0;
+
+
+/**
+ * @see [USE_STATE_RETAIN_ANIMATION]:
+ *  This is a workaround for upstream usage. For example, if updating elements during state transition
+ *  animations, it is expected to keep the existing animation running without jump. However, state related
+ *  props are mainly on styles, which requires to be updated only on `normal` state. A typical pattern is
+ *  `clearStates`->`setStyle`->`useStates`. If we drop existing animations in `clearStates` and create new
+ *  animations in `useStates`, the original values have been lost, and it causes visual jump. This method
+ *  retain the original values in animators and then retarget the target values. Typical usage:
+ *  ```ts
+ *  const prevStates = el.currentStates;
+ *  el.clearStates(USE_STATE_NO_ANIMATION_OPT_RETAIN_ANIMATION)
+ *  el.setStyle(newStyle);
+ *  el.useStates(prevStates, USE_STATE_NO_ANIMATION_OPT_RETARGET_ANIMATION);
+ *  ```
+ *
+ * NOTE: Use special truthy values to keep backward compatible.
+ */
+export const USE_STATE_NO_ANIMATION_OPT_RETARGET_ANIMATION = 2;
+export const USE_STATE_NO_ANIMATION_OPT_RETAIN_ANIMATION = 3;
+export type UseStateNoAnimationOpt =
+    // A truthy value means clear existing animation (forward to final values) and not introduce new animation.
+    // A falsy value means allow new animation according to `el.stateTransition`.
+    | NullUndefined | boolean
+    | typeof USE_STATE_NO_ANIMATION_OPT_RETARGET_ANIMATION
+    | typeof USE_STATE_NO_ANIMATION_OPT_RETAIN_ANIMATION;
+
+/**
+ * @see USE_STATE_RETAIN_ANIMATION
+ * NOTE: Use special falsy values to keep backward compatible.
+ */
+const APPLY_STATE_OBJ_TRANS_ONLY_RETARGET_ANIMATION = '';
+const APPLY_STATE_OBJ_TRANS_ONLY_RETAIN_ANIMATION = NaN;
+export type ApplyStateObjTransOpt =
+    | NullUndefined | boolean
+    | typeof APPLY_STATE_OBJ_TRANS_ONLY_RETARGET_ANIMATION
+    | typeof APPLY_STATE_OBJ_TRANS_ONLY_RETAIN_ANIMATION;
+
 
 export interface ElementTextConfig {
     /**
@@ -1017,7 +1053,7 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Clear all states.
      */
-    clearStates(noAnimation?: boolean) {
+    clearStates(noAnimation?: UseStateNoAnimationOpt) {
         this.useState(PRESERVED_NORMAL_STATE, false, noAnimation);
         // TODO set _normalState to null?
     }
@@ -1029,7 +1065,12 @@ class Element<Props extends ElementProps = ElementProps> {
      * @param keepCurrentState If keep current states.
      *      If not, it will inherit from the normal state.
      */
-    useState(stateName: string, keepCurrentStates?: boolean, noAnimation?: boolean, forceUseHoverLayer?: boolean) {
+    useState(
+        stateName: string,
+        keepCurrentStates?: boolean,
+        noAnimation?: UseStateNoAnimationOpt,
+        forceUseHoverLayer?: boolean
+    ) {
 
         // Use preserved word __normal__
         // TODO: Only restore changed properties when restore to normal???
@@ -1131,9 +1172,13 @@ class Element<Props extends ElementProps = ElementProps> {
      * Apply multiple states.
      * @param states States list.
      */
-    useStates(states: string[], noAnimation?: boolean, forceUseHoverLayer?: boolean) {
+    useStates(
+        states: string[],
+        noAnimation?: UseStateNoAnimationOpt,
+        forceUseHoverLayer?: boolean
+    ) {
         if (!states.length) {
-            this.clearStates();
+            this.clearStates(noAnimation);
         }
         else {
             const stateObjects: ElementState[] = [];
@@ -1315,7 +1360,7 @@ class Element<Props extends ElementProps = ElementProps> {
         state: ElementState,
         normalState: ElementState,
         keepCurrentStates: boolean,
-        transition: boolean,
+        transition: ApplyStateObjTransOpt,
         animationCfg: ElementAnimateConfig
     ) {
         if (this.__inHover === IN_HOVER_LAYER_KIND_ONLY_STYLE_CHANGE) {
@@ -1371,17 +1416,24 @@ class Element<Props extends ElementProps = ElementProps> {
         }
 
         if (!transition) {
-            // Keep the running animation to the new values after states changed.
-            // Not simply stop animation. Or it may have jump effect.
             for (let i = 0; i < this.animators.length; i++) {
                 const animator = this.animators[i];
                 const targetName = animator.targetName;
-                // Ignore loop animation
-                if (!animator.getLoop()) {
-                    animator.__changeFinalValue(targetName
+                if (animator.__fromStateTransition == null) {
+                    continue;
+                }
+                if (transition === APPLY_STATE_OBJ_TRANS_ONLY_RETARGET_ANIMATION) {
+                    // @see USE_STATE_RETAIN_ANIMATION
+                    // NOTE:
+                    //  Although this is implemented in a base class Element, props owned by subclasses (Displayable,
+                    //  Path) are also handled here.
+                    !animator.getLoop() && animator.__changeFinalValue(targetName
                         ? ((state || normalState) as any)[targetName]
                         : (state || normalState)
                     );
+                }
+                else if (transition !== APPLY_STATE_OBJ_TRANS_ONLY_RETAIN_ANIMATION) {
+                    animator.stop(true);
                 }
             }
         }
@@ -1970,6 +2022,21 @@ mixin(Element, Transformable);
  *      animator and handle all updates in `during`.
  *
  *
+ * @tutorial [ZR_ANIMATION_SET_TO_FINAL_PATTERN]:
+ *  Upstream applications are likely to relies on the final values to measure (e.g., calculate bounding
+ *  rect for text layout) or other subsequent processing.
+ *  And setting to final values ensures consistency between animation and non-animation processing.
+ *  Therefore, a recommended pattern is firstly updating element props to the final values, and then
+ *  animation interpolated values are automatically set to the element from the first frame.
+ *  This pattern is supported by design in `ElementAnimateConfig['setToFinal']` and `el.animateFrom`,
+ *  and @see ZR_CALL_FIRST_FRAME_BEFORE_FIRST_REFRESH .
+ *
+ *
+ * @tutorial [ZR_DURING_MUST_BE_FROM_THE_FIRST_FRAME]
+ *  `during` must be called from the first frame, especially when using ELEMENT_ANIMATION_PROPS_NONE, otherwise,
+ *  visual artefacts may be introduced, in this case @see ZR_ANIMATION_SET_TO_FINAL_PATTERN .
+ *
+ *
  * @tutorial [ZR_ELEMENT_STOP_ANIMATION_ON_PROPS]:
  *  - [ZR_ELEMENT_ANIMATE_RETARGET_EXISTING_ANIMATION]:
  *    ```js
@@ -2024,7 +2091,9 @@ mixin(Element, Transformable);
  *      // NOTE: When indending to disable all animations, if using empty objects instead of
  *      // ELEMENT_ANIMATION_PROPS_NONE, every level needs an empty object, which is inconvenient.
  *      ```
- *    - `duration: 0` does not necessarily behave the same way as ELEMENT_ANIMATION_PROPS_NONE.
+ *    - [ZR_ELEMENT_ANIMATE_DURATION_ZERO]:
+ *     `duration: 0` does not necessarily behave the same way as ELEMENT_ANIMATION_PROPS_NONE.
+ *     Animators are still created in this case.
  *      ```ts
  *      // `x` will be changed immediately:
  *      el.animateTo({x: 10}, null, ELEMENT_ANIMATION_PROPS_NONE);
@@ -2479,10 +2548,12 @@ function isTextRelatedEl(el: Element<ElementProps>): boolean {
 
 function canTransition(
     el: Element,
-    noAnimation: boolean,
+    noAni: UseStateNoAnimationOpt,
     animationCfg: ElementAnimateConfig
-): boolean {
-    return !noAnimation && !el.__inHover && animationCfg && animationCfg.duration > 0;
+): ApplyStateObjTransOpt {
+    return noAni === USE_STATE_NO_ANIMATION_OPT_RETAIN_ANIMATION ? APPLY_STATE_OBJ_TRANS_ONLY_RETAIN_ANIMATION
+        : noAni === USE_STATE_NO_ANIMATION_OPT_RETARGET_ANIMATION ? APPLY_STATE_OBJ_TRANS_ONLY_RETARGET_ANIMATION
+        : (!noAni && !el.__inHover && animationCfg && animationCfg.duration > 0)
 }
 
 

@@ -47,6 +47,7 @@ class Clip {
 
     private _pausedTime = 0
     private _paused = false
+    private _noAni: ClipProps['noAni']
 
     animation: Animation
 
@@ -64,6 +65,7 @@ class Clip {
 
         this._life = retrieve2(opts.life, 1000);
         this._delay = opts.delay || 0;
+        this._noAni = opts.noAni;
 
         this.loop = opts.loop || false;
 
@@ -100,6 +102,12 @@ class Clip {
         }
 
         percent = Math.min(percent, 1);
+
+        // @see ZR_DURING_MUST_BE_FROM_THE_FIRST_FRAME
+        // @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
+        if (this._noAni) {
+            percent = 1;
+        }
 
         this.onframe(callEasing(this, percent), percent);
 

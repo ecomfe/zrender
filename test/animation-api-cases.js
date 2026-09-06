@@ -15,7 +15,7 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function () {
 
     // For debugging test cases.
-    // var ONLY_RUN_SINGLE_TEST_ID = 'during_with_easing';
+    // var ONLY_RUN_SINGLE_TEST_ID = 'during_with_ELEMENT_ANIMATION_PROPS_NONE';
     var ONLY_RUN_SINGLE_TEST_ID = null;
 
 
@@ -239,8 +239,10 @@
 
     function runCases(cases) {
         var promise = Promise.resolve();
+        var hasCaseAdded = false;
 
         function addTest(caseFn) {
+            hasCaseAdded = true;
             promise = promise.then(function () {
                 return caseFn();
             });
@@ -251,6 +253,9 @@
             ) {
                 addTest(cases[caseIdx].caseFn);
             }
+        }
+        if (!hasCaseAdded) {
+            assert(false, 'Something wrong - no test case is added.');
         }
 
         return promise;
@@ -1168,7 +1173,17 @@
                     };
 
                     record.first = {existingAnimatorsList: existingAnimatorsList};
-                    return promisifiedNextFrame(5);
+
+                    return promisifiedNextFrame(1);
+                }).then(function () {
+                    // @see ZR_DURING_MUST_BE_FROM_THE_FIRST_FRAME
+                    assert(countInList(prepared.log, 'during1') > 0);
+                    assert(countInList(prepared.log, 'during1_percent:1') === 0);
+                    assert(countInList(prepared.log, 'during1_rawPercent:1') === 0);
+                    assert(noDuplicateString(prepared.log, 'during1_percent:'));
+                    assert(noDuplicateString(prepared.log, 'during1_rawPercent:'));
+
+                    return promisifiedNextFrame(4);
 
                 }).then(function () {
                     assert(countInList(prepared.log, 'during1') > 4);
@@ -1400,6 +1415,8 @@
          */
         addTestCase('during_with_ELEMENT_ANIMATION_PROPS_NONE', function () {
             function testSingle(method, cfgForce, changeInnerOrOuterProp) {
+                // NOTE: Outer prop means the top level props of el. (e.g., el.x)
+                //       Inner prop means the inner level props of el. (e.g., el.shape.x, el.style.opacity)
                 var prepared;
                 var record = {};
 
@@ -1443,6 +1460,22 @@
                         assert(countInList(prepared.log, 'done1') === 0);
                         assert(countInList(prepared.log, 'during1_percent:0') === 0);
                         assert(countInList(prepared.log, 'during1_rawPercent:0') === 0);
+                    }
+
+                    return promisifiedNextFrame(1);
+
+                }).then(function () {
+                    if (!cfgForce) {
+                        record.checkCfgForceFalse1();
+                    }
+                    else {
+                        // @see ZR_DURING_MUST_BE_FROM_THE_FIRST_FRAME
+                        assert(countInList(prepared.log, 'during1') === 1);
+                        assert(countInList(prepared.log, 'during1_percent:1') === 1);
+                        assert(countInList(prepared.log, 'during1_rawPercent:1') === 1);
+                        assert(countInList(prepared.log, 'during1_percent:0') === 0);
+                        assert(countInList(prepared.log, 'during1_rawPercent:0') === 0);
+                        assert(countInList(prepared.log, 'done1') === 1);
                     }
 
                     return promisifiedTimeOut(DURATION * 1.1);

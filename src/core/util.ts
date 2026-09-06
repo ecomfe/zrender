@@ -79,6 +79,9 @@ export function logError(...args: any[]) {
  * Caution: do not support clone Date, for performance consideration.
  * (There might be a large number of date in `series.data`).
  * So date should not be modified in and out of echarts.
+ *
+ * @see copyAnimatableValue (in Animator.ts) for another impl of clone dedicated to animation.
+ * @see copyArrShallow for a simple shallow array copy.
  */
 export function clone<T extends any>(source: T): T {
     if (source == null || typeof source !== 'object') {
@@ -202,9 +205,27 @@ export function extend<
     return target as T & S;
 }
 
-export const ASSIGN_PROPS_OMIT_NULL_UNDEFINED = 1;
-type AssignPropsOpt = typeof ASSIGN_PROPS_OMIT_NULL_UNDEFINED;
+// Do not assign if a source prop is null/undefined.
+// (They are bit flags, i.e., `1 << n`);
+export const ASSIGN_PROPS_OMIT_SRC_NULL_UNDEFINED = 1;
+export const ASSIGN_PROPS_OMIT_TAR_NON_NULL_UNDEFINED = 2;
+type AssignPropsOpt =
+    | typeof ASSIGN_PROPS_OMIT_SRC_NULL_UNDEFINED
+    | typeof ASSIGN_PROPS_OMIT_TAR_NON_NULL_UNDEFINED;
 
+/**
+ * @usage
+ *  ```ts
+ *  assignProps(target, source, ['x', 'y']);
+ *  assignProps(target, source, ['x', 'y'], ASSIGN_PROPS_OMIT_SRC_NULL_UNDEFINED);
+ *  assignProps(target, source, ['x', 'y'], ASSIGN_PROPS_OMIT_TAR_NON_NULL_UNDEFINED);
+ *  assignProps(
+ *      target, source, ['x', 'y'],
+ *      // Use both of the two restrictions.
+ *      ASSIGN_PROPS_OMIT_SRC_NULL_UNDEFINED | ASSIGN_PROPS_OMIT_TAR_NON_NULL_UNDEFINED
+ *  );
+ *  ```
+ */
 export function assignProps<
     TSrc extends Dictionary<any>,
     TCommonKey extends keyof TSrc
@@ -234,8 +255,9 @@ export function assignProps(
     for (let idx = 0; idx < props.length; idx++) {
         const prop = props[idx];
         if (!opt
-            || (opt === ASSIGN_PROPS_OMIT_NULL_UNDEFINED
-                && src[prop] != null
+            || (
+                (!(opt & ASSIGN_PROPS_OMIT_SRC_NULL_UNDEFINED) || src[prop] != null)
+                && (!(opt & ASSIGN_PROPS_OMIT_TAR_NON_NULL_UNDEFINED) || tar[prop] == null)
             )
         ) {
             tar[prop] = src[prop];
@@ -257,6 +279,44 @@ export function defaults<
     }
     return target as T & S;
 }
+
+/**
+ * @usage
+ *  ```ts
+ *  // Copy to target if target exists, otherwise create a new array as target.
+ *  target = copyArrShallow(target, source);
+ *  ```
+ */
+export function copyArrShallow<TTar extends unknown[]>(
+    target: TTar | NullUndefined,
+    source: ArrayLike<unknown>,
+): TTar {
+    if (!target) {
+        target = [] as TTar;
+    }
+    const srcLen = source.length;
+    copyArrShallow2(target, source, srcLen);
+    target.length = srcLen;
+    return target;
+}
+
+/**
+ * @usage
+ *  ```ts
+ *  // Copy to target if target exists, otherwise create a new array as target.
+ *  target = copyArrShallow(target, source);
+ *  ```
+ */
+export function copyArrShallow2(
+    target: ArrayLike<unknown>,
+    source: ArrayLike<unknown>,
+    len: number
+): void {
+    for (let i = 0; i < len; i++) {
+        target[i] = source[i];
+    }
+}
+
 
 // Expose createCanvas in util for compatibility
 export const createCanvas = platformApi.createCanvas;
