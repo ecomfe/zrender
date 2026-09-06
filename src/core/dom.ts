@@ -1,8 +1,9 @@
-
 import env from './env';
 import {buildTransformer} from './fourPointsTransform';
 import {Dictionary} from './types';
 import { each } from './util';
+
+/* global document */
 
 const EVENT_SAVED_PROP = '___zrEVENTSAVED';
 const _calcOut: number[] = [];

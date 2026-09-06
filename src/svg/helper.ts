@@ -1,5 +1,7 @@
 // Shared methods of svg and svg-ssr
 
+/* global Buffer, btoa */
+
 import { MatrixArray } from '../core/matrix';
 import Transformable, { TransformProp } from '../core/Transformable';
 import { RADIAN_TO_DEGREE, retrieve2, logError } from '../core/util';

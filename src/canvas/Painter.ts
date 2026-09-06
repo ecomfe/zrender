@@ -1,6 +1,6 @@
 import {devicePixelRatio} from '../config';
 import * as util from '../core/util';
-import Layer, { isIncrementalLayer, LayerConfig, LayerDrawCursor } from './Layer';
+import Layer, { isIncrementalLayer, LAYER_LAST_CLEARED_DIRTY_RECTS, LayerConfig, LayerDrawCursor } from './Layer';
 import requestAnimationFrame from '../animation/requestAnimationFrame';
 import env from '../core/env';
 import Displayable from '../graphic/Displayable';
@@ -18,6 +18,7 @@ import { REDRAW_BIT } from '../graphic/constants';
 import { getSize } from './helper';
 import { platformApi } from '../core/platform';
 
+/* global document */
 
 const HOVER_LAYER_ZLEVEL = 1e5;
 // zlevel for the case that `Painter['_singleCanvas']` is `true`.
@@ -28,12 +29,13 @@ type HoverLayerDirty =
     typeof HOVER_LAYER_DIRTY_NO
     | typeof HOVER_LAYER_DIRTY_REPAINT_IF_EXISTING
     | typeof HOVER_LAYER_DIRTY_REPAINT
-// Do noting to hover layer.
+// Do nothing to the hover layer.
 const HOVER_LAYER_DIRTY_NO: undefined = undefined;
-// Repaint only if existing. In most cases hover layer is not used,
-// do not need to travel one more time to detect hover state.
+// Repaint only if the hover layer exists. In most cases, hover layer is
+// not used, thereby avoiding its creation.
 const HOVER_LAYER_DIRTY_REPAINT_IF_EXISTING = 1;
-// Create a hover layer if not existing, and repaint.
+// Repaint the hover layer. Create a hover layer if not existing.
+// This is the only flag that can create a hover layer.
 const HOVER_LAYER_DIRTY_REPAINT = 2;
 
 
@@ -211,6 +213,10 @@ export default class CanvasPainter implements PainterBase {
 
     type = 'canvas'
 
+    /**
+     * NOTICE: Effectively, it may be a canvas-like instance, rather than a `HTMLElement`.
+     * See CAUTION_ZRENDER_PLATFORM_CREATE_CANVAS for more info.
+     */
     root: HTMLElement
 
     dpr: number
@@ -261,15 +267,18 @@ export default class CanvasPainter implements PainterBase {
             layers: [],
         };
 
-        // In node environment using node-canvas
-        const singleCanvas = !root.nodeName // In node ?
+        // NOTICE:
+        //  - `singleCanvas` can be `true` in the `node-canvas` project, where `root` is an canvas
+        //    instance created by the project `node-canvas`, and no `nodeName` field.
+        //  - `singleCanvas` can be `true` in the `echarts-for-weixin` project, where `root`
+        //    is a canvas-like instance and no `nodeName` field.
+        const singleCanvas = this._singleCanvas =
+            !root.nodeName
             || root.nodeName.toUpperCase() === 'CANVAS';
 
         this._opts = opts = util.extend({}, opts || {}) as CanvasPainterOption;
 
         this.dpr = opts.devicePixelRatio || devicePixelRatio;
-
-        this._singleCanvas = singleCanvas;
 
         this.root = root;
 
@@ -539,7 +548,16 @@ export default class CanvasPainter implements PainterBase {
                 return;
             }
 
-            const repaintRects = (painter._opts.useDirtyRect && !isIncrementalLayer(layer))
+            // [DIRTY_RECT_WITH_INCREMENTAL_REDNDERING]
+            // PENDING: Currently, dirty rect is not supported on incremental layers.
+            // The following issues need to be considered before adding support:
+            // (1) May unnecessary: There might not be a compelling use case for partial updates in an
+            //  incremental layer, since the most common partial-update cases have already been handled
+            //  by the hover layer.
+            // (2) If dirty rects changes, incremental rendering may need to restart.
+            // (3) Rendering a display list against dirty rects involves a nested loop, which needs to
+            //  be able to yield at an appropriate point without causing any element to miss a dirty rect.
+            let repaintRects = (painter._opts.useDirtyRect && !isIncrementalLayer(layer))
                 ? layer.createRepaintRects(list, prevList, painter._width, painter._height) : null;
 
             const firstLayerKey = painter._i.layerStack[0];
@@ -551,6 +569,10 @@ export default class CanvasPainter implements PainterBase {
                 const clearColor = (layer.zlevel === firstLayerKey.zl && layer.zlevel2 === firstLayerKey.zl2)
                     ? painter._backgroundColor : null;
                 layer.clear(false, clearColor, repaintRects);
+                if (layer.lastCleared !== LAYER_LAST_CLEARED_DIRTY_RECTS) {
+                    // layer may be still cleared all even if `repaintRects` is provided.
+                    repaintRects = null;
+                }
             }
 
             eachCursorInLayer(layer, function (cursor) {
@@ -577,22 +599,25 @@ export default class CanvasPainter implements PainterBase {
         layer: Layer,
         layerCursor: LayerDrawCursor,
         list: Displayable[],
+        // null/undefined means dirty rect is disabled.
         repaintRects: BoundingRect[] | NullUndefined,
         contentRetained: boolean
         // Return `finished`
     ): boolean {
         const ctx = layer.ctx;
 
+        const cursorCurrDrawIdx = layerCursor.drawIdx;
+        const notClearIdx = layerCursor.notClearIdx;
+        const idxLoopStart = notClearIdx >= 0 ? Math.min(notClearIdx, cursorCurrDrawIdx) : cursorCurrDrawIdx;
+        const idxLoopEnd = layerCursor.endIdx;
+        let resultIdx;
+
         if (repaintRects) {
-            if (!repaintRects.length) {
-                layerCursor.drawIdx = layerCursor.endIdx; // Nothing to repaint, mark as finished
-            }
-            else {
+            if (repaintRects.length) {
                 const dpr = this.dpr;
                 // Set repaintRect as clipPath
                 for (let r = 0; r < repaintRects.length; ++r) {
                     const rect = repaintRects[r];
-
                     ctx.save();
                     ctx.beginPath();
                     ctx.rect(
@@ -602,28 +627,44 @@ export default class CanvasPainter implements PainterBase {
                         rect.height * dpr
                     );
                     ctx.clip();
-                    this._paintPerCursorInRect(layer, layerCursor, list, rect, contentRetained);
+                    this._paintPerCursorInRect(
+                        list, layer, idxLoopStart, idxLoopEnd, cursorCurrDrawIdx,
+                        false, // Do not use timer. @see DIRTY_RECT_WITH_INCREMENTAL_REDNDERING
+                        rect, contentRetained
+                    );
                     ctx.restore();
                 }
             }
+            // NOTE: If `repaintRects.length === 0`, nothing needs repaint.
+            resultIdx = idxLoopEnd;
         }
         else {
-            // Paint all once
             ctx.save();
-            this._paintPerCursorInRect(layer, layerCursor, list, null, contentRetained);
+            resultIdx = this._paintPerCursorInRect(
+                list, layer, idxLoopStart, idxLoopEnd, cursorCurrDrawIdx,
+                isIncrementalLayer(layer), // Use timer only on incremental layers.
+                null, contentRetained
+            );
             ctx.restore();
         }
 
-        return layerCursor.drawIdx >= layerCursor.endIdx;
+        // NOTE: `resultIdx` may be less than `cursorCurrDrawIdx` due to `notClearIdx`.
+        layerCursor.drawIdx = Math.max(resultIdx, cursorCurrDrawIdx);
+
+        return layerCursor.drawIdx >= idxLoopEnd;
     }
 
     private _paintPerCursorInRect(
-        layer: Layer,
-        layerCursor: LayerDrawCursor,
         list: Displayable[],
+        layer: Layer,
+        idxLoopStart: number,
+        idxLoopEnd: number,
+        cursorCurrDrawIdx: number,
+        useTimer: boolean,
+        // null/undefined means dirty rect is disabled.
         repaintRect: BoundingRect | NullUndefined,
         contentRetained: boolean,
-    ): void {
+    ): number {
         const scope: BrushScope = {
             inHover: false,
             allClipped: false,
@@ -633,31 +674,30 @@ export default class CanvasPainter implements PainterBase {
             beforeBrushParam: {contentRetained}
         };
         const ctx = layer.ctx;
-        const useTimer = isIncrementalLayer(layer);
         const startTime = useTimer && platformApi.getTime();
+        let idx = idxLoopStart;
 
-        // NOTICE: This loop is performance-sensitive, especially for large data.
-        const drawIdxBegin = layerCursor.drawIdx;
-        const notClearIdx = layerCursor.notClearIdx;
-        let idx = notClearIdx >= 0 ? Math.min(notClearIdx, drawIdxBegin) : drawIdxBegin;
-        for (; idx < layerCursor.endIdx; idx++) {
+        for (; idx < idxLoopEnd; idx++) {
             const el = list[idx];
 
-            if (idx < drawIdxBegin && !el.notClear) {
-                // In this portion, all non-`notClear` elements do not need to be painted.
+            if (idx < cursorCurrDrawIdx && !el.notClear) {
+                // `notClear` elements should always be brushed -- its draw index and incremental
+                // rendering is self-maintained. @see CANVAS_INCREMENTAL_CASE_SINGLE_ELEMENT .
+                // non-`notClear` elements should not be re-brushed.
                 continue;
             }
 
             if (el.__inHover) {
                 // To avoid repeatedly repaint hover layer in progressive rendering,
-                // set HOVER_LAYER_DIRTY_REPAINT only when needed.
-                // Notice rendered el may not be traveled here again if the layer is not dirty,
-                // in this case HOVER_LAYER_DIRTY_REPAINT is set via markRedraw() calling
-                // zr.refreshHover().
+                // HOVER_LAYER_DIRTY_REPAINT should be set only when needed.
+                // Notice rendered elements may not be traveled here again if the layer is not dirty,
+                // in this case HOVER_LAYER_DIRTY_REPAINT can be set via `markRedraw()`, which calls
+                // `zr.refreshHover()`.
                 this._hoverLayerDirty = HOVER_LAYER_DIRTY_REPAINT;
-                // NOTE: To ensure a consistent composited visual effect, `el` should be
-                // always painted to normal layers regardless of whether it will be painted
-                // to a hover layer.
+                // NOTE: Hover state is typically triggered after an element is painted to a normal layer,
+                // and then painted to the hover layer, forming a composited visual effect if translucent.
+                // To ensure a consistent composited visual effect, that element should always be repainted
+                // to both a normal layer and a hover layer if it is dirty.
             }
 
             if (repaintRect != null) {
@@ -685,9 +725,10 @@ export default class CanvasPainter implements PainterBase {
                 }
             }
         }
+        // This loop is allowed to break only if `useTimer: true`.
         brushLoopFinalize(ctx, scope);
 
-        layerCursor.drawIdx = Math.max(idx, drawIdxBegin); // `idx` may < `drawIdxBegin` due to `notClearIdx`.
+        return idx;
     }
 
     /**
@@ -870,8 +911,8 @@ export default class CanvasPainter implements PainterBase {
      * @tutorial [CANVAS_INCREMENTAL_LAYER_USE_CASES]
      *  Two use patterns are covered per incremental layer:
      *  [CANVAS_INCREMENTAL_CASE_SINGLE_ELEMENT]
-     *    An single incremental element with a customized `buildPath`, using `Displayable['notClear']`
-     *    to retain the rendered content.
+     *    An single incremental element with a customized `buildPath` and self-maintained draw index,
+     *    using `Displayable['notClear']` to retain the rendered content.
      *  [CANVAS_INCREMENTAL_CASE_MULTIPLE_ELEMENTS]
      *    A run of consecutive incremental elements, progressively drawing per frame in `_paintList`. This
      *    is not an optimal approach for rendering due to the increasing cost of updating and sorting
@@ -1138,6 +1179,7 @@ export default class CanvasPainter implements PainterBase {
                     // should be respected.
                     cursor.drawIdx = cursor.startIdx;
                 });
+                // If any layer needs to repaint, the hover layer should repaint accordingly.
                 if (painter._hoverLayerDirty === HOVER_LAYER_DIRTY_NO) {
                     painter._hoverLayerDirty = HOVER_LAYER_DIRTY_REPAINT_IF_EXISTING;
                 }
@@ -1163,6 +1205,9 @@ export default class CanvasPainter implements PainterBase {
 
     configLayer(zlevel: number, config: LayerConfig) {
         if (config) {
+            // PENDING: Only props in `LayerConfig` is allowed to be set,
+            // it's dangerous to modify other props of the `layer` instance.
+            // But for historical reason, no restriction is enforced.
             const layerConfig = this._layerConfig;
             if (!layerConfig[zlevel]) {
                 layerConfig[zlevel] = config;
@@ -1171,8 +1216,13 @@ export default class CanvasPainter implements PainterBase {
                 util.merge(layerConfig[zlevel], config, true);
             }
 
-            eachLayer(this._i, function (layer, zlevel) {
-                util.merge(layer, layerConfig[zlevel], true);
+            eachLayer(this._i, function (layer, zlv, zlv2) {
+                if (zlv === zlevel) {
+                    util.merge(layer, layerConfig[zlv], true);
+                    if (zlv2 === ZLEVEL2_INCREMENTAL) {
+                        layer.motionBlur = false;
+                    }
+                }
             });
         }
     }

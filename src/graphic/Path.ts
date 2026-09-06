@@ -4,7 +4,9 @@ import Displayable, { DisplayableProps,
     DisplayableStatePropNames,
     DEFAULT_COMMON_ANIMATION_PROPS
 } from './Displayable';
-import Element, {ElementAnimateConfig, ElementCommonState, IN_HOVER_LAYER_KIND_ONLY_STYLE_CHANGE} from '../Element';
+import Element, {
+    ApplyStateObjTransOpt, ElementAnimateConfig, ElementCommonState, IN_HOVER_LAYER_KIND_ONLY_STYLE_CHANGE
+} from '../Element';
 import PathProxy from '../core/PathProxy';
 import * as pathContain from '../contain/path';
 import { PatternObject } from './Pattern';
@@ -525,7 +527,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
         state: PathState,
         normalState: PathState,
         keepCurrentStates: boolean,
-        transition: boolean,
+        transition: ApplyStateObjTransOpt,
         animationCfg: ElementAnimateConfig
     ) {
         super._applyStateObj(stateName, state, normalState, keepCurrentStates, transition, animationCfg);

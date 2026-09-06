@@ -3,6 +3,8 @@ import type CanvasPainter from '../canvas/Painter';
 import type BoundingRect from '../core/BoundingRect';
 import { extend } from '../core/util';
 
+/* global document, getComputedStyle */
+
 class DebugRect {
 
     dom: HTMLDivElement

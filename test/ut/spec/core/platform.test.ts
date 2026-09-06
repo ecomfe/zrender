@@ -12,7 +12,7 @@ describe('platform', function() {
         function createCanvas() {
             return {
                 width: 1
-            }as HTMLCanvasElement;
+            } as HTMLCanvasElement;
         }
         function measureText() {
             return { width: 16.5 };
@@ -35,6 +35,19 @@ describe('platform', function() {
     });
 
     it('measureText should return correct width', function () {
+        function createCanvas() {
+            // zrender should use the fallback logic for no canvas env.
+            return null as HTMLCanvasElement;
+        }
+        const oldCreateCanvas = platform.platformApi.createCanvas;
+        platform.setPlatformAPI({
+            createCanvas,
+        });
         expect(platform.platformApi.measureText('A', 'normal normal 18px sans-serif').width).toBe(12.06);
+        // Restore
+        platform.setPlatformAPI({
+            createCanvas: oldCreateCanvas,
+        });
     });
+
 });

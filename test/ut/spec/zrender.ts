@@ -1,2 +1,1 @@
-export * from '../../../src/export';
-export * from '../../../src/zrender';
+export * from '../../../src/all';

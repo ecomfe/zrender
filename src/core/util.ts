@@ -79,6 +79,9 @@ export function logError(...args: any[]) {
  * Caution: do not support clone Date, for performance consideration.
  * (There might be a large number of date in `series.data`).
  * So date should not be modified in and out of echarts.
+ *
+ * @see copyAnimatableValue (in Animator.ts) for another impl of clone dedicated to animation.
+ * @see copyArrShallow for a simple shallow array copy.
  */
 export function clone<T extends any>(source: T): T {
     if (source == null || typeof source !== 'object') {
@@ -187,9 +190,8 @@ export function extend<
     T extends Dictionary<any>,
     S extends Dictionary<any>
 >(target: T, source: S): T & S {
-    // @ts-ignore
     if (Object.assign) {
-        // @ts-ignore
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         Object.assign(target, source);
     }
     else {
@@ -203,32 +205,63 @@ export function extend<
     return target as T & S;
 }
 
+// Do not assign if a source prop is null/undefined.
+// (They are bit flags, i.e., `1 << n`);
+export const ASSIGN_PROPS_OMIT_SRC_NULL_UNDEFINED = 1;
+export const ASSIGN_PROPS_OMIT_TAR_NON_NULL_UNDEFINED = 2;
+type AssignPropsOpt =
+    | typeof ASSIGN_PROPS_OMIT_SRC_NULL_UNDEFINED
+    | typeof ASSIGN_PROPS_OMIT_TAR_NON_NULL_UNDEFINED;
+
+/**
+ * @usage
+ *  ```ts
+ *  assignProps(target, source, ['x', 'y']);
+ *  assignProps(target, source, ['x', 'y'], ASSIGN_PROPS_OMIT_SRC_NULL_UNDEFINED);
+ *  assignProps(target, source, ['x', 'y'], ASSIGN_PROPS_OMIT_TAR_NON_NULL_UNDEFINED);
+ *  assignProps(
+ *      target, source, ['x', 'y'],
+ *      // Use both of the two restrictions.
+ *      ASSIGN_PROPS_OMIT_SRC_NULL_UNDEFINED | ASSIGN_PROPS_OMIT_TAR_NON_NULL_UNDEFINED
+ *  );
+ *  ```
+ */
 export function assignProps<
     TSrc extends Dictionary<any>,
     TCommonKey extends keyof TSrc
 >(
     tar: NullUndefined,
     src: TSrc,
-    props: readonly TCommonKey[]
+    props: readonly TCommonKey[],
+    opt?: AssignPropsOpt
 ): Pick<TSrc, TCommonKey>;
 export function assignProps<
     TTar extends Dictionary<any>,
     TSrc extends Dictionary<any>,
-    TCommonKey extends keyof TSrc & keyof TTar
+    TCommonKey extends keyof TSrc & keyof TTar,
 >(
     tar: TTar,
-    src: TSrc & { [P in TCommonKey]: TTar[P] },
-    props: readonly TCommonKey[]
+    src: TSrc & { [P in TCommonKey]?: TTar[P] },
+    props: readonly TCommonKey[],
+    opt?: AssignPropsOpt
 ): TTar;
 export function assignProps(
     tar: any,
     src: any,
-    props: readonly string[]
+    props: readonly string[],
+    opt?: AssignPropsOpt
 ) {
     tar = (tar || {});
     for (let idx = 0; idx < props.length; idx++) {
         const prop = props[idx];
-        tar[prop] = src[prop];
+        if (!opt
+            || (
+                (!(opt & ASSIGN_PROPS_OMIT_SRC_NULL_UNDEFINED) || src[prop] != null)
+                && (!(opt & ASSIGN_PROPS_OMIT_TAR_NON_NULL_UNDEFINED) || tar[prop] == null)
+            )
+        ) {
+            tar[prop] = src[prop];
+        }
     }
     return tar;
 }
@@ -247,6 +280,44 @@ export function defaults<
     return target as T & S;
 }
 
+/**
+ * @usage
+ *  ```ts
+ *  // Copy to target if target exists, otherwise create a new array as target.
+ *  target = copyArrShallow(target, source);
+ *  ```
+ */
+export function copyArrShallow<TTar extends unknown[]>(
+    target: TTar | NullUndefined,
+    source: ArrayLike<unknown>,
+): TTar {
+    if (!target) {
+        target = [] as TTar;
+    }
+    const srcLen = source.length;
+    copyArrShallow2(target, source, srcLen);
+    target.length = srcLen;
+    return target;
+}
+
+/**
+ * @usage
+ *  ```ts
+ *  // Copy to target if target exists, otherwise create a new array as target.
+ *  target = copyArrShallow(target, source);
+ *  ```
+ */
+export function copyArrShallow2(
+    target: ArrayLike<unknown>,
+    source: ArrayLike<unknown>,
+    len: number
+): void {
+    for (let i = 0; i < len; i++) {
+        target[i] = source[i];
+    }
+}
+
+
 // Expose createCanvas in util for compatibility
 export const createCanvas = platformApi.createCanvas;
 
@@ -256,6 +327,7 @@ export const createCanvas = platformApi.createCanvas;
 export function indexOf<T>(array: T[] | readonly T[] | ArrayLike<T>, value: T): number {
     if (array) {
         if ((array as T[]).indexOf) {
+            // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
             return (array as T[]).indexOf(value);
         }
         for (let i = 0, len = array.length; i < len; i++) {
@@ -294,6 +366,7 @@ export function mixin<T, S>(target: T | Function, source: S | Function, override
     // If build target is ES6 class. prototype methods is not enumerable. Use getOwnPropertyNames instead
     // TODO: Determine if source is ES6 class?
     if (Object.getOwnPropertyNames) {
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         const keyList = Object.getOwnPropertyNames(source);
         for (let i = 0; i < keyList.length; i++) {
             const key = keyList[i];
@@ -344,6 +417,7 @@ export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayL
         return;
     }
     if ((arr as any).forEach && (arr as any).forEach === nativeForEach) {
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         (arr as any).forEach(cb, context);
     }
     else if (arr.length === +arr.length) {
@@ -381,6 +455,7 @@ export function map<T, R, Context>(
         return slice(arr) as unknown[] as R[];
     }
     if (arr.map && arr.map === nativeMap) {
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         return arr.map(cb, context);
     }
     else {
@@ -426,6 +501,7 @@ export function filter<T, Context>(
         return slice(arr);
     }
     if (arr.filter && arr.filter === nativeFilter) {
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         return arr.filter(cb, context);
     }
     else {
@@ -471,6 +547,7 @@ export function keys<T extends object>(obj: T): (KeyOfDistributive<T> & string)[
     // `Object.keys` only return string rather than `number | string`.
     type TKeys = KeyOfDistributive<T> & string;
     if (Object.keys) {
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         return Object.keys(obj) as TKeys[];
     }
     let keyList: TKeys[] = [];
@@ -507,6 +584,7 @@ function bindPolyfill<Ctx, Fn extends(...args: any) => any>(
     };
 }
 export const bind: FunctionBind = (protoFunction && isFunction(protoFunction.bind))
+    // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
     ? protoFunction.call.bind(protoFunction.bind)
     : bindPolyfill;
 
@@ -530,6 +608,7 @@ export {curry};
 
 export function isArray(value: any): value is any[] {
     if (Array.isArray) {
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         return Array.isArray(value);
     }
     return objToString.call(value) === '[object Array]';
@@ -735,6 +814,7 @@ class MapPolyfill<T, KEY extends string | number = string | number> implements M
 
 // We want to use native Map if it is available, but we do not want to polyfill the global scope
 // in case users ship their own polyfills or patch the native map object in any way.
+// eslint-disable-next-line no-restricted-globals
 const isNativeMapSupported = typeof Map === 'function';
 function maybeNativeMap<T, KEY extends string | number = string | number>(): MapInterface<T, KEY> {
     // Map may be a native class if we are running in an ES6 compatible environment.
@@ -824,6 +904,7 @@ export function createObject<T>(proto?: object, properties?: T): T {
     // https://jsperf.com/style-strategy-proto-or-others
     let obj: T;
     if (Object.create) {
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         obj = Object.create(proto);
     }
     else {

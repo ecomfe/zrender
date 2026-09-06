@@ -10,10 +10,8 @@ import Eventful from '../core/Eventful';
 import requestAnimationFrame from './requestAnimationFrame';
 import Animator from './Animator';
 import Clip from './Clip';
+import { platformApi } from '../core/platform';
 
-export function getTime() {
-    return new Date().getTime();
-}
 
 interface Stage {
     update?: () => void
@@ -133,9 +131,15 @@ export default class Animation extends Eventful {
     }
 
     update(notTriggerFrameAndStageUpdate?: boolean) {
-        const time = getTime() - this._pausedTime;
+        const time = platformApi.getTime() - this._pausedTime;
         const delta = time - this._time;
         let clip = this._head;
+
+        /** @tutorial [ZR_CALL_FIRST_FRAME_BEFORE_FIRST_REFRESH]: */
+        // Guaranteed the first frame is called before the first painter `refresh` call after
+        // any element update occurs, otherwise visual artefacts may be introduced, since
+        // `setToFinal` pattern is widely used by upstream application.
+        // @see ZR_ANIMATION_SET_TO_FINAL_PATTERN
 
         while (clip) {
             // Save the nextClip before step.
@@ -155,7 +159,6 @@ export default class Animation extends Eventful {
         this._time = time;
 
         if (!notTriggerFrameAndStageUpdate) {
-
             // 'frame' should be triggered before stage, because upper application
             // depends on the sequence (e.g., echarts-stream and finish
             // event judge)
@@ -188,7 +191,7 @@ export default class Animation extends Eventful {
             return;
         }
 
-        this._time = getTime();
+        this._time = platformApi.getTime();
         this._pausedTime = 0;
 
         this._startLoop();
@@ -206,7 +209,7 @@ export default class Animation extends Eventful {
      */
     pause() {
         if (!this._paused) {
-            this._pauseStart = getTime();
+            this._pauseStart = platformApi.getTime();
             this._paused = true;
         }
     }
@@ -216,7 +219,7 @@ export default class Animation extends Eventful {
      */
     resume() {
         if (this._paused) {
-            this._pausedTime += getTime() - this._pauseStart;
+            this._pausedTime += platformApi.getTime() - this._pauseStart;
             this._paused = false;
         }
     }

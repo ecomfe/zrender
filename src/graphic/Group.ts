@@ -104,7 +104,7 @@ class Group extends Element<GroupProps> {
             && nextSibling && nextSibling.parent === this) {
 
             const children = this._children;
-            const idx = children.indexOf(nextSibling);
+            const idx = zrUtil.indexOf(children, nextSibling);
 
             if (idx >= 0) {
                 children.splice(idx, 0, child);

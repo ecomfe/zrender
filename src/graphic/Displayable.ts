@@ -5,6 +5,7 @@
 import Element, {
     ElementProps, ElementStatePropNames, ElementAnimateConfig, ElementCommonState,
     IN_HOVER_LAYER_KIND_ONLY_STYLE_CHANGE,
+    ApplyStateObjTransOpt,
 } from '../Element';
 import BoundingRect from '../core/BoundingRect';
 import { PropType, Dictionary, MapToType, IncrementalIdCompat } from '../core/types';
@@ -142,8 +143,10 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      * `false` is the normal behavior as other elements - can clear when `REDRAW_BIT` is set.
      *
      * NOTICE: The layer may be still cleared if marked as dirty by other incremental elements
-     * sharing the same layer. Therefore, `contentRetained` is used in indicate whether the
-     * content is retained, which enable the element to reset its internal draw index.
+     * sharing the same layer. Therefore, `contentRetained` is used to indicate whether the
+     * content is retained, which enables the element to reset its internal draw index.
+     *
+     * @see CANVAS_INCREMENTAL_CASE_SINGLE_ELEMENT
      *
      * Typical usage:
      *  ```
@@ -505,7 +508,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
         state: DisplayableState,
         normalState: DisplayableState,
         keepCurrentStates: boolean,
-        transition: boolean,
+        transition: ApplyStateObjTransOpt,
         animationCfg: ElementAnimateConfig
     ) {
         super._applyStateObj(stateName, state, normalState, keepCurrentStates, transition, animationCfg);

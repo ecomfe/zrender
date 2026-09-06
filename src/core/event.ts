@@ -2,6 +2,8 @@
  * Utilities for mouse or touch events.
  */
 
+/* global window */
+
 import Eventful from './Eventful';
 import env from './env';
 import { ZRRawEvent } from './types';

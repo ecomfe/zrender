@@ -13,7 +13,7 @@ import * as zrUtil from './core/util';
 import Handler from './Handler';
 import Storage from './Storage';
 import {PainterBase} from './PainterBase';
-import Animation, {getTime} from './animation/Animation';
+import Animation from './animation/Animation';
 import HandlerProxy from './dom/HandlerProxy';
 import Element, { ElementEventCallback } from './Element';
 import { Dictionary, ElementEventName, RenderedEvent, WithThisType } from './core/types';
@@ -26,6 +26,7 @@ import { lum } from './tool/color';
 import { DARK_MODE_THRESHOLD } from './config';
 import Group from './graphic/Group';
 import { CanvasPainterRefreshOpt } from './canvas/Painter';
+import { platformApi } from './core/platform';
 
 
 type PainterBaseCtor = {
@@ -65,7 +66,10 @@ function isDarkMode(backgroundColor: string | GradientObject | PatternObject): b
 
 class ZRender {
     /**
-     * Not necessary if using SSR painter like svg-ssr
+     * NOTICE:
+     *  - It is not necessary if using SSR painter like svg-ssr.
+     *  - Effectively, it may be a canvas-like instance, rather than a `HTMLElement`.
+     *    See CAUTION_ZRENDER_PLATFORM_CREATE_CANVAS for more info.
      */
     dom?: HTMLElement
 
@@ -94,9 +98,6 @@ class ZRender {
     constructor(id: number, dom?: HTMLElement, opts?: ZRenderInitOpt) {
         opts = opts || {};
 
-        /**
-         * @type {HTMLDomElement}
-         */
         this.dom = dom;
 
         this.id = id;
@@ -240,7 +241,7 @@ class ZRender {
     }) {
         if (opt.animUpdate) {
             // Update animation if refreshImmediately is invoked from outside.
-            // Not trigger stage update to call flush again. Which may refresh twice
+            // Use `true` to prevent from triggering `stage.update`, otherwise `_flush` will be called twice.
             this.animation.update(true);
         }
 
@@ -276,13 +277,17 @@ class ZRender {
         if (this._disposed) {
             return;
         }
+        // The explicit call to `flush()` needs to advance the animation by one step. Upstream application
+        // (like echarts) is likely to call `el.animateTo`/`el.animateFrom` with `setToFinal`, where the
+        // final value is convenient for their subsequent handling, but they should not be renderered. An
+        // animation advance can override those final values.
         this._flush(true);
     }
 
     private _flush(animationUpdate: boolean) {
         let triggerRendered;
 
-        const start = getTime();
+        const start = platformApi.getTime();
         const needsRefresh = this._needsRefresh;
         const needsRefreshHover = this._needsRefreshHover;
 
@@ -294,7 +299,7 @@ class ZRender {
                 refreshHover: needsRefreshHover,
             });
         }
-        const end = getTime();
+        const end = platformApi.getTime();
 
         if (triggerRendered) {
             this._stillFrameAccum = 0;

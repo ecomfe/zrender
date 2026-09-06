@@ -1,7 +1,11 @@
 module.exports = {
+    displayName: "zrenderUT",
     preset: 'ts-jest',
-    testEnvironment: 'node',
+    testEnvironment: 'jsdom',
     rootDir: __dirname,
+    setupFiles: [
+        'jest-canvas-mock'
+    ],
     setupFilesAfterEnv: [
         '<rootDir>/extendExpect.ts'
     ],

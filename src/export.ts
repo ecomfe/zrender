@@ -20,7 +20,8 @@ export {
     ElementTextGuideLineConfig,
     ElementEvent,
     ElementEventCallback,
-    ElementProps
+    ElementProps,
+    ELEMENT_ANIMATION_PROPS_NONE
 } from './Element';
 
 export {default as Displayable, DisplayableProps} from './graphic/Displayable';
@@ -73,4 +74,4 @@ export {parseSVG};
 
 export {default as showDebugDirtyRect} from './debug/showDebugDirtyRect';
 
-export {setPlatformAPI} from './core/platform';
+export {setPlatformAPI, getPlatformAPI} from './core/platform';

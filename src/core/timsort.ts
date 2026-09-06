@@ -1,3 +1,5 @@
+/* eslint-disable no-var */
+
 // https://github.com/mziccard/node-timsort
 const DEFAULT_MIN_MERGE = 32;
 

@@ -2,6 +2,8 @@
  * SVG Painter
  */
 
+/* global document */
+
 import {createElement, SVGNS, XLINKNS, XMLNS} from '../svg/core';
 import { normalizeColor } from '../svg/helper';
 import * as util from '../core/util';

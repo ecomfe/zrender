@@ -1,9 +1,44 @@
+/**
+ * CAUTION:
+ *  This is the most underlying module. Do not import any other modules.
+ */
+
 export const DEFAULT_FONT_SIZE = 12;
 export const DEFAULT_FONT_FAMILY = 'sans-serif';
 export const DEFAULT_FONT = `${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`;
 
+/* global document, Image */
+
 interface Platform {
-    // TODO CanvasLike?
+    // [CAUTION_ZRENDER_PLATFORM_CREATE_CANVAS]:
+    //  - Effectively, the returned instance may be a canvas-like instance, not necessarily a `HTMLCanvasElement`.
+    //    For example, `echarts-for-weixin` project returns a customized plain instance (WxCanvas); `node-echarts`
+    //    project returns an instance created by `node-canvas` project.
+    //    PENDING:
+    //      Use a `CanvasLike` type here?
+    //  - [CAUTION_BORROW_MAIN_CANVAS]:
+    //    `createCanvas` is normally intended to create a new dedicated canvas for some off-screen or on-screen
+    //    usage. But a special pattern has long been in use: `createCanvas` always returns the same canvas, which
+    //    is the instance passed to `echarts.init(canvas)`. We call it BORROW_MAIN_CANVAS for short. For example,
+    //    `echarts-for-weixin` and `node-echarts` use this pattern.
+    //    But this pattern is inherently incorrect in most cases.
+    //    - Case: BORROW_MAIN_CANVAS_FOR_TRANSIENT_MODIFICATION:
+    //      The pattern can work correctly in this case. A typical usage is `measureText`, where only `ctx.font`
+    //      is changed and restorable. See the default implementation of `measureText` for more info.
+    //    - Case: BORROW_MAIN_CANVAS_FOR_PERSISTENT_MODIFICATION:
+    //      The pattern can not work correctly in cases like "multiple zlevels", "hover layer", "incremental layer",
+    //      "decal", "using a dedicated layer for heatmap" or "motion blur", where the canvas needs to be persistently
+    //      modified. And this pattern may cause different charts (i.e., different zrender instances) to affect each
+    //      other unexpectedly, since `createCanvas` is a static method without any instance info provided.
+    //    Some platforms may allow only one canvas instance per runtime context, where using this pattern
+    //    is unavoidable if we require a precise `measureText` (`measureText` has a fallback implementation but
+    //    not precise). But other functionality requiring persistent modification to a dedicated canvas are
+    //    inherently unavailable.
+    //  PENDING:
+    //    Currently zrender does not automatically disable the features above even when BORROW_MAIN_CANVAS is used
+    //    and they work incorrectly. One reason is that automatic disabling would require non-trivial refactoring,
+    //    for example, style merging (including "hover style") is handled in `el.useState()` API, where `createCanvas`
+    //    is not called yet. Therefore, upstream applications or users have to to manually disable these features.
     createCanvas(): HTMLCanvasElement
     measureText(text: string, font?: string): { width: number }
     loadImage(
@@ -51,8 +86,9 @@ function getTextWidthMap(mapStr: string): Record<string, number> {
 
 export const DEFAULT_TEXT_WIDTH_MAP = getTextWidthMap(defaultWidthMapStr);
 
+
 export const platformApi: Platform = {
-    // Export methods
+
     createCanvas() {
         return typeof document !== 'undefined'
             && document.createElement('canvas');
@@ -68,6 +104,11 @@ export const platformApi: Platform = {
                 _ctx = canvas && canvas.getContext('2d');
             }
             if (_ctx) {
+                // FIXME:
+                //  Consider wrapping this with `_ctx.save()` and `_ctx.restore()`, or restoring font after use?
+                //  Currently, `measureText` is mainly called in `Element['update']` phase and does not
+                //  affect the brush phase by coincidence, but this is fragile to other usages.
+                //  @see CAUTION_BORROW_MAIN_CANVAS for more details.
                 if (_cachedFont !== font) {
                     _cachedFont = _ctx.font = font || DEFAULT_FONT;
                 }
@@ -104,6 +145,7 @@ export const platformApi: Platform = {
 
     getTime(): number {
         // Indicatively, Date.now can be executed in 13,025,305 ops/second in a certain env.
+        // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
         return Date.now ? Date.now() : +(new Date());
     }
 };
@@ -115,4 +157,11 @@ export function setPlatformAPI(newPlatformApis: Partial<Platform>) {
             (platformApi as any)[key] = (newPlatformApis as any)[key];
         }
     }
+}
+
+/**
+ * Export it to users for possible restore.
+ */
+export function getPlatformAPI(method: keyof Platform): Platform[keyof Platform] {
+    return platformApi[method];
 }

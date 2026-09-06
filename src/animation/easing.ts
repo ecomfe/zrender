@@ -4,9 +4,41 @@
  * @exports zrender/animation/easing
  */
 
+import { NullUndefined } from '../core/types';
+import { isFunction } from '../core/util';
+import { createCubicEasingFunc } from './cubicEasing';
+
+
 type easingFunc = (percent: number) => number;
 
 export type AnimationEasing = keyof typeof easingFuncs | easingFunc;
+
+export type EasingHost = {
+    easing?: AnimationEasing | NullUndefined;
+    easingFunc?: ((percent: number) => number) | NullUndefined;
+}
+
+export function setEasing(host: EasingHost, easing: AnimationEasing | NullUndefined): void {
+    if (easing) {
+        // Save the raw easing name to be used in css animation output.
+        host.easing = easing;
+        host.easingFunc = isFunction(easing)
+            ? easing
+            : easingFuncs[easing] || createCubicEasingFunc(easing);
+    }
+}
+
+/**
+ * Some of `easingFuncs` below may not guarantee `easing(1) === 1` due to rounding error.
+ * For example, `sinusoidalIn` and `backIn`. But this matters for a correct animation final state.
+ * This method handles this issue.
+ */
+export function callEasing(host: EasingHost, val: number): number {
+    const easingFunc = host.easingFunc;
+    return !easingFunc ? val
+        : val === 1 ? 1
+        : easingFunc(val);
+}
 
 const easingFuncs = {
     /**

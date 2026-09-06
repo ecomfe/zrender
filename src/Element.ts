@@ -1,10 +1,11 @@
 import Transformable, {TRANSFORMABLE_PROPS, TransformProp} from './core/Transformable';
 import { AnimationEasing } from './animation/easing';
-import Animator, {cloneValue} from './animation/Animator';
+import Animator, {copyAnimatableValue} from './animation/Animator';
 import { ZRenderType } from './zrender';
 import {
     Dictionary, ElementEventName, ZRRawEvent, BuiltinTextPosition, AllPropTypes,
     TextVerticalAlign, TextAlign, MapToType,
+    NullUndefined, ArrayLike
 } from './core/types';
 import Path from './graphic/Path';
 import BoundingRect, { RectLike } from './core/BoundingRect';
@@ -20,10 +21,10 @@ import {
     logError,
     mixin,
     isArrayLike,
-    isTypedArray,
     isGradientObject,
     filter,
-    reduce
+    reduce,
+    assert
 } from './core/util';
 import Polyline from './graphic/shape/Polyline';
 import Group from './graphic/Group';
@@ -34,39 +35,140 @@ import { REDRAW_BIT } from './graphic/constants';
 import { invert } from './core/matrix';
 
 export interface ElementAnimateConfig {
+    /**
+     * Special values:
+     *  - If `duration` is `null | undefined`, a default value can be set internally.
+     *  - `duration: 0` is supported by not the same as `ELEMENT_ANIMATION_PROPS_NONE`.
+     *    @see ZR_ELEMENT_ANIMATE_DURATION_ZERO for details.
+     */
     duration?: number
     delay?: number
     easing?: AnimationEasing
-    during?: (percent: number) => void
 
-    // `done` will be called when all of the animations of the target props are
-    // "done" or "aborted", and at least one "done" happened.
-    // Common cases: animations declared, but some of them are aborted (e.g., by state change).
-    // The calling of `animationTo` done rather than aborted if at least one done happened.
-    done?: Function
-    // `aborted` will be called when all of the animations of the target props are "aborted".
-    aborted?: Function
+    /**
+     * NOTICE:
+     *  - `rawPercent` ranges from 0 to 1 and increase monotonically over time.
+     *  - `percent` is the result after applying a easing function (if any). Therefore, it is probably not linear
+     *    and may not monotonic, and does not necessarily range from 0 to 1 (may less than 0 or greater than 1 in
+     *    certain moments), which depends on the easing function.
+     *    The last call to `during` must pass `percent: 1, rawPercent: 1` if animation completes with no abortion.
+     *  - Calling with `percent: 1, rawPercent: 1` (`during(1, 1)`) occurs if and only if this animation completes
+     *    with no abortion or values are assigned directly with no animation, and this `during` call is immediately
+     *    before a `done` call.
+     *    But only `rawPercent === 1` can be used to determine the animation completion, since
+     *    `percent: 1, rawPercent < 1` may occur in a non-monotonic easing.
+     *  - Calling with `rawPercent: 0` does not necessarily occur.
+     *
+     * @see ZR_SYNC_MULTIPLE_ANIMATIONS
+     */
+    during?: (percent: number, rawPercent: number) => void
+    /**
+     * `done` will be called when all of the animations of the target props are
+     * "done" or "aborted", and at least one "done" happened.
+     * Common cases: animations declared, but some of them are aborted (e.g., by state change).
+     * The calling of `animationTo` done rather than aborted if at least one done happened.
+     * @see ZR_ELEMENT_ANIMATE_TO_DONE_CB_ISSUE
+     */
+    done?: () => void
+    /**
+     * `aborted` is called when all of the animations of the target props are "aborted".
+     * @see ZR_ELEMENT_ANIMATE_TO_DONE_CB_ISSUE
+     */
+    aborted?: () => void
+    /**
+     * Whether to discard all previous callbacks (`during`, `done`, `aborted`) regardless of
+     * whether new callbacks are provided.
+     * NOTE: `el.useState` should not support `cleanCb: true`.
+     * @see ZR_ELEMENT_ANIMATE_TO_DONE_CB_ISSUE for the reason.
+     */
+    cleanCb?: boolean
 
     scope?: string
+
     /**
-     * If force animate
-     * Prevent stop animation and callback
-     * immediently when target values are the same as current values.
+     * @see ZR_ELEMENT_ANIMATION_CALLBACK_WHEN_NO_ANIMATION
      */
     force?: boolean
+
     /**
-     * If use additive animation.
+     * Whether to use additive animation.
      */
     additive?: boolean
+
     /**
-     * If set to final state before animation started.
-     * It can be useful if something you want to calcuate depends on the final state of element.
-     * Like bounding rect for text layouting.
-     *
-     * Only available in animateTo
+     * Whether to set to final values before animation started.
+     * Only available in `el.animateTo`.
+     * @see ZR_ANIMATION_SET_TO_FINAL_PATTERN
      */
     setToFinal?: boolean
 }
+
+/**
+ * A nested map to specify which properties in the given `props` should animate. If not specified, animate all.
+ *
+ * Optional values:
+ *  - For the outermost level of `animationProps`:
+ *    `true | false | null | undefined` indicate animating all given props (for historical reasons).
+ *    e.g., consider cases:
+ *      ```js
+ *      el.animateTo({x: 10, style: {opacity: 1}}, null, undefined);
+ *      // All the given props should animate, since `animationProps` is `undefined`.
+ *      ```
+ *  - For inner levels of `animationProps`:
+ *    Only truthy values indcate animating all given props.
+ *    e.g., consider cases:
+ *      ```js
+ *      el.animateTo({x: 10, style: {opacity: 1}}, null, {x: true, style: undefined});
+ *      el.animateTo({x: 10, style: {opacity: 1}}, null, {x: true});
+ *      // `style.opacity` should not animate, since `style` is absent or falsy in `animationProps`.
+ *      ```
+ *  - ELEMENT_ANIMATION_PROPS_NONE (`0`, a falsy value) is designated as a sentinel to stop all given props
+ *    (considered backward compatibility).
+ *    @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
+ */
+type ElementAnimationProps<Props extends ElementProps = ElementProps> =
+    MapToType<Props, boolean> | boolean | typeof ELEMENT_ANIMATION_PROPS_NONE | NullUndefined;
+// @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
+export const ELEMENT_ANIMATION_PROPS_NONE = 0;
+
+
+/**
+ * @see [USE_STATE_RETAIN_ANIMATION]:
+ *  This is a workaround for upstream usage. For example, if updating elements during state transition
+ *  animations, it is expected to keep the existing animation running without jump. However, state related
+ *  props are mainly on styles, which requires to be updated only on `normal` state. A typical pattern is
+ *  `clearStates`->`setStyle`->`useStates`. If we drop existing animations in `clearStates` and create new
+ *  animations in `useStates`, the original values have been lost, and it causes visual jump. This method
+ *  retain the original values in animators and then retarget the target values. Typical usage:
+ *  ```ts
+ *  const prevStates = el.currentStates;
+ *  el.clearStates(USE_STATE_NO_ANIMATION_OPT_RETAIN_ANIMATION)
+ *  el.setStyle(newStyle);
+ *  el.useStates(prevStates, USE_STATE_NO_ANIMATION_OPT_RETARGET_ANIMATION);
+ *  ```
+ *
+ * NOTE: Use special truthy values to keep backward compatible.
+ */
+export const USE_STATE_NO_ANIMATION_OPT_RETARGET_ANIMATION = 2;
+export const USE_STATE_NO_ANIMATION_OPT_RETAIN_ANIMATION = 3;
+export type UseStateNoAnimationOpt =
+    // A truthy value means clear existing animation (forward to final values) and not introduce new animation.
+    // A falsy value means allow new animation according to `el.stateTransition`.
+    | NullUndefined | boolean
+    | typeof USE_STATE_NO_ANIMATION_OPT_RETARGET_ANIMATION
+    | typeof USE_STATE_NO_ANIMATION_OPT_RETAIN_ANIMATION;
+
+/**
+ * @see USE_STATE_RETAIN_ANIMATION
+ * NOTE: Use special falsy values to keep backward compatible.
+ */
+const APPLY_STATE_OBJ_TRANS_ONLY_RETARGET_ANIMATION = '';
+const APPLY_STATE_OBJ_TRANS_ONLY_RETAIN_ANIMATION = NaN;
+export type ApplyStateObjTransOpt =
+    | NullUndefined | boolean
+    | typeof APPLY_STATE_OBJ_TRANS_ONLY_RETARGET_ANIMATION
+    | typeof APPLY_STATE_OBJ_TRANS_ONLY_RETAIN_ANIMATION;
+
 
 export interface ElementTextConfig {
     /**
@@ -143,8 +245,8 @@ export interface ElementTextConfig {
      *
      * The reason of (A) is not decisive:
      * 1. If users specify `fill` in style and still use "auto-calculated-stroke", the effect
-     * is not good and unexpected in some cases. It not easy and seams uncessary to auto calculate
-     * a proper `stroke` for the given `fill`, since they can specify `stroke` themselve.
+     * is not good and unexpected in some cases. It not easy and seams unnecessary to auto calculate
+     * a proper `stroke` for the given `fill`, since they can specify `stroke` themselves.
      * 2. Backward compat.
      */
     insideStroke?: string
@@ -157,7 +259,7 @@ export interface ElementTextConfig {
     outsideFill?: string
 
     /**
-     * `outsideStroke` is a color string or left empth.
+     * `outsideStroke` is a color string or left empty.
      * If a `textContent` is not "inside", its final `stroke` will be picked by this priority:
      * `textContent.style.stroke` > `textConfig.outsideStroke` > "auto-calculated-stroke"
      *
@@ -348,7 +450,8 @@ class Element<Props extends ElementProps = ElementProps> {
     name: string
 
     /**
-     * If ignore drawing and events of the element object
+     * Whether to ignore drawing and events of this element and the descendants,
+     * including its `decalElement`s, `textContent`s and `textGuideLine`s.
      */
     ignore: boolean
 
@@ -380,8 +483,22 @@ class Element<Props extends ElementProps = ElementProps> {
      */
     dragging: boolean
 
+    /**
+     * NOTICE: `textContent` and `textGuideLine` use this `parent` pointing to their
+     * `__hostTarget` iff `textConfig.local` is truthy.
+     */
     parent: Group
 
+    /**
+     * CAUTION: Do not visit it from outside directly except you
+     * can clearly manage the risk. For example,
+     *  ```js
+     *  el.animateTo(target);
+     *  el.animators[0].during(cb); // This is INCORRECT!
+     *  // el.animators[0] is not necessarily created by this call to `el.animateTo`,
+     *  // but actually, for example, created by previous state change.
+     *  ```
+     */
     animators: Animator<any>[] = []
 
     /**
@@ -414,10 +531,9 @@ class Element<Props extends ElementProps = ElementProps> {
     __isRendered: boolean;
 
     /**
-     * Whether this element has been moved to the hover layer.
-     * If so, dirty will only trigger the zrender refresh hover layer.
+     * This flag indicates whether this element requests rendering on a hover layer.
      *
-     * Hover layer is typically useful for progressive rendering case,
+     * Hover layer is typically useful for large data case (including progressive rendering case),
      * where the underlying layers can remain not dirty for most hovering
      * interactions.
      *
@@ -480,7 +596,7 @@ class Element<Props extends ElementProps = ElementProps> {
     private _textGuide?: Polyline
 
     /**
-     * Config of textContent. Inlcuding layout, color, ...etc.
+     * Config of textContent. Including layout, color, ...etc.
      */
     textConfig?: ElementTextConfig
 
@@ -500,7 +616,7 @@ class Element<Props extends ElementProps = ElementProps> {
     extra: Dictionary<unknown>
 
     currentStates?: string[] = []
-    // prevStates is for storager in echarts.
+    // prevStates is for storage in echarts.
     prevStates?: string[]
     /**
      * Store of element state.
@@ -937,7 +1053,7 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Clear all states.
      */
-    clearStates(noAnimation?: boolean) {
+    clearStates(noAnimation?: UseStateNoAnimationOpt) {
         this.useState(PRESERVED_NORMAL_STATE, false, noAnimation);
         // TODO set _normalState to null?
     }
@@ -949,7 +1065,13 @@ class Element<Props extends ElementProps = ElementProps> {
      * @param keepCurrentState If keep current states.
      *      If not, it will inherit from the normal state.
      */
-    useState(stateName: string, keepCurrentStates?: boolean, noAnimation?: boolean, forceUseHoverLayer?: boolean) {
+    useState(
+        stateName: string,
+        keepCurrentStates?: boolean,
+        noAnimation?: UseStateNoAnimationOpt,
+        forceUseHoverLayer?: boolean
+    ) {
+
         // Use preserved word __normal__
         // TODO: Only restore changed properties when restore to normal???
         const toNormalState = stateName === PRESERVED_NORMAL_STATE;
@@ -1050,9 +1172,13 @@ class Element<Props extends ElementProps = ElementProps> {
      * Apply multiple states.
      * @param states States list.
      */
-    useStates(states: string[], noAnimation?: boolean, forceUseHoverLayer?: boolean) {
+    useStates(
+        states: string[],
+        noAnimation?: UseStateNoAnimationOpt,
+        forceUseHoverLayer?: boolean
+    ) {
         if (!states.length) {
-            this.clearStates();
+            this.clearStates(noAnimation);
         }
         else {
             const stateObjects: ElementState[] = [];
@@ -1199,7 +1325,7 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     /**
-     * Toogle state.
+     * Toggle state.
      */
     toggleState(state: string, enable: boolean) {
         if (enable) {
@@ -1234,7 +1360,7 @@ class Element<Props extends ElementProps = ElementProps> {
         state: ElementState,
         normalState: ElementState,
         keepCurrentStates: boolean,
-        transition: boolean,
+        transition: ApplyStateObjTransOpt,
         animationCfg: ElementAnimateConfig
     ) {
         if (this.__inHover === IN_HOVER_LAYER_KIND_ONLY_STYLE_CHANGE) {
@@ -1290,17 +1416,24 @@ class Element<Props extends ElementProps = ElementProps> {
         }
 
         if (!transition) {
-            // Keep the running animation to the new values after states changed.
-            // Not simply stop animation. Or it may have jump effect.
             for (let i = 0; i < this.animators.length; i++) {
                 const animator = this.animators[i];
                 const targetName = animator.targetName;
-                // Ignore loop animation
-                if (!animator.getLoop()) {
-                    animator.__changeFinalValue(targetName
+                if (animator.__fromStateTransition == null) {
+                    continue;
+                }
+                if (transition === APPLY_STATE_OBJ_TRANS_ONLY_RETARGET_ANIMATION) {
+                    // @see USE_STATE_RETAIN_ANIMATION
+                    // NOTE:
+                    //  Although this is implemented in a base class Element, props owned by subclasses (Displayable,
+                    //  Path) are also handled here.
+                    !animator.getLoop() && animator.__changeFinalValue(targetName
                         ? ((state || normalState) as any)[targetName]
                         : (state || normalState)
                     );
+                }
+                else if (transition !== APPLY_STATE_OBJ_TRANS_ONLY_RETAIN_ANIMATION) {
+                    animator.stop(true);
                 }
             }
         }
@@ -1425,13 +1558,15 @@ class Element<Props extends ElementProps = ElementProps> {
     /**
      * Set layout of attached text. Will merge with the previous.
      */
-    setTextConfig(cfg: ElementTextConfig) {
+    setTextConfig(cfg?: ElementTextConfig) {
         // TODO hide cfg property?
         if (!this.textConfig) {
             this.textConfig = {};
         }
-        extend(this.textConfig, cfg);
-        this.markRedraw();
+        if (cfg) {
+            extend(this.textConfig, cfg);
+        }
+        this.markRedraw(); // For backward compatibility, markRedraw even if empty cfg.
     }
 
     /**
@@ -1633,8 +1768,11 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     /**
-     * 停止动画
-     * @param {boolean} forwardToLast If move to last frame before stop
+     * CAUTION: In practice, stop all animations may be unexpected in many scenarios,
+     * e.g., some animations are started and managed by other modules.
+     * @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS for a more precise alternative.
+     *
+     * @param forwardToLast Whether to move to last frame before stopping.
      */
     stopAnimation(scope?: string, forwardToLast?: boolean) {
         const animators = this.animators;
@@ -1655,7 +1793,6 @@ class Element<Props extends ElementProps = ElementProps> {
     }
 
     /**
-     * @param animationProps A map to specify which property to animate. If not specified, will animate all.
      * @example
      *  // Animate position
      *  el.animateTo({
@@ -1677,19 +1814,25 @@ class Element<Props extends ElementProps = ElementProps> {
      *      easing: 'cubicOut',
      *      done: () => { // done }
      *  })
+     *
+     * CAUTION: @see ZR_ELEMENT_ANIMATE_TO_DONE_CB_ISSUE
+     * CAUTION: Do not use `el.animateTo` together with `el.animate`, otherwise the result may be incorrect.
      */
-    animateTo(target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>) {
+    animateTo(
+        target: Props, cfg?: ElementAnimateConfig, animationProps?: ElementAnimationProps<Props>
+    ) {
         animateTo(this, target, cfg, animationProps);
     }
 
     /**
      * Animate from the target state to current state.
      * The params and the value are the same as `this.animateTo`.
+     *
+     * CAUTION: @see ZR_ELEMENT_ANIMATE_TO_DONE_CB_ISSUE
+     * CAUTION: Do not use `el.animateFrom` together with `el.animate`, otherwise the result may be incorrect.
      */
-
-    // Overload definitions
     animateFrom(
-        target: Props, cfg: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>
+        target: Props, cfg: ElementAnimateConfig, animationProps?: ElementAnimationProps<Props>
     ) {
         animateTo(this, target, cfg, animationProps, true);
     }
@@ -1697,14 +1840,15 @@ class Element<Props extends ElementProps = ElementProps> {
     protected _transitionState(
         stateName: string, target: Props, cfg?: ElementAnimateConfig, animationProps?: MapToType<Props, boolean>
     ) {
-        const animators = animateTo(this, target, cfg, animationProps);
-        for (let i = 0; i < animators.length; i++) {
-            animators[i].__fromStateTransition = stateName;
-        }
+        animateTo(this, target, cfg, animationProps, false, stateName);
     }
 
     /**
      * Interface of getting the minimum bounding box.
+     *
+     * NOTICE:
+     *  - Never return `null | undefined`.
+     *  - Must not modify the returned object.
      */
     getBoundingRect(): BoundingRect {
         return null;
@@ -1718,7 +1862,7 @@ class Element<Props extends ElementProps = ElementProps> {
      * The string value of `textPosition` needs to be calculated to a real postion.
      * For example, `'inside'` is calculated to `[rect.width/2, rect.height/2]`
      * by default. See `contain/text.js#calculateTextPosition` for more details.
-     * But some coutom shapes like "pin", "flag" have center that is not exactly
+     * But some custom shapes like "pin", "flag" have center that is not exactly
      * `[width/2, height/2]`. So we provide this hook to customize the calculation
      * for those shapes. It will be called if the `style.textPosition` is a string.
      * @param {Obejct} [out] Prepared out object. If not provided, this method should
@@ -1767,6 +1911,7 @@ class Element<Props extends ElementProps = ElementProps> {
             xKey: string,
             yKey: string
         ) {
+            // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
             Object.defineProperty(elProto, key, {
                 get() {
                     if (process.env.NODE_ENV !== 'production') {
@@ -1789,6 +1934,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 }
             });
             function enhanceArray(self: any, pos: number[]) {
+                // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
                 Object.defineProperty(pos, 0, {
                     get() {
                         return self[xKey];
@@ -1797,6 +1943,7 @@ class Element<Props extends ElementProps = ElementProps> {
                         self[xKey] = val;
                     }
                 });
+                // eslint-disable-next-line @echarts-x/ec/no-props-polyfill-uncertain
                 Object.defineProperty(pos, 1, {
                     get() {
                         return self[yKey];
@@ -1821,140 +1968,307 @@ class Element<Props extends ElementProps = ElementProps> {
 mixin(Element, Eventful);
 mixin(Element, Transformable);
 
-function animateTo<T>(
-    animatable: Element<T>,
+
+/**
+ * @tutorial [ZR_ELEMENT_ANIMATE_TO_DONE_CB_ISSUE]:
+ *  Do not use `done` and `aborted` callback unless you are fully aware the limitations under the current
+ *  implementation.
+ *  It is not intuitive for users to understand whether the previous `done`, `aborted` and `during` will be called
+ *  after another call to `animateTo`. For example,
+ *      ```ts
+ *      function test1() {
+ *          el.animateTo({scaleX: 5, x: 100, style: {opacity: 1}}, {duration: 3000, done: done1, aborted: aborted1});
+ *          el.animateTo({scaleX: 50}, {duration: 3000, done: done2});
+ *      } // Finally, only `done1` and `done2` are called.
+ *      function test2() {
+ *          el.animateTo({scaleX: 5, style: {opacity: 1}}, {duration: 3000, done: done1, aborted: aborted1});
+ *          el.animateTo({scaleX: 50}, {duration: 3000, done: done2});
+ *      } // Finally, only `done1` and `done2` are called.
+ *      function test3() {
+ *          el.animateTo({scaleX: 5}, {duration: 3000, done: done1, aborted: aborted1});
+ *          el.animateTo({scaleX: 50}, {duration: 3000, done: done2});
+ *      } // Finally, only `aborted1` and `done2` are called.
+ *      ```
+ *  This subtlety is likely to confuse users. To avoid this issue, a pattern can be used if `done`/`during` need
+ *  to be used:
+ *    - Ensure previous callbacks can be removed per call to `el.animateTo`/`el.animateFrom`, which can be achieved by
+ *      - either ensure keys of props are always the same;
+ *      - or always use `cleanCb: true`.
+ *    - Do not use `aborted`.
+ *    - Ensure `props` passed to `el.animateTo`/`el.animateForm` are not fully contained by `props` passed to
+ *      `el.useState` (intersection is allowed). See DEFAULT_PATH_ANIMATION_PROPS. The reason is, `el.useState`
+ *      does not support callback and should not use `cleanCb: true`. Callbacks provided by
+ *      `el.animateTo`/`el.animateFrom` may be discarded by a subsequent call to `el.useState` if `props` are fully
+ *      contained, even if `cleanCb: false`.
+ *  @test <zrender/test/animation-api-cases.html>
+ *
+ *
+ * @tutorial [ZR_ELEMENT_ANIMATION_CALLBACK_WHEN_NO_ANIMATION]:
+ *  Caller's code arrangement may be affected by the following difference:
+ *  - If `cfg.force` is a falsy value (the default):
+ *    In some cases animators are not created (e.g., when target values are the same as the initial values, or
+ *    animation is disabled by `animationProps`). In this cases, `done` and `during` (with `rawPercent: 1`) are called
+ *    immediately in the call to `el.animateTo`/`el.animateFrom`. This is a historical behavior; we keep compatible.
+ *  - Otherwise (if `cfg.force` is a truthy value):
+ *    At least one animator is created, and `done` and `during` are not called immediately, but are called when the
+ *    clip of the animator is handled, typically in next frames.
+ *    There are additional nuances in this case:
+ *    - If the animation is disabled by ELEMENT_ANIMATION_PROPS_NONE:
+ *      `during` is called only once, and `rawPercent: 1` is passed. Otherwise, calls to `during` with `rawPercent`
+ *      less then `1` is inconsistent with the semantics of "no animation", and cause unexpected effect if `during`
+ *      is used to update other elements.
+ *    - Otherwise:
+ *      `during` is called normally with percent increasing gradually. This feature can be used to create an
+ *      animator and handle all updates in `during`.
+ *
+ *
+ * @tutorial [ZR_ANIMATION_SET_TO_FINAL_PATTERN]:
+ *  Upstream applications are likely to relies on the final values to measure (e.g., calculate bounding
+ *  rect for text layout) or other subsequent processing.
+ *  And setting to final values ensures consistency between animation and non-animation processing.
+ *  Therefore, a recommended pattern is firstly updating element props to the final values, and then
+ *  animation interpolated values are automatically set to the element from the first frame.
+ *  This pattern is supported by design in `ElementAnimateConfig['setToFinal']` and `el.animateFrom`,
+ *  and @see ZR_CALL_FIRST_FRAME_BEFORE_FIRST_REFRESH .
+ *
+ *
+ * @tutorial [ZR_DURING_MUST_BE_FROM_THE_FIRST_FRAME]
+ *  `during` must be called from the first frame, especially when using ELEMENT_ANIMATION_PROPS_NONE, otherwise,
+ *  visual artefacts may be introduced, in this case @see ZR_ANIMATION_SET_TO_FINAL_PATTERN .
+ *
+ *
+ * @tutorial [ZR_ELEMENT_STOP_ANIMATION_ON_PROPS]:
+ *  - [ZR_ELEMENT_ANIMATE_RETARGET_EXISTING_ANIMATION]:
+ *    ```js
+ *    el.animateTo({x: 100}, {during: 1000});
+ *    // Then animation on `x` is started.
+ *    el.animateTo({x: 200}, {during: 1000});
+ *    // Then the existing animations on `x` are retargetd.
+ *    // That is, a new animator are created (based on the current and target value),
+ *    // and `x` is removed from the existing animator.
+ *    ```
+ *  - [ZR_ELEMENT_ANIMATE_CURRENT_TARGET_VALUE_THE_SAME]:
+ *    If `force` is falsy, animation will not be created if the current value and the target value are the same.
+ *    `done` and `during(1)` will be called immediately. This is a historicall behavior and keep compatible.
+ *    PENDING:
+ *      One except is 2d Array does not perform this comparison. This is a historical behavior. However it affects
+ *      the timing of callback `done` and `during(1)` invocation, which may confuse users.
+ *  - [ELEMENT_ANIMATION_PROPS_NONE]:
+ *    To stop animations of specific props while allowing other animations to continue, we can simply
+ *    Pass ELEMENT_ANIMATION_PROPS_NONE to `animationProps`. This approach is more precise than `el.stopAnimation()`.
+ *      - el.animateTo(props, cfg, ELEMENT_ANIMATION_PROPS_NONE);
+ *        Values in `props` are assigned to `el` immediately, and existing animations on `props` are stopped.
+ *      - el.animateFrom(props, cfg, ELEMENT_ANIMATION_PROPS_NONE);
+ *        `el` retains its current values, and existing animations on `props` are stopped.
+ *        In this case, only keys in `props` are used.
+ *    For example,
+ *      ```js
+ *      el.animateTo({x: 10, style: {opacity: 1}}, null, ELEMENT_ANIMATION_PROPS_NONE);
+ *      // NOTE: `duration` can be omitted if passing ELEMENT_ANIMATION_PROPS_NONE.
+ *      ```
+ *  - [ZR_ELEMENT_ANIMATE_PROP_NULL_UNDEFINED]:
+ *    If the target value or the current value is null/undefined (non-animatable), animations are not created and
+ *    existing animations on these props (if any) will be stopped.
+ *    ```js
+ *    el.animateTo({shape: {__myPts: [[111, 3], [222, 5]]}}, {duration: 300});
+ *    // Previously, `__myPts` is `undefined`. Therefore, the new value is assigned directly and
+ *    // no animation is created.
+ *    el.animateTo({shape: {__myPts: [[151, 37], [252, 57]]}}, {duration: 300});
+ *    // Animation on `__myPts` is created.
+ *    el.animateTo({shape: {__myPts: null}, {duration: 300});
+ *    // `__myPts` is directly set to `null` and the existing animation is stopped and discarded.
+ *    ```
+ *  - NOTICE:
+ *    - `cfg.additive` must be falsy, otherwise nothing can be stopped.
+ *    - Callbacks (`done`, `aborted`, `during`) will be called normally if provided,
+ *      - `cfg.force: true`: they are called in an later frame.
+ *      - Otherwise, they are called immediately in this frame.
+ *  - IMPL_MEMO:
+ *    - The following sentences behave the same way:
+ *      ```js
+ *      el.animateTo({x: 10, style: {opacity: 1}}, null, ELEMENT_ANIMATION_PROPS_NONE);
+ *      el.animateTo({x: 10, style: {opacity: 1}}, null, {style: {}});
+ *      // NOTE: When indending to disable all animations, if using empty objects instead of
+ *      // ELEMENT_ANIMATION_PROPS_NONE, every level needs an empty object, which is inconvenient.
+ *      ```
+ *    - [ZR_ELEMENT_ANIMATE_DURATION_ZERO]:
+ *     `duration: 0` does not necessarily behave the same way as ELEMENT_ANIMATION_PROPS_NONE.
+ *     Animators are still created in this case.
+ *      ```ts
+ *      // `x` will be changed immediately:
+ *      el.animateTo({x: 10}, null, ELEMENT_ANIMATION_PROPS_NONE);
+ *      // `x` will be modified to the final value in the next frame, rather than changing immediately:
+ *      el.animateTo({x: 10}, {duration: 0});
+ *      // `x` will be modified to the final value in a frame after 1000ms:
+ *      el.animateTo({x: 10}, {duration: 0, delay: 1000});
+ *      // `x` will be modified to the final value immediately, but animators may still be created, although
+ *      // effectively not necessary - there is no special optimization for `duration: 0, delay: 0, setToFinal: true`,
+ *      // since we opt to support ELEMENT_ANIMATION_PROPS_NONE.
+ *      el.animateTo({x: 10}, {duration: 0, setToFinal: true});
+ *      ```
+ *  @test <zrender/test/animation-api-cases.html>
+ *
+ *
+ * @tutorial [ZR_ELEMENT_ANIMATE_PROP_OBJECT_REFERENCE_CHANGE]
+ *  ```js
+ *  const points1 = [[11, 3], [21, 5], [31, 7]];
+ *  const points2 = [[311, 33], [321, 35], [331, 37]];
+ *  el.setShape({points: points1});
+ *  el.animateTo({shape: {points: points2}}, cfg); // or `el.animateFrom`
+ *  // Then `el.shape.points` may be `points1` or `points2` - this is not garanteed.
+ *  // But thereafter, `el.shape.points` will never change to another object if no more explicit call.
+ *  // That is, the animating value of `el.shape.points` can be used externally.
+ *  // For example, shared by another element:
+ *  const el2 = new Polygon({shape: {points: el.shape.points}});
+ *  ```
+ *
+ *
+ * @tutorial [ZR_SYNC_MULTIPLE_ANIMATIONS]
+ *  If intending to update other elements in multiple `during`s, `SBarrier` can be used to sync them.
+ */
+function animateTo<Props>(
+    animatable: Element<Props>,
     target: Dictionary<any>,
     cfg: ElementAnimateConfig,
-    animationProps: Dictionary<any>,
-    reverse?: boolean
-) {
+    // @see ZR_ELEMENT_STOP_ANIMATION_ON_PROPS
+    animationProps: ElementAnimationProps<Props>,
+    reverse?: boolean,
+    stateName?: string
+): void {
     cfg = cfg || {};
-    const animators: Animator<any>[] = [];
+
+    if (cfg.cleanCb) {
+        const existingAnimators = animatable.animators;
+        for (let i = 0; i < existingAnimators.length; i++) {
+            existingAnimators[i].cleanCb();
+        }
+    }
+
+    let duration = cfg.duration;
+    if (duration == null) {
+        duration = animationProps !== ELEMENT_ANIMATION_PROPS_NONE ? 500 : 0;
+    }
+    if (!duration) {
+        // In practice, animation frame time gap is typically greater or equal than 16ms.
+        // So we use a small positive duration (`1`) instead of `0`. Otherwise, we have
+        // to handle `0` duration everywhere (e.g., when calculating percent or interpolation).
+        // And this strategy is fine since no need to be precise here.
+        // NOTICE: `1` is also smaller than the default `ZRender['_sleepAfterStill']`, otherwise
+        // the `during` may not be called when ELEMENT_ANIMATION_PROPS_NONE is used.
+        duration = 1;
+    }
+
     animateToShallow(
         animatable,
-        '',
+        '', // topmost `topKey` must be '', which is used in test cases.
         animatable,
         target,
         cfg,
+        duration,
         animationProps,
-        animators,
-        reverse
+        tmpNewAnimators,
+        reverse,
+        stateName
     );
 
-    let finishCount = animators.length;
-    let doneHappened = false;
+    let newAnimatorsLength = tmpNewAnimators.length;
     const cfgDone = cfg.done;
     const cfgAborted = cfg.aborted;
+    const cfgDuring = cfg.during;
 
-    const doneCb = () => {
-        doneHappened = true;
-        finishCount--;
-        if (finishCount <= 0) {
-            doneHappened
-                ? (cfgDone && cfgDone())
-                : (cfgAborted && cfgAborted());
-        }
-    };
-
-    const abortedCb = () => {
-        finishCount--;
-        if (finishCount <= 0) {
-            doneHappened
-                ? (cfgDone && cfgDone())
-                : (cfgAborted && cfgAborted());
-        }
-    };
-
-    // No animators. This should be checked before animators[i].start(),
-    // because 'done' may be executed immediately if no need to animate.
-    if (!finishCount) {
+    // Also need to optimize for ELEMENT_ANIMATION_PROPS_NONE case,
+    // because their may be large data.
+    if (!newAnimatorsLength) {
+        // @see ZR_ELEMENT_ANIMATION_CALLBACK_WHEN_NO_ANIMATION
+        cfgDuring && cfgDuring(1, 1);
         cfgDone && cfgDone();
+        tmpNewAnimators.length = 0;
+        return;
     }
 
-    // Adding during callback to the first animator
-    if (animators.length > 0 && cfg.during) {
-        // TODO If there are two animators in animateTo, and the first one is stopped by other animator.
-        animators[0].during((target, percent) => {
-            cfg.during(percent);
-        });
-    }
+    const cbDoneAborted = (cfgDone || cfgAborted)
+        ? animateToCreateDoneAbortedCb(cfg, newAnimatorsLength)
+        : null;
+    const cbDuring = cfgDuring
+        ? animateToCreateDuringCb(cfg)
+        : null;
 
     // Start after all animators created
     // Incase any animator is done immediately when all animation properties are not changed
-    for (let i = 0; i < animators.length; i++) {
-        const animator = animators[i];
-        if (doneCb) {
-            animator.done(doneCb);
+    for (let i = 0; i < newAnimatorsLength; i++) {
+        const animator = tmpNewAnimators[i];
+
+        if (process.env.NODE_ENV !== 'production') {
+            // Using `__aTDn` `__aTAb` `__aTDr` is based on the fact that residual animators
+            // never enter this code.
+            assert(!animator.__aTDn && !animator.__aTAb && !animator.__aTDr);
         }
-        if (abortedCb) {
-            animator.aborted(abortedCb);
+        if (cbDoneAborted) {
+            animator.done(animator.__aTDn = cbDoneAborted.dn);
+            animator.aborted(animator.__aTAb = cbDoneAborted.ab);
         }
+        if (cfgDuring) {
+            // If `newAnimators[0]` is removed in future, a next `animator` in `newAnimators`
+            // will be found to carry `cbDuring` (see `animateToChooseNextDuringOwner`).
+            animator.__aTDr = cbDuring;
+            if (i === 0) {
+                animator.during(cbDuring);
+                animator.__aTDrOw = true;
+            }
+        }
+
         if (cfg.force) {
-            animator.duration(cfg.duration);
+            animator.duration(duration);
         }
+
         animator.start(cfg.easing);
     }
+    tmpNewAnimators.length = 0;
+}
+const tmpNewAnimators: Animator<Element>[] = [];
 
-    return animators;
+function animateToCreateDoneAbortedCb(cfg: ElementAnimateConfig, finishCount: number) {
+    const cfgDone = cfg.done;
+    const cfgAborted = cfg.aborted;
+    let doneHappened = false;
+
+    function doneCb() {
+        doneHappened = true;
+        abortedOrDoneCb();
+    };
+    doneCb.__zrAniTo = true;
+
+    function abortedOrDoneCb() {
+        finishCount--;
+        if (finishCount <= 0) {
+            doneHappened
+                ? (cfgDone && cfgDone())
+                : (cfgAborted && cfgAborted());
+        }
+    };
+    abortedOrDoneCb.__zrAniTo = true;
+
+    return {dn: doneCb, ab: abortedOrDoneCb};
 }
 
-function copyArrShallow(source: number[], target: number[], len: number) {
-    for (let i = 0; i < len; i++) {
-        source[i] = target[i];
+function animateToCreateDuringCb<Props>(cfg: ElementAnimateConfig) {
+    const cfgDuring = cfg.during;
+    function duringCb(target: Element<Props>, percent: number, rawPercent: number): void {
+        // Considering part of animators may be discarded by later `el.animateTo`/`el.animateFrom`,
+        // during is added to every animators, and `cfg.during` should be triggered only once
+        // for each `rawPercent`.
+        cfgDuring(percent, rawPercent);
     }
-}
+    duringCb.__zrAniTo = true;
 
-function is2DArray(value: any[]): value is number[][] {
-    return isArrayLike(value[0]);
-}
-
-function copyValue(target: Dictionary<any>, source: Dictionary<any>, key: string) {
-    if (isArrayLike(source[key])) {
-        if (!isArrayLike(target[key])) {
-            target[key] = [];
-        }
-
-        if (isTypedArray(source[key])) {
-            const len = source[key].length;
-            if (target[key].length !== len) {
-                target[key] = new (source[key].constructor)(len);
-                copyArrShallow(target[key], source[key], len);
-            }
-        }
-        else {
-            const sourceArr = source[key] as any[];
-            const targetArr = target[key] as any[];
-
-            const len0 = sourceArr.length;
-            if (is2DArray(sourceArr)) {
-                // NOTE: each item should have same length
-                const len1 = sourceArr[0].length;
-
-                for (let i = 0; i < len0; i++) {
-                    if (!targetArr[i]) {
-                        targetArr[i] = Array.prototype.slice.call(sourceArr[i]);
-                    }
-                    else {
-                        copyArrShallow(targetArr[i], sourceArr[i], len1);
-                    }
-                }
-            }
-            else {
-                copyArrShallow(targetArr, sourceArr, len0);
-            }
-
-            targetArr.length = sourceArr.length;
-        }
-    }
-    else {
-        target[key] = source[key];
-    }
+    return duringCb;
 }
 
 function isValueSame(val1: any, val2: any) {
     return val1 === val2
         // Only check 1 dimension array
         || isArrayLike(val1) && isArrayLike(val2) && is1DArraySame(val1, val2);
+    // PENDING: 2d array behave differently? @see ZR_ELEMENT_ANIMATE_CURRENT_TARGET_VALUE_THE_SAME
 }
 
 function is1DArraySame(arr0: ArrayLike<number>, arr1: ArrayLike<number>) {
@@ -1970,103 +2284,151 @@ function is1DArraySame(arr0: ArrayLike<number>, arr1: ArrayLike<number>) {
     return true;
 }
 
-function animateToShallow<T>(
-    animatable: Element<T>,
+function animateToShallow<Props>(
+    animatable: Element<Props>,
     topKey: string,
     animateObj: Dictionary<any>,
     target: Dictionary<any>,
     cfg: ElementAnimateConfig,
-    animationProps: Dictionary<any> | true,
-    animators: Animator<any>[],
-    reverse: boolean    // If `true`, animate from the `target` to current state.
-) {
+    // `cfg.duration` should not be used in this method.
+    duration: ElementAnimateConfig['duration'],
+    animationProps: ElementAnimationProps<Props>,
+    // Output. All new added animators.
+    newAnimators: Animator<any>[],
+    // If `true`, animate from the `target` to current state.
+    reverse: boolean,
+    stateName: string | NullUndefined
+): void {
+    // IMPL_NOTE:
+    //  - animators are organized according to `animateObj` object tree.
+    //    e.g., animateObj: {x: 100, y: 200, style: {opacity: 1}, shape: {width: 20}}
+    //    The finally created animators can be:
+    //    [
+    //      animator0, // For style.opacity; targetName (topKey) is 'style'.
+    //      animator1, // For shape.x, shape.y; targetName (topKey) is 'shape'.
+    //      animator2, // For x, y; targetName (topKey) is ''.
+    //    ]
+    //  - `existingAnimators` may have more than one animators for a specific `topKey`. e.g.,
+    //      el.animateTo({x: 1, y:2, scaleX: 3});
+    //      el.animateTo({x: 10, y:20});
+    //      el.animateTo({x: 100});
+    //    Then more than one animators with `topKey: ''` exist in `existingAnimators`.
+
     const targetKeys = keys(target);
-    const duration = cfg.duration;
+
     const delay = cfg.delay;
     const additive = cfg.additive;
     const setToFinal = cfg.setToFinal;
-    const animateAll = !isObject(animationProps);
-    // Find last animator animating same prop.
-    const existsAnimators = animatable.animators;
+    const existingAnimators = animatable.animators;
+    const animateByDict = isObject(animationProps);
 
-    let animationKeys: string[] = [];
+    const isOutermostLevel = !topKey;
+    const animationKeys = tmpAniKeys[isOutermostLevel ? 0 : 1]; // At most 2 depth.
+    animationKeys.length = 0;
+    const stopKeys = tmpStopKeys[isOutermostLevel ? 0 : 1];
+    stopKeys.length = 0;
+
     for (let k = 0; k < targetKeys.length; k++) {
         const innerKey = targetKeys[k] as string;
         const targetVal = target[innerKey];
+        let directlyAssignAndStop = false;
 
-        if (
-            targetVal != null && animateObj[innerKey] != null
-            && (animateAll || (animationProps as Dictionary<any>)[innerKey])
+        const animateOnInnerKey =
+            animateByDict ? (animationProps as Dictionary<any>)[innerKey]
+            // Otherwise, determine whether to animate all given props or animate nothing.
+            // ELEMENT_ANIMATION_PROPS_NONE may need to be passed to `animateToShallow` recursively.
+            : animationProps === ELEMENT_ANIMATION_PROPS_NONE ? ELEMENT_ANIMATION_PROPS_NONE
+            // The outermost level have a different behavior. See the reason in
+            // the comments of `ElementAnimationProps`.
+            : (isOutermostLevel || !!animationProps);
+
+        if (isObject(targetVal)
+            && !isArrayLike(targetVal)
+            && !isGradientObject(targetVal)
         ) {
-            if (isObject(targetVal)
-                && !isArrayLike(targetVal)
-                && !isGradientObject(targetVal)
+            if (// logError('Only support 1 depth nest object animation.');
+                // TODO richText?
+                !isOutermostLevel
+                // PENDING: Theoretically, direct assign is invalid here for cases like
+                // `animateObj['style'] == null`, but we still retain this logic for backward compatibility.
+                || animateObj[innerKey] == null
             ) {
-                if (topKey) {
-                    // logError('Only support 1 depth nest object animation.');
-                    // Assign directly.
-                    // TODO richText?
-                    if (!reverse) {
-                        animateObj[innerKey] = targetVal;
-                        animatable.updateDuringAnimation(topKey);
-                    }
-                    continue;
-                }
+                directlyAssignAndStop = true;
+            }
+            else {
                 animateToShallow(
                     animatable,
                     innerKey,
                     animateObj[innerKey],
                     targetVal,
                     cfg,
-                    animationProps && (animationProps as Dictionary<any>)[innerKey],
-                    animators,
-                    reverse
+                    duration,
+                    animateOnInnerKey,
+                    newAnimators,
+                    reverse,
+                    stateName
                 );
             }
-            else {
-                animationKeys.push(innerKey);
-            }
         }
-        else if (!reverse) {
-            // Assign target value directly.
-            animateObj[innerKey] = targetVal;
-            animatable.updateDuringAnimation(topKey);
-            // Previous animation will be stopped on the changed keys.
-            // So direct assign is also included.
+        else if (
+            targetVal != null
+            && animateObj[innerKey] != null
+            && animateOnInnerKey
+        ) {
+            // In this case, animation (newly added or retarget) can be performed
+            // (if the following other conditions are satisfied).
             animationKeys.push(innerKey);
+            stopKeys.push(innerKey);
+        }
+        else {
+            directlyAssignAndStop = true;
+        }
+
+        if (directlyAssignAndStop) {
+            if (!reverse) {
+                // In this case no animation should occur; set to the target value directly.
+                animateObj[innerKey] = targetVal;
+                animatable.updateDuringAnimation(topKey);
+            }
+            stopKeys.push(innerKey);
         }
     }
 
-    let keyLen = animationKeys.length;
-    // Stop previous animations on the same property.
-    if (!additive && keyLen) {
-        // Stop exists animation on specific tracks. Only one animator available for each property.
-        // TODO Should invoke previous animation callback?
-        for (let i = 0; i < existsAnimators.length; i++) {
-            const animator = existsAnimators[i];
-            if (animator.targetName === topKey) {
-                const allAborted = animator.stopTracks(animationKeys);
-                if (allAborted) {   // This animator can't be used.
-                    const idx = indexOf(existsAnimators, animator);
-                    existsAnimators.splice(idx, 1);
-                }
+    // Stop previous animations on the relevant props.
+    if (!additive && stopKeys.length) {
+        // Stop existing animators on specific properties. Ensure a property is handled by no more than one animator.
+        for (let i = existingAnimators.length - 1; i >= 0; i--) {
+            const animator = existingAnimators[i];
+            // Different levels of `topKey`s are mutually distinct by coincidence, thereby only comparing `topKey`.
+            if (animator.targetName === topKey
+                && animator.stopTracks(stopKeys) // return true if all tracks are aborted.
+            ) {
+                existingAnimators.splice(i, 1);
+                animateToChooseNextDuringOwner(animator, existingAnimators);
             }
         }
     }
 
-    // Ignore values not changed.
+    // Ignore values not changed, required as an optimization for scenarios involving frequent and rapid updates.
     // NOTE: Must filter it after previous animation stopped
     // and make sure the value to compare is using initial frame if animation is not started yet when setToFinal is used.
     if (!cfg.force) {
-        animationKeys = filter(animationKeys, key => !isValueSame(target[key], animateObj[key]));
-        keyLen = animationKeys.length;
+        let keysIdx = 0;
+        for (let idx = 0; idx < animationKeys.length; idx++) {
+            const key = animationKeys[idx];
+            if (!isValueSame(target[key], animateObj[key])) {
+                animationKeys[keysIdx++] = key;
+            }
+        }
+        animationKeys.length = keysIdx;
     }
+    const keyLen = animationKeys.length;
 
     if (keyLen > 0
-        // cfg.force is mainly for keep invoking onframe and ondone callback even if animation is not necessary.
-        // So if there is already has animators. There is no need to create another animator if not necessary.
-        // Or it will always add one more with empty target.
-        || (cfg.force && !animators.length)
+        // `cfg.force` is mainly used for invoking `during` and `done` callback even if animation is not necessary.
+        // At least one animator should be added for this purpose. `!animators.length` means only add that
+        // animator once.
+        || (cfg.force && !newAnimators.length)
     ) {
         let revertedSource: Dictionary<any>;
         let reversedTarget: Dictionary<any>;
@@ -2083,7 +2445,7 @@ function animateToShallow<T>(
                     revertedSource[innerKey] = target[innerKey];
                 }
                 else {
-                    // The usage of "animateFrom" expects that the element props has been updated dirctly to
+                    // The usage of "animateFrom" expects that the element props has been updated directly to
                     // "final" values outside, and input the "from" values here (i.e., in variable `target` here).
                     // So here we assign the "from" values directly to element here (rather that in the next frame)
                     // to prevent the "final" values from being read in any other places (like other running
@@ -2098,17 +2460,22 @@ function animateToShallow<T>(
             for (let i = 0; i < keyLen; i++) {
                 const innerKey = animationKeys[i];
                 // NOTE: Must clone source after the stopTracks. The property may be modified in stopTracks.
-                sourceClone[innerKey] = cloneValue(animateObj[innerKey]);
+                sourceClone[innerKey] = copyAnimatableValue(null, animateObj[innerKey]);
                 // Use copy, not change the original reference
                 // Copy from target to source.
-                copyValue(animateObj, target, innerKey);
+                animateObj[innerKey] = copyAnimatableValue(animateObj[innerKey], target[innerKey]);
             }
         }
 
         const animator = new Animator(animateObj, false, false, additive ? filter(
+            existingAnimators,
             // Use key string instead object reference because ref may be changed.
-            existsAnimators, animator => animator.targetName === topKey
-        ) : null);
+            function (animator) {
+                return animator.targetName === topKey;
+            }
+        ) : null, animationProps === ELEMENT_ANIMATION_PROPS_NONE);
+
+        animator.__fromStateTransition = stateName;
 
         animator.targetName = topKey;
         if (cfg.scope) {
@@ -2123,13 +2490,32 @@ function animateToShallow<T>(
         }
 
         animator.whenWithKeys(
-            duration == null ? 500 : duration,
+            duration,
             reverse ? reversedTarget : target,
             animationKeys
         ).delay(delay || 0);
 
         animatable.addAnimator(animator, topKey);
-        animators.push(animator);
+        newAnimators.push(animator);
+    }
+}
+const tmpAniKeys: string[][] = [[], []];
+const tmpStopKeys: string[][] = [[], []];
+
+function animateToChooseNextDuringOwner(
+    removedOwner: Animator<Element>,
+    existingAnimators: Animator<Element>[]
+): void {
+    if (!removedOwner.__aTDrOw) {
+        return;
+    }
+    const duringCb = removedOwner.__aTDr;
+    for (let j = 0; j < existingAnimators.length; j++) {
+        if (existingAnimators[j].__aTDr === duringCb) {
+            existingAnimators[j].during(duringCb);
+            existingAnimators[j].__aTDrOw = true;
+            return;
+        }
     }
 }
 
@@ -2162,10 +2548,12 @@ function isTextRelatedEl(el: Element<ElementProps>): boolean {
 
 function canTransition(
     el: Element,
-    noAnimation: boolean,
+    noAni: UseStateNoAnimationOpt,
     animationCfg: ElementAnimateConfig
-): boolean {
-    return !noAnimation && !el.__inHover && animationCfg && animationCfg.duration > 0;
+): ApplyStateObjTransOpt {
+    return noAni === USE_STATE_NO_ANIMATION_OPT_RETAIN_ANIMATION ? APPLY_STATE_OBJ_TRANS_ONLY_RETAIN_ANIMATION
+        : noAni === USE_STATE_NO_ANIMATION_OPT_RETARGET_ANIMATION ? APPLY_STATE_OBJ_TRANS_ONLY_RETARGET_ANIMATION
+        : (!noAni && !el.__inHover && animationCfg && animationCfg.duration > 0)
 }
 
 

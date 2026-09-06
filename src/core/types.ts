@@ -136,3 +136,13 @@ export type ZLevel2 =
 export const ZLEVEL2_NORMAL_ABOVE = 2;
 export const ZLEVEL2_INCREMENTAL = 1;
 export const ZLEVEL2_NORMAL_BELOW = 0;
+
+/**
+ * Force the type to be "literal number" (e.g., 0 | 1 | 2 | 3) rather than `number`.
+ *
+ * @usage
+ *  ```ts
+ *  function fn<Q extends number>(q: NumberLiteral<Q>) {}
+ *  ```
+ */
+export type NumberLiteral<T extends number> = number extends T ? never : T;

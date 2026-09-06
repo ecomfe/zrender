@@ -5,6 +5,7 @@
 
 /* global Float32Array */
 
+import { NullUndefined } from './types';
 import {VectorArray} from './vector';
 
 export type MatrixArray = number[]
@@ -84,8 +85,11 @@ export function rotate(
     out: MatrixArray,
     a: MatrixArray,
     rad: number,
-    pivot: VectorArray = [0, 0]
+    pivot?: VectorArray | NullUndefined
 ): MatrixArray {
+    if (pivot == null) {
+        pivot = tmpRotatePivotDefault;
+    }
     const aa = a[0];
     const ac = a[2];
     const atx = a[4];
@@ -103,6 +107,7 @@ export function rotate(
     out[5] = ct * (aty - pivot[1]) - st * (atx - pivot[0]) + pivot[1];
     return out;
 }
+const tmpRotatePivotDefault = [0, 0];
 
 /**
  * 缩放变换

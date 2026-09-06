@@ -5,21 +5,22 @@
 import Clip from './Clip';
 import * as color from '../tool/color';
 import {
+    copyArrShallow2,
     eqNaN,
     extend,
+    isArray,
     isArrayLike,
-    isFunction,
     isGradientObject,
     isNumber,
     isString,
+    isTypedArray,
     keys,
     logError,
     map
 } from '../core/util';
-import {ArrayLike, Dictionary} from '../core/types';
-import easingFuncs, { AnimationEasing } from './easing';
+import {ArrayLike, Dictionary, NullUndefined} from '../core/types';
+import { AnimationEasing, callEasing, EasingHost, setEasing } from './easing';
 import Animation from './Animation';
-import { createCubicEasingFunc } from './cubicEasing';
 import { isLinearGradient, isRadialGradient } from '../svg/helper';
 
 type NumberArray = ArrayLike<number>
@@ -46,9 +47,13 @@ interface ParsedRadialGradientObject extends ParsedGradientObject {
 
 const arraySlice = Array.prototype.slice;
 
-function interpolateNumber(p0: number, p1: number, percent: number): number {
-    return (p1 - p0) * percent + p0;
+export function interpolateNumber(p0: number, p1: number, percent: number): number {
+    // Considered rounding error introduced by ieee754 when `percent === 1`,
+    // `p1 - p0 + p0` does not necessarily equal `p0`;
+    // e.g., `0.1 - 0.987 + 0.987` get `0.09999999999999998`.
+    return percent === 1 ? p1 : (p1 - p0) * percent + p0
 }
+
 function interpolate1DArray(
     out: NumberArray,
     p0: NumberArray,
@@ -177,21 +182,73 @@ function fillArray(
     }
 }
 
-export function cloneValue(value: InterpolatableType) {
-    if (isArrayLike(value)) {
-        const len = value.length;
-        if (isArrayLike(value[0])) {
-            const ret = [];
-            for (let i = 0; i < len; i++) {
-                ret.push(arraySlice.call(value[i]));
-            }
-            return ret;
-        }
-
-        return arraySlice.call(value);
+/**
+ * If `target` is null/undefined, it behaves as `clone`.
+ * Only copy or clone `ArrayLike`, assuming other values are primitive and transfer them directly.
+ * The input `target` is returned only if suitable for copy, otherwise a new `target` is created and returned.
+ *
+ * @usage
+ *  ```js
+ *  // Copy to target if target exists, otherwise create a target according to source.
+ *  target = copyAnimatableValue(target, source);
+ *  ```
+ */
+export function copyAnimatableValue(
+    target: InterpolatableType | NullUndefined, source: NullUndefined
+): NullUndefined; // Avoid to return `any`.
+export function copyAnimatableValue<TSrc extends InterpolatableType>(
+    target: InterpolatableType | NullUndefined, source: TSrc | NullUndefined
+): TSrc;
+export function copyAnimatableValue(
+    target: InterpolatableType | NullUndefined, source: InterpolatableType | NullUndefined
+): InterpolatableType {
+    if (!isArrayLike(source)) {
+        return source;
     }
 
-    return value;
+    const len0 = source.length;
+
+    if (isTypedArray(source)) {
+        // Performance-sensitive. `source` may contain numerous points in a flat form.
+        if (!isTypedArray(target)
+            || target.constructor !== source.constructor
+            || (target as ArrayLike<unknown>).length !== len0
+        ) {
+            target = new (source.constructor as any)(len0);
+        }
+        (target as any).set(source);
+    }
+    else {
+        if (!isArray(target)) {
+            target = [];
+        }
+        if (guessArrayDim(source) === VALUE_TYPE_2D_ARRAY) {
+            // Assume each item is a plain array with the same length; not a TypedArray and not nullish
+            // (no such case yet, typically each item is a "point").
+            const len1 = (source[0] as ArrayLike<unknown>).length;
+            for (let i = 0; i < len0; i++) {
+                let targetItem = target[i] as unknown[];
+                const sourceItem = source[i] as ArrayLike<unknown>;
+                if (!isArray(targetItem)) {
+                    targetItem = target[i] = [];
+                }
+                if (len1 === 2) { // Quick optimize for the most common case in large data.
+                    targetItem[0] = sourceItem[0];
+                    targetItem[1] = sourceItem[1];
+                }
+                else {
+                    copyArrShallow2(targetItem, sourceItem, len1);
+                }
+                targetItem.length = len1;
+            }
+        }
+        else { // VALUE_TYPE_1D_ARRAY
+            copyArrShallow2(target, source, len0);
+        }
+        target.length = len0;
+    }
+
+    return target;
 }
 
 function rgba2String(rgba: number[]): string {
@@ -203,8 +260,10 @@ function rgba2String(rgba: number[]): string {
     return 'rgba(' + rgba.join(',') + ')';
 }
 
-function guessArrayDim(value: ArrayLike<unknown>): 1 | 2 {
-    return isArrayLike(value && (value as ArrayLike<unknown>)[0]) ? 2 : 1;
+function guessArrayDim(value: ArrayLike<unknown>):
+    typeof VALUE_TYPE_1D_ARRAY | typeof VALUE_TYPE_2D_ARRAY {
+    // Typically each item is a "point".
+    return isArrayLike(value && (value as ArrayLike<unknown>)[0]) ? VALUE_TYPE_2D_ARRAY : VALUE_TYPE_1D_ARRAY;
 }
 
 const VALUE_TYPE_NUMBER = 0;
@@ -214,27 +273,36 @@ const VALUE_TYPE_COLOR = 3;
 const VALUE_TYPE_LINEAR_GRADIENT = 4;
 const VALUE_TYPE_RADIAL_GRADIENT = 5;
 // Other value type that can only use discrete animation.
-const VALUE_TYPE_UNKOWN = 6;
+const VALUE_TYPE_UNKNOWN = 6;
 
-type ValueType = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+type ValueType =
+    | typeof VALUE_TYPE_NUMBER
+    | typeof VALUE_TYPE_1D_ARRAY
+    | typeof VALUE_TYPE_2D_ARRAY
+    | typeof VALUE_TYPE_COLOR
+    | typeof VALUE_TYPE_LINEAR_GRADIENT
+    | typeof VALUE_TYPE_RADIAL_GRADIENT
+    | typeof VALUE_TYPE_UNKNOWN
+
 
 type Keyframe = {
     time: number
     value: unknown
+    // This is a raw percent with no easing applied.
     percent: number
     // Raw value for discrete animation.
     rawValue: unknown
 
-    easing?: AnimationEasing    // Raw easing
-    easingFunc?: (percent: number) => number
     additiveValue?: unknown
-}
+} & EasingHost;
 
 
-function isGradientValueType(valType: ValueType): valType is 4 | 5 {
+function isGradientValueType(valType: ValueType):
+    valType is typeof VALUE_TYPE_LINEAR_GRADIENT | typeof VALUE_TYPE_RADIAL_GRADIENT {
     return valType === VALUE_TYPE_LINEAR_GRADIENT || valType === VALUE_TYPE_RADIAL_GRADIENT;
 }
-function isArrayValueType(valType: ValueType): valType is 1 | 2 {
+function isArrayValueType(valType: ValueType):
+    valType is typeof VALUE_TYPE_1D_ARRAY | typeof VALUE_TYPE_2D_ARRAY {
     return valType === VALUE_TYPE_1D_ARRAY || valType === VALUE_TYPE_2D_ARRAY;
 }
 
@@ -303,7 +371,7 @@ class Track {
         let len = keyframes.length;
 
         let discrete = false;
-        let valType: ValueType = VALUE_TYPE_UNKOWN;
+        let valType: ValueType = VALUE_TYPE_UNKNOWN;
         let value = rawValue;
 
         // Handling values only if it's possible to be interpolated.
@@ -311,8 +379,8 @@ class Track {
             let arrayDim = guessArrayDim(rawValue);
             valType = arrayDim;
             // Not a number array.
-            if (arrayDim === 1 && !isNumber(rawValue[0])
-                || arrayDim === 2 && !isNumber(rawValue[0][0])) {
+            if (arrayDim === VALUE_TYPE_1D_ARRAY && !isNumber(rawValue[0])
+                || arrayDim === VALUE_TYPE_2D_ARRAY && !isNumber(rawValue[0][0])) {
                 discrete = true;
             }
         }
@@ -354,7 +422,7 @@ class Track {
             this.valType = valType;
         }
          // Not same value type or can't be interpolated.
-        else if (valType !== this.valType || valType === VALUE_TYPE_UNKOWN) {
+        else if (valType !== this.valType || valType === VALUE_TYPE_UNKNOWN) {
             discrete = true;
         }
 
@@ -367,11 +435,7 @@ class Track {
             percent: 0
         };
         if (easing) {
-            // Save the raw easing name to be used in css animation output
-            kf.easing = easing;
-            kf.easingFunc = isFunction(easing)
-                ? easing
-                : easingFuncs[easing] || createCubicEasingFunc(easing);
+            setEasing(kf, easing);
         }
         // Not check if value equal here.
         keyframes.push(kf);
@@ -516,9 +580,10 @@ class Track {
 
         // Apply different easing of each keyframe.
         // Use easing specified in target frame.
-        if (nextFrame.easingFunc) {
-            w = nextFrame.easingFunc(w);
-        }
+        w = callEasing(nextFrame, w);
+        // PENDING: The input `percent` has been applied `clip.easing` (if any).
+        // If easings are both passed to `animator.start(easing)` and keyframes, a raw percent
+        // will apply easings multiple times, which may not produce an expected result.
 
         // If value is arr
         let targetArr = isAdditive ? this._additiveValue
@@ -637,7 +702,7 @@ class Track {
 
 type DoneCallback = () => void;
 type AbortCallback = () => void;
-export type OnframeCallback<T> = (target: T, percent: number) => void;
+export type OnframeCallback<T> = (target: T, percent: number, rawPercent: number) => void;
 
 export type AnimationPropGetter<T> = (target: T, key: string) => InterpolatableType;
 export type AnimationPropSetter<T> = (target: T, key: string, value: InterpolatableType) => void;
@@ -651,6 +716,16 @@ export default class Animator<T> {
     scope?: string
 
     __fromStateTransition?: string
+
+    // Injected by `Element['animateTo']`
+    // An done callback created by `Element['animateTo']`.
+    __aTDn?: DoneCallback
+    // An aborted callback created by `Element['animateTo']`.
+    __aTAb?: AbortCallback
+    // a during (onframe) callback created by `Element['animateTo']`.
+    __aTDr?: OnframeCallback<T>
+    // This is the owner, where `animator.during(animator.__aTDr)` has been called.
+    __aTDrOw?: boolean;
 
     private _tracks: Dictionary<Track> = {}
     private _trackKeys: string[] = []
@@ -684,6 +759,8 @@ export default class Animator<T> {
 
     private _additiveAnimators: Animator<any>[]
 
+    private _noAni: boolean;
+
     private _doneCbs: DoneCallback[]
     private _onframeCbs: OnframeCallback<T>[]
 
@@ -695,7 +772,8 @@ export default class Animator<T> {
         target: T,
         loop: boolean,
         allowDiscreteAnimation?: boolean,  // If doing discrete animation on the values can't be interpolated
-        additiveTo?: Animator<any>[]
+        additiveTo?: Animator<any>[],
+        noAni?: boolean, // No animation.
     ) {
         this._target = target;
         this._loop = loop;
@@ -706,6 +784,8 @@ export default class Animator<T> {
         this._additiveAnimators = additiveTo;
 
         this._allowDiscrete = allowDiscreteAnimation;
+
+        this._noAni = noAni;
     }
 
     getMaxTime() {
@@ -744,7 +824,7 @@ export default class Animator<T> {
     }
 
 
-    // Fast path for add keyframes of aniamteTo
+    // Fast path for add keyframes of animateTo
     whenWithKeys(time: number, props: Dictionary<any>, propNames: string[], easing?: AnimationEasing) {
         const tracks = this._tracks;
         for (let i = 0; i < propNames.length; i++) {
@@ -780,12 +860,12 @@ export default class Animator<T> {
                 // Else
                 //  Initialize value from current prop value
                 if (time > 0) {
-                    track.addKeyframe(0, cloneValue(initialValue), easing);
+                    track.addKeyframe(0, copyAnimatableValue(null, initialValue), easing);
                 }
 
                 this._trackKeys.push(propName);
             }
-            track.addKeyframe(time, cloneValue(props[propName]), easing);
+            track.addKeyframe(time, copyAnimatableValue(null, props[propName]), easing);
         }
         this._maxTime = Math.max(this._maxTime, time);
         return this;
@@ -909,12 +989,15 @@ export default class Animator<T> {
             }
         }
         // Add during callback on the last clip
+        // When `_force: true` there might be no track added.
         if (tracks.length || this._force) {
             const clip = new Clip({
                 life: maxTime,
                 loop: this._loop,
                 delay: this._delay || 0,
-                onframe(percent: number) {
+                noAni: this._noAni,
+                onframe(percent: number, rawPercent: number) {
+
                     self._started = 2;
                     // Remove additived animator if it's finished.
                     // For the purpose of memory effeciency.
@@ -941,7 +1024,7 @@ export default class Animator<T> {
                     const onframeList = self._onframeCbs;
                     if (onframeList) {
                         for (let i = 0; i < onframeList.length; i++) {
-                            onframeList[i](self._target, percent);
+                            onframeList[i](self._target, percent, rawPercent);
                         }
                     }
                 },
@@ -955,9 +1038,7 @@ export default class Animator<T> {
                 this.animation.addClip(clip);
             }
 
-            if (easing) {
-                clip.setEasing(easing);
-            }
+            setEasing(clip, easing);
         }
         else {
             // This optimization will help the case that in the upper application
@@ -979,7 +1060,7 @@ export default class Animator<T> {
         const clip = this._clip;
         if (forwardToLast) {
             // Move to last frame before stop
-            clip.onframe(1);
+            clip.onframe(1, 1);
         }
 
         this._abortedCallback();
@@ -1027,6 +1108,28 @@ export default class Animator<T> {
             this._abortedCbs.push(cb);
         }
         return this;
+    }
+
+    /**
+     * Currently only callbacks added by `el.animateTo`/`el.animateFrom`
+     * need to be cleaned.
+     */
+    cleanCb() {
+        clean(this._doneCbs, this.__aTDn);
+        clean(this._abortedCbs, this.__aTAb);
+        clean(this._onframeCbs, this.__aTDr);
+        this.__aTDn = this.__aTAb = this.__aTDr = null;
+
+        function clean(cbs: Function[], cb: Function) {
+            if (!cbs || !cb) {
+                return;
+            }
+            for (let i = cbs.length - 1; i >= 0; i--) {
+                if (cbs[i] === cb) {
+                    cbs.splice(i, 1);
+                }
+            }
+        }
     }
 
     getClip() {
@@ -1115,7 +1218,7 @@ export default class Animator<T> {
             if (kf) {
                 // TODO CLONE?
                 // Use raw value without parse.
-                (target as any)[propName] = cloneValue(kf.rawValue as any);
+                (target as any)[propName] = copyAnimatableValue(null, kf.rawValue as any);
             }
         }
     }

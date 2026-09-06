@@ -1,6 +1,8 @@
 import { keys, map } from '../core/util';
 import { encodeHTML } from '../core/dom';
 
+/* global document */
+
 export type CSSSelectorVNode = Record<string, string>
 export type CSSAnimationVNode = Record<string, Record<string, string>>
 
