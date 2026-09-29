@@ -266,8 +266,13 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
     protected getInsideTextFill() {
         const pathFill = this.style.fill;
         if (pathFill !== 'none') {
-            if (isString(pathFill)) {
-                const fillLum = lum(pathFill, 0);
+            if (isString(pathFill)
+                || (pathFill && 'colorStops' in pathFill && pathFill.colorStops.length)) {
+                // Match the average-stop luminance used for gradient backgrounds.
+                const fillLum = isString(pathFill)
+                    ? lum(pathFill, 0)
+                    : pathFill.colorStops.reduce((sum, stop) => sum + lum(stop.color, 0), 0)
+                        / pathFill.colorStops.length;
                 // Determin text color based on the lum of path fill.
                 // TODO use (1 - DARK_MODE_THRESHOLD)?
                 if (fillLum > 0.5) {   // TODO Consider background lum?
