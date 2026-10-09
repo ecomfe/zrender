@@ -406,7 +406,8 @@ export default class PathProxy {
         }
         for (let i = 0; i < len; i++) {
             const appendPathData = path[i].data;
-            for (let k = 0; k < appendPathData.length; k++) {
+            const appendPathLen = path[i].len();
+            for (let k = 0; k < appendPathLen; k++) {
                 this.data[offset++] = appendPathData[k];
             }
         }
