@@ -236,6 +236,9 @@ class Transformable {
         }
 
         this.setLocalTransform(m);
+        // The matrix above was normalized for this origin.
+        this.originX = ox;
+        this.originY = oy;
     }
 
     /**
