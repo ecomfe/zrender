@@ -43,7 +43,6 @@ export type WXCanvasRenderingContext = CanvasRenderingContext2D & {
 };
 
 export type ZRCanvasRenderingContext = CanvasRenderingContext2D & {
-    dpr: number
     __attrCachedBy: boolean | number
 }
 
@@ -136,3 +135,19 @@ export type ZLevel2 =
 export const ZLEVEL2_NORMAL_ABOVE = 2;
 export const ZLEVEL2_INCREMENTAL = 1;
 export const ZLEVEL2_NORMAL_BELOW = 0;
+
+export interface DOMSizeOpts {
+    // Can be 10 / '10px' / 'auto'
+    width?: number | string | NullUndefined
+    height?: number | string | NullUndefined
+};
+export interface DevicePixelRatioOpts {
+    devicePixelRatio?: number | NullUndefined
+};
+export interface DirtyRectOpts {
+    useDirtyRect?: boolean | NullUndefined
+}
+
+export const XY = ['x', 'y'] as const;
+export const WH = ['width', 'height'] as const;
+

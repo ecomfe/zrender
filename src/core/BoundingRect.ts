@@ -1,14 +1,11 @@
 import * as matrix from './matrix';
 import * as vector from './vector';
 import Point, { PointLike } from './Point';
-import { NullUndefined } from './types';
+import { NullUndefined, WH, XY } from './types';
 
 const mathMin = Math.min;
 const mathMax = Math.max;
 const mathAbs = Math.abs;
-
-const XY = ['x', 'y'] as const;
-const WH = ['width', 'height'] as const;
 
 const lt = new Point();
 const rb = new Point();

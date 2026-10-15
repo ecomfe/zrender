@@ -5,6 +5,9 @@ import requestAnimationFrame from '../animation/requestAnimationFrame';
 import env from '../core/env';
 import Displayable from '../graphic/Displayable';
 import {
+    DevicePixelRatioOpts,
+    DirtyRectOpts,
+    DOMSizeOpts,
     IncrementalIdCompat, NullUndefined, WXCanvasRenderingContext,
     ZLevel, ZLevel2, ZLEVEL2_INCREMENTAL, ZLEVEL2_NORMAL_ABOVE, ZLEVEL2_NORMAL_BELOW
 } from '../core/types';
@@ -15,7 +18,7 @@ import { brush, brushLoopFinalize, BrushScope, brushSingle } from './graphic';
 import { PainterBase } from '../PainterBase';
 import BoundingRect from '../core/BoundingRect';
 import { REDRAW_BIT } from '../graphic/constants';
-import { getSize } from './helper';
+import { getSize, getSizeForSingleCanvas } from './helper';
 import { platformApi } from '../core/platform';
 
 
@@ -93,11 +96,7 @@ function createBuiltinLayer(
     return layer;
 }
 
-interface CanvasPainterOption {
-    devicePixelRatio?: number
-    width?: number | string  // Can be 10 / 10px / auto
-    height?: number | string
-    useDirtyRect?: boolean
+interface CanvasPainterOption extends DOMSizeOpts, DevicePixelRatioOpts, DirtyRectOpts {
 }
 
 export type CanvasPainterRefreshOpt = {
@@ -193,6 +192,9 @@ const EACH_LAYER_NOT_BUILTIN = 2;
 const EACH_LAYER_NOT_HOVER = 4;
 const EACH_LAYER_BUILTIN_NOT_HOVER = EACH_LAYER_BUILTIN | EACH_LAYER_NOT_HOVER;
 
+function getDPR(opts: CanvasPainterOption): number {
+    return opts.devicePixelRatio || getDevicePixelRatio();
+}
 
 interface CanvasPainterInternal {
     // Order is maintained by zlevel and zlevel2.
@@ -267,7 +269,7 @@ export default class CanvasPainter implements PainterBase {
 
         this._opts = opts = util.extend({}, opts || {}) as CanvasPainterOption;
 
-        this.dpr = opts.devicePixelRatio || getDevicePixelRatio();
+        const dpr = this.dpr = getDPR(opts);
 
         this._singleCanvas = singleCanvas;
 
@@ -295,24 +297,12 @@ export default class CanvasPainter implements PainterBase {
         }
         else {
             const rootCanvas = root as HTMLCanvasElement;
-            let width = rootCanvas.width;
-            let height = rootCanvas.height;
-
-            if (opts.width != null) {
-                // TODO sting?
-                width = opts.width as number;
-            }
-            if (opts.height != null) {
-                // TODO sting?
-                height = opts.height as number;
-            }
+            const width = this._width = getSizeForSingleCanvas(rootCanvas, 0, opts);
+            const height = this._height = getSizeForSingleCanvas(rootCanvas, 1, opts);
 
             // Use canvas width and height directly
-            rootCanvas.width = width * this.dpr;
-            rootCanvas.height = height * this.dpr;
-
-            this._width = width;
-            this._height = height;
+            rootCanvas.width = width * dpr;
+            rootCanvas.height = height * dpr;
 
             // Create layer if only one given canvas
             // Device can be specified to create a high dpi image.
@@ -417,11 +407,13 @@ export default class CanvasPainter implements PainterBase {
         // unnecessarily repeated clearing.
         hoverLayer.clear();
 
+        const dpr = this.dpr;
         const scope: BrushScope = {
             inHover: true,
             viewWidth: this._width,
             viewHeight: this._height,
-            beforeBrushParam: {},
+            beforeBrushParam: {dpr},
+            dpr,
         };
 
         let ctx;
@@ -472,7 +464,7 @@ export default class CanvasPainter implements PainterBase {
      * @deprecated
      */
     paintOne(ctx: CanvasRenderingContext2D, el: Displayable) {
-        brushSingle(ctx, el);
+        brushSingle(ctx, el, this.dpr);
     }
 
     private _paintList(list: Displayable[], prevList: Displayable[], redrawId?: number) {
@@ -623,13 +615,15 @@ export default class CanvasPainter implements PainterBase {
         repaintRect: BoundingRect | NullUndefined,
         contentRetained: boolean,
     ): void {
+        const dpr = this.dpr;
         const scope: BrushScope = {
             inHover: false,
             allClipped: false,
             prevEl: null,
             viewWidth: this._width,
             viewHeight: this._height,
-            beforeBrushParam: {contentRetained}
+            dpr,
+            beforeBrushParam: {contentRetained, dpr}
         };
         const ctx = layer.ctx;
         const useTimer = isIncrementalLayer(layer);
@@ -1202,65 +1196,77 @@ export default class CanvasPainter implements PainterBase {
     }
 
     /**
-     * 区域大小变化后重绘
-     * @param width 宽度
-     * @param height 高度
-     * @param devicePixelRatio 设备像素比，如果未指定，则自动获取当前设备像素比
+     * If a parameter is not specified, recalculate it from the original `opts` passed to
+     * the constructor.
+     * Omitting certain or all parameters allows zrender to automatically adapt
+     * to the current values of DOM container size or DPR.
      */
     resize(
-        width?: number | string,
-        height?: number | string,
+        width?: CanvasPainterOption['width'],
+        height?: CanvasPainterOption['height'],
         devicePixelRatio?: number
     ) {
-        const newDpr = devicePixelRatio || getDevicePixelRatio();
+        const opts = this._opts;
+        const root = this.root;
+        const domRoot = this._domRoot;
+        const isSingleCanvas = this._singleCanvas;
 
-        const dprChanged = newDpr !== this.dpr;
-        if (dprChanged) {
-            this.dpr = newDpr;
+        if (devicePixelRatio != null) {
+            opts.devicePixelRatio = devicePixelRatio; // Save DPR to `opts`.
+        }
+        devicePixelRatio = getDPR(opts);
+        const dprChanged = devicePixelRatio !== this.dpr;
+        this.dpr = devicePixelRatio; // Save calculated DPR.
+
+        // Historical behavior: both width and height are required in this case.
+        // PENDING: Remove this compatibility.
+        if (isSingleCanvas && (width == null || height == null) && !dprChanged) {
+            return;
         }
 
-        if (!this._domRoot.style) { // Maybe in node or worker
-            if (width == null || height == null) {
-                return;
-            }
-            // TODO width / height may be string
-            this._width = width as number;
-            this._height = height as number;
+        // Save w/h to `opts`.
+        width != null && (opts.width = width);
+        height != null && (opts.height = height);
 
-            this._ensureLayer(CANVAS_ZLEVEL).resize(width as number, height as number, this.dpr);
+        let wNum: number;
+        let hNum: number;
+
+        if (isSingleCanvas) {
+            wNum = getSizeForSingleCanvas(root, 0, opts);
+            hNum = getSizeForSingleCanvas(root, 1, opts);
         }
         else {
-            const domRoot = this._domRoot;
             // FIXME Why ?
+            // (This code was introduced in zr2.0-)
             domRoot.style.display = 'none';
 
-            // Save input w/h
-            const opts = this._opts;
-            const root = this.root;
-            width != null && (opts.width = width);
-            height != null && (opts.height = height);
-
-            width = getSize(root, 0, opts);
-            height = getSize(root, 1, opts);
+            wNum = getSize(root, 0, opts);
+            hNum = getSize(root, 1, opts);
 
             domRoot.style.display = '';
+        }
 
-            // 优化没有实际改变的resize
-            if (this._width !== width || height !== this._height || dprChanged) {
-                domRoot.style.width = width + 'px';
-                domRoot.style.height = height + 'px';
+        const anythingChanged = this._width !== wNum || this._height !== hNum || dprChanged;
+        // Save calculated size.
+        this._width = wNum;
+        this._height = hNum;
+
+        if (anythingChanged) {
+            if (isSingleCanvas) {
+                this._ensureLayer(CANVAS_ZLEVEL).resize(wNum, hNum, devicePixelRatio);
+            }
+            else {
+                domRoot.style.width = wNum + 'px';
+                domRoot.style.height = hNum + 'px';
 
                 eachLayer(this._i, function (layer) {
-                    layer.resize(width as number, height as number, this.dpr);
+                    layer.resize(wNum, hNum, devicePixelRatio);
                 });
-
-                this.refresh({paintAll: true});
             }
 
-            this._width = width;
-            this._height = height;
-
+            this.refresh({paintAll: true});
         }
+
         return this;
     }
 
@@ -1320,11 +1326,13 @@ export default class CanvasPainter implements PainterBase {
         }
         else {
             // PENDING, echarts-gl and incremental rendering.
+            const dpr = this.dpr;
             const scope: BrushScope = {
                 inHover: false,
                 viewWidth: this._width,
                 viewHeight: this._height,
-                beforeBrushParam: {},
+                dpr,
+                beforeBrushParam: {dpr},
             };
             const displayList = this.storage.getDisplayList(true);
             for (let i = 0, len = displayList.length; i < len; i++) {

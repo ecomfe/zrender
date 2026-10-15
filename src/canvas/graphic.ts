@@ -4,7 +4,6 @@ import { GradientObject } from '../graphic/Gradient';
 import { ImagePatternObject, InnerImagePatternObject } from '../graphic/Pattern';
 import { LinearGradientObject } from '../graphic/LinearGradient';
 import { RadialGradientObject } from '../graphic/RadialGradient';
-import { ZRCanvasRenderingContext } from '../core/types';
 import { createOrUpdateImage, isImageReady } from '../graphic/helper/image';
 import { getCanvasGradient, isClipPathChanged } from './helper';
 import Path, { PathStyleProps } from '../graphic/Path';
@@ -191,7 +190,7 @@ function brushPath(
 
     // Update path sx, sy
     const scale = el.getGlobalScale();
-    path.setScale(scale[0], scale[1], el.segmentIgnoreThreshold);
+    path.setScale(scale[0], scale[1], el.segmentIgnoreThreshold, scope.dpr);
 
     let lineDash;
     let lineDashOffset;
@@ -202,7 +201,6 @@ function brushPath(
     let needsRebuild = true;
 
     if (firstDraw || (dirtyFlag & SHAPE_CHANGED_BIT)) {
-        path.setDPR((ctx as any).dpr);
         if (strokePart) {
             // Use rebuildPath for percent stroke, so no context.
             path.setContext(null);
@@ -414,7 +412,7 @@ function bindCommonProps(
                 styleChanged = true;
             }
             // FIXME Invalid property value will cause style leak from previous element.
-            ctx[propName] = (ctx as ZRCanvasRenderingContext).dpr * (style[propName] || 0);
+            ctx[propName] = scope.dpr * (style[propName] || 0);
         }
     }
     if (forceSetAll || style.shadowColor !== prevStyle.shadowColor) {
@@ -514,9 +512,9 @@ function bindImageStyle(
     );
 }
 
-function setContextTransform(ctx: CanvasRenderingContext2D, el: Displayable) {
+function setContextTransform(ctx: CanvasRenderingContext2D, el: Displayable, scope: BrushScope) {
     const m = el.transform;
-    const dpr = (ctx as ZRCanvasRenderingContext).dpr || 1;
+    const dpr = scope.dpr
     if (m) {
         ctx.setTransform(dpr * m[0], dpr * m[1], dpr * m[2], dpr * m[3], dpr * m[4], dpr * m[5]);
     }
@@ -532,7 +530,7 @@ function updateClipStatus(clipPaths: Path[], ctx: CanvasRenderingContext2D, scop
         // Ignore draw following elements if clipPath has zero area.
         allClipped = allClipped || clipPath.isZeroArea();
 
-        setContextTransform(ctx, clipPath);
+        setContextTransform(ctx, clipPath, scope);
         ctx.beginPath();
         clipPath.buildPath(ctx, clipPath.shape);
         ctx.clip();
@@ -567,6 +565,8 @@ export type BrushScope = {
     // width / height of viewport
     viewWidth: number
     viewHeight: number
+
+    dpr: number
 
     // Status for clipping
     prevElClipPaths?: Path[] // Only paths with length > 0 can be assigned.
@@ -616,8 +616,8 @@ function flushPathDrawn(ctx: CanvasRenderingContext2D, scope: BrushScope) {
     }
 }
 
-export function brushSingle(ctx: CanvasRenderingContext2D, el: Displayable) {
-    const scope = { inHover: false, viewWidth: 0, viewHeight: 0, beforeBrushParam: {} };
+export function brushSingle(ctx: CanvasRenderingContext2D, el: Displayable, dpr: number) {
+    const scope = { inHover: false, viewWidth: 0, viewHeight: 0, beforeBrushParam: {dpr}, dpr};
     brush(ctx, el, scope);
     brushLoopFinalize(ctx, scope);
 }
@@ -716,7 +716,7 @@ export function brush(
     if (forceSetTransform || isTransformChanged(m, prevEl.transform)) {
         // Flush
         flushPathDrawn(ctx, scope);
-        setContextTransform(ctx, el);
+        setContextTransform(ctx, el, scope);
     }
     else if (!canBatchPath) {
         // Flush
@@ -816,14 +816,16 @@ function brushIncremental(
     // Provide an inner scope.
     // Save current context and restore after brushed.
     ctx.save();
+    const dpr = scope.dpr;
     let innerScope: BrushScope = {
         prevElClipPaths: null,
         prevEl: null,
         allClipped: false,
         viewWidth: scope.viewWidth,
         viewHeight: scope.viewHeight,
+        dpr,
         inHover: scope.inHover,
-        beforeBrushParam: {}
+        beforeBrushParam: {dpr}
     };
     let i;
     let len;
