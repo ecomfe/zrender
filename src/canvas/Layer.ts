@@ -3,8 +3,7 @@ import { ImagePatternObject } from '../graphic/Pattern';
 import CanvasPainter from './Painter';
 import { GradientObject, InnerGradientObject } from '../graphic/Gradient';
 import {
-    INCREMENTAL_ID_FALSE, IncrementalId, ZLevel, ZLevel2, ZLEVEL2_NORMAL_BELOW,
-    ZRCanvasRenderingContext
+    INCREMENTAL_ID_FALSE, IncrementalId, ZLevel, ZLevel2, ZLEVEL2_NORMAL_BELOW
 } from '../core/types';
 import Eventful from '../core/Eventful';
 import Element, { ElementEventCallback } from '../Element';
