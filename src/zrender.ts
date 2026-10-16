@@ -566,6 +566,10 @@ export function getElementSSRData(el: Element): ElementSSRData {
     }
 }
 
+/**
+ * CAVEAT: `SSRDataGetter` must come from trusted source, otherwise security risk may arise.
+ * zrender does not sanitize it.
+ */
 export function registerSSRDataGetter<T>(getter: ElementSSRDataGetter<T>) {
     ssrDataGetter = getter;
 }
