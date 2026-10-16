@@ -514,7 +514,7 @@ function bindImageStyle(
 
 function setContextTransform(ctx: CanvasRenderingContext2D, el: Displayable, scope: BrushScope) {
     const m = el.transform;
-    const dpr = scope.dpr
+    const dpr = scope.dpr;
     if (m) {
         ctx.setTransform(dpr * m[0], dpr * m[1], dpr * m[2], dpr * m[3], dpr * m[4], dpr * m[5]);
     }

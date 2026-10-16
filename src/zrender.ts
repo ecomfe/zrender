@@ -16,7 +16,9 @@ import {PainterBase} from './PainterBase';
 import Animation, {getTime} from './animation/Animation';
 import HandlerProxy from './dom/HandlerProxy';
 import Element, { ElementEventCallback } from './Element';
-import { DevicePixelRatioOpts, Dictionary, DirtyRectOpts, DOMSizeOpts, ElementEventName, RenderedEvent, WithThisType } from './core/types';
+import {
+    DevicePixelRatioOpts, Dictionary, DirtyRectOpts, DOMSizeOpts, ElementEventName, RenderedEvent, WithThisType
+} from './core/types';
 import { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
