@@ -18,7 +18,7 @@ import { brush, brushLoopFinalize, BrushScope, brushSingle } from './graphic';
 import { PainterBase } from '../PainterBase';
 import BoundingRect from '../core/BoundingRect';
 import { REDRAW_BIT } from '../graphic/constants';
-import { getSize, getSizeForSingleCanvas } from './helper';
+import { getSize, getSizeForSingleCanvas, isGetSizeWHNumeric } from './helper';
 import { platformApi } from '../core/platform';
 
 
@@ -1215,27 +1215,31 @@ export default class CanvasPainter implements PainterBase {
             opts.devicePixelRatio = devicePixelRatio; // Save DPR to `opts`.
         }
         devicePixelRatio = getDPR(opts);
-        const dprChanged = devicePixelRatio !== this.dpr;
-        this.dpr = devicePixelRatio; // Save calculated DPR.
 
-        // Historical behavior: both width and height are required in this case.
-        // PENDING: Remove this compatibility.
-        if (isSingleCanvas && (width == null || height == null) && !dprChanged) {
-            return;
+        function setToOpts(width?: CanvasPainterOption['width'], height?: CanvasPainterOption['height']): void {
+            // Save w/h to `opts`.
+            width != null && (opts.width = width);
+            height != null && (opts.height = height);
         }
-
-        // Save w/h to `opts`.
-        width != null && (opts.width = width);
-        height != null && (opts.height = height);
 
         let wNum: number;
         let hNum: number;
 
         if (isSingleCanvas) {
-            wNum = getSizeForSingleCanvas(root, 0, opts);
-            hNum = getSizeForSingleCanvas(root, 1, opts);
+            // Both width and height are required in `singleCanvas` case, otherwise, the omitted width/height
+            // has to be calculated and introduces necessary complexity.
+            if (isGetSizeWHNumeric(opts, 0) && isGetSizeWHNumeric(opts, 1)) {
+                setToOpts(width, height);
+                wNum = getSizeForSingleCanvas(null, 0, opts);
+                hNum = getSizeForSingleCanvas(null, 1, opts);
+            }
+            else {
+                wNum = this._width;
+                hNum = this._height;
+            }
         }
         else {
+            setToOpts(width, height);
             // FIXME Why ?
             // (This code was introduced in zr2.0-)
             domRoot.style.display = 'none';
@@ -1246,10 +1250,12 @@ export default class CanvasPainter implements PainterBase {
             domRoot.style.display = '';
         }
 
-        const anythingChanged = this._width !== wNum || this._height !== hNum || dprChanged;
-        // Save calculated size.
+        const anythingChanged = this._width !== wNum || this._height !== hNum || devicePixelRatio !== this.dpr;
+
+        // Save calculated size and DPR.
         this._width = wNum;
         this._height = hNum;
+        this.dpr = devicePixelRatio;
 
         if (anythingChanged) {
             if (isSingleCanvas) {
@@ -1302,7 +1308,8 @@ export default class CanvasPainter implements PainterBase {
             return this._i.layers[CANVAS_ZLEVEL][0].dom;
         }
 
-        const imageLayer = new Layer('image', this, opts.pixelRatio || this.dpr);
+        const dpr = opts.pixelRatio || this.dpr;
+        const imageLayer = new Layer('image', this, dpr);
         imageLayer.initContext();
         imageLayer.clear(false, opts.backgroundColor || this._backgroundColor);
 
@@ -1326,7 +1333,6 @@ export default class CanvasPainter implements PainterBase {
         }
         else {
             // PENDING, echarts-gl and incremental rendering.
-            const dpr = this.dpr;
             const scope: BrushScope = {
                 inHover: false,
                 viewWidth: this._width,

@@ -3,7 +3,7 @@ import { RadialGradientObject } from '../graphic/RadialGradient';
 import { GradientObject } from '../graphic/Gradient';
 import { RectLike } from '../core/BoundingRect';
 import Path from '../graphic/Path';
-import { DOMSizeOpts, WH } from '../core/types';
+import { DOMSizeOpts, NullUndefined, WH } from '../core/types';
 
 function isSafeNum(num: number) {
     // NaN、Infinity、undefined、'xx'
@@ -107,14 +107,14 @@ export function getSize(
     root: HTMLElement,
     whIdx: number,
     opts: DOMSizeOpts
-) {
+): number {
 
     const wh = WH[whIdx];
     const cwh = ['clientWidth', 'clientHeight'][whIdx] as 'clientWidth' | 'clientHeight';
     const plt = ['paddingLeft', 'paddingTop'][whIdx] as 'paddingLeft' | 'paddingTop';
     const prb = ['paddingRight', 'paddingBottom'][whIdx] as 'paddingRight' | 'paddingBottom';
 
-    if (isGetSizeWHNumeric(opts, wh)) {
+    if (isGetSizeWHNumeric(opts, whIdx)) {
         return parseFloat(opts[wh] as string);
     }
 
@@ -129,17 +129,20 @@ export function getSize(
 }
 
 export function getSizeForSingleCanvas(
-    root: HTMLElement,
+    // `root.width/height` may have been multiplied by DPR. In this case,
+    // `root` should not be passed.
+    root: HTMLElement | NullUndefined,
     whIdx: number,
     opts: DOMSizeOpts
-) {
-    const wh = WH[whIdx];
-    if (isGetSizeWHNumeric(opts, wh)) {
-        return parseFloat(opts[wh] as string);
+): number | NullUndefined {
+    if (isGetSizeWHNumeric(opts, whIdx)) {
+        return parseFloat(opts[WH[whIdx]] as string);
     }
-    return (root as HTMLCanvasElement)[wh];
+    if (root) {
+        return (root as HTMLCanvasElement)[WH[whIdx]];
+    }
 }
 
-function isGetSizeWHNumeric(opts: DOMSizeOpts, wh: 'width' | 'height'): boolean {
-    return opts[wh] != null && opts[wh] !== 'auto';
+export function isGetSizeWHNumeric(opts: DOMSizeOpts, whIdx: number): boolean {
+    return opts[WH[whIdx]] != null && opts[WH[whIdx]] !== 'auto';
 }
