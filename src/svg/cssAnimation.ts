@@ -126,6 +126,11 @@ function createCompoundPathCSSAnimation(
     return cssAnimationCfg.replace(cssAnimationName, animationName);
 }
 
+/**
+ * CAVEAT: If user-provided easing functions were to be supported, users should
+ * be warned about the security risks.
+ * @see ZR_SVG_INJECTION_RISK .
+ */
 function getEasingFunc(easing: AnimationEasing) {
     return isString(easing)
         ? EASING_MAP[easing]

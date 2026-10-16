@@ -3,8 +3,7 @@ import { ImagePatternObject } from '../graphic/Pattern';
 import CanvasPainter from './Painter';
 import { GradientObject, InnerGradientObject } from '../graphic/Gradient';
 import {
-    INCREMENTAL_ID_FALSE, IncrementalId, ZLevel, ZLevel2, ZLEVEL2_NORMAL_BELOW,
-    ZRCanvasRenderingContext
+    INCREMENTAL_ID_FALSE, IncrementalId, ZLevel, ZLevel2, ZLEVEL2_NORMAL_BELOW
 } from '../core/types';
 import Eventful from '../core/Eventful';
 import Element, { ElementEventCallback } from '../Element';
@@ -14,6 +13,7 @@ import Displayable from '../graphic/Displayable';
 import BoundingRect from '../core/BoundingRect';
 import { REDRAW_BIT } from '../graphic/constants';
 import { platformApi } from '../core/platform';
+import { getDevicePixelRatio } from '../config';
 
 function createDom(id: string, painter: CanvasPainter, dpr: number) {
     const newDom = platformApi.createCanvas();
@@ -31,10 +31,14 @@ function createDom(id: string, painter: CanvasPainter, dpr: number) {
         newDom.setAttribute('data-zr-dom-id', id);
     }
 
-    newDom.width = width * dpr;
-    newDom.height = height * dpr;
+    updateDomByDPR(newDom, width, height, dpr);
 
     return newDom;
+}
+
+function updateDomByDPR(dom: HTMLCanvasElement, width: number, height: number, dpr: number): void {
+    dom.width = width * dpr;
+    dom.height = height * dpr;
 }
 
 export function isIncrementalLayer(layer: Layer): boolean {
@@ -155,7 +159,7 @@ export default class Layer extends Eventful {
         super();
 
         let dom;
-        dpr = dpr || 1;
+        dpr = dpr || getDevicePixelRatio();
         if (typeof id === 'string') {
             dom = createDom(id, painter, dpr);
         }
@@ -187,7 +191,6 @@ export default class Layer extends Eventful {
 
     initContext() {
         this.ctx = this.dom.getContext('2d');
-        (this.ctx as ZRCanvasRenderingContext).dpr = this.dpr;
     }
 
     setUnpainted() {
@@ -398,27 +401,12 @@ export default class Layer extends Eventful {
         return (this._paintRects || []).slice();
     }
 
-    /**
-     * Update dpr and keep context markers in sync.
-     * Returns true if dpr changed.
-     */
-    updateDpr(dpr?: number): boolean {
-        if (dpr != null && dpr !== this.dpr) {
-            this.dpr = dpr;
-            // Keep a custom dpr marker in sync for downstream brush logic.
-            if (this.ctx) {
-                (this.ctx as ZRCanvasRenderingContext).dpr = dpr;
-            }
-            if (this.ctxBack) {
-                (this.ctxBack as ZRCanvasRenderingContext).dpr = dpr;
-            }
-            return true;
-        }
-        return false;
-    }
-
     resize(width: number, height: number, dpr?: number) {
-        this.updateDpr(dpr);
+
+        if (dpr != null) {
+            this.dpr = dpr;
+        }
+
         dpr = this.dpr;
 
         const dom = this.dom;
@@ -430,12 +418,10 @@ export default class Layer extends Eventful {
             domStyle.height = height + 'px';
         }
 
-        dom.width = width * dpr;
-        dom.height = height * dpr;
+        updateDomByDPR(dom, width, height, dpr);
 
         if (domBack) {
-            domBack.width = width * dpr;
-            domBack.height = height * dpr;
+            updateDomByDPR(domBack, width, height, dpr);
 
             if (dpr !== 1) {
                 this.ctxBack.scale(dpr, dpr);
