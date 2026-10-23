@@ -153,11 +153,20 @@ function truncateSingleLine(
             break;
         }
 
-        const subLength = j === 0
+        let subLength = j === 0
             ? estimateLength(textLine, contentWidth, fontMeasureInfo)
             : lineWidth > 0
             ? Math.floor(textLine.length * contentWidth / lineWidth)
             : 0;
+
+        // `subLength` counts UTF-16 code units, so it can land between the two
+        // halves of a surrogate pair. Cutting there leaves an orphaned lead
+        // surrogate, which renders as a replacement character.
+        if (subLength > 0 && subLength < textLine.length
+            && isLeadSurrogate(textLine.charCodeAt(subLength - 1))
+        ) {
+            subLength--;
+        }
 
         textLine = textLine.substr(0, subLength);
         lineWidth = measureWidth(fontMeasureInfo, textLine);
@@ -169,6 +178,14 @@ function truncateSingleLine(
 
     out.textLine = textLine;
     out.isTruncated = true;
+}
+
+function isLeadSurrogate(charCode: number): boolean {
+    return charCode >= 0xD800 && charCode <= 0xDBFF;
+}
+
+function isTrailSurrogate(charCode: number): boolean {
+    return charCode >= 0xDC00 && charCode <= 0xDFFF;
 }
 
 function estimateLength(
@@ -720,7 +737,13 @@ function wrapText(
 
     for (let i = 0; i < text.length; i++) {
 
-        const ch = text.charAt(i);
+        // A surrogate pair is one character: taking it a code unit at a time
+        // would put a line break between its halves.
+        let ch = text.charAt(i);
+        if (isLeadSurrogate(text.charCodeAt(i)) && isTrailSurrogate(text.charCodeAt(i + 1))) {
+            ch = text.substr(i, 2);
+            i++;
+        }
         if (ch === '\n') {
             if (currentWord) {
                 line += currentWord;
