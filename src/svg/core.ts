@@ -53,7 +53,7 @@ function createElementOpen(name: string, attrs?: SVGVNodeAttrs) {
                 continue;
             }
             else if (val !== true && val != null) {
-                part += `="${val}"`;
+                part += `="${encodeHTML(val + '')}"`;
             }
             attrsStr.push(part);
         }
@@ -65,6 +65,9 @@ function createElementClose(name: string) {
     return `</${name}>`;
 }
 
+/**
+ * CAVEAT: @see ZR_SVG_INJECTION_RISK for security risks.
+ */
 export function vNodeToString(el: SVGVNode, opts?: {
     newline?: boolean
 }) {
@@ -80,6 +83,9 @@ export function vNodeToString(el: SVGVNode, opts?: {
     return convertElToString(el);
 }
 
+/**
+ * CAVEAT: @see ZR_SVG_INJECTION_RISK for security risks.
+ */
 export function getCssString(
     selectorNodes: Record<string, CSSSelectorVNode>,
     animationNodes: Record<string, CSSAnimationVNode>,

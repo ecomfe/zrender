@@ -123,6 +123,15 @@ class SVGPainter implements PainterBase {
         return brush(el, createBrushScope(this._id));
     }
 
+    /**
+     * @tutorial [ZR_SVG_INJECTION_RISK]:
+     *  CAVEAT: zrender does not escape or sanitize tag name, attribute key and style text.
+     *  For security reasons, they must come from trusted source. User customization should
+     *  generally not be supported.
+     *  Attribute values can come from user input, since it will be processed by `encodeHTML`.
+     *  @see vNodeToString
+     *  @see getCssString
+     */
     renderToVNode(opts?: {
         animation?: boolean,
         willUpdate?: boolean,
@@ -206,7 +215,7 @@ class SVGPainter implements PainterBase {
         return this._mainVNode && this._mainVNode.elm as SVGElement;
     }
 
-    _paintList(list: Displayable[], scope: BrushScope, out?: SVGVNode[]) {
+    private _paintList(list: Displayable[], scope: BrushScope, out?: SVGVNode[]) {
         const listLen = list.length;
 
         const clipPathsGroupsStack: SVGVNode[] = [];

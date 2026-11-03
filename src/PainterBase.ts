@@ -1,6 +1,6 @@
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
-import { Dictionary, NullUndefined } from './core/types';
+import { DevicePixelRatioOpts, Dictionary, DOMSizeOpts, NullUndefined } from './core/types';
 import { CanvasPainterRefreshOpt } from './canvas/Painter';
 
 // interface PainterOption {
@@ -20,7 +20,11 @@ export interface PainterBase {
 
     // constructor(dom: HTMLElement, storage: Storage, opts: PainterOption, id: number): void
 
-    resize(width?: number | string, height?: number | string, devicePixelRatio?: number): void
+    resize(
+        width?: DOMSizeOpts['width'],
+        height?: DOMSizeOpts['height'],
+        devicePixelRatio?: DevicePixelRatioOpts['devicePixelRatio']
+    ): void
     refresh(opt?: CanvasPainterRefreshOpt | NullUndefined): void
     clear(): void
 

@@ -11,6 +11,7 @@ import * as vec2 from './vector';
 import BoundingRect from './BoundingRect';
 import { fromLine, fromCubic, fromQuadratic, fromArc } from './bbox';
 import { cubicLength, cubicSubdivide, quadraticLength, quadraticSubdivide } from './curve';
+import { NullUndefined } from './types';
 
 const CMD = {
     M: 1,
@@ -32,10 +33,6 @@ const CMD = {
 //     R: 5,
 //     Z: 1
 // };
-
-interface ExtendedCanvasRenderingContext2D extends CanvasRenderingContext2D {
-    dpr?: number
-}
 
 const tmpOutX: number[] = [];
 const tmpOutY: number[] = [];
@@ -103,8 +100,6 @@ export function normalizeArcAngles(angles: number[], anticlockwise: boolean): vo
 
 export default class PathProxy {
 
-    dpr = 1
-
     data: number[] | Float32Array
 
     /**
@@ -128,7 +123,7 @@ export default class PathProxy {
     // Only update the pending pt when distance is larger.
     private _pendingPtDist: number;
 
-    private _ctx: ExtendedCanvasRenderingContext2D
+    private _ctx: CanvasRenderingContext2D
 
     private _xi = 0
     private _yi = 0
@@ -169,28 +164,20 @@ export default class PathProxy {
         return this._version;
     }
 
-    /**
-     * @readOnly
-     */
-    setScale(sx: number, sy: number, segmentIgnoreThreshold?: number) {
-        // Compat. Previously there is no segmentIgnoreThreshold.
+    setScale(sx: number, sy: number, segmentIgnoreThreshold: number | NullUndefined, dpr: number) {
         segmentIgnoreThreshold = segmentIgnoreThreshold || 0;
+        dpr = dpr || 1;
         if (segmentIgnoreThreshold > 0) {
-            const dpr = this.dpr || 1;
             this._ux = mathAbs(segmentIgnoreThreshold / dpr / sx) || 0;
             this._uy = mathAbs(segmentIgnoreThreshold / dpr / sy) || 0;
         }
     }
 
-    setDPR(dpr: number) {
-        this.dpr = dpr;
-    }
-
-    setContext(ctx: ExtendedCanvasRenderingContext2D) {
+    setContext(ctx: CanvasRenderingContext2D) {
         this._ctx = ctx;
     }
 
-    getContext(): ExtendedCanvasRenderingContext2D {
+    getContext(): CanvasRenderingContext2D {
         return this._ctx;
     }
 

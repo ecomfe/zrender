@@ -2,6 +2,7 @@
 
 import Path from './Path';
 import PathProxy from '../core/PathProxy';
+import { BeforeBrushParam } from './Displayable';
 
 export interface CompoundPathShape {
     paths: Path[]
@@ -25,7 +26,7 @@ export default class CompoundPath extends Path {
         }
     }
 
-    beforeBrush() {
+    beforeBrush(param: BeforeBrushParam) {
         this._updatePathDirty();
         const paths = this.shape.paths || [];
         const scale = this.getGlobalScale();
@@ -34,7 +35,7 @@ export default class CompoundPath extends Path {
             if (!paths[i].path) {
                 paths[i].createPathProxy();
             }
-            paths[i].path.setScale(scale[0], scale[1], paths[i].segmentIgnoreThreshold);
+            paths[i].path.setScale(scale[0], scale[1], paths[i].segmentIgnoreThreshold, param && param.dpr);
         }
     }
 

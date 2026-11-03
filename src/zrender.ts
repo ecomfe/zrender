@@ -16,7 +16,9 @@ import {PainterBase} from './PainterBase';
 import Animation, {getTime} from './animation/Animation';
 import HandlerProxy from './dom/HandlerProxy';
 import Element, { ElementEventCallback } from './Element';
-import { Dictionary, ElementEventName, RenderedEvent, WithThisType } from './core/types';
+import {
+    DevicePixelRatioOpts, Dictionary, DirtyRectOpts, DOMSizeOpts, ElementEventName, RenderedEvent, WithThisType
+} from './core/types';
 import { LayerConfig } from './canvas/Layer';
 import { GradientObject } from './graphic/Gradient';
 import { PatternObject } from './graphic/Pattern';
@@ -355,13 +357,11 @@ class ZRender {
 
     /**
      * Resize the canvas.
-     * Should be invoked when container size is changed
+     * It should be invoked when DOM container size or DPR are changed.
+     * Omitting certain or all parameters allows zrender to automatically adapt
+     * to the current values of DOM container size or DPR.
      */
-    resize(opts?: {
-        width?: number| string
-        height?: number | string
-        devicePixelRatio?: number
-    }) {
+    resize(opts?: DOMSizeOpts & DevicePixelRatioOpts) {
         if (this._disposed) {
             return;
         }
@@ -509,12 +509,8 @@ class ZRender {
 }
 
 
-export interface ZRenderInitOpt {
+export interface ZRenderInitOpt extends DOMSizeOpts, DevicePixelRatioOpts, DirtyRectOpts {
     renderer?: string   // 'canvas' or 'svg
-    devicePixelRatio?: number
-    width?: number | string // 10, 10px, 'auto'
-    height?: number | string
-    useDirtyRect?: boolean
     useCoarsePointer?: 'auto' | boolean
     pointerSize?: number
     ssr?: boolean   // If enable ssr mode.
@@ -572,6 +568,10 @@ export function getElementSSRData(el: Element): ElementSSRData {
     }
 }
 
+/**
+ * CAVEAT: `SSRDataGetter` must come from trusted source, otherwise security risk may arise.
+ * zrender does not sanitize it.
+ */
 export function registerSSRDataGetter<T>(getter: ElementSSRDataGetter<T>) {
     ssrDataGetter = getter;
 }

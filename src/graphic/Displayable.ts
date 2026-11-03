@@ -88,6 +88,8 @@ export interface BeforeBrushParam {
     // [EXPERIMENTAL]
     // true means the layer is not cleared before this run of brush().
     contentRetained?: boolean
+    // Mandatory
+    dpr: number
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
