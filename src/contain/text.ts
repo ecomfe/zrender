@@ -89,7 +89,7 @@ export function measureCharWidth(fontMeasureInfo: FontMeasureInfo, charCode: num
     return (0 <= charCode && charCode <= 127)
         ? (fontMeasureInfo.asciiWidthMap != null
             ? fontMeasureInfo.asciiWidthMap[charCode]
-            : fontMeasureInfo.asciiCharWidth
+            : measureWidth(fontMeasureInfo, String.fromCharCode(charCode))
         )
         : fontMeasureInfo.stWideCharWidth;
 }
