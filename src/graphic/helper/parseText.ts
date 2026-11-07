@@ -822,7 +822,7 @@ function wrapText(
     if (currentWord) {
         line += currentWord;
     }
-    if (line) {
+    if (line || text.charAt(text.length - 1) === '\n') {
         lines.push(line);
         linesWidths.push(accumWidth);
     }
