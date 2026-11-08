@@ -50,6 +50,7 @@ export default class Animation extends Eventful {
     private _tail: Clip
 
     private _running = false
+    private _loopId = 0
 
     private _time = 0
     private _pausedTime = 0
@@ -167,11 +168,13 @@ export default class Animation extends Eventful {
 
     _startLoop() {
         const self = this;
+        // A pending callback from an earlier loop must not restart after stop/start.
+        const loopId = ++this._loopId;
 
         this._running = true;
 
         function step() {
-            if (self._running) {
+            if (self._running && loopId === self._loopId) {
                 requestAnimationFrame(step);
                 !self._paused && self.update();
             }
