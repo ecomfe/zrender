@@ -243,6 +243,8 @@ class Handler extends Eventful {
             this.dispatchToElement(this._hovered, 'mouseout', event);
         }
 
+        this._hovered = new HoveredResult(0, 0);
+
         if (eventControl !== 'no_globalout') {
             // FIXME: if the pointer moving from the extra doms to realy "outside",
             // the `globalout` should have been triggered. But currently not.
