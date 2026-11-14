@@ -182,6 +182,13 @@ export function parse(colorStr: string, rgbaArr?: number[]): number[] {
         return rgbaArr;
     }
 
+    // check for the <color> syntax,
+    // https://drafts.csswg.org/css-color/#color-syntax
+    if (/\(\S*\s\S*\s\S*/.test(colorStr)) {
+        colorStr = colorStr.replace(/\s\/\s/, ' ');
+        str = colorStr.replace(/ /g, ',');
+    }
+
     // supports the forms #rgb, #rrggbb, #rgba, #rrggbbaa
     // #rrggbbaa(use the last pair of digits as alpha)
     // see https://drafts.csswg.org/css-color/#hex-notation
