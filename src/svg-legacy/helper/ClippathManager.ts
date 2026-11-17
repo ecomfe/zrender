@@ -117,7 +117,7 @@ export default class ClippathManager extends Definable {
 
             const pathEl = this.getSvgElement(clipPath);
 
-            clipPathEl.innerHTML = '';
+            clipPathEl.textContent = '';
             clipPathEl.appendChild(pathEl);
 
             parentEl.setAttribute('clip-path', getIdURL(id));

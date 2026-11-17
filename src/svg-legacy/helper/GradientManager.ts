@@ -173,7 +173,7 @@ export default class GradientManager extends Definable {
         );
 
         // Remove color stops if exists
-        dom.innerHTML = '';
+        dom.textContent = '';
 
         // Add color stops
         const colors = gradient.colorStops;

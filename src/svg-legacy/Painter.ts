@@ -377,7 +377,7 @@ class SVGPainter implements PainterBase {
     }
 
     dispose() {
-        this.root.innerHTML = '';
+        this.root.textContent = '';
 
         this._svgRoot =
             this._backgroundRoot =

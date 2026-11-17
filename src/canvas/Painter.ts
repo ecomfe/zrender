@@ -279,7 +279,7 @@ export default class CanvasPainter implements PainterBase {
 
         if (rootStyle) {
             util.disableUserSelect(root);
-            root.innerHTML = '';
+            root.textContent = '';
         }
 
         this.storage = storage;
@@ -1288,7 +1288,7 @@ export default class CanvasPainter implements PainterBase {
     }
 
     dispose() {
-        this.root.innerHTML = '';
+        this.root.textContent = '';
 
         this.root =
         this.storage =
