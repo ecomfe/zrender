@@ -63,7 +63,8 @@ const kCSSColorTable = {
     'peachpuff': [255, 218, 185, 1], 'peru': [205, 133, 63, 1],
     'pink': [255, 192, 203, 1], 'plum': [221, 160, 221, 1],
     'powderblue': [176, 224, 230, 1], 'purple': [128, 0, 128, 1],
-    'red': [255, 0, 0, 1], 'rosybrown': [188, 143, 143, 1],
+    'rebeccapurple': [102, 51, 153, 1], 'red': [255, 0, 0, 1],
+    'rosybrown': [188, 143, 143, 1],
     'royalblue': [65, 105, 225, 1], 'saddlebrown': [139, 69, 19, 1],
     'salmon': [250, 128, 114, 1], 'sandybrown': [244, 164, 96, 1],
     'seagreen': [46, 139, 87, 1], 'seashell': [255, 245, 238, 1],
@@ -98,6 +99,9 @@ export function parseCssInt(val: string | number): number {  // int or percentag
     if (str.length && str.charAt(str.length - 1) === '%') {
         return clampCssByte(parseFloat(str) / 100 * 255);
     }
+    if (typeof val === 'string' && /^[+-]?(?:\d*\.)?\d+e[+-]?\d+$/i.test(val.trim())) {
+        return clampCssByte(parseFloat(str));
+    }
     return clampCssByte(parseInt(str, 10));
 }
 
@@ -107,6 +111,26 @@ export function parseCssFloat(val: string | number): number {  // float or perce
         return clampCssFloat(parseFloat(str) / 100);
     }
     return clampCssFloat(parseFloat(str));
+}
+
+function normalizeCssHue(val: string | number): number {
+    const str = String(val).trim();
+    const angle = /^[+-]?(?:\d*\.)?\d+(?:e[+-]?\d+)?(turn|rad|grad)$/i.exec(str);
+    let fullTurn = 360;
+    if (angle) {
+        switch (angle[1].toLowerCase()) {
+            case 'turn':
+                fullTurn = 1;
+                break;
+            case 'rad':
+                fullTurn = Math.PI * 2;
+                break;
+            case 'grad':
+                fullTurn = 400;
+                break;
+        }
+    }
+    return (((parseFloat(str) % fullTurn) + fullTurn) % fullTurn) / fullTurn;
 }
 
 function cssHueToRgb(m1: number, m2: number, h: number): number {
@@ -238,6 +262,9 @@ export function parse(colorStr: string, rgbaArr?: number[]): number[] {
                 alpha = parseCssFloat(params.pop()); // jshint ignore:line
             // Fall through.
             case 'rgb':
+                if (params.length === 4 && (params[3] as string).trim() === '') {
+                    return;
+                }
                 if (params.length >= 3) {
                     setRgba(rgbaArr,
                         parseCssInt(params[0]),
@@ -279,7 +306,7 @@ export function parse(colorStr: string, rgbaArr?: number[]): number[] {
 }
 
 function hsla2rgba(hsla: (number | string) [], rgba?: number[]): number[] {
-    const h = (((parseFloat(hsla[0] as string) % 360) + 360) % 360) / 360;  // 0 .. 1
+    const h = normalizeCssHue(hsla[0]);  // 0 .. 1
     // NOTE(deanm): According to the CSS spec s/l should only be
     // percentages, but we don't bother and let float or percentage.
     const s = parseCssFloat(hsla[1]);
