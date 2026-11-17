@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
         "target": "ES3",
+        "isolatedModules": true,
         "noImplicitAny": true,
         "strictBindCallApply": true,
         "removeComments": true,
