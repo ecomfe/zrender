@@ -91,7 +91,7 @@ const commandReg = /([mlvhzcqtsa])([^mlvhzcqtsa]*)/ig;
 // (2) value can be like:
 // '2e-4', 'l.5.9' (ignore 0), 'M-10-10', 'l-2.43e-1,34.9983',
 // 'l-.5E1,54', '121-23-44-11' (no delimiter)
-const numberReg = /-?([0-9]*\.)?[0-9]+([eE]-?[0-9]+)?/g;
+const numberReg = /-?([0-9]*\.)?[0-9]+([eE][-+]?[0-9]+)?/g;
 // const valueSplitReg = /[\s,]+/;
 
 function createPathProxyFromString(data: string) {
@@ -354,6 +354,9 @@ function createPathProxyFromString(data: string) {
                     );
                     break;
             }
+            // A command letter can be followed by several groups of numbers (`S 1 2 3 4 5 6 7 8`).
+            // Each group is a command of its own, so the next group's S or T reflects this one.
+            prevCmd = cmd;
         }
 
         if (cmdStr === 'z' || cmdStr === 'Z') {
