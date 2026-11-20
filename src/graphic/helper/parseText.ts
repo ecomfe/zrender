@@ -12,6 +12,7 @@ import {
     adjustTextX,
     adjustTextY,
     ensureFontMeasureInfo, FontMeasureInfo, getLineHeight, measureCharWidth, measureWidth, parsePercent,
+    charLength, codePointAt, prevCharIndex,
 } from '../../contain/text';
 import BoundingRect, { BoundingRectIntersectOpt } from '../../core/BoundingRect';
 
@@ -243,9 +244,13 @@ export function parsePlainText(
     }
 
     let lines: string[];
+    // Measured while wrapping.
+    let linesWidths: number[];
 
-    if (width != null && (overflow === 'break' || overflow === 'breakAll')) {
-        lines = text ? wrapText(text, style.font, width, overflow === 'breakAll', 0).lines : [];
+    if (text !== '' && width != null && (overflow === 'break' || overflow === 'breakAll')) {
+        const wrapped = wrapText(text, style.font, width, overflow === 'breakAll', 0);
+        lines = wrapped.lines;
+        linesWidths = wrapped.linesWidths;
     }
     else {
         lines = text ? text.split('\n') : [];
@@ -293,7 +298,10 @@ export function parsePlainText(
     let contentWidth = 0;
     const fontMeasureInfo = ensureFontMeasureInfo(font);
     for (let i = 0; i < lines.length; i++) {
-        contentWidth = Math.max(measureWidth(fontMeasureInfo, lines[i]), contentWidth);
+        contentWidth = Math.max(
+            linesWidths != null ? linesWidths[i] : measureWidth(fontMeasureInfo, lines[i]),
+            contentWidth
+        );
     }
     if (width == null) {
         // When width is not explicitly set, use contentWidth as width.
@@ -670,13 +678,12 @@ function pushTokens(
 }
 
 
-function isAlphabeticLetter(ch: string) {
+function isAlphabeticLetter(code: number) {
     // Unicode Character Ranges
     // https://jrgraphix.net/research/unicode_blocks.php
     // The following ranges may not cover all letter ranges but only the more
     // popular ones. Developers could make pull requests when they find those
     // not covered.
-    let code = ch.charCodeAt(0);
     return code >= 0x20 && code <= 0x24F // Latin
         || code >= 0x370 && code <= 0x10FF // Greek, Coptic, Cyrilic, and etc.
         || code >= 0x1200 && code <= 0x13FF // Ethiopic and Cherokee
@@ -684,15 +691,15 @@ function isAlphabeticLetter(ch: string) {
 }
 
 const breakCharMap = reduce(',&?/;] '.split(''), function (obj, ch) {
-    obj[ch] = true;
+    obj[ch.charCodeAt(0)] = true;
     return obj;
 }, {} as Dictionary<boolean>);
 /**
  * If break by word. For latin languages.
  */
-function isWordBreakChar(ch: string) {
-    if (isAlphabeticLetter(ch)) {
-        if (breakCharMap[ch]) {
+function isWordBreakChar(code: number) {
+    if (isAlphabeticLetter(code)) {
+        if (breakCharMap[code]) {
             return true;
         }
         return false;
@@ -701,9 +708,22 @@ function isWordBreakChar(ch: string) {
 }
 
 /**
+ * If the line can break before `index`, i.e., not inside a word.
+ */
+function canBreakBefore(text: string, index: number, isBreakAll: boolean) {
+    return isBreakAll
+        || isWordBreakChar(codePointAt(text, index))
+        || isWordBreakChar(codePointAt(text, prevCharIndex(text, index)));
+}
+
+/**
  * NOTE: The current strategy is that if no enough space, all the text is
  * still displayed, regardless of overflow.
  * A clip path can be used to completely avoid overflow.
+ *
+ * Lines are split at '\n' like `text.split('\n')`, so the last line can be empty.
+ * @param lastAccumWidth The width taken on the first line by the previous tokens.
+ *  If nothing fits after it, the first line is empty.
  */
 function wrapText(
     text: string,
@@ -712,134 +732,134 @@ function wrapText(
     isBreakAll: boolean,
     lastAccumWidth: number
 ) {
-    let lines: string[] = [];
-    let linesWidths: number[] = [];
-    let line = '';
-    let currentWord = '';
-    let currentWordWidth = 0;
-    let accumWidth = 0;
+    const lines: string[] = [];
+    const linesWidths: number[] = [];
     const fontMeasureInfo = ensureFontMeasureInfo(font);
+    let lineStart = 0;
 
-    for (let i = 0; i < text.length; i++) {
-
-        const ch = text.charAt(i);
-        if (ch === '\n') {
-            if (currentWord) {
-                line += currentWord;
-                accumWidth += currentWordWidth;
+    while (true) {
+        // Only the first line comes after the previous tokens.
+        const usedWidth = lines.length > 0 ? 0 : lastAccumWidth;
+        const availableWidth = lineWidth - usedWidth;
+        let end = findLineEnd(text, lineStart, lineWidth, usedWidth, isBreakAll, fontMeasureInfo);
+        let line = text.substring(lineStart, end);
+        let width = measureWidth(fontMeasureInfo, line);
+        // A char alone can be narrower than in the line, e.g., in another fallback font.
+        while (width > availableWidth && end > lineStart) {
+            const newEnd = findPrevLineEnd(text, lineStart, end, usedWidth > 0, isBreakAll);
+            if (newEnd === end) {
+                // A char that is too wide for a line.
+                break;
             }
-            lines.push(line);
-            linesWidths.push(accumWidth);
-            // Reset
-            line = '';
-            currentWord = '';
-            currentWordWidth = 0;
-            accumWidth = 0;
-            continue;
+            end = newEnd;
+            line = text.substring(lineStart, end);
+            width = measureWidth(fontMeasureInfo, line);
         }
-
-        const chWidth = measureCharWidth(fontMeasureInfo, ch.charCodeAt(0));
-        const inWord = isBreakAll ? false : !isWordBreakChar(ch);
-
-        if (!lines.length
-            ? lastAccumWidth + accumWidth + chWidth > lineWidth
-            : accumWidth + chWidth > lineWidth
-        ) {
-            if (!accumWidth) {  // If nothing appended yet.
-                if (inWord) {
-                    // The word length is still too long for one line
-                    // Force break the word
-                    lines.push(currentWord);
-                    linesWidths.push(currentWordWidth);
-
-                    currentWord = ch;
-                    currentWordWidth = chWidth;
-                }
-                else {
-                    // lineWidth is too small for ch
-                    lines.push(ch);
-                    linesWidths.push(chWidth);
-                }
-            }
-            else if (line || currentWord) {
-                if (inWord) {
-                    if (!line) {
-                        // The one word is still too long for one line
-                        // Force break the word
-                        // TODO Keep the word?
-                        line = currentWord;
-                        currentWord = '';
-                        currentWordWidth = 0;
-                        accumWidth = currentWordWidth;
-                    }
-
-                    lines.push(line);
-                    linesWidths.push(accumWidth - currentWordWidth);
-
-                    // Break the whole word
-                    currentWord += ch;
-                    currentWordWidth += chWidth;
-                    line = '';
-                    accumWidth = currentWordWidth;
-                }
-                else {
-                    // Append lastWord if have
-                    if (currentWord) {
-                        line += currentWord;
-                        currentWord = '';
-                        currentWordWidth = 0;
-                    }
-                    lines.push(line);
-                    linesWidths.push(accumWidth);
-
-                    line = ch;
-                    accumWidth = chWidth;
-                }
-            }
-
-            continue;
-        }
-
-        accumWidth += chWidth;
-
-        if (inWord) {
-            currentWord += ch;
-            currentWordWidth += chWidth;
-        }
-        else {
-            // Append whole word
-            if (currentWord) {
-                line += currentWord;
-                // Reset
-                currentWord = '';
-                currentWordWidth = 0;
-            }
-
-            // Append character
-            line += ch;
-        }
-    }
-
-    // Append last line.
-    if (currentWord) {
-        line += currentWord;
-    }
-    if (line) {
         lines.push(line);
-        linesWidths.push(accumWidth);
+        linesWidths.push(width);
+
+        if (end >= text.length) {
+            break;
+        }
+        lineStart = text.charAt(end) === '\n' ? end + 1 : end;
     }
 
-    if (lines.length === 1) {
-        // No new line.
-        accumWidth += lastAccumWidth;
-    }
-
+    const lastLineWidth = linesWidths[linesWidths.length - 1];
     return {
         // Accum width of last line
-        accumWidth,
+        accumWidth: lines.length === 1 ? lastLineWidth + lastAccumWidth : lastLineWidth,
         lines: lines,
         linesWidths
     };
+}
+
+/**
+ * Where the line from `lineStart` ends, by the sum of the char widths.
+ */
+function findLineEnd(
+    text: string,
+    lineStart: number,
+    lineWidth: number,
+    usedWidth: number,
+    isBreakAll: boolean,
+    fontMeasureInfo: FontMeasureInfo
+) {
+    const availableWidth = lineWidth - usedWidth;
+    const len = text.length;
+    let width = 0;
+    let breakIndex = lineStart;
+    let isPrevWordChar = false;
+    let i = lineStart;
+    while (i < len) {
+        const code = codePointAt(text, i);
+        if (code === NEWLINE_CODE) {
+            return i;
+        }
+        const size = charLength(code);
+        const isWordChar = !isBreakAll && !isWordBreakChar(code);
+        if (i > lineStart && !(isWordChar && isPrevWordChar)) {
+            breakIndex = i;
+        }
+        const charWidth = measureCharWidth(fontMeasureInfo, code);
+        if (width + charWidth > availableWidth) {
+            if (breakIndex > lineStart) {
+                // Before this char, or before its word.
+                return breakIndex;
+            }
+            // Only one word so far, or nothing.
+            if (usedWidth > 0 && (i === lineStart || measureWordWidth(text, i, width, fontMeasureInfo) <= lineWidth)) {
+                // Start from a new line.
+                return lineStart;
+            }
+            // Force break the word, or put a too wide char alone.
+            return i > lineStart ? i : i + size;
+        }
+        width += charWidth;
+        isPrevWordChar = isWordChar;
+        i += size;
+    }
+    return len;
+}
+const NEWLINE_CODE = '\n'.charCodeAt(0);
+
+/**
+ * `width` plus the width of the rest of the word at `index`.
+ */
+function measureWordWidth(text: string, index: number, width: number, fontMeasureInfo: FontMeasureInfo) {
+    const len = text.length;
+    while (index < len) {
+        const code = codePointAt(text, index);
+        if (isWordBreakChar(code)) {
+            break;
+        }
+        width += measureCharWidth(fontMeasureInfo, code);
+        index += charLength(code);
+    }
+    return width;
+}
+
+/**
+ * The previous place to break the line [lineStart, end).
+ */
+function findPrevLineEnd(
+    text: string,
+    lineStart: number,
+    end: number,
+    isContinued: boolean,
+    isBreakAll: boolean
+) {
+    for (let i = prevCharIndex(text, end); i > lineStart; i = prevCharIndex(text, i)) {
+        if (canBreakBefore(text, i, isBreakAll)) {
+            return i;
+        }
+    }
+    if (isContinued) {
+        // Start from a new line.
+        return lineStart;
+    }
+    // Force break the word, but keep a too wide char.
+    const lastChar = prevCharIndex(text, end);
+    return lastChar > lineStart ? lastChar : end;
 }
 
 /**

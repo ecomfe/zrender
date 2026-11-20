@@ -145,6 +145,51 @@ function charFromCode(charCode: number) {
     );
 }
 
+const HIGH_SURROGATE_END = 0xDBFF;
+const LOW_SURROGATE_END = 0xDFFF;
+
+/**
+ * The code point at `index`. A surrogate pair is one char.
+ */
+export function codePointAt(text: string, index: number) {
+    const code = text.charCodeAt(index);
+    if (!isHighSurrogate(code)) {
+        return code;
+    }
+    const low = text.charCodeAt(index + 1);
+    return isLowSurrogate(low)
+        ? ((code - HIGH_SURROGATE_START) << SURROGATE_BITS) + (low - LOW_SURROGATE_START) + MAX_BMP_CODE + 1
+        : code;
+}
+
+/**
+ * The number of UTF-16 code units of a code point.
+ */
+export function charLength(codePoint: number) {
+    return codePoint > MAX_BMP_CODE ? 2 : 1;
+}
+
+/**
+ * Move `index` back if it is in the middle of a surrogate pair.
+ */
+export function toCharBoundary(text: string, index: number) {
+    return isLowSurrogate(text.charCodeAt(index)) && isHighSurrogate(text.charCodeAt(index - 1))
+        ? index - 1
+        : index;
+}
+
+export function prevCharIndex(text: string, index: number) {
+    return toCharBoundary(text, index - 1);
+}
+
+function isHighSurrogate(code: number) {
+    return code >= HIGH_SURROGATE_START && code <= HIGH_SURROGATE_END;
+}
+
+function isLowSurrogate(code: number) {
+    return code >= LOW_SURROGATE_START && code <= LOW_SURROGATE_END;
+}
+
 export function measureWidth(fontMeasureInfo: FontMeasureInfo, text: string): number {
     const strWidthCache = fontMeasureInfo.strWidthCache;
     let width = strWidthCache.get(text);

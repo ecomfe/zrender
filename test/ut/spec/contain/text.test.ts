@@ -188,6 +188,145 @@ describe('text measurement', function () {
             expect(truncateText('xyzxyzxyz', 32, '10px cw-in-use-truncate', '...', { minChar: 2 })).toBe('xyz...');
             expect(truncateCalls).toContain('a');
         });
+
+        it('should measure a surrogate pair as one char, and never split it', function () {
+            const calls = stubMeasureText(ch => (ch.length === 2 ? 12 : 5));
+            const emoji = '\uD83D\uDE00';
+            const text = emoji + emoji + emoji;
+            const overflows: TextStyleProps['overflow'][] = ['break', 'breakAll'];
+            for (let i = 0; i < overflows.length; i++) {
+                expect(parsePlainText(
+                    text, { font: '10px cw-pair', width: 25, overflow: overflows[i] }, null, null
+                ).lines).toEqual([emoji + emoji, emoji]);
+            }
+            expect(calls).toContain(emoji);
+            expect(calls).not.toContain('\uD83D');
+            expect(calls).not.toContain('\uDE00');
+        });
+    });
+
+    describe('wrapping', function () {
+
+        it('should check each line as a whole', function () {
+            // Each char is 10px alone, but 10.25px in a text.
+            stubMeasureText(() => 10, () => 10.25);
+            const overflows: TextStyleProps['overflow'][] = ['break', 'breakAll'];
+            for (let i = 0; i < overflows.length; i++) {
+                const style = { font: '10px wrap-whole-' + overflows[i], width: 30, overflow: overflows[i] };
+                // '中文中' would be 30.75px wide.
+                expect(parsePlainText('中文中文中文', style, null, null).lines).toEqual(['中文', '中文', '中文']);
+            }
+            // 'ab cd' would be 51.25px wide, so the word moves to the next line.
+            expect(parsePlainText(
+                'ab cd', { font: '10px wrap-whole-word', width: 50, overflow: 'break' }, null, null
+            ).lines).toEqual(['ab ', 'cd']);
+            const rich = parseRichText(
+                '{a|中文中文中文}',
+                { font: '10px wrap-whole-rich', width: 30, overflow: 'break', rich: { a: {} } },
+                null, null, 'left'
+            );
+            expect(richLines(rich)).toEqual([[['中文', 20.5]], [['中文', 20.5]], [['中文', 20.5]]]);
+        });
+
+        it('should give each wrapped token its width, after the previous tokens', function () {
+            const widths: Record<string, number> = { a: 5, ' ': 5, n: 10, u: 10, m: 15, x: 40, '甲': 14 };
+            stubMeasureText(ch => widths[ch]);
+            const rich = { a: {}, b: {}, c: {} };
+            const parse = (text: string, font: string) => richLines(parseRichText(
+                text, { font: font, width: 32, overflow: 'break', rich: rich }, null, null, 'left'
+            ));
+
+            // A char that is wider than a line takes a line alone, without an empty line before it.
+            expect(parsePlainText(
+                'a x', { font: '10px wrap-rich-1', width: 32, overflow: 'break' }, null, null
+            ).lines).toEqual(['a ', 'x']);
+            expect(parse('{a|a x}', '10px wrap-rich-1')).toEqual([[['a ', 10]], [['x', 40]]]);
+            // A token that does not fit starts a new line with its width.
+            expect(parse('{a|a }{b|nu}{c|m}', '10px wrap-rich-2'))
+                .toEqual([[['a ', 10], ['nu', 20]], [['m', 15]]]);
+            // A width is not counted twice before '\n'.
+            expect(parse('{a|a }{b|nu}{c|m\n}', '10px wrap-rich-3'))
+                .toEqual([[['a ', 10], ['nu', 20]], [['m', 15]], [['', 0]]]);
+            // A char that does not fit after the previous tokens starts a new line.
+            expect(parse('{a|aaaa}{b|甲}', '10px wrap-rich-4')).toEqual([[['aaaa', 20]], [['甲', 14]]]);
+
+            stubMeasureText(ch => (ch === 'a' ? 15 : 10));
+            // A word that does not fit after the previous tokens moves to the next line, as in plain text.
+            expect(parse('{a|a}{b|bb}', '10px wrap-rich-5')).toEqual([[['a', 15]], [['bb', 20]]]);
+        });
+
+        it('should move a word to the next line, and break a word that is wider than a line', function () {
+            stubMeasureText(() => 10);
+            const wrap = (text: string, font: string) => parsePlainText(
+                text, { font: font, width: 35, overflow: 'break' }, null, null
+            ).lines;
+            expect(wrap('ab cd', '10px word-latin')).toEqual(['ab ', 'cd']);
+            expect(wrap('ab éè', '10px word-accented')).toEqual(['ab ', 'éè']);
+            expect(wrap('ab жё', '10px word-cyrillic')).toEqual(['ab ', 'жё']);
+            // The word is still too wide after it is moved.
+            expect(wrap('a bcdefgh', '10px word-long')).toEqual(['a ', 'bcd', 'efg', 'h']);
+        });
+
+        it('should not add an empty line before a char that is wider than a line', function () {
+            stubMeasureText(() => 40);
+            expect(parsePlainText(
+                'xx', { font: '10px wide-latin', width: 32, overflow: 'break' }, null, null
+            ).lines).toEqual(['x', 'x']);
+            expect(parsePlainText(
+                '甲甲', { font: '10px wide-cjk', width: 32, overflow: 'break' }, null, null
+            ).lines).toEqual(['甲', '甲']);
+        });
+
+        it('should keep the lines of `text.split`, including the empty ones', function () {
+            stubMeasureText(() => 5);
+            const wrap = (text: string) => parsePlainText(
+                text, { font: '10px split-plain', width: 100, overflow: 'break' }, null, null
+            ).lines;
+            expect(wrap('ab\n\ncd')).toEqual(['ab', '', 'cd']);
+            expect(wrap('ab\n')).toEqual(['ab', '']);
+
+            const rich = { a: {}, b: {} };
+            const parse = (text: string, overflow?: TextStyleProps['overflow']) => richLines(parseRichText(
+                text, { font: '10px split-rich', width: 100, overflow: overflow, rich: rich }, null, null, 'left'
+            ));
+            // The next token starts on a new line.
+            expect(parse('{a|ab\n}{b|cd}', 'break')).toEqual([[['ab', 10]], [['cd', 10]]]);
+            // An empty token, e.g., for an image, is kept.
+            expect(parse('{a|ab}{b|}', 'break')).toEqual([[['ab', 10], ['', 0]]]);
+            // The same as without wrapping.
+            expect(parse('{a|ab\n}{b|cd}')).toEqual(parse('{a|ab\n}{b|cd}', 'break'));
+            expect(parse('{a|ab}{b|}')).toEqual(parse('{a|ab}{b|}', 'break'));
+        });
+
+        it('should work with fractional widths', function () {
+            stubMeasureText(ch => (ch === '甲' ? 13.533333333333333 : 6.766666666666667));
+            const font = '13.533333333333333px fractional';
+            expect(getLineHeight(font)).toBe(13.533333333333333);
+            expect(parsePlainText('甲甲甲abab', { font: font, width: 40.6, overflow: 'break' }, null, null).lines)
+                .toEqual(['甲甲甲', 'abab']);
+        });
+
+        it('should not split a surrogate pair, though a char of several code points can be split', function () {
+            // NOTICE: It is not text shaping. Each code point is measured alone.
+            stubMeasureText(ch => {
+                if (ch === '\u200D') {
+                    return 0;
+                }
+                return ch.length === 2 ? 12 : 5;
+            });
+            // Man, ZWJ, woman. It is drawn as one char if the font supports it.
+            const family = '\uD83D\uDC68\u200D\uD83D\uDC69';
+            const lines = parsePlainText(
+                family + family, { font: '10px cluster-zwj', width: 20, overflow: 'breakAll' }, null, null
+            ).lines;
+            expect(lines).toEqual(['\uD83D\uDC68\u200D', '\uD83D\uDC69', '\uD83D\uDC68\u200D', '\uD83D\uDC69']);
+
+            // A combining mark is a char of its own.
+            stubMeasureText(() => 5);
+            expect(parsePlainText(
+                'e\u0301e', { font: '10px cluster-mark', width: 7, overflow: 'break' }, null, null
+            ).lines).toEqual(['e', '\u0301', 'e']);
+        });
     });
 
     describe('truncation', function () {
@@ -279,6 +418,19 @@ describe('text measurement', function () {
             const rich = lineYs({ text: '{a|ab}\n{a|ab}', font: '10px layout', rich: { a: {} } });
             expect(rich.tspan[1] - rich.tspan[0]).toBe(10);
             expect(rich.svg[1] - rich.svg[0]).toBe(10);
+        });
+
+        it('should measure each char without a canvas, e.g., in SSR', function () {
+            // The estimate of `platformApi.measureText` without a canvas.
+            setPlatformAPI({ measureText: originalMeasureText, createCanvas: originalCreateCanvas });
+            const block = parsePlainText(
+                '甲乙甲乙 abc', { font: '10px layout-no-canvas', width: 25, overflow: 'break' }, null, null
+            );
+            expect(block.lines).toEqual(['甲乙', '甲乙 ', 'abc']);
+            expect(block.lineHeight).toBe(10);
+            const wrapped = lineYs({ text: '甲乙甲乙', font: '10px layout-no-canvas', width: 25, overflow: 'break' });
+            expect(wrapped.svg.length).toBe(2);
+            expect(wrapped.svg[1] - wrapped.svg[0]).toBe(10);
         });
     });
 });
