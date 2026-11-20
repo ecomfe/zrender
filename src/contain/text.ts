@@ -1,7 +1,7 @@
 import BoundingRect, { RectLike } from '../core/BoundingRect';
-import { TextAlign, TextVerticalAlign, BuiltinTextPosition } from '../core/types';
+import { Dictionary, TextAlign, TextVerticalAlign, BuiltinTextPosition } from '../core/types';
 import LRU from '../core/LRU';
-import { DEFAULT_FONT, platformApi } from '../core/platform';
+import { DEFAULT_FONT, DEFAULT_FONT_SIZE, platformApi, resolveFontSize } from '../core/platform';
 
 /**
  * @deprecated But keep for possible outside usage.
@@ -17,7 +17,7 @@ export interface FontMeasureInfo {
     // Key: char code, index: 0~127 (include 127)
     asciiWidthMap: number[] | null | undefined;
     asciiWidthMapTried: boolean;
-    // Default width char width used both in non-ascii and line height.
+    // 1em, i.e., the font size. Used both in non-ascii and line height.
     stWideCharWidth: number;
     // Default asc char width
     asciiCharWidth: number;
@@ -39,7 +39,7 @@ export function ensureFontMeasureInfo(font: string): FontMeasureInfo {
             // Other languages?
             // FIXME
             // Consider proportional font?
-            stWideCharWidth: platformApi.measureText('国', font).width,
+            stWideCharWidth: resolveEm(font),
             asciiCharWidth: platformApi.measureText('a', font).width,
         };
         _fontMeasureInfoCache.put(font, measureInfo);
@@ -47,6 +47,39 @@ export function ensureFontMeasureInfo(font: string): FontMeasureInfo {
     return measureInfo;
 }
 let _fontMeasureInfoCache: LRU<FontMeasureInfo>;
+
+// 1in is 96px in CSS.
+const PX_PER_INCH = 96;
+// The number of each CSS absolute length unit in 1in.
+const UNITS_PER_INCH: Dictionary<number> = {
+    pt: 72,
+    pc: 6,
+    'in': 1,
+    cm: 2.54,
+    mm: 25.4,
+    q: 101.6
+};
+// In a CSS font shorthand, the first number with a unit is the font size, unless it is the angle of `oblique`.
+const FONT_SIZE_REG = /(?:^|\s)(\d*\.?\d+(?:e[+-]?\d+)?)(?!deg|grad|rad|turn)([a-z]+|%)(?=[\s/]|$)/i;
+
+/**
+ * The font size in px, i.e., 1em. A relative size or a keyword is resolved by the platform.
+ */
+function resolveEm(font: string) {
+    const match = FONT_SIZE_REG.exec(font);
+    if (match !== null) {
+        const size = +match[1];
+        const unit = match[2].toLowerCase();
+        if (size === 0 || unit === 'px') {
+            return size;
+        }
+        if (UNITS_PER_INCH.hasOwnProperty(unit)) {
+            return size * PX_PER_INCH / UNITS_PER_INCH[unit];
+        }
+    }
+    const size = resolveFontSize(font);
+    return size != null ? size : DEFAULT_FONT_SIZE;
+}
 
 /**
  * For getting more precise result in truncate.

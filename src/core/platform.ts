@@ -108,6 +108,27 @@ export const platformApi: Platform = {
     }
 };
 
+const PX_SIZE_REG = /(\d*\.?\d+)px/;
+
+/**
+ * The font size in px that a canvas resolves a font to, e.g., 15 for `1.5em serif`.
+ * It is called once for a font, so no canvas is kept.
+ * @return `undefined` without a canvas, or if the canvas does not tell.
+ */
+export function resolveFontSize(font: string) {
+    const canvas = platformApi.createCanvas();
+    const ctx = canvas && canvas.getContext('2d');
+    if (!ctx) {
+        return undefined;
+    }
+    // The default font remains if the font is not accepted.
+    ctx.font = DEFAULT_FONT;
+    ctx.font = font;
+    // e.g., `1.5em serif` becomes `15px serif`.
+    const res = PX_SIZE_REG.exec(ctx.font);
+    return res !== null ? +res[1] : undefined;
+}
+
 export function setPlatformAPI(newPlatformApis: Partial<Platform>) {
     for (let key in platformApi) {
         // Don't assign unknown methods.
