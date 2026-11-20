@@ -1,6 +1,8 @@
 import { platformApi, setPlatformAPI } from '../../../../src/core/platform';
-import { getLineHeight } from '../../../../src/contain/text';
-import { parsePlainText } from '../../../../src/graphic/helper/parseText';
+import {
+    ensureFontMeasureInfo, getBoundingRect, getLineHeight, getWidth, measureCharWidth
+} from '../../../../src/contain/text';
+import { parsePlainText, parseRichText, truncateText } from '../../../../src/graphic/helper/parseText';
 import Text, { TextStyleProps } from '../../../../src/graphic/Text';
 import TSpan from '../../../../src/graphic/TSpan';
 import { init, registerPainter } from '../../../../src/zrender';
@@ -45,6 +47,20 @@ function stubMeasureText(charWidth: (ch: string) => number, runCharWidth?: (ch: 
         }
     });
     return calls;
+}
+
+/**
+ * `[text, width]` of each token, by line.
+ */
+function richLines(block: ReturnType<typeof parseRichText>) {
+    return block.lines.map(line => line.tokens.map(token => [token.text, token.width]));
+}
+
+/**
+ * `widths[ch]`, or `defaultWidth` for the other chars.
+ */
+function widthOf(widths: Record<string, number>, defaultWidth: number) {
+    return (ch: string) => (widths[ch] != null ? widths[ch] : defaultWidth);
 }
 
 describe('text measurement', function () {
@@ -107,6 +123,120 @@ describe('text measurement', function () {
             expect(getLineHeight('150% lh-no-canvas')).toBe(12);
             expect(getLineHeight('x-large lh-no-canvas')).toBe(12);
             expect(getLineHeight('caption')).toBe(12);
+        });
+    });
+
+    describe('char widths', function () {
+
+        it('should be measured for each char, whether it is wider or narrower than 1em', function () {
+            // 1em is 10px.
+            stubMeasureText(widthOf({ '甲': 14, '乙': 3 }, 5));
+            const overflows: TextStyleProps['overflow'][] = ['break', 'breakAll'];
+            for (let i = 0; i < overflows.length; i++) {
+                const style = { font: '10px cw-each-' + overflows[i], overflow: overflows[i] };
+                // '甲甲' is 28px wide, though it is 2em.
+                expect(parsePlainText('甲甲', { ...style, width: 22 }, null, null).lines)
+                    .toEqual(['甲', '甲']);
+                // '甲乙' is 17px wide, though it is 2em.
+                expect(parsePlainText('甲乙甲乙', { ...style, width: 17 }, null, null).lines)
+                    .toEqual(['甲乙', '甲乙']);
+            }
+            const rich = parseRichText(
+                '{a|甲乙甲乙}',
+                { font: '10px cw-each-rich', width: 17, overflow: 'break', rich: { a: {} } },
+                null, null, 'left'
+            );
+            expect(richLines(rich)).toEqual([[['甲乙', 17]], [['甲乙', 17]]]);
+        });
+
+        it('should be measured once for each char and font, also if it is 0', function () {
+            const calls = stubMeasureText(ch => (ch === '\u200B' ? 0 : 5));
+            const info = ensureFontMeasureInfo('10px cw-once');
+            for (let i = 0; i < 3; i++) {
+                expect(measureCharWidth(info, 0x61)).toBe(5);
+                expect(measureCharWidth(info, 0x7532)).toBe(5);
+                // Zero width space.
+                expect(measureCharWidth(info, 0x200B)).toBe(0);
+                // An emoji, which is a surrogate pair.
+                expect(measureCharWidth(info, 0x1F600)).toBe(5);
+            }
+            expect(calls).toEqual(['a', '甲', '\u200B', '\uD83D\uDE00']);
+
+            const wrapCalls = stubMeasureText(ch => (ch === '\u200B' ? 0 : 5));
+            const text = new Array(51).join('ab甲\u200B');
+            const style: TextStyleProps = { font: '10px cw-once-wrap', width: 1000, overflow: 'break' };
+            parsePlainText(text, style, null, null);
+            // Each char, then the line.
+            expect(wrapCalls).toEqual(['a', 'b', '甲', '\u200B', text]);
+            parsePlainText(text, style, null, null);
+            expect(wrapCalls.length).toBe(5);
+        });
+
+        it('should measure only the chars in use', function () {
+            const calls = stubMeasureText(() => 5);
+            const font = '10px cw-in-use';
+            ensureFontMeasureInfo(font);
+            getLineHeight(font);
+            expect(calls).toEqual([]);
+            parsePlainText('ba ba', { font: font, width: 100, overflow: 'break' }, null, null);
+            expect(calls).toEqual(['b', 'a', ' ', 'ba ba']);
+
+            // The width of 'a' is needed only for `truncateMinChar`.
+            const truncateCalls = stubMeasureText(() => 5);
+            truncateText('xyzxyzxyz', 32, '10px cw-in-use-truncate');
+            expect(truncateCalls).not.toContain('a');
+            expect(truncateText('xyzxyzxyz', 32, '10px cw-in-use-truncate', '...', { minChar: 2 })).toBe('xyz...');
+            expect(truncateCalls).toContain('a');
+        });
+    });
+
+    describe('truncation', function () {
+
+        it('should estimate with the width of each char', function () {
+            stubMeasureText(ch => (ch === '乙' ? 3 : 14));
+            // 20px are available. Six chars of 3px fit, though they are 6em.
+            expect(truncateText('乙乙乙乙乙乙乙乙', 21, '10px truncate-each', '')).toBe('乙乙乙乙乙乙');
+            expect(parsePlainText(
+                '乙乙乙乙乙乙乙乙', { font: '10px truncate-each', width: 21, overflow: 'truncate', ellipsis: '' }, null, null
+            ).lines).toEqual(['乙乙乙乙乙乙']);
+        });
+    });
+
+    describe('measured text', function () {
+
+        it('should not have 国 if the text does not', function () {
+            const calls = stubMeasureText(() => 5);
+            const text = 'ab cd 甲乙甲乙';
+            const richText = '{a|' + text + '}';
+            const rich = { a: {} };
+
+            getLineHeight('10px mt-line-height');
+            getWidth(text, '10px mt-width');
+            getBoundingRect(text, '10px mt-bounding-rect');
+            parsePlainText(text, { font: '10px mt-break', width: 20, overflow: 'break' }, null, null);
+            parsePlainText(text, { font: '10px mt-break-all', width: 20, overflow: 'breakAll' }, null, null);
+            parsePlainText(text, { font: '10px mt-truncate', width: 20, overflow: 'truncate' }, null, null);
+            parseRichText(
+                richText, { font: '10px mt-rich-break', width: 20, overflow: 'break', rich: rich }, null, null, 'left'
+            );
+            parseRichText(
+                richText, { font: '10px mt-rich-truncate', width: 20, overflow: 'truncate', rich: rich },
+                null, null, 'left'
+            );
+            truncateText(text, 20, '10px mt-truncate-text');
+            new Text({ style: { text: text + '\n' + text, font: '10px mt-text' } }).getBoundingRect();
+
+            expect(calls.length).toBeGreaterThan(0);
+            expect(calls.join('')).not.toContain(GUO);
+        });
+
+        it('should have 国 if the text does', function () {
+            const calls = stubMeasureText(ch => (ch === GUO ? 9 : 5));
+            expect(getWidth('国甲', '10px mt-guo')).toBe(14);
+            expect(calls).toContain('国甲');
+            expect(parsePlainText('国甲', { font: '10px mt-guo-wrap', width: 9, overflow: 'break' }, null, null).lines)
+                .toEqual(['国', '甲']);
+            expect(calls).toContain(GUO);
         });
     });
 

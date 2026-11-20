@@ -68,7 +68,7 @@ describe('line height with a canvas', function () {
         expect(getLineHeight('menu')).toBe(12);
         // A font that the canvas does not accept.
         expect(getLineHeight('1.5em/ lh-canvas')).toBe(12);
-        // '国' is not measured for it.
-        expect(measured).not.toContain('国');
+        // No text is measured for it.
+        expect(measured).toEqual([]);
     });
 });

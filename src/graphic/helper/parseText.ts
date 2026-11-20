@@ -98,14 +98,16 @@ function prepareTruncateOptions(
     preparedOpts.maxIterations = retrieve2(options.maxIterations, 2);
     const minChar = preparedOpts.minChar = retrieve2(options.minChar, 0);
     const fontMeasureInfo = preparedOpts.fontMeasureInfo = ensureFontMeasureInfo(font);
-    const ascCharWidth = fontMeasureInfo.asciiCharWidth;
     preparedOpts.placeholder = retrieve2(options.placeholder, '');
 
     // Example 1: minChar: 3, text: 'asdfzxcv', truncate result: 'asdf', but not: 'a...'.
     // Example 2: minChar: 3, text: '维度', truncate result: '维', but not: '...'.
     let contentWidth = containerWidth = Math.max(0, containerWidth - 1); // Reserve some gap.
-    for (let i = 0; i < minChar && contentWidth >= ascCharWidth; i++) {
-        contentWidth -= ascCharWidth;
+    if (minChar > 0) {
+        const ascCharWidth = measureCharWidth(fontMeasureInfo, 'a'.charCodeAt(0));
+        for (let i = 0; i < minChar && contentWidth >= ascCharWidth; i++) {
+            contentWidth -= ascCharWidth;
+        }
     }
 
     let ellipsisWidth = measureWidth(fontMeasureInfo, ellipsis);

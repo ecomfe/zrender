@@ -14,12 +14,18 @@ export function getWidth(text: string, font: string): number {
 export interface FontMeasureInfo {
     font: string;
     strWidthCache: LRU<number>;
-    // Key: char code, index: 0~127 (include 127)
+    // Key: char code, index: 0~127 (include 127). Filled when a char is first used.
     asciiWidthMap: number[] | null | undefined;
+    // Always `true`.
     asciiWidthMapTried: boolean;
-    // 1em, i.e., the font size. Used both in non-ascii and line height.
+    // Key: `charCode >> BMP_BLOCK_BITS`, then `charCode & BMP_BLOCK_MASK`, for chars up to U+FFFF.
+    // Faster than a dictionary.
+    bmpWidthMap: number[][];
+    // Key: code point, for chars above U+FFFF.
+    nonBMPWidthMap: Dictionary<number>;
+    // 1em, i.e., the font size. The default line height.
     stWideCharWidth: number;
-    // Default asc char width
+    // @deprecated Always `null`. Use `measureCharWidth(fontMeasureInfo, 'a'.charCodeAt(0))`.
     asciiCharWidth: number;
 }
 
@@ -33,14 +39,12 @@ export function ensureFontMeasureInfo(font: string): FontMeasureInfo {
         measureInfo = {
             font: font,
             strWidthCache: new LRU(500),
-            asciiWidthMap: null, // Init lazily for performance.
-            asciiWidthMapTried: false,
-            // FIXME
-            // Other languages?
-            // FIXME
-            // Consider proportional font?
+            asciiWidthMap: [],
+            asciiWidthMapTried: true,
+            bmpWidthMap: [],
+            nonBMPWidthMap: {},
             stWideCharWidth: resolveEm(font),
-            asciiCharWidth: platformApi.measureText('a', font).width,
+            asciiCharWidth: null
         };
         _fontMeasureInfoCache.put(font, measureInfo);
     }
@@ -81,50 +85,64 @@ function resolveEm(font: string) {
     return size != null ? size : DEFAULT_FONT_SIZE;
 }
 
-/**
- * For getting more precise result in truncate.
- * non-monospace font vary in char width.
- * But if it is time consuming in some platform, return null/undefined.
- * @return Key: char code, index: 0~127 (include 127)
- */
-function tryCreateASCIIWidthMap(font: string): FontMeasureInfo['asciiWidthMap'] {
-    // PENDING: is it necessary? Re-examine it if bad case reported.
-    if (_getASCIIWidthMapLongCount >= GET_ASCII_WIDTH_LONG_COUNT_MAX) {
-        return;
-    }
-    font = font || DEFAULT_FONT;
-    const asciiWidthMap = [];
-    const start = +(new Date());
-    // 0~31 and 127 may also have width, and may vary in some fonts.
-    for (let code = 0; code <= 127; code++) {
-        asciiWidthMap[code] = platformApi.measureText(String.fromCharCode(code), font).width;
-    }
-    const cost = +(new Date()) - start;
-    if (cost > 16) {
-        _getASCIIWidthMapLongCount = GET_ASCII_WIDTH_LONG_COUNT_MAX;
-    }
-    else if (cost > 2) {
-        _getASCIIWidthMapLongCount++;
-    }
-    return asciiWidthMap;
-}
-let _getASCIIWidthMapLongCount: number = 0;
-const GET_ASCII_WIDTH_LONG_COUNT_MAX = 5;
+const MAX_ASCII_CODE = 127;
+const MAX_BMP_CODE = 0xFFFF;
+// A char above U+FFFF is a high and a low surrogate in UTF-16, which take 10 bits of it each.
+const HIGH_SURROGATE_START = 0xD800;
+const LOW_SURROGATE_START = 0xDC00;
+const SURROGATE_BITS = 10;
+const SURROGATE_MASK = (1 << SURROGATE_BITS) - 1;
+// The chars up to U+FFFF are cached in blocks of 64.
+const BMP_BLOCK_BITS = 6;
+const BMP_BLOCK_MASK = 63;
 
 /**
  * Hot path, performance sensitive.
+ * The width of a char measured alone, cached per font.
+ * NOTICE: It is not text shaping, so the sum of the widths can differ from the width of the text.
+ * @param charCode A code point. A surrogate pair is one char.
  */
 export function measureCharWidth(fontMeasureInfo: FontMeasureInfo, charCode: number): number {
-    if (!fontMeasureInfo.asciiWidthMapTried) {
-        fontMeasureInfo.asciiWidthMap = tryCreateASCIIWidthMap(fontMeasureInfo.font);
-        fontMeasureInfo.asciiWidthMapTried = true;
+    // A width of 0 is cached as well, so compare with null.
+    if (charCode <= MAX_ASCII_CODE) {
+        const width = fontMeasureInfo.asciiWidthMap[charCode];
+        return width != null ? width : measureNewCharWidth(fontMeasureInfo, charCode);
     }
-    return (0 <= charCode && charCode <= 127)
-        ? (fontMeasureInfo.asciiWidthMap != null
-            ? fontMeasureInfo.asciiWidthMap[charCode]
-            : fontMeasureInfo.asciiCharWidth
-        )
-        : fontMeasureInfo.stWideCharWidth;
+    if (charCode <= MAX_BMP_CODE) {
+        const block = fontMeasureInfo.bmpWidthMap[charCode >> BMP_BLOCK_BITS];
+        const width = block && block[charCode & BMP_BLOCK_MASK];
+        return width != null ? width : measureNewCharWidth(fontMeasureInfo, charCode);
+    }
+    const width = fontMeasureInfo.nonBMPWidthMap[charCode];
+    return width != null ? width : measureNewCharWidth(fontMeasureInfo, charCode);
+}
+
+function measureNewCharWidth(fontMeasureInfo: FontMeasureInfo, charCode: number) {
+    const width = platformApi.measureText(charFromCode(charCode), fontMeasureInfo.font).width;
+    if (charCode <= MAX_ASCII_CODE) {
+        fontMeasureInfo.asciiWidthMap[charCode] = width;
+        return width;
+    }
+    if (charCode <= MAX_BMP_CODE) {
+        const blocks = fontMeasureInfo.bmpWidthMap;
+        const blockIndex = charCode >> BMP_BLOCK_BITS;
+        (blocks[blockIndex] || (blocks[blockIndex] = []))[charCode & BMP_BLOCK_MASK] = width;
+        return width;
+    }
+    fontMeasureInfo.nonBMPWidthMap[charCode] = width;
+    return width;
+}
+
+// `String.fromCodePoint` is not in ES5.
+function charFromCode(charCode: number) {
+    if (charCode <= MAX_BMP_CODE) {
+        return String.fromCharCode(charCode);
+    }
+    const offset = charCode - MAX_BMP_CODE - 1;
+    return String.fromCharCode(
+        HIGH_SURROGATE_START + (offset >> SURROGATE_BITS),
+        LOW_SURROGATE_START + (offset & SURROGATE_MASK)
+    );
 }
 
 export function measureWidth(fontMeasureInfo: FontMeasureInfo, text: string): number {
