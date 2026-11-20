@@ -91,7 +91,7 @@ export interface TextStylePropsPart {
     verticalAlign?: TextVerticalAlign
 
     /**
-     * Line height. Default to be text height of '国'
+     * Line height. Default to be the font size.
      */
     lineHeight?: number
     /**
