@@ -339,6 +339,22 @@ describe('text measurement', function () {
                 '乙乙乙乙乙乙乙乙', { font: '10px truncate-each', width: 21, overflow: 'truncate', ellipsis: '' }, null, null
             ).lines).toEqual(['乙乙乙乙乙乙']);
         });
+
+        it('should fit, even if the text is wider than the estimate', function () {
+            // 'x' is 10px alone, but 50px in a text.
+            stubMeasureText(() => 10, ch => (ch === 'x' ? 50 : 10));
+            // 60px are available. 'xyy' would be 70px wide.
+            expect(truncateText('xyyyyyyyyy', 61, '10px truncate-fit', '')).toBe('xy');
+            // 60px are left for the text besides '...', which is 30px wide.
+            expect(truncateText('xyyyyyyyyy', 91, '10px truncate-fit', '...')).toBe('xy...');
+        });
+
+        it('should not split a surrogate pair', function () {
+            stubMeasureText(ch => (ch.length === 2 ? 12 : 5));
+            const emoji = '\uD83D\uDE00';
+            // 2.5 emojis would fit.
+            expect(truncateText(emoji + emoji + emoji + emoji, 31, '10px truncate-pair', '')).toBe(emoji + emoji);
+        });
     });
 
     describe('measured text', function () {

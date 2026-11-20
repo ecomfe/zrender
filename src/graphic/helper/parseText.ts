@@ -12,7 +12,7 @@ import {
     adjustTextX,
     adjustTextY,
     ensureFontMeasureInfo, FontMeasureInfo, getLineHeight, measureCharWidth, measureWidth, parsePercent,
-    charLength, codePointAt, prevCharIndex,
+    charLength, codePointAt, prevCharIndex, toCharBoundary,
 } from '../../contain/text';
 import BoundingRect, { BoundingRectIntersectOpt } from '../../core/BoundingRect';
 
@@ -150,21 +150,21 @@ function truncateSingleLine(
         return;
     }
 
-    for (let j = 0; ; j++) {
-        if (lineWidth <= contentWidth || j >= options.maxIterations) {
-            textLine += options.ellipsis;
-            break;
-        }
-
+    for (let j = 0; lineWidth > contentWidth && j < options.maxIterations; j++) {
         const subLength = j === 0
             ? estimateLength(textLine, contentWidth, fontMeasureInfo)
             : lineWidth > 0
             ? Math.floor(textLine.length * contentWidth / lineWidth)
             : 0;
 
-        textLine = textLine.substr(0, subLength);
+        textLine = textLine.substr(0, toCharBoundary(textLine, subLength));
         lineWidth = measureWidth(fontMeasureInfo, textLine);
     }
+    if (lineWidth > contentWidth) {
+        // Still too wide after the estimates.
+        textLine = textLine.substr(0, findFitLength(textLine, contentWidth, fontMeasureInfo));
+    }
+    textLine += options.ellipsis;
 
     if (textLine === '') {
         textLine = options.placeholder;
@@ -179,12 +179,37 @@ function estimateLength(
     contentWidth: number,
     fontMeasureInfo: FontMeasureInfo
 ): number {
+    const len = text.length;
     let width = 0;
     let i = 0;
-    for (let len = text.length; i < len && width < contentWidth; i++) {
-        width += measureCharWidth(fontMeasureInfo, text.charCodeAt(i));
+    while (i < len && width < contentWidth) {
+        const code = codePointAt(text, i);
+        width += measureCharWidth(fontMeasureInfo, code);
+        i += charLength(code);
     }
     return i;
+}
+
+/**
+ * The length of the longest prefix of `text` that fits in `width`.
+ */
+function findFitLength(text: string, width: number, fontMeasureInfo: FontMeasureInfo) {
+    // `text.substr(0, low)` fits, and `text.substr(0, high)` does not.
+    let low = 0;
+    let high = text.length;
+    while (true) {
+        const half = toCharBoundary(text, (low + high) >> 1);
+        // Take at least one char.
+        const mid = half > low ? half : low + charLength(codePointAt(text, low));
+        if (mid >= high) {
+            return low;
+        }
+        if (measureWidth(fontMeasureInfo, text.substr(0, mid)) <= width) {
+            low = mid;
+            continue;
+        }
+        high = mid;
+    }
 }
 
 export interface PlainTextContentBlock {
