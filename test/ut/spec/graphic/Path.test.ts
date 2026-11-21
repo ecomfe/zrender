@@ -1,4 +1,4 @@
-import {Rect, util} from '../zrender';
+import {Rect, util, LinearGradient, RadialGradient} from '../zrender';
 import { PathState } from '../../../../src/graphic/Path';
 
 describe('Path', function () {
@@ -310,4 +310,35 @@ describe('Path', function () {
 
     // TODO more getBoundingRect test on different shapes.
     // TODO pathContain test
+
+    describe('inside labels on gradient fills', function () {
+        class LabelRect extends Rect {
+            labelFill() {
+                return this.getInsideTextFill();
+            }
+        }
+
+        [() => new LinearGradient(0, 0, 1, 0), () => new RadialGradient(0.5, 0.5, 0.5)].forEach(function (createGradient) {
+            ['#eeeeee', '#777777', '#111111'].forEach(function (fill) {
+                it(createGradient().type + ' uses the same label contrast as an equivalent solid fill ' + fill, function () {
+                    const gradient = createGradient();
+                    gradient.addColorStop(0, fill);
+                    gradient.addColorStop(1, fill);
+                    const solid = new LabelRect({ style: { fill } });
+                    const shaded = new LabelRect({ style: { fill: gradient } });
+                    expect(shaded.labelFill()).toBe(solid.labelFill());
+                    expect(gradient.colorStops).toEqual([
+                        { offset: 0, color: fill },
+                        { offset: 1, color: fill }
+                    ]);
+                });
+            });
+        });
+
+        it('keeps the fallback for empty gradients and patterns', function () {
+            const gradient = new LabelRect({ style: { fill: new LinearGradient(0, 0, 1, 0) } });
+            const pattern = new LabelRect({ style: { fill: { image: 'tile.png' } } });
+            expect(gradient.labelFill()).toBe(pattern.labelFill());
+        });
+    });
 });
