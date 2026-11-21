@@ -194,6 +194,20 @@ export default class Animation extends Eventful {
         this._startLoop();
     }
 
+    seek(timestamp: number) {
+        this._time = getTime() - timestamp;
+        let clip = this._head;
+        while(clip) {
+            clip.loop = true;
+            clip.setStartTime(this._time + clip.getDelay());
+            clip = clip.next;
+        }
+        this._pausedTime = 0;
+        this._pauseStart = getTime();
+        this._paused = true;
+        this.update();
+    }
+
     /**
      * Stop animation.
      */
