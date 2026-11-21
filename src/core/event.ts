@@ -267,7 +267,13 @@ export function addEventListener(
     //     // By default, the third param of el.addEventListener is `capture: false`.
     //     : void 0;
     // el.addEventListener(name, handler /* , opts */);
-    el.addEventListener(name, handler, opt);
+    el.addEventListener(
+        name,
+        handler,
+        typeof opt === 'boolean'
+            ? { passive: false, capture: opt }
+            : { passive: false, ...opt },
+    );
 }
 
 /**
