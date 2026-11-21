@@ -196,7 +196,8 @@ export function normalizeEvent(
     return e;
 }
 
-// TODO: also provide prop "deltaX" "deltaY" in zrender "mousewheel" event.
+// Note: the normalization here ignores "deltaMode", so the scale of `zrDelta` differs
+// among browsers and devices. `ElementEvent` provides the raw "deltaX"/"deltaY"/"deltaMode".
 function getWheelDeltaMayPolyfill(e: ZRRawEvent): number {
     // Although event "wheel" do not has the prop "wheelDelta" in spec,
     // agent like Chrome and Safari still provide "wheelDelta" like
