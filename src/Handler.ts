@@ -466,6 +466,10 @@ util.each(['click', 'mousedown', 'mouseup', 'mousewheel', 'dblclick', 'contextme
                 // including the case that `mousedown` - `mousemove` - `mouseup`,
                 // which should be filtered, otherwise it will bring trouble to
                 // pan and zoom.
+                // If the element was removed from zrender (e.g. recreated by
+                // setOption), the reference comparison will fail but the click
+                // should still be allowed. See apache/echarts#21566.
+                && (!this._downEl || this._downEl.__zr)
                 || !this._downPoint
                 // Arbitrary value
                 || vec2.dist(this._downPoint, [event.zrX, event.zrY]) > 4
