@@ -1,13 +1,13 @@
 import { Dictionary } from './types';
+import { createHashMap, HashMap } from './util';
 
 // Simple LRU cache use doubly linked list
-// @module zrender/core/LRU
 
-export class Entry<T> {
+class Entry<T> {
 
     value: T
 
-    key: string | number
+    key: string
 
     next: Entry<T>
 
@@ -105,7 +105,7 @@ export default class LRU<T> {
 
     private _lastRemovedEntry: Entry<T>
 
-    private _map: Dictionary<Entry<T>> = {}
+    private _map: HashMap<Entry<T>, string> = createHashMap();
 
     constructor(maxSize: number) {
         this._maxSize = maxSize;
@@ -115,10 +115,11 @@ export default class LRU<T> {
      * @return Removed value
      */
     put(key: string | number, value: T): T {
+        key = strKey(key);
         const list = this._list;
         const map = this._map;
         let removed = null;
-        if (map[key] == null) {
+        if (map.get(key) == null) {
             const len = list.len();
             // Reuse last removed entry
             let entry = this._lastRemovedEntry;
@@ -127,7 +128,7 @@ export default class LRU<T> {
                 // Remove the least recently used
                 const leastUsedEntry = list.head;
                 list.remove(leastUsedEntry);
-                delete map[leastUsedEntry.key];
+                map.removeKey(leastUsedEntry.key);
 
                 removed = leastUsedEntry.value;
                 this._lastRemovedEntry = leastUsedEntry;
@@ -141,14 +142,15 @@ export default class LRU<T> {
             }
             entry.key = key;
             list.insertEntry(entry);
-            map[key] = entry;
+            map.set(key, entry);
         }
 
         return removed;
     }
 
     get(key: string | number): T {
-        const entry = this._map[key];
+        key = strKey(key);
+        const entry = this._map.get(key);
         const list = this._list;
         if (entry != null) {
             // Put the latest used entry in the tail
@@ -166,10 +168,16 @@ export default class LRU<T> {
      */
     clear() {
         this._list.clear();
-        this._map = {};
+        this._map = createHashMap();
     }
 
     len() {
         return this._list.len();
     }
+}
+
+function strKey(key: string | number): string {
+    // PENDING: For backward compatibility, only support string key.
+    //  (NOTE: null/undefined is the same as 'null'/'undefined')
+    return key + '';
 }
