@@ -689,7 +689,7 @@ export function isPrimitive(obj: any): boolean {
 }
 
 interface MapInterface<T, KEY extends string | number = string | number> {
-    delete(key: KEY): boolean;
+    delete(key: KEY): void; // NOTE: Map['delete'] returns boolean, but unnecessary here.
     has(key: KEY): boolean;
     get(key: KEY): T | undefined;
     set(key: KEY, value: T): this;
@@ -698,27 +698,27 @@ interface MapInterface<T, KEY extends string | number = string | number> {
 }
 
 class MapPolyfill<T, KEY extends string | number = string | number> implements MapInterface<T, KEY> {
-    private data: Record<KEY, T> = {} as Record<KEY, T>;
+    private data: Record<string, T> = {};
 
-    delete(key: KEY): boolean {
-        const existed = this.has(key);
-        if (existed) {
-            delete this.data[key];
-        }
-        return existed;
+    delete(key: KEY): void {
+        delete this.data[mapPolyfillMakeSafeKey(key)];
     }
     has(key: KEY): boolean {
-        return this.data.hasOwnProperty(key);
+        return this.data.hasOwnProperty(mapPolyfillMakeSafeKey(key));
     }
     get(key: KEY): T | undefined {
-        return this.data[key];
+        return this.data[mapPolyfillMakeSafeKey(key)];
     }
     set(key: KEY, value: T): this {
-        this.data[key] = value;
+        this.data[mapPolyfillMakeSafeKey(key)] = value;
         return this;
     }
     keys(): KEY[] {
-        return keys(this.data);
+        const keyList = keys(this.data);
+        for (let i = 0; i < keyList.length; i++) {
+            keyList[i] = keyList[i].slice(1);
+        }
+        return keyList as KEY[];
     }
     forEach(callback: (value: T, key: KEY) => void): void {
         // This is a potential performance bottleneck, see details in
@@ -727,10 +727,15 @@ class MapPolyfill<T, KEY extends string | number = string | number> implements M
         const data = this.data;
         for (const key in data) {
             if (data.hasOwnProperty(key)) {
-                callback(data[key], key);
+                callback(data[key], key.slice(1) as KEY);
             }
         }
     }
+}
+function mapPolyfillMakeSafeKey<KEY extends string | number>(key: KEY): string {
+    // Escape from built-in properties, e.g., `__proto__`, `toString`. And distinguish type.
+    const type = isNumber(key) ? 1 : 2;
+    return type + '' + key;
 }
 
 // We want to use native Map if it is available, but we do not want to polyfill the global scope
@@ -747,7 +752,7 @@ function maybeNativeMap<T, KEY extends string | number = string | number>(): Map
  * @param {Object} obj
  */
 export class HashMap<T, KEY extends string | number = string | number> {
-    data: MapInterface<T, KEY>
+    private data: MapInterface<T, KEY>
 
     constructor(obj?: HashMap<T, KEY> | { [key in KEY]?: T } | KEY[]) {
         const isArr = isArray(obj);
