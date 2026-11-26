@@ -70,7 +70,6 @@
     },
     "./lib/canvas/canvas": "./lib/canvas/canvas.js",
     "./lib/svg/svg": "./lib/svg/svg.js",
-    "./lib/vml/vml": "./lib/vml/vml.js",
     "./lib/canvas/Painter": "./lib/canvas/Painter.js",
     "./lib/svg/Painter": "./lib/svg/Painter.js",
     "./lib/svg/patch": "./lib/svg/patch.js",

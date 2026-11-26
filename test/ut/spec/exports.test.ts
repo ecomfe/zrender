@@ -38,6 +38,17 @@ describe('package exports', function () {
         }
     });
 
+    it('names only files the package ships', function () {
+        const root = path.resolve(__dirname, '../../..');
+        const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+        // Node's resolver trusts the map: a stale entry promises a file that is not there.
+        // The root entry is conditional and depends on the dist build; a pattern is not a file.
+        const missing = Object.keys(pkg.exports)
+            .filter(key => key !== '.' && !key.endsWith('*'))
+            .filter(key => !fs.existsSync(path.join(root, pkg.exports[key])));
+        expect(missing).toEqual([]);
+    });
+
     it.each(reported)('bundles explicit %s.js with Rollup 1', async function (name) {
         const root = path.resolve(__dirname, '../../..');
         const { rollup } = require('rollup');
