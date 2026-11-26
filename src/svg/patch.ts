@@ -8,7 +8,7 @@
  * https://github.com/paldepind/snabbdom/blob/master/LICENSE
  */
 
-import { isArray, isObject } from '../core/util';
+import { hasOwn, isArray, isObject, keys } from '../core/util';
 import { createElement, createVNode, SVGVNode, XMLNS, XML_NAMESPACE, XLINKNS } from './core';
 import * as api from './domapi';
 
@@ -121,7 +121,6 @@ function removeVnodes(parentElm: Node, vnodes: SVGVNode[], startIdx: number, end
 }
 
 export function updateAttrs(oldVnode: SVGVNode, vnode: SVGVNode): void {
-    let key: string;
     const elm = vnode.elm as SVGElement;
     const oldAttrs = oldVnode && oldVnode.attrs || {};
     const attrs = vnode.attrs || {};
@@ -131,8 +130,9 @@ export function updateAttrs(oldVnode: SVGVNode, vnode: SVGVNode): void {
     }
 
     // update modified attributes, add new attributes
-    // eslint-disable-next-line
-    for (key in attrs) {
+    const attrKeys = keys(attrs);
+    for (let idx = 0; idx < attrKeys.length; idx++) {
+        const key = attrKeys[idx];
         const cur = attrs[key];
         const old = oldAttrs[key];
         if (old !== cur) {
@@ -171,8 +171,10 @@ export function updateAttrs(oldVnode: SVGVNode, vnode: SVGVNode): void {
     // remove removed attributes
     // use `in` operator since the previous `for` iteration uses it (.i.e. add even attributes with undefined value)
     // the other option is to remove all attributes with value == undefined
-    for (key in oldAttrs) {
-        if (!(key in attrs)) {
+    const oldAttrKeys = keys(oldAttrs);
+    for (let idx = 0; idx < oldAttrKeys.length; idx++) {
+        const key = oldAttrKeys[idx];
+        if (!(hasOwn(attrs, key))) {
             elm.removeAttribute(key);
         }
     }

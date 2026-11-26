@@ -33,7 +33,7 @@ interface Platform {
 const OFFSET = 20;
 const SCALE = 100;
 // TODO other basic fonts?
-// eslint-disable-next-line
+// eslint-disable-next-line max-len, quotes
 const defaultWidthMapStr = `007LLmW'55;N0500LLLLLLLLLL00NNNLzWW\\\\WQb\\0FWLg\\bWb\\WQ\\WrWWQ000CL5LLFLL0LL**F*gLLLL5F0LF\\FFF5.5N`;
 
 function getTextWidthMap(mapStr: string): Record<string, number> {

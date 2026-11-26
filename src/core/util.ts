@@ -1,4 +1,4 @@
-/* global: defineProperty */
+/* global Map */
 import { Dictionary, ArrayLike, KeyOfDistributive, NullUndefined } from './types';
 import { GradientObject } from '../graphic/Gradient';
 import { ImagePatternObject } from '../graphic/Pattern';
@@ -98,7 +98,6 @@ export function clone<T extends any>(source: T): T {
     }
     else if (TYPED_ARRAY[typeStr]) {
         if (!isPrimitive(source)) {
-            /* eslint-disable-next-line */
             const Ctor = source.constructor as typeof Float32Array;
             if (Ctor.from) {
                 result = Ctor.from(source as Float32Array);
@@ -743,7 +742,6 @@ function mapPolyfillMakeSafeKey<KEY extends string | number>(key: KEY): string {
 const isNativeMapSupported = typeof Map === 'function';
 function maybeNativeMap<T, KEY extends string | number = string | number>(): MapInterface<T, KEY> {
     // Map may be a native class if we are running in an ES6 compatible environment.
-    // eslint-disable-next-line
     return (isNativeMapSupported ? new Map<KEY, T>() : new MapPolyfill<T, KEY>()) as MapInterface<T, KEY>;
 }
 

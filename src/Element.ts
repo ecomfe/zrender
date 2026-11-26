@@ -23,7 +23,8 @@ import {
     isTypedArray,
     isGradientObject,
     filter,
-    reduce
+    reduce,
+    hasOwn
 } from './core/util';
 import Polyline from './graphic/shape/Polyline';
 import Group from './graphic/Group';
@@ -902,7 +903,7 @@ class Element<Props extends ElementProps = ElementProps> {
             let key = primaryKeys[i];
             // Only save property that will be changed by toState
             // and has not been saved to normalState yet.
-            if (toState[key] != null && !(key in normalState)) {
+            if (toState[key] != null && !(hasOwn(normalState, key))) {
                 (normalState as any)[key] = (this as any)[key];
             }
         }

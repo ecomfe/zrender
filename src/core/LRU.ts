@@ -1,4 +1,3 @@
-import { Dictionary } from './types';
 import { createHashMap, HashMap } from './util';
 
 // Simple LRU cache use doubly linked list
