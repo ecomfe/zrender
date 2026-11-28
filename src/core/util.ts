@@ -35,7 +35,9 @@ const TYPED_ARRAY: Record<string, boolean> = reduce([
     return obj;
 }, {} as Record<string, boolean>);
 
-const objToString = Object.prototype.toString;
+const objectProto = Object.prototype;
+const objToString = objectProto.toString;
+const objHasOwnProperty = objectProto.hasOwnProperty;
 
 const arrayProto = Array.prototype;
 const nativeForEach = arrayProto.forEach;
@@ -821,7 +823,10 @@ export function concatArray<T, R>(a: ArrayLike<T>, b: ArrayLike<R>): ArrayLike<T
     return newArray;
 }
 
-export function createObject<T>(proto?: object, properties?: T): T {
+/**
+ * NOTE: `proto` can only be Object or `null`; other values cause TypeError.
+ */
+export function createObject<T>(proto?: object | null, properties?: T): T {
     // Performance of Object.create
     // https://jsperf.com/style-strategy-proto-or-others
     let obj: T;
@@ -850,8 +855,9 @@ export function disableUserSelect(dom: HTMLElement) {
     (domStyle as any)['-webkit-touch-callout'] = 'none';
 }
 
-export function hasOwn(own: object, prop: string): boolean {
-    return own.hasOwnProperty(prop);
+export function hasOwn(obj: object, prop: string): boolean {
+    // NOTE: `Object.create(null)` has no `hasOwnProperty` method.
+    return objHasOwnProperty.call(obj, prop);
 }
 
 export function noop() {}
