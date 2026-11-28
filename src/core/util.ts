@@ -702,7 +702,7 @@ class MapPolyfill<T, KEY extends string | number = string | number> implements M
         delete this.data[mapPolyfillMakeSafeKey(key)];
     }
     has(key: KEY): boolean {
-        return this.data.hasOwnProperty(mapPolyfillMakeSafeKey(key));
+        return hasOwn(this.data, mapPolyfillMakeSafeKey(key));
     }
     get(key: KEY): T | undefined {
         return this.data[mapPolyfillMakeSafeKey(key)];
