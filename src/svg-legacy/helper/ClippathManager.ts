@@ -11,6 +11,7 @@ import { Dictionary } from '../../core/types';
 import { isClipPathChanged } from '../../canvas/helper';
 import { getClipPathsKey, getIdURL } from '../../svg/helper';
 import { createElement } from '../../svg/core';
+import { hasOwn } from '../../core/util';
 
 type PathExtended = Path & {
     _dom: SVGElement
@@ -36,7 +37,7 @@ export default class ClippathManager extends Definable {
         super.markAllUnused();
         const refGroups = this._refGroups;
         for (let key in refGroups) {
-            if (refGroups.hasOwnProperty(key)) {
+            if (hasOwn(refGroups, key)) {
                 this.markDomUnused(refGroups[key]);
             }
         }
@@ -158,7 +159,7 @@ export default class ClippathManager extends Definable {
         const newRefGroupsMap: Dictionary<SVGElement> = {};
         const refGroups = this._refGroups;
         for (let key in refGroups) {
-            if (refGroups.hasOwnProperty(key)) {
+            if (hasOwn(refGroups, key)) {
                 const group = refGroups[key];
                 if (!this.isDomUnused(group)) {
                     newRefGroupsMap[key] = group;

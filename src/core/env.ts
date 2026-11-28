@@ -23,6 +23,7 @@ class Env {
     domSupported = false
     transformSupported = false
     transform3dSupported = false
+    defPropSupported = false
 
     hasGlobalWindow = typeof window !== 'undefined'
 }
@@ -118,5 +119,15 @@ function detect(ua: string, env: Env) {
 
 }
 
+env.defPropSupported = (function () {
+    try {
+        Object.defineProperty({}, '_', {value: 1});
+        // Legacy platforms (IE8) may throws error for plain object, but works only for DOM.
+        return true;
+    }
+    catch (e) {
+        return false;
+    }
+})();
 
 export default env;

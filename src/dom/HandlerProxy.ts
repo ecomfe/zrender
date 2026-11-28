@@ -525,7 +525,7 @@ function mountSingleDOMEventListener(
 function unmountDOMEventListeners(scope: DOMHandlerScope) {
     const mounted = scope.mounted;
     for (let nativeEventName in mounted) {
-        if (mounted.hasOwnProperty(nativeEventName)) {
+        if (zrUtil.hasOwn(mounted, nativeEventName)) {
             removeEventListener(
                 scope.domTarget, nativeEventName, mounted[nativeEventName],
                 scope.listenerOpts[nativeEventName]

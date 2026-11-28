@@ -8,6 +8,7 @@ import Displayable from '../../graphic/Displayable';
 import { Dictionary } from '../../core/types';
 import { getIdURL, getShadowKey, hasShadow, normalizeColor } from '../../svg/helper';
 import { createElement } from '../../svg/core';
+import { hasOwn } from '../../core/util';
 
 type DisplayableExtended = Displayable & {
     _shadowDom: SVGElement
@@ -137,7 +138,7 @@ export default class ShadowManager extends Definable {
         // let currentUsedShadow = 0;
         const shadowDomMap = this._shadowDomMap;
         for (let key in shadowDomMap) {
-            if (shadowDomMap.hasOwnProperty(key)) {
+            if (hasOwn(shadowDomMap, key)) {
                 shadowDomsPool.push(shadowDomMap[key]);
             }
             // currentUsedShadow++;

@@ -1,5 +1,5 @@
 import LRU from '../core/LRU';
-import { extend, isFunction, isGradientObject, isString, map } from '../core/util';
+import { extend, hasOwn, isFunction, isGradientObject, isString, map } from '../core/util';
 import { GradientObject } from '../graphic/Gradient';
 
 const kCSSColorTable = {
@@ -176,7 +176,7 @@ export function parse(colorStr: string, rgbaArr?: number[]): number[] {
     let str = colorStr.replace(/ /g, '').toLowerCase();
 
     // Color keywords (and transparent) lookup.
-    if (str in kCSSColorTable) {
+    if (hasOwn(kCSSColorTable, str)) {
         copyRgba(rgbaArr, kCSSColorTable[str as keyof typeof kCSSColorTable]);
         putToCache(colorStr, rgbaArr);
         return rgbaArr;

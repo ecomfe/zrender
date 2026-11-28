@@ -114,7 +114,7 @@ export function clone<T extends any>(source: T): T {
         result = {} as any;
         for (let key in source) {
             // Check if key is __proto__ to avoid prototype pollution
-            if (source.hasOwnProperty(key) && key !== protoKey) {
+            if (hasOwn(source as object, key) && key !== protoKey) {
                 result[key] = clone(source[key]);
             }
         }
@@ -140,7 +140,7 @@ export function merge(target: any, source: any, overwrite?: boolean): any {
 
     for (let key in source) {
         // Check if key is __proto__ to avoid prototype pollution
-        if (source.hasOwnProperty(key) && key !== protoKey) {
+        if (hasOwn(source, key) && key !== protoKey) {
             const targetProp = target[key];
             const sourceProp = source[key];
 
@@ -155,7 +155,6 @@ export function merge(target: any, source: any, overwrite?: boolean): any {
                 && !isPrimitive(sourceProp)
                 && !isPrimitive(targetProp)
             ) {
-                // 如果需要递归覆盖，就递归调用merge
                 merge(targetProp, sourceProp, overwrite);
             }
             else if (overwrite || !(key in target)) {
@@ -194,7 +193,7 @@ export function extend<
     else {
         for (let key in source) {
             // Check if key is __proto__ to avoid prototype pollution
-            if (source.hasOwnProperty(key) && key !== protoKey) {
+            if (hasOwn(source, key) && key !== protoKey) {
                 (target as S & T)[key] = (source as T & S)[key];
             }
         }
@@ -279,7 +278,7 @@ export function inherits(clazz: Function, baseClazz: Function) {
     clazz.prototype = new (F as any)();
 
     for (let prop in clazzPrototype) {
-        if (clazzPrototype.hasOwnProperty(prop)) {
+        if (hasOwn(clazzPrototype, prop)) {
             clazz.prototype[prop] = clazzPrototype[prop];
         }
     }
@@ -353,7 +352,7 @@ export function each<I extends Dictionary<any> | any[] | readonly any[] | ArrayL
     }
     else {
         for (let key in arr) {
-            if (arr.hasOwnProperty(key)) {
+            if (hasOwn(arr, key)) {
                 cb.call(context, (arr as Dictionary<any>)[key], key as any, arr);
             }
         }
@@ -474,7 +473,7 @@ export function keys<T extends object>(obj: T): (KeyOfDistributive<T> & string)[
     }
     let keyList: TKeys[] = [];
     for (let key in obj) {
-        if (obj.hasOwnProperty(key)) {
+        if (hasOwn(obj, key)) {
             keyList.push(key as any);
         }
     }
@@ -725,7 +724,7 @@ class MapPolyfill<T, KEY extends string | number = string | number> implements M
         // less likely to occur as we default to native maps when possible.
         const data = this.data;
         for (const key in data) {
-            if (data.hasOwnProperty(key)) {
+            if (hasOwn(data, key)) {
                 callback(data[key], key.slice(1) as KEY);
             }
         }

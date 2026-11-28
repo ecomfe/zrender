@@ -1,6 +1,7 @@
+import env from './env';
+
 let wmUniqueIndex = Math.round(Math.random() * 9);
 
-const supportDefineProperty = typeof Object.defineProperty === 'function';
 
 export default class WeakMap<K extends object, V> {
 
@@ -16,7 +17,7 @@ export default class WeakMap<K extends object, V> {
 
     set(key: K, value: V): WeakMap<K, V> {
         const target = this._guard(key) as any;
-        if (supportDefineProperty) {
+        if (env.defPropSupported) {
             Object.defineProperty(target, this._id, {
                 value: value,
                 enumerable: false,
