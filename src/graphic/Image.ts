@@ -8,6 +8,7 @@ import BoundingRect from '../core/BoundingRect';
 import { ImageLike, MapToType } from '../core/types';
 import { defaults, createObject } from '../core/util';
 import { ElementCommonState } from '../Element';
+import { createStyleProto } from './helper/style';
 
 export interface ImageStyleProps extends CommonStyleProps {
     image?: string | ImageLike
@@ -25,6 +26,7 @@ export const DEFAULT_IMAGE_STYLE: CommonStyleProps = defaults({
     x: 0,
     y: 0
 }, DEFAULT_COMMON_STYLE);
+const DEFAULT_IMAGE_STYLE_PROTO = createStyleProto(DEFAULT_IMAGE_STYLE);
 
 export const DEFAULT_IMAGE_ANIMATION_PROPS: MapToType<ImageProps, boolean> = {
     style: defaults<MapToType<ImageStyleProps, boolean>, MapToType<ImageStyleProps, boolean>>({
@@ -70,7 +72,7 @@ class ZRImage extends Displayable<ImageProps> {
      * @override
      */
     createStyle(obj?: ImageStyleProps) {
-        return createObject(DEFAULT_IMAGE_STYLE, obj);
+        return createObject(DEFAULT_IMAGE_STYLE_PROTO, obj);
     }
 
     private _getSize(dim: 'width' | 'height') {

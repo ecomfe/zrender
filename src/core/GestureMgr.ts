@@ -5,6 +5,7 @@
 import * as eventUtil from './event';
 import { ZRRawTouchEvent, ZRPinchEvent, Dictionary } from './types';
 import Displayable from '../graphic/Displayable';
+import { hasOwn } from './util';
 
 interface TrackItem {
     points: number[][]
@@ -55,7 +56,7 @@ export class GestureMgr {
 
     _recognize(event: ZRRawTouchEvent) {
         for (let eventName in recognizers) {
-            if (recognizers.hasOwnProperty(eventName)) {
+            if (hasOwn(recognizers, eventName)) {
                 const gestureInfo = recognizers[eventName](this._track, event);
                 if (gestureInfo) {
                     return gestureInfo;

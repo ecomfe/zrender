@@ -3,11 +3,13 @@
  * It will parse text string and create sub displayable elements respectively.
  */
 import {
-    TextAlign, TextVerticalAlign, ImageLike, Dictionary, MapToType, FontWeight, FontStyle, NullUndefined
+    TextAlign, TextVerticalAlign, ImageLike, Dictionary, MapToType, FontWeight, FontStyle, NullUndefined,
+    FILL, STROKE
 } from '../core/types';
 import {
     parseRichText, parsePlainText, CalcInnerTextOverflowAreaOut, calcInnerTextOverflowArea,
     tSpanCreateBoundingRect2,
+    retrieveRichStyleOption,
 } from './helper/parseText';
 import TSpan, { TSpanStyleProps } from './TSpan';
 import { retrieve2, each, normalizeCssArray, trim, retrieve3, extend, keys, defaults } from '../core/util';
@@ -27,6 +29,7 @@ import Transformable from '../core/Transformable';
 import { ElementCommonState } from '../Element';
 import { GroupLike } from './Group';
 import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../core/platform';
+import { zrStyleHas } from './helper/style';
 
 type TextContentBlock = ReturnType<typeof parseRichText>
 type TextLine = TextContentBlock['lines'][0]
@@ -585,12 +588,12 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         let usingDefaultStroke = false;
         let useDefaultFill = false;
         const textFill = getFill(
-            'fill' in style
+            zrStyleHas(style, FILL)
                 ? style.fill
                 : (useDefaultFill = true, defaultStyle.fill)
         );
         const textStroke = getStroke(
-            'stroke' in style
+            zrStyleHas(style, STROKE)
                 ? style.stroke
                 : (!bgColorDrawn
                     // If we use "auto lineWidth" widely, it probably bring about some bad case.
@@ -786,7 +789,7 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         textAlign: string,
         parentBgColorDrawn: boolean
     ) {
-        const tokenStyle = style.rich[token.styleName] || {};
+        const tokenStyle = retrieveRichStyleOption(style.rich, token.styleName);
         tokenStyle.text = token.text;
 
         // 'ctx.textBaseline' is always set as 'middle', for sake of
@@ -831,13 +834,13 @@ class ZRText extends Displayable<TextProps> implements GroupLike {
         let defaultLineWidth = 0;
         let usingDefaultStroke = false;
         const textFill = getFill(
-            'fill' in tokenStyle ? tokenStyle.fill
-                : 'fill' in style ? style.fill
+            zrStyleHas(tokenStyle, FILL) ? tokenStyle.fill
+                : zrStyleHas(style, FILL) ? style.fill
                 : (useDefaultFill = true, defaultStyle.fill)
         );
         const textStroke = getStroke(
-            'stroke' in tokenStyle ? tokenStyle.stroke
-                : 'stroke' in style ? style.stroke
+            zrStyleHas(tokenStyle, STROKE) ? tokenStyle.stroke
+                : zrStyleHas(style, STROKE) ? style.stroke
                 : (
                     !bgColorDrawn
                     && !parentBgColorDrawn

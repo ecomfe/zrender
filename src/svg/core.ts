@@ -25,6 +25,10 @@ export interface SVGVNode {
     elm?: Node
     key: string
 };
+/**
+ * SECURITY: Do not add user-provided key to `attrs`, otherwise
+ * prototype pollution may be introduced.
+ */
 export function createVNode(
     tag: string,
     key: string,
@@ -44,8 +48,9 @@ export function createVNode(
 function createElementOpen(name: string, attrs?: SVGVNodeAttrs) {
     const attrsStr: string[] = [];
     if (attrs) {
-        // eslint-disable-next-line
-        for (let key in attrs) {
+        const keyList = keys(attrs);
+        for (let i = 0; i < keyList.length; i++) {
+            const key = keyList[i];
             const val = attrs[key];
             let part = key;
             // Same with the logic in patch.

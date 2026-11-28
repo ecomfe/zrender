@@ -4,6 +4,7 @@ import {
     retrieve2,
     retrieve3,
     reduce,
+    hasOwn,
 } from '../../core/util';
 import { TextAlign, TextVerticalAlign, ImageLike, Dictionary, NullUndefined } from '../../core/types';
 import type { DefaultTextStyle, TextStyleProps } from '../Text';
@@ -455,7 +456,7 @@ export function parseRichText(
 
         for (let j = 0; j < line.tokens.length; j++) {
             const token = line.tokens[j];
-            const tokenStyle = token.styleName && style.rich[token.styleName] || {};
+            const tokenStyle = retrieveRichStyleOption(style.rich, token.styleName);
             // textPadding should not inherit from style.
             const textPadding = token.textPadding = tokenStyle.padding as number[];
             const paddingH = textPadding ? textPadding[1] + textPadding[3] : 0;
@@ -579,8 +580,6 @@ export function parseRichText(
     return contentBlock;
 }
 
-type TokenStyle = TextStyleProps['rich'][string];
-
 function pushTokens(
     block: RichTextContentBlock,
     str: string,
@@ -589,7 +588,7 @@ function pushTokens(
     styleName?: string
 ) {
     const isEmptyStr = str === '';
-    const tokenStyle: TokenStyle = styleName && style.rich[styleName] || {};
+    const tokenStyle = retrieveRichStyleOption(style.rich, styleName);
     const lines = block.lines;
     const font = tokenStyle.font || style.font;
     let newLine = false;
@@ -949,3 +948,12 @@ export function tSpanHasStroke(style: TSpanStyleProps): boolean {
     return stroke != null && stroke !== 'none' && style.lineWidth > 0;
 }
 
+export function retrieveRichStyleOption(
+    rich: TextStyleProps['rich'],
+    styleName: RichTextToken['styleName']
+): TextStyleProps['rich'][RichTextToken['styleName']] {
+    // - Pollution must be prevented: User-provided `styleName` may be '__proto__',
+    //   'toString', etc., while `rich` does not has that own properies.
+    // - It is hitorically established that '' is not valid.
+    return (styleName && hasOwn(rich, styleName)) && rich[styleName] || {};
+}

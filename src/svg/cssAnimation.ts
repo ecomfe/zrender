@@ -99,15 +99,16 @@ function createCompoundPathCSSAnimation(
         cssAnimationName = animNames[len - 1];
         // Only use last animation because they are conflicted.
         const lastAnim = cssAnims[cssAnimationName];
-        // eslint-disable-next-line
-        for (let percent in lastAnim) {
+        const lastAnimPercents = keys(lastAnim);
+        for (let idx = 0; idx < lastAnimPercents.length; idx++) {
+            const percent = lastAnimPercents[idx];
             const kf = lastAnim[percent];
             composedAnim[percent] = composedAnim[percent] || { d: '' };
             composedAnim[percent].d += kf.d || '';
         }
-        // eslint-disable-next-line
-        for (let className in cssNodes) {
-            const val = cssNodes[className].animation;
+        const classNameList = keys(cssNodes);
+        for (let idx = 0; idx < classNameList.length; idx++) {
+            const val = cssNodes[classNameList[idx]].animation;
             if (val.indexOf(cssAnimationName) >= 0) {
                 // Only pick the animation configuration of last subpath.
                 cssAnimationCfg = val;
@@ -248,8 +249,9 @@ export function createCSSAnimation(
             }
         }
 
-        // eslint-disable-next-line
-        for (let percent in transformKfs) {
+        const transformKfsPercents = keys(transformKfs);
+        for (let idx = 0; idx < transformKfsPercents.length; idx++) {
+            const percent = transformKfsPercents[idx];
             const transform = {} as Transformable;
             copyTransform(transform, el);
             extend(transform, transformKfs[percent]);
@@ -270,8 +272,9 @@ export function createCSSAnimation(
 
         let path: PathProxy;
         let canAnimateShape = true;
-        // eslint-disable-next-line
-        for (let percent in shapeKfs) {
+        const shapeKfsPercents = keys(shapeKfs);
+        for (let idx = 0; idx < shapeKfsPercents.length; idx++) {
+            const percent = shapeKfsPercents[idx];
             finalKfs[percent] = finalKfs[percent] || {};
 
             const isFirst = !path;
@@ -296,9 +299,9 @@ export function createCSSAnimation(
             }
         };
         if (!canAnimateShape) {
-            // eslint-disable-next-line
-            for (let percent in finalKfs) {
-                delete finalKfs[percent].d;
+            const finalKfsPercents = keys(finalKfs);
+            for (let idx = 0; idx < finalKfsPercents.length; idx++) {
+                delete finalKfs[finalKfsPercents[idx]].d;
             }
         }
 
@@ -329,7 +332,8 @@ export function createCSSAnimation(
             transformOrigin = finalKfs[p0][transformOriginKey];
         }
         if (allTransformOriginSame && transformOrigin) {
-            for (const percent in finalKfs) {
+            for (let idx = 0; idx < percents.length; idx++) {
+                const percent = percents[idx];
                 if (finalKfs[percent][transformOriginKey]) {
                     delete finalKfs[percent][transformOriginKey];
                 }
@@ -338,10 +342,11 @@ export function createCSSAnimation(
         }
 
         if (filter(
-            percents, (percent) => keys(finalKfs[percent]).length > 0
+            percents, function (percent) {
+                return keys(finalKfs[percent]).length > 0;
+            }
         ).length) {
             const animationName = addAnimation(finalKfs, scope);
-            // eslint-disable-next-line
             // for (const attrName in finalKfs[percents[0]]) {
             //     // Remove the attrs in the element because it will be set by animation.
             //     // Reduce the size.
@@ -352,9 +357,9 @@ export function createCSSAnimation(
         }
     }
 
-    // eslint-disable-next-line
-    for (let key in groupAnimators) {
-        const animationCfg = createSingleCSSAnimation(groupAnimators[key]);
+    const groupAnimatorsKeys = keys(groupAnimators);
+    for (let idx = 0; idx < groupAnimatorsKeys.length; idx++) {
+        const animationCfg = createSingleCSSAnimation(groupAnimators[groupAnimatorsKeys[idx]]);
         if (animationCfg) {
             cssAnimations.push(animationCfg);
         }

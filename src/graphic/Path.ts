@@ -12,12 +12,13 @@ import { Dictionary, PropType, MapToType } from '../core/types';
 import BoundingRect from '../core/BoundingRect';
 import { LinearGradientObject } from './LinearGradient';
 import { RadialGradientObject } from './RadialGradient';
-import { defaults, keys, extend, clone, isString, createObject } from '../core/util';
+import { defaults, keys, extend, clone, isString, createObject, hasOwn } from '../core/util';
 import Animator from '../animation/Animator';
 import { lum } from '../tool/color';
 import { DARK_LABEL_COLOR, LIGHT_LABEL_COLOR, DARK_MODE_THRESHOLD, LIGHTER_LABEL_COLOR } from '../config';
 import { REDRAW_BIT, SHAPE_CHANGED_BIT, STYLE_CHANGED_BIT } from './constants';
 import { TRANSFORMABLE_PROPS } from '../core/Transformable';
+import { createStyleProto } from './helper/style';
 
 
 export interface PathStyleProps extends CommonStyleProps {
@@ -70,7 +71,7 @@ export const DEFAULT_PATH_STYLE: PathStyleProps = defaults({
     strokeNoScale: false,
     strokeFirst: false
 } as PathStyleProps, DEFAULT_COMMON_STYLE);
-
+const DEFAULT_PATH_STYLE_PROTO = createStyleProto(DEFAULT_PATH_STYLE);
 
 export const DEFAULT_PATH_ANIMATION_PROPS: MapToType<PathProps, boolean> = {
     style: defaults<MapToType<PathStyleProps, boolean>, MapToType<PathStyleProps, boolean>>({
@@ -505,7 +506,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
      * @override
      */
     createStyle(obj?: Props['style']) {
-        return createObject(DEFAULT_PATH_STYLE, obj);
+        return createObject(DEFAULT_PATH_STYLE_PROTO, obj);
     }
 
     protected _innerSaveToNormal(toState: PathState) {
@@ -659,7 +660,7 @@ class Path<Props extends PathProps = PathProps> extends Displayable<Props> {
 
         // TODO Legacy usage. Extend functions
         for (let key in defaultProps) {
-            if (typeof (defaultProps as any)[key] === 'function') {
+            if (hasOwn(defaultProps, key) && typeof (defaultProps as any)[key] === 'function') {
                 (Sub.prototype as any)[key] = (defaultProps as any)[key];
             }
         }

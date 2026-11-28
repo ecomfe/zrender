@@ -5,6 +5,7 @@ import { createObject, defaults } from '../core/util';
 import { FontStyle, FontWeight } from '../core/types';
 import { DEFAULT_FONT } from '../core/platform';
 import { tSpanCreateBoundingRect, tSpanHasStroke } from './helper/parseText';
+import { createStyleProto } from './helper/style';
 
 export interface TSpanStyleProps extends PathStyleProps {
 
@@ -40,7 +41,7 @@ export const DEFAULT_TSPAN_STYLE: TSpanStyleProps = defaults({
     textBaseline: 'top',
     miterLimit: 2
 } as TSpanStyleProps, DEFAULT_PATH_STYLE);
-
+const DEFAULT_TSPAN_STYLE_PROTO = createStyleProto(DEFAULT_TSPAN_STYLE);
 
 export interface TSpanProps extends DisplayableProps {
     style?: TSpanStyleProps
@@ -67,7 +68,7 @@ class TSpan extends Displayable<TSpanProps> {
      * @override
      */
     createStyle(obj?: TSpanStyleProps) {
-        return createObject(DEFAULT_TSPAN_STYLE, obj);
+        return createObject(DEFAULT_TSPAN_STYLE_PROTO, obj);
     }
 
     /**

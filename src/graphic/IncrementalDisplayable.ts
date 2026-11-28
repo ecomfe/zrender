@@ -12,6 +12,7 @@ import BoundingRect from '../core/BoundingRect';
 import { MatrixArray } from '../core/matrix';
 import Group from './Group';
 import { INCREMENTAL_ID_TRUE_COMPAT } from '../core/types';
+import { createObject } from '../core/util';
 
 const m: MatrixArray = [];
 // TODO Style override ?
@@ -37,7 +38,7 @@ export default class IncrementalDisplayable extends Displayble {
     useStyle() {
         // Use an empty style
         // PENDING
-        this.style = {};
+        this.style = createObject(null);
     }
 
     protected _useHoverStyle() {

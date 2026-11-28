@@ -1,7 +1,7 @@
 import type { ZRenderType } from '../zrender';
 import type CanvasPainter from '../canvas/Painter';
 import type BoundingRect from '../core/BoundingRect';
-import { extend } from '../core/util';
+import { extend, hasOwn } from '../core/util';
 
 class DebugRect {
 
@@ -26,7 +26,7 @@ pointer-events: none;
 `;
 
         for (let key in style) {
-            if (style.hasOwnProperty(key)) {
+            if (hasOwn(style, key)) {
                 (dom.style as any)[key] = (style as any)[key];
             }
         }

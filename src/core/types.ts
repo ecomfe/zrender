@@ -151,3 +151,5 @@ export interface DirtyRectOpts {
 export const XY = ['x', 'y'] as const;
 export const WH = ['width', 'height'] as const;
 
+export const FILL = 'fill';
+export const STROKE = 'stroke';

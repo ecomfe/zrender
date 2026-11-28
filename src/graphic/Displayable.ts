@@ -12,10 +12,10 @@ import Path from './Path';
 import { keys, extend, createObject } from '../core/util';
 import Animator from '../animation/Animator';
 import { REDRAW_BIT, STYLE_CHANGED_BIT } from './constants';
+import { createStyleProto, isStyleObject } from './helper/style';
 
 // type CalculateTextPositionResult = ReturnType<typeof calculateTextPosition>
 
-const STYLE_MAGIC_KEY = '__zr_style_' + Math.round((Math.random() * 10));
 
 export interface CommonStyleProps {
     shadowBlur?: number
@@ -38,6 +38,7 @@ export const DEFAULT_COMMON_STYLE: CommonStyleProps = {
     opacity: 1,
     blend: 'source-over'
 };
+const DEFAULT_COMMON_STYLE_PROTO = createStyleProto(DEFAULT_COMMON_STYLE);
 
 export const DEFAULT_COMMON_ANIMATION_PROPS: MapToType<DisplayableProps, boolean> = {
     style: {
@@ -47,9 +48,7 @@ export const DEFAULT_COMMON_ANIMATION_PROPS: MapToType<DisplayableProps, boolean
         shadowColor: true,
         opacity: true
     }
- };
-
-(DEFAULT_COMMON_STYLE as any)[STYLE_MAGIC_KEY] = true;
+};
 
 export interface DisplayableProps extends ElementProps {
     style?: Dictionary<any>
@@ -182,6 +181,9 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      */
     ignoreCoarsePointer?: boolean
 
+    /**
+     * @see ZR_STYLE_OBJECT
+     */
     // FIXME: do not use TS any.
     style: Dictionary<any>
 
@@ -448,22 +450,26 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
 
     /**
      * Create a style object with default values in it's prototype.
+     *
+     * [CAVEAT]: The overriden methods must also create style object via `createObject`
+     *  to guarantee prototype safety.
+     * @see ZR_STYLE_OBJECT
      */
     createStyle(obj?: Props['style']) {
-        return createObject(DEFAULT_COMMON_STYLE, obj);
+        return createObject(DEFAULT_COMMON_STYLE_PROTO, obj);
     }
 
     /**
      * Replace style property.
      * It will create a new style if given obj is not a valid style object.
+     *
+     * [CAVEAT]: style object can only be created via `createObject(createStyleProto, ...)`.
+     * @see ZR_STYLE_OBJECT
      */
-     // PENDING should not createStyle if it's an style object.
     useStyle(obj: Props['style']) {
-        if (!obj[STYLE_MAGIC_KEY]) {
-            obj = this.createStyle(obj);
-        }
-        // // See the comment `HOVER_LAYER_CONSTRAINTS` for `hoverStyle` case.
-        this.style = obj;
+        // NOTE: State changing usually passes a style object here, so optimize it by `isStyleObject`.
+        this.style = isStyleObject(obj) ? obj : this.createStyle(obj);
+        // See the comment `HOVER_LAYER_CONSTRAINTS` for `hoverStyle` case.
         this.dirtyStyle();
     }
 
@@ -479,6 +485,8 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
     }
 
     /**
+     * @deprecated Use `isStyleObject` of `style.ts` instead.
+     *
      * Determine if an object is a valid style object.
      * Which means it is created by `createStyle.`
      *
@@ -486,7 +494,7 @@ class Displayable<Props extends DisplayableProps = DisplayableProps> extends Ele
      * To avoid get null/undefined values.
      */
     isStyleObject(obj: Props['style']) {
-        return obj[STYLE_MAGIC_KEY];
+        return isStyleObject(obj);
     }
 
     protected _innerSaveToNormal(toState: DisplayableState) {

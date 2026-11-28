@@ -23,7 +23,8 @@ import {
     isTypedArray,
     isGradientObject,
     filter,
-    reduce
+    reduce,
+    hasOwn
 } from './core/util';
 import Polyline from './graphic/shape/Polyline';
 import Group from './graphic/Group';
@@ -32,6 +33,7 @@ import { LIGHT_LABEL_COLOR, DARK_LABEL_COLOR } from './config';
 import { parse, stringify } from './tool/color';
 import { REDRAW_BIT } from './graphic/constants';
 import { invert } from './core/matrix';
+import env from './core/env';
 
 export interface ElementAnimateConfig {
     duration?: number
@@ -902,7 +904,7 @@ class Element<Props extends ElementProps = ElementProps> {
             let key = primaryKeys[i];
             // Only save property that will be changed by toState
             // and has not been saved to normalState yet.
-            if (toState[key] != null && !(key in normalState)) {
+            if (toState[key] != null && !(hasOwn(normalState, key))) {
                 (normalState as any)[key] = (this as any)[key];
             }
         }
@@ -1807,10 +1809,7 @@ class Element<Props extends ElementProps = ElementProps> {
                 });
             }
         }
-        if (Object.defineProperty
-            // Just don't support ie8
-            // && (!(env as any).browser.ie || (env as any).browser.version > 8)
-        ) {
+        if (env.defPropSupported) {
             createLegacyProperty('position', '_legacyPos', 'x', 'y');
             createLegacyProperty('scale', '_legacyScale', 'scaleX', 'scaleY');
             createLegacyProperty('origin', '_legacyOrigin', 'originX', 'originY');

@@ -15,6 +15,7 @@ import { getLineDash } from './dashStyle';
 import { REDRAW_BIT, SHAPE_CHANGED_BIT } from '../graphic/constants';
 import type IncrementalDisplayable from '../graphic/IncrementalDisplayable';
 import { DEFAULT_FONT } from '../core/platform';
+import { getDevicePixelRatio } from '../config';
 
 
 const pathProxyForDraw = new PathProxy(true);
@@ -616,7 +617,13 @@ function flushPathDrawn(ctx: CanvasRenderingContext2D, scope: BrushScope) {
     }
 }
 
-export function brushSingle(ctx: CanvasRenderingContext2D, el: Displayable, dpr: number) {
+export function brushSingle(ctx: CanvasRenderingContext2D, el: Displayable, dpr?: number) {
+    if (dpr == null) {
+        // NOTE: `brushSingle` has long been exported with no parameter `dpr` (e.g., exported
+        // to echarts-gl via echarts as `innerDrawElementOnCanvas`).
+        // So keep backward compatibility.
+        dpr = getDevicePixelRatio();
+    }
     const scope = { inHover: false, viewWidth: 0, viewHeight: 0, beforeBrushParam: {dpr}, dpr};
     brush(ctx, el, scope);
     brushLoopFinalize(ctx, scope);
