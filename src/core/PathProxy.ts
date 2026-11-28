@@ -3,7 +3,7 @@
  * 可以用于 isInsidePath 判断以及获取boundingRect
  */
 
-// TODO getTotalLength, getPointAtLength, arcTo
+// TODO getTotalLength, getPointAtLength
 
 /* global Float32Array */
 
@@ -300,14 +300,55 @@ export default class PathProxy {
         return this;
     }
 
-    // TODO
     arcTo(x1: number, y1: number, x2: number, y2: number, radius: number) {
+        if (!this._saveData || radius < 0) {
+            this._drawPendingPt();
+            this._ctx && this._ctx.arcTo(x1, y1, x2, y2, radius);
+            return this;
+        }
+        if (!isFinite(x1) || !isFinite(y1) || !isFinite(x2) || !isFinite(y2) || !isFinite(radius)) {
+            return this;
+        }
+        if (this._len === 0) {
+            return this.moveTo(x1, y1);
+        }
+
+        // Use the point that the live context will see after flushing a short line.
+        let ux = (this._pendingPtDist > 0 ? this._pendingPtX : this._xi) - x1;
+        let uy = (this._pendingPtDist > 0 ? this._pendingPtY : this._yi) - y1;
+        let vx = x2 - x1;
+        let vy = y2 - y1;
+        const uLength = Math.hypot(ux, uy);
+        const vLength = Math.hypot(vx, vy);
         this._drawPendingPt();
 
-        if (this._ctx) {
-            this._ctx.arcTo(x1, y1, x2, y2, radius);
+        if (!radius || !uLength || !vLength) {
+            return this.lineTo(x1, y1);
         }
-        return this;
+        ux /= uLength;
+        uy /= uLength;
+        vx /= vLength;
+        vy /= vLength;
+        const cross = ux * vy - uy * vx;
+        if (!cross) {
+            return this.lineTo(x1, y1);
+        }
+
+        const dot = ux * vx + uy * vy;
+        const absCross = mathAbs(cross);
+        const tangent = radius * (dot >= 0 ? (1 + dot) / absCross : absCross / (1 - dot));
+        const anticlockwise = cross > 0;
+        const side = anticlockwise ? 1 : -1;
+        const startX = x1 + ux * tangent;
+        const startY = y1 + uy * tangent;
+        const centerX = startX - uy * radius * side;
+        const centerY = startY + ux * radius * side;
+        const startAngle = Math.atan2(-ux * side, uy * side);
+        const endAngle = Math.atan2(vx * side, -vy * side);
+
+        // Use existing path commands so replay, bounds and SVG all see the corner.
+        this.lineTo(startX, startY);
+        return this.arc(centerX, centerY, radius, startAngle, endAngle, anticlockwise);
     }
 
     // TODO
@@ -316,6 +357,8 @@ export default class PathProxy {
 
         this._ctx && this._ctx.rect(x, y, w, h);
         this.addData(CMD.R, x, y, w, h);
+        this._x0 = this._xi = x;
+        this._y0 = this._yi = y;
         return this;
     }
 
